@@ -14,16 +14,18 @@ Node Inspector is an debugger interface for nodeJS using the WebKit Web Inspecto
 
 1. make a debug build of node
     > ./configure --debug
+    
     > make
+    
     > make install
 
 2. start Chrome
 
   To use context menus (for conditional breakpoints, etc.) start Chrome with:
-    > --enable-experimental-extension-apis
+    --enable-experimental-extension-apis
     
   OR to disable context menus
-    > remove "experimental" from /front-end/mainfest.json
+    remove "experimental" from /front-end/mainfest.json
 
 3. enable Developer mode from the Chrome extensions page
 
@@ -49,7 +51,7 @@ Node Inspector is an debugger interface for nodeJS using the WebKit Web Inspecto
 
 ## Cool stuff
 
-* the WebKit Web Inspector debugger is a great js debugger interface, most it works just as well for node
+* the WebKit Web Inspector debugger is a great js debugger interface, it works just as well for node
 * uses a WebSocket to connect to debug-agent, so no polling for breaks
 * javascript top to bottom :)
 
