@@ -6,7 +6,7 @@
     "default_icon": "Images/warningMediumIcon.png",
     "default_title": "nodeJS Inspector"
   },
-  "background_page": "background.html",
+  "background_page": "node/background.html",
   "permissions": [
   	"experimental",
     "tabs"

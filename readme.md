@@ -6,8 +6,8 @@ Node Inspector is an debugger interface for nodeJS using the WebKit Web Inspecto
 
 * Google Chrome (or Chromium)
   - version 6.0.466.0 or later for context menu support
-    - http://www.chromium.org/getting-involved/dev-channel
-* nodeJS - http://github.com/ry/node
+    - [dev-channel](http://www.chromium.org/getting-involved/dev-channel)
+* [nodeJS](http://github.com/ry/node)
   - versions: 0.1.100 - 0.1.101
 
 ### Setup
@@ -21,11 +21,11 @@ Node Inspector is an debugger interface for nodeJS using the WebKit Web Inspecto
 
 2. start Chrome
 
-  To use context menus (for conditional breakpoints, etc.) start Chrome with:
-    --enable-experimental-extension-apis
-    
+  To use context menus (for conditional breakpoints, etc.) with:
+  > --enable-experimental-extension-apis 
+   
   OR to disable context menus
-    remove "experimental" from /front-end/mainfest.json
+  > remove "experimental" from /front-end/mainfest.json
 
 3. enable Developer mode from the Chrome extensions page
 
@@ -57,7 +57,7 @@ Node Inspector is an debugger interface for nodeJS using the WebKit Web Inspecto
 
 ## Known Issues
 
-This pre-alpha quality code, so use at your own risk:
+This is pre-alpha quality code, so use at your own risk:
 
 * while not stopped at a breakpoint the console doesn't always behave as you might expect
 * hovering the mouse over the arguments of the wrapper function will crash node
@@ -81,3 +81,13 @@ This pre-alpha quality code, so use at your own risk:
 * debug-agent needs a lot of work
 * try out live edit
 * separate source into WebKit and custom code sections
+
+## Thanks
+
+This project respectfully uses code from and thanks the authors of:
+
+* [WebKit](http://webkit.org/building/checkout.html)
+* [node](http://github.com/ry/node)
+* [node.ws.js](http://github.com/ncr/node.ws.js)
+
+
