@@ -751,13 +751,49 @@ WebInspector.ResourcesPanel.prototype = {
     {
         var tableElement = document.createElement("table");
         var resource = anchor.parentElement.resource;
-        var data = [WebInspector.UIString("Blocking"), resource.timing.requestTime === 0 ? "?" : Number.secondsToString(Math.max(resource.timing.requestTime - resource.startTime, 0)),
-                    WebInspector.UIString("Proxy"), resource.timing.proxyDuration == -1 ? WebInspector.UIString("(none)") : Number.secondsToString(resource.timing.proxyDuration),
-                    WebInspector.UIString("DNS Lookup"), resource.timing.dnsDuration == -1 ? WebInspector.UIString("(reused)") : Number.secondsToString(resource.timing.dnsDuration),
-                    WebInspector.UIString("Connecting"), resource.timing.connectDuration == -1 ? WebInspector.UIString("(reused)") : Number.secondsToString(resource.timing.connectDuration),
-                    WebInspector.UIString("Sending"), Number.secondsToString(resource.timing.sendDuration),
-                    WebInspector.UIString("Waiting"), Number.secondsToString(resource.timing.receiveHeadersDuration),
-                    WebInspector.UIString("Receiving"), Number.secondsToString(resource.endTime - resource.responseReceivedTime)];
+        var data = [];
+
+        if (resource.timing.proxyDuration !== -1) {
+            data.push(WebInspector.UIString("Proxy"));
+            data.push(Number.secondsToString(resource.timing.proxyDuration));
+        }
+
+        if (resource.timing.dnsDuration !== -1) {
+            data.push(WebInspector.UIString("DNS Lookup"));
+            data.push(Number.secondsToString(resource.timing.dnsDuration));
+        }
+
+        if (resource.timing.connectDuration !== -1) {
+            if (resource.connectionReused) {
+                data.push(WebInspector.UIString("Blocking"));
+                data.push(Number.secondsToString(resource.timing.connectDuration));
+            } else {
+                data.push(WebInspector.UIString("Connecting"));
+                // Connection includes DNS, subtract it here.
+                var connectDuration = resource.timing.connectDuration;
+                if (resource.timing.dnsDuration !== -1)
+                    connectDuration -= resource.timing.dnsDuration;
+                data.push(Number.secondsToString(connectDuration));
+            }
+        }
+
+        if (resource.timing.sslDuration !== -1) {
+            data.push(WebInspector.UIString("SSL"));
+            data.push(Number.secondsToString(resource.timing.sslDuration));
+        }
+
+        data.push(WebInspector.UIString("Sending"));
+        data.push(Number.secondsToString(resource.timing.sendDuration));
+
+        data.push(WebInspector.UIString("Waiting"));
+        // Waiting includes SSL, subtract it here.
+        var waitDuration = resource.timing.waitDuration;
+        if (resource.timing.sslDuration !== -1)
+            waitDuration -= resource.timing.sslDuration;
+        data.push(Number.secondsToString(waitDuration));
+
+        data.push(WebInspector.UIString("Receiving"));
+        data.push(Number.secondsToString(resource.endTime - resource.responseReceivedTime));
 
         for (var i = 0; i < data.length; i += 2) {
             var tr = document.createElement("tr");
@@ -1252,8 +1288,7 @@ WebInspector.ResourceGraph = function(resource)
     this._graphElement.className = "resources-graph-side";
     this._graphElement.addEventListener("mouseover", this.refreshLabelPositions.bind(this), false);
 
-    if (resource.cached)
-        this._graphElement.addStyleClass("resource-cached");
+    this._cachedChanged();
 
     this._barAreaElement = document.createElement("div");
     this._barAreaElement.className = "resources-graph-bar-area hidden";
@@ -1277,6 +1312,8 @@ WebInspector.ResourceGraph = function(resource)
     this._barAreaElement.appendChild(this._labelRightElement);
 
     this._graphElement.addStyleClass("resources-category-" + resource.category.name);
+
+    resource.addEventListener("cached changed", this._cachedChanged, this);
 }
 
 WebInspector.ResourceGraph.prototype = {
@@ -1400,5 +1437,11 @@ WebInspector.ResourceGraph.prototype = {
         this._labelLeftElement.title = tooltip;
         this._labelRightElement.title = tooltip;
         this._barRightElement.title = tooltip;
+    },
+
+    _cachedChanged: function()
+    {
+        if (this.resource.cached)
+            this._graphElement.addStyleClass("resource-cached");
     }
 }

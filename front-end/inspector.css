@@ -90,6 +90,10 @@ body.inactive #toolbar {
     border-bottom: 1px solid rgb(64%, 64%, 64%);
 }
 
+body.detached.platform-mac-leopard #toolbar,
+body.detached.platform-mac-snowleopard #toolbar {
+    background: transparent !important;
+}
 
 body.attached #toolbar {
     height: 34px;
@@ -705,6 +709,16 @@ body.platform-linux .monospace, body.platform-linux .source-code {
 
 .console-group-messages .section.expanded .header::before {
     content: url(Images/treeDownTriangleBlack.png);
+}
+
+.console-message > ol.stack-trace {
+    margin: 5px 0 5px -30px;
+    list-style: none;
+}
+
+.console-message.repeated-message > ol.stack-trace.trace-message {
+    margin-top: -9px;
+    margin-left: -12px;
 }
 
 .console-group-messages .section .header .title {
@@ -1470,7 +1484,7 @@ body.inactive .placard.selected {
     outline: 1px solid rgb(66%, 66%, 66%) !important;
     background-color: white;
     -webkit-user-modify: read-write-plaintext-only;
-    text-overflow: clip;
+    text-overflow: clip !important;
     padding-left: 2px;
     margin-left: -2px;
     padding-right: 2px;

@@ -308,6 +308,17 @@ WebInspector.Resource.prototype = {
         }
     },
 
+    get cached()
+    {
+        return this._cached;
+    },
+
+    set cached(x)
+    {
+        this._cached = x;
+        this.dispatchEventToListeners("cached changed");
+    },
+
     get mimeType()
     {
         return this._mimeType;
@@ -587,9 +598,14 @@ WebInspector.Resource.prototype = {
                 if (!this._mimeTypeIsConsistentWithType())
                     msg = new WebInspector.ConsoleMessage(WebInspector.ConsoleMessage.MessageSource.Other,
                         WebInspector.ConsoleMessage.MessageType.Log, 
-                        WebInspector.ConsoleMessage.MessageLevel.Warning, -1, this.url, null, 1,
-                        String.sprintf(WebInspector.Warnings.IncorrectMIMEType.message,
-                        WebInspector.Resource.Type.toString(this.type), this.mimeType));
+                        WebInspector.ConsoleMessage.MessageLevel.Warning,
+                        -1,
+                        this.url,
+                        null,
+                        1,
+                        String.sprintf(WebInspector.Warnings.IncorrectMIMEType.message, WebInspector.Resource.Type.toString(this.type), this.mimeType),
+                        null,
+                        null);
                 break;
         }
 

@@ -33,17 +33,6 @@ if (!window.InspectorFrontendHost) {
 WebInspector.InspectorFrontendHostStub = function()
 {
     this._attachedWindowHeight = 0;
-    this.showContextMenu = function(event, items) {
-    	chrome.experimental.contextMenus.removeAll();
-    	items.forEach(function(item) {
-		  		chrome.experimental.contextMenus.create({
-		  			title: item.label,
-		  			onclick: function() {
-		  				WebInspector.contextMenuItemSelected(item.id);
-		  			}
-		  		});
-    	});    	
-    };
 }
 
 WebInspector._platformFlavor = WebInspector.PlatformFlavor.MacLeopard;
@@ -97,13 +86,6 @@ WebInspector.InspectorFrontendHostStub.prototype = {
 
     loaded: function()
     {
-    	document.getElementById("dock-status-bar-item").style.display='none';
-    	WebInspector.populateApplicationSettings();
-    	WebInspector.applicationSettings.installSetting("scriptsSidebarWidth", "scripts-sidebar-width", 250);
-    	WebInspector.applicationSettings.installSetting("consoleSidebarWidth", "console-sidebar-width", 250);    	
-    	WebInspector.showScriptsPanel();
-    	WebInspector.panels.scripts._pauseOnExceptionButton.disabled = true;
-    	WebInspector.panels.scripts._enableDebugging();
     },
 
     localizedStringsURL: function()
@@ -113,7 +95,7 @@ WebInspector.InspectorFrontendHostStub.prototype = {
 
     hiddenPanels: function()
     {
-        return "elements,resources,timeline,profiles,storage,audits";
+        return "";
     },
 
     inspectedURLChanged: function(url)

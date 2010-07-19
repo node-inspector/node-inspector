@@ -42,7 +42,8 @@ var Preferences = {
     showColorNicknames: true,
     debuggerAlwaysEnabled: false,
     profilerAlwaysEnabled: false,
-    auditsPanelEnabled: true
+    auditsPanelEnabled: true,
+    appCacheEnabled: true
 }
 
 WebInspector.populateApplicationSettings = function(settingsString)

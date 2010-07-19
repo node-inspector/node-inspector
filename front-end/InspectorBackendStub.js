@@ -61,7 +61,6 @@ WebInspector.InspectorBackendStub.prototype = {
 
     clearConsoleMessages: function()
     {
-    	WebInspector.console.clearMessages();
     },
 
     getOuterHTML: function()
@@ -158,48 +157,35 @@ WebInspector.InspectorBackendStub.prototype = {
 
     enableDebugger: function()
     {
-				WebInspector.InspectorController.initialize();
+        WebInspector.debuggerWasEnabled();
     },
 
     disableDebugger: function()
     {
-    		WebInspector.InspectorController.close();
+        WebInspector.debuggerWasDisabled();
     },
 
     setBreakpoint: function(callId, sourceID, line, enabled, condition)
     {
-				WebInspector.InspectorController.setBreakpoint(callId, sourceID, line, enabled, condition);
         WebInspector.didSetBreakpoint(callId, true, line);
     },
 
     removeBreakpoint: function(sourceID, line)
     {
-    	WebInspector.InspectorController.clearBreakpoint(sourceID, line);
     },
 
     activateBreakpoints: function()
     {
-    	var bps = WebInspector.breakpointManager._breakpoints;
-    	Object.keys(bps).forEach(
-    		function(key) {
-    			bps[key].enabled = true;
-    		});
-      this._breakpointsActivated = true;
+        this._breakpointsActivated = true;
     },
 
     deactivateBreakpoints: function()
     {
-    	var bps = WebInspector.breakpointManager._breakpoints;
-    	Object.keys(bps).forEach(
-    		function(key) {
-    			bps[key].enabled = false;
-    		});
-      this._breakpointsActivated = false;
+        this._breakpointsActivated = false;
     },
 
-    pauseInDebugger: function()
+    pause: function()
     {
-    	WebInspector.InspectorController.pause();
     },
 
     setPauseOnExceptionsState: function(value)
@@ -217,9 +203,8 @@ WebInspector.InspectorBackendStub.prototype = {
         WebInspector.didGetScriptSource(callId, null);
     },
 
-    resumeDebugger: function()
+    resume: function()
     {
-    	WebInspector.InspectorController.resume();
     },
 
     enableProfiler: function()
@@ -258,19 +243,16 @@ WebInspector.InspectorBackendStub.prototype = {
         return [];
     },
 
-    stepIntoStatementInDebugger: function()
+    stepIntoStatement: function()
     {
-    	WebInspector.InspectorController.resume('in');
     },
 
-    stepOutOfFunctionInDebugger: function()
+    stepOutOfFunction: function()
     {
-    	WebInspector.InspectorController.resume('out');
     },
 
-    stepOverStatementInDebugger: function()
+    stepOverStatement: function()
     {
-    	WebInspector.InspectorController.resume('next');
     },
 
     saveApplicationSettings: function()
@@ -280,80 +262,9 @@ WebInspector.InspectorBackendStub.prototype = {
     saveSessionSettings: function()
     {
     },
-    
-    
+
     dispatchOnInjectedScript: function()
     {
-			console.log("injected: " + JSON.stringify(arguments));
-			switch(arguments[2]) {
-				case 'getProperties':
-					var id = arguments[1];
-				
-					var _decode = function(local) 
-					{
-						var n = local.name || 'arguments[' + argi + ']';
-						argi += 1;
-						var p = {name: n};
-						switch (local.value.type) {
-							case 'object':
-								p.value = {
-									description: local.value.className,
-									hasChildren: true,
-									injectedScriptId: local.value.ref
-									};
-								break;
-							case 'function':
-								p.value = {
-									description: 'function ' + n + '()',
-									hasChildren: true,
-									injectedScriptId: local.value.ref
-									};
-								break;
-							case 'undefined':
-								p.value = {description: 'undefined'};
-								break;
-							case 'null':
-								p.value = {description: 'null'};
-								break;
-							default:
-								p.value = {description: local.value.value};
-								break;
-						}
-						return p;
-					};
-					if (id.scopeId !== undefined) {
-						var x = JSON.parse(arguments[3]);
-						if(x[0] && x[0].isLocal)
-						{
-							var obj = x[0];
-							var props = obj.locals.map(_decode);
-							var argi = 0;
-							props = props.concat(obj.arguments.map(_decode));
-							WebInspector.Callback.processCallback(arguments[0], props);
-						}
-						else {
-							WebInspector.InspectorController.getScope(id.frameId, id.scopeId, arguments[0]);
-						}
-					}
-					else {
-						WebInspector.InspectorController.lookup(id, arguments[0]);
-					}
-					break;
-				case 'evaluate':
-					var expr = JSON.parse(arguments[3])[0];
-					WebInspector.InspectorController.evaluate(expr, arguments[0]);
-					break;
-				case 'evaluateInCallFrame':
-					var args = JSON.parse(arguments[3]);
-					var frameId = args[0];
-					var expr = args[1];
-					WebInspector.InspectorController.evaluate(expr, arguments[0], frameId);
-					break;
-				default:
-					// so the callback list doesn't leak
-					WebInspector.Callback.processCallback(arguments[0], null);
-					break;
-			}
     },
 
     releaseWrapperObjectGroup: function()

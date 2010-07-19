@@ -34,19 +34,19 @@ WebInspector.InspectorFrontendHostStub = function()
 {
     this._attachedWindowHeight = 0;
     this.showContextMenu = function(event, items) {
-    	chrome.experimental.contextMenus.removeAll();
-    	items.forEach(function(item) {
-		  		chrome.experimental.contextMenus.create({
-		  			title: item.label,
-		  			onclick: function() {
-		  				WebInspector.contextMenuItemSelected(item.id);
-		  			}
-		  		});
-    	});    	
+    	if(chrome && chrome.experimental) {
+		  	chrome.experimental.contextMenus.removeAll();
+		  	items.forEach(function(item) {
+						chrome.experimental.contextMenus.create({
+							title: item.label,
+							onclick: function() {
+								WebInspector.contextMenuItemSelected(item.id);
+							}
+						});
+		  	});
+    	}    	
     };
 }
-
-WebInspector._platformFlavor = WebInspector.PlatformFlavor.MacLeopard;
 
 WebInspector.InspectorFrontendHostStub.prototype = {
     platform: function()

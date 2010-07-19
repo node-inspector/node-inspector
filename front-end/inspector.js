@@ -1071,6 +1071,14 @@ WebInspector.elementDragEnd = function(event)
     event.preventDefault();
 }
 
+WebInspector.toggleSearchingForNode = function()
+{
+    if (this.panels.elements) {
+        this.showElementsPanel();
+        this.panels.elements.toggleSearchingForNode();
+    }
+}
+
 WebInspector.showConsole = function()
 {
     this.drawer.showView(this.console);
@@ -1159,7 +1167,6 @@ WebInspector.updateResource = function(identifier, payload)
         resource.mainResource = payload.mainResource;
         resource.requestMethod = payload.requestMethod;
         resource.requestFormData = payload.requestFormData;
-        resource.cached = payload.cached;
         resource.documentURL = payload.documentURL;
 
         if (resource.mainResource)
@@ -1182,7 +1189,9 @@ WebInspector.updateResource = function(identifier, payload)
         resource.suggestedFilename = payload.suggestedFilename;
         resource.responseHeaders = payload.responseHeaders;
         resource.connectionID = payload.connectionID;
+        resource.connectionReused = payload.connectionReused;
         resource.timing = payload.timing;
+        resource.cached = payload.cached;
     }
 
     if (payload.didTypeChange) {
@@ -1455,10 +1464,10 @@ WebInspector.didCommitLoad = function()
 WebInspector.updateConsoleMessageExpiredCount = function(count)
 {
     var message = String.sprintf(WebInspector.UIString("%d console messages are not shown."), count);
-    WebInspector.console.addMessage(new WebInspector.ConsoleTextMessage(message, WebInspector.ConsoleMessage.MessageLevel.Warning));
+    WebInspector.console.addMessage(WebInspector.ConsoleMessage.createTextMessage(message, WebInspector.ConsoleMessage.MessageLevel.Warning));
 }
 
-WebInspector.addConsoleMessage = function(payload, opt_args)
+WebInspector.addConsoleMessage = function(payload)
 {
     var consoleMessage = new WebInspector.ConsoleMessage(
         payload.source,
@@ -1467,8 +1476,10 @@ WebInspector.addConsoleMessage = function(payload, opt_args)
         payload.line,
         payload.url,
         payload.groupLevel,
-        payload.repeatCount);
-    consoleMessage.setMessageBody(Array.prototype.slice.call(arguments, 1));
+        payload.repeatCount,
+        payload.message,
+        payload.parameters,
+        payload.stackTrace);
     this.console.addMessage(consoleMessage);
 }
 
@@ -1536,7 +1547,9 @@ WebInspector.log = function(message, messageLevel)
             null,
             null,
             repeatCount,
-            message);
+            null,
+            [message],
+            null);
 
         self.console.addMessage(msg);
     }
@@ -1866,8 +1879,13 @@ WebInspector.performSearch = function(event)
     if (query === this.currentPanel.currentQuery && this.currentPanel.currentQuery === this.currentQuery) {
         // When this is the same query and a forced search, jump to the next
         // search result for a good user experience.
-        if (forceSearch && this.currentPanel.jumpToNextSearchResult)
-            this.currentPanel.jumpToNextSearchResult();
+        if (forceSearch) {
+            var backward = event.shiftKey;
+            if (!backward && this.currentPanel.jumpToNextSearchResult)
+                this.currentPanel.jumpToNextSearchResult();
+            else if (backward && this.currentPanel.jumpToPreviousSearchResult)
+                this.currentPanel.jumpToPreviousSearchResult();
+        }
         return;
     }
 

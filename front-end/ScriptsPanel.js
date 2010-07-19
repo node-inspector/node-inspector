@@ -931,11 +931,11 @@ WebInspector.ScriptsPanel.prototype = {
         if (this._paused) {
             this._paused = false;
             this._waitingToPause = false;
-            InspectorBackend.resumeDebugger();
+            InspectorBackend.resume();
         } else {
             this._stepping = false;
             this._waitingToPause = true;
-            InspectorBackend.pauseInDebugger();
+            InspectorBackend.pause();
         }
 
         this._clearInterface();
@@ -948,7 +948,7 @@ WebInspector.ScriptsPanel.prototype = {
 
         this._clearInterface();
 
-        InspectorBackend.stepOverStatementInDebugger();
+        InspectorBackend.stepOverStatement();
     },
 
     _stepIntoClicked: function()
@@ -958,7 +958,7 @@ WebInspector.ScriptsPanel.prototype = {
 
         this._clearInterface();
 
-        InspectorBackend.stepIntoStatementInDebugger();
+        InspectorBackend.stepIntoStatement();
     },
 
     _stepOutClicked: function()
@@ -968,7 +968,7 @@ WebInspector.ScriptsPanel.prototype = {
 
         this._clearInterface();
 
-        InspectorBackend.stepOutOfFunctionInDebugger();
+        InspectorBackend.stepOutOfFunction();
     },
 
     _toggleBreakpointsClicked: function()

@@ -99,7 +99,7 @@ WebInspector.ElementsPanel = function()
     this.sidebarResizeElement.addEventListener("mousedown", this.rightSidebarResizerDragStart.bind(this), false);
 
     this._nodeSearchButton = new WebInspector.StatusBarButton(WebInspector.UIString("Select an element in the page to inspect it."), "node-search-status-bar-item");
-    this._nodeSearchButton.addEventListener("click", this._nodeSearchButtonClicked.bind(this), false);
+    this._nodeSearchButton.addEventListener("click", this.toggleSearchingForNode.bind(this), false);
 
     this.element.appendChild(this.contentElement);
     this.element.appendChild(this.sidebarElement);
@@ -453,7 +453,7 @@ WebInspector.ElementsPanel.prototype = {
         }
 
         WebInspector.showConsole();
-        WebInspector.console.addMessage(new WebInspector.ConsoleTextMessage(builder.join("\n")));
+        WebInspector.console.addMessage(WebInspector.ConsoleMessage.createTextMessage(builder.join("\n")));
     },
 
     get rootDOMNode()
@@ -1092,7 +1092,7 @@ WebInspector.ElementsPanel.prototype = {
                 var isNodeSearchKey = event.ctrlKey && !event.metaKey && !event.altKey && event.shiftKey;
 
             if (isNodeSearchKey) {
-                this._nodeSearchButtonClicked(event);
+                this.toggleSearchingForNode();
                 event.handled = true;
                 return;
             }
@@ -1136,7 +1136,7 @@ WebInspector.ElementsPanel.prototype = {
         this.treeOutline.updateSelection();
     },
 
-    _nodeSearchButtonClicked: function(event)
+    toggleSearchingForNode: function()
     {
         if (!this._nodeSearchButton.toggled)
             InspectorBackend.enableSearchingForNode();
