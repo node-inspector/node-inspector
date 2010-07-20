@@ -40,6 +40,7 @@ WebInspector.InspectorController = (function() {
 				breakpoints = {};
 				callbacks = {};
 				WebInspector.debuggerWasDisabled();
+				WebInspector.panels.scripts.reset();
 				console.log('socket closed');
 			};
 			socket.onopen = function() {

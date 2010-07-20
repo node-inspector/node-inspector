@@ -66,14 +66,14 @@ This is pre-alpha quality code, so use at your own risk:
 
 * while not stopped at a breakpoint the console doesn't always behave as you might expect
 * pause on exceptions doesn't play nice with the node event loop
-* closing the inspector does not stop debugging, you must stop debug-agent.js manually
+* closing the inspector does not stop debugging, you must stop inspector.js manually
 * opening more than one inspector window causes trouble
 
 ## Other Ideas
 
-* the debug-agent could be extended to provide collaborative debugging with
+* the inspector could be extended to provide collaborative debugging with
   multiple inspectors connected to the same debug session.
-* use a native node extension instead of the debug-agent.js as a separate process
+* use a native node extension instead of the inspector.js as a separate process
 
 ## TODOS
 
