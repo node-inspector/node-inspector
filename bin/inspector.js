@@ -24,7 +24,8 @@ function makeMessage() {
 	return {
 		headersDone: false,
 		headers: null,
-		contentLength: 0
+		contentLength: 0,
+		body: ''
 	};
 }
 
@@ -36,6 +37,7 @@ function parseBody() {
 			wsServer.broadcast(current.body);
 		}
 		current = false;
+		parse();
 	}	
 }
 
