@@ -1,12 +1,9 @@
-Node Inspector is a debugger interface for nodeJS using the WebKit Web Inspector as a Google Chrome extension.
+Node Inspector is a debugger interface for nodeJS using the WebKit Web Inspector.
 
 ## Getting Started
 
 ### Requirements
 
-* Google Chrome (or Chromium)
-  - version 6.0.466.0 or later for context menu support
-    - [dev-channel](http://www.chromium.org/getting-involved/dev-channel)
 * [nodeJS](http://github.com/ry/node)
   - versions: 0.1.100 - 0.1.101
 
@@ -19,34 +16,43 @@ Node Inspector is a debugger interface for nodeJS using the WebKit Web Inspector
     
     > make install
 
-2. start Chrome
-		with context menus (for conditional breakpoints, etc.):
-		> --enable-experimental-extension-apis
-		  
-		OR to disable context menus
-		> remove "experimental" from /front-end/mainfest.json
-
-3. enable Developer mode from the Chrome extensions page
-
-4. load unpacked extension
-    > open node-inspector/front-end
-    
-    You should now see a yellow triangle next to your address bar
-
 ### Debugging
 
-1. start a node project with debugging, for example:
-    > node_g --debug test/hello.js
+(NEW) There are two ways to use node-inspector. First I'll describe the easy way. 
+As an example lets debug test/hello.js, from the root project directory (node-inspector)
 
-2. start the debug-agent
-    > node bin/debug-agent.js
+1. start the inspector like this:
+    > node bin/inspector.js --start=test/hello.js
 
-3. open nodeJS Inspector
+2. open http://localhost:8080 in your favorite WebKit based browser
 
-4. you should now see the javascript source from nodeJS
+3. you should now see the javascript source from nodeJS
 
-5. set some breakpoints, see what happens
+4. set some breakpoints, see what happens
 
+
+This will start a child process (node_g --debug test/hello.js) and host the inspector 
+interface at http://localhost:8080. The other way is to connect the inspector to an 
+external node process.
+
+1. start a node process:
+		> node_g --debug=7878 test/hello.js
+		
+2. start the inspector:
+		> node bin/inspector.js --debug-port=7878 --agent-port=8000
+
+3. open http://localhost:8000
+
+## Options
+
+		--start=[file]		starts [file] in a child process with node_g --debug
+		--start-brk=[file]	same as start with --debug-brk
+		--agent-port=[port]	port to host the inspector (default 8080)
+		--debug-port=[port]	v8 debug port to connect to (default 5858)
+
+## Extensions
+
+This project started as a Chrome extension. For more info see the wiki.
 
 ## Cool stuff
 
@@ -59,16 +65,12 @@ Node Inspector is a debugger interface for nodeJS using the WebKit Web Inspector
 This is pre-alpha quality code, so use at your own risk:
 
 * while not stopped at a breakpoint the console doesn't always behave as you might expect
-* hovering the mouse over the arguments of the wrapper function will crash node
 * pause on exceptions doesn't play nice with the node event loop
 * closing the inspector does not stop debugging, you must stop debug-agent.js manually
-* opening the inspector more than once causes trouble
-* connection info to debug-agent is hard coded to 127.0.0.1:8080
+* opening more than one inspector window causes trouble
 
 ## Other Ideas
 
-* most, if not all of the extension features could be served as a static site,
-  which could allow you to host the debugger from a website, or from debug-agent.
 * the debug-agent could be extended to provide collaborative debugging with
   multiple inspectors connected to the same debug session.
 * use a native node extension instead of the debug-agent.js as a separate process
@@ -87,6 +89,7 @@ This project respectfully uses code from and thanks the authors of:
 
 * [WebKit](http://webkit.org/building/checkout.html)
 * [node](http://github.com/ry/node)
-* [node.ws.js](http://github.com/ncr/node.ws.js)
+* [node-websocket-server](http://github.com/miksago/node-websocket-server)
+* [node-paperboy](http://github.com/felixge/node-paperboy)
 
 

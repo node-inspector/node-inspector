@@ -347,7 +347,14 @@ WebInspector.InspectorBackendStub.prototype = {
 					var args = JSON.parse(arguments[3]);
 					var frameId = args[0];
 					var expr = args[1];
-					WebInspector.InspectorController.evaluate(expr, arguments[0], frameId);
+					//HACK: protect against evaluating known dangerous expressions,
+					// i.e. ones that crash node
+					if (['require', 'exports', 'module', '__filename', '__dirname'].indexOf(expr) > -1) {
+						WebInspector.Callback.processCallback(arguments[0], null);
+					}
+					else {
+						WebInspector.InspectorController.evaluate(expr, arguments[0], frameId);
+					}
 					break;
 				default:
 					// so the callback list doesn't leak

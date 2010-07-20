@@ -26,7 +26,13 @@ WebInspector.InspectorController = (function() {
 	
 	var controller = {
 		initialize: function() {
-			socket = new WebSocket('ws://127.0.0.1:8080');
+			if (['http:', 'https:'].indexOf(window.location.protocol) > -1) {
+				var addr = window.location.host;
+			}
+			else {
+				var addr = '127.0.0.1:8080'; //FIXME
+			}
+			socket = new WebSocket('ws://' + addr);
 			socket.onmessage = function(event) {
 				parseMessage(event.data);
 			};
