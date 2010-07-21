@@ -49,6 +49,7 @@ external node process.
 		--start-brk=[file]	same as start with --debug-brk
 		--agent-port=[port]	port to host the inspector (default 8080)
 		--debug-port=[port]	v8 debug port to connect to (default 5858)
+		--fwd-io			forward stdout and stderr from the child process to inspector console
 
 ## Extensions
 

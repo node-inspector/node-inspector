@@ -121,6 +121,7 @@ var fileToDebug = null;
 var port = 8080;
 var flag = '--debug=';
 var debugPort = 5858;
+var fwd = false;
 
 process.argv.forEach(function(arg) {
   if (arg.indexOf('--') > -1) {
@@ -145,6 +146,9 @@ process.argv.forEach(function(arg) {
           break;
       }
     }
+    else if (parts[0] === '--fwd-io') {
+      fwd = true;
+    }
     else if (parts[0] === '--help') {
       console.log('Usage: node [node_options] debug-agent.js [options]');
       console.log('Options:');
@@ -152,6 +156,7 @@ process.argv.forEach(function(arg) {
       console.log('--start-brk=[file]\tsame as start with --debug-brk');
       console.log('--agent-port=[port]\tport to host the inspector (default 8080)');
       console.log('--debug-port=[port]\tv8 debug port to connect to (default 5858)');
+      console.log('--fwd-io\t\t\tforward stdout and stderr from the child process to inspector console');
       process.exit();
     }
   }
@@ -164,27 +169,29 @@ if (fileToDebug != null) {
   flag = flag + debugPort;
   var debugProcess = spawn('node_g', [flag, fileToDebug]);
 
-  debugProcess.stdout.setEncoding('utf8');
-  debugProcess.stdout.on('data', function(data) {
-    sys.print(data);
-    wsServer.broadcast(JSON.stringify({
-      seq: 0,
-      type: 'event',
-      event: 'stdout',
-      body: data
-    }));
-  });
+  if (fwd) {
+    debugProcess.stdout.setEncoding('utf8');
+    debugProcess.stdout.on('data', function(data) {
+      sys.print(data);
+      wsServer.broadcast(JSON.stringify({
+        seq: 0,
+        type: 'event',
+        event: 'stdout',
+        body: data
+      }));
+    });
 
-  debugProcess.stderr.setEncoding('utf8');
-  debugProcess.stderr.on('data', function(data) {
-    console.error(data);
-    wsServer.broadcast(JSON.stringify({
-      seq: 0,
-      type: 'event',
-      event: 'stderr',
-      body: data
-    }));
-  });
+    debugProcess.stderr.setEncoding('utf8');
+    debugProcess.stderr.on('data', function(data) {
+      console.error(data);
+      wsServer.broadcast(JSON.stringify({
+        seq: 0,
+        type: 'event',
+        event: 'stderr',
+        body: data
+      }));
+    });
+  }
 
   debugProcess.on('exit', function(code) {
     console.log(fileToDebug + ' exited with code ' + code);
