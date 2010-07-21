@@ -5,13 +5,13 @@
  * modification, are permitted provided that the following conditions are
  * met:
  *
- *     * Redistributions of source code must retain the above copyright
+ *	   * Redistributions of source code must retain the above copyright
  * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
+ *	   * Redistributions in binary form must reproduce the above
  * copyright notice, this list of conditions and the following disclaimer
  * in the documentation and/or other materials provided with the
  * distribution.
- *     * Neither the name of Google Inc. nor the names of its
+ *	   * Neither the name of Google Inc. nor the names of its
  * contributors may be used to endorse or promote products derived from
  * this software without specific prior written permission.
  *
@@ -32,360 +32,360 @@ if (!window.InspectorBackend) {
 
 WebInspector.InspectorBackendStub = function()
 {
-    this._attachedWindowHeight = 0;
-    this._timelineEnabled = false;
+  this._attachedWindowHeight = 0;
+  this._timelineEnabled = false;
 }
 
 WebInspector.InspectorBackendStub.prototype = {
-    wrapCallback: function(func)
-    {
-        return func;
-    },
+  wrapCallback: function(func)
+  {
+    return func;
+  },
 
-    closeWindow: function()
-    {
-        this._windowVisible = false;
-    },
+  closeWindow: function()
+  {
+    this._windowVisible = false;
+  },
 
-    attach: function()
-    {
-    },
+  attach: function()
+  {
+  },
 
-    detach: function()
-    {
-    },
+  detach: function()
+  {
+  },
 
-    storeLastActivePanel: function(panel)
-    {
-    },
+  storeLastActivePanel: function(panel)
+  {
+  },
 
-    clearConsoleMessages: function()
-    {
-    	WebInspector.console.clearMessages();
-    },
+  clearConsoleMessages: function()
+  {
+    WebInspector.console.clearMessages();
+  },
 
-    getOuterHTML: function()
-    {
-    },
+  getOuterHTML: function()
+  {
+  },
 
-    setOuterHTML: function()
-    {
-    },
+  setOuterHTML: function()
+  {
+  },
 
-    addInspectedNode: function()
-    {
-    },
+  addInspectedNode: function()
+  {
+  },
 
-    search: function(sourceRow, query)
-    {
-    },
+  search: function(sourceRow, query)
+  {
+  },
 
-    moveByUnrestricted: function(x, y)
-    {
-    },
+  moveByUnrestricted: function(x, y)
+  {
+  },
 
-    getResourceContent: function(callId, identifier)
-    {
-        WebInspector.didGetResourceContent(callId, "");
-    },
+  getResourceContent: function(callId, identifier)
+  {
+    WebInspector.didGetResourceContent(callId, "");
+  },
 
-    highlightDOMNode: function(node)
-    {
-    },
+  highlightDOMNode: function(node)
+  {
+  },
 
-    hideDOMNodeHighlight: function()
-    {
-    },
+  hideDOMNodeHighlight: function()
+  {
+  },
 
-    inspectedWindow: function()
-    {
-        return window;
-    },
+  inspectedWindow: function()
+  {
+    return window;
+  },
 
-    loaded: function()
-    {
-    },
+  loaded: function()
+  {
+  },
 
-    localizedStringsURL: function()
-    {
-        return undefined;
-    },
+  localizedStringsURL: function()
+  {
+    return undefined;
+  },
 
-    windowUnloading: function()
-    {
-        return false;
-    },
+  windowUnloading: function()
+  {
+    return false;
+  },
 
-    hiddenPanels: function()
-    {
-        return "";
-    },
+  hiddenPanels: function()
+  {
+    return "";
+  },
 
-    enableResourceTracking: function()
-    {
-        WebInspector.resourceTrackingWasEnabled();
-    },
+  enableResourceTracking: function()
+  {
+    WebInspector.resourceTrackingWasEnabled();
+  },
 
-    disableResourceTracking: function()
-    {
-        WebInspector.resourceTrackingWasDisabled();
-    },
+  disableResourceTracking: function()
+  {
+    WebInspector.resourceTrackingWasDisabled();
+  },
 
 
-    enableSearchingForNode: function()
-    {
-        WebInspector.searchingForNodeWasEnabled();
-    },
+  enableSearchingForNode: function()
+  {
+    WebInspector.searchingForNodeWasEnabled();
+  },
 
-    disableSearchingForNode: function()
-    {
-        WebInspector.searchingForNodeWasDisabled();
-    },
+  disableSearchingForNode: function()
+  {
+    WebInspector.searchingForNodeWasDisabled();
+  },
 
-    enableMonitoringXHR: function()
-    {
-        WebInspector.monitoringXHRWasEnabled();
-    },
+  enableMonitoringXHR: function()
+  {
+    WebInspector.monitoringXHRWasEnabled();
+  },
 
-    disableMonitoringXHR: function()
-    {
-        WebInspector.monitoringXHRWasDisabled();
-    },
+  disableMonitoringXHR: function()
+  {
+    WebInspector.monitoringXHRWasDisabled();
+  },
 
-    reloadPage: function()
-    {
-    },
+  reloadPage: function()
+  {
+  },
 
-    enableDebugger: function()
-    {
-				WebInspector.InspectorController.initialize();
-    },
+  enableDebugger: function()
+  {
+        WebInspector.InspectorController.initialize();
+  },
 
-    disableDebugger: function()
-    {
-    		WebInspector.InspectorController.close();
-    },
+  disableDebugger: function()
+  {
+      WebInspector.InspectorController.close();
+  },
 
-    setBreakpoint: function(callId, sourceID, line, enabled, condition)
-    {
-				WebInspector.InspectorController.setBreakpoint(callId, sourceID, line, enabled, condition);
-        WebInspector.didSetBreakpoint(callId, true, line);
-    },
+  setBreakpoint: function(callId, sourceID, line, enabled, condition)
+  {
+        WebInspector.InspectorController.setBreakpoint(callId, sourceID, line, enabled, condition);
+    WebInspector.didSetBreakpoint(callId, true, line);
+  },
 
-    removeBreakpoint: function(sourceID, line)
-    {
-    	WebInspector.InspectorController.clearBreakpoint(sourceID, line);
-    },
+  removeBreakpoint: function(sourceID, line)
+  {
+    WebInspector.InspectorController.clearBreakpoint(sourceID, line);
+  },
 
-    activateBreakpoints: function()
-    {
-    	var bps = WebInspector.breakpointManager._breakpoints;
-    	Object.keys(bps).forEach(
-    		function(key) {
-    			bps[key].enabled = true;
-    		});
-      this._breakpointsActivated = true;
-    },
+  activateBreakpoints: function()
+  {
+    var bps = WebInspector.breakpointManager._breakpoints;
+    Object.keys(bps).forEach(
+      function(key) {
+        bps[key].enabled = true;
+      });
+    this._breakpointsActivated = true;
+  },
 
-    deactivateBreakpoints: function()
-    {
-    	var bps = WebInspector.breakpointManager._breakpoints;
-    	Object.keys(bps).forEach(
-    		function(key) {
-    			bps[key].enabled = false;
-    		});
-      this._breakpointsActivated = false;
-    },
+  deactivateBreakpoints: function()
+  {
+    var bps = WebInspector.breakpointManager._breakpoints;
+    Object.keys(bps).forEach(
+      function(key) {
+        bps[key].enabled = false;
+      });
+    this._breakpointsActivated = false;
+  },
 
-    pause: function()
-    {
-    	WebInspector.InspectorController.pause();
-    },
+  pause: function()
+  {
+    WebInspector.InspectorController.pause();
+  },
 
-    setPauseOnExceptionsState: function(value)
-    {
-        WebInspector.updatePauseOnExceptionsState(value);
-    },
+  setPauseOnExceptionsState: function(value)
+  {
+    WebInspector.updatePauseOnExceptionsState(value);
+  },
 
-    editScriptSource: function()
-    {
-        WebInspector.didEditScriptSource(callId, false);
-    },
+  editScriptSource: function()
+  {
+    WebInspector.didEditScriptSource(callId, false);
+  },
 
-    getScriptSource: function(callId, sourceID)
-    {
-        WebInspector.didGetScriptSource(callId, null);
-    },
+  getScriptSource: function(callId, sourceID)
+  {
+    WebInspector.didGetScriptSource(callId, null);
+  },
 
-    resume: function()
-    {
-    	WebInspector.InspectorController.resume();
-    },
+  resume: function()
+  {
+    WebInspector.InspectorController.resume();
+  },
 
-    enableProfiler: function()
-    {
-        WebInspector.profilerWasEnabled();
-    },
+  enableProfiler: function()
+  {
+    WebInspector.profilerWasEnabled();
+  },
 
-    disableProfiler: function()
-    {
-        WebInspector.profilerWasDisabled();
-    },
+  disableProfiler: function()
+  {
+    WebInspector.profilerWasDisabled();
+  },
 
-    startProfiling: function()
-    {
-    },
+  startProfiling: function()
+  {
+  },
 
-    stopProfiling: function()
-    {
-    },
+  stopProfiling: function()
+  {
+  },
 
-    getProfileHeaders: function(callId)
-    {
-        WebInspector.didGetProfileHeaders(callId, []);
-    },
+  getProfileHeaders: function(callId)
+  {
+    WebInspector.didGetProfileHeaders(callId, []);
+  },
 
-    getProfile: function(callId, uid)
-    {
-    },
+  getProfile: function(callId, uid)
+  {
+  },
 
-    takeHeapSnapshot: function()
-    {
-    },
+  takeHeapSnapshot: function()
+  {
+  },
 
-    databaseTableNames: function(database)
-    {
-        return [];
-    },
+  databaseTableNames: function(database)
+  {
+    return [];
+  },
 
-    stepIntoStatement: function()
-    {
-    	WebInspector.InspectorController.resume('in');
-    },
+  stepIntoStatement: function()
+  {
+    WebInspector.InspectorController.resume('in');
+  },
 
-    stepOutOfFunction: function()
-    {
-    	WebInspector.InspectorController.resume('out');
-    },
+  stepOutOfFunction: function()
+  {
+    WebInspector.InspectorController.resume('out');
+  },
 
-    stepOverStatement: function()
-    {
-    	WebInspector.InspectorController.resume('next');
-    },
+  stepOverStatement: function()
+  {
+    WebInspector.InspectorController.resume('next');
+  },
 
-    saveApplicationSettings: function()
-    {
-    },
+  saveApplicationSettings: function()
+  {
+  },
 
-    saveSessionSettings: function()
-    {
-    },
+  saveSessionSettings: function()
+  {
+  },
+  
+  
+  dispatchOnInjectedScript: function()
+  {
+    console.log("injected: " + JSON.stringify(arguments));
+    switch(arguments[2]) {
+      case 'getProperties':
+        var id = arguments[1];
     
-    
-    dispatchOnInjectedScript: function()
-    {
-			console.log("injected: " + JSON.stringify(arguments));
-			switch(arguments[2]) {
-				case 'getProperties':
-					var id = arguments[1];
-				
-					var _decode = function(local) 
-					{
-						var n = local.name || 'arguments[' + argi + ']';
-						argi += 1;
-						var p = {name: n};
-						switch (local.value.type) {
-							case 'object':
-								p.value = {
-									description: local.value.className,
-									hasChildren: true,
-									injectedScriptId: local.value.ref
-									};
-								break;
-							case 'function':
-								p.value = {
-									description: 'function ' + n + '()',
-									hasChildren: true,
-									injectedScriptId: local.value.ref
-									};
-								break;
-							case 'undefined':
-								p.value = {description: 'undefined'};
-								break;
-							case 'null':
-								p.value = {description: 'null'};
-								break;
-							default:
-								p.value = {description: local.value.value};
-								break;
-						}
-						return p;
-					};
-					if (id.scopeId !== undefined) {
-						var x = JSON.parse(arguments[3]);
-						if(x[0] && x[0].isLocal)
-						{
-							var obj = x[0];
-							var props = obj.locals.map(_decode);
-							var argi = 0;
-							props = props.concat(obj.arguments.map(_decode));
-							WebInspector.Callback.processCallback(arguments[0], props);
-						}
-						else {
-							WebInspector.InspectorController.getScope(id.frameId, id.scopeId, arguments[0]);
-						}
-					}
-					else {
-						WebInspector.InspectorController.lookup(id, arguments[0]);
-					}
-					break;
-				case 'evaluate':
-					var expr = JSON.parse(arguments[3])[0];
-					WebInspector.InspectorController.evaluate(expr, arguments[0]);
-					break;
-				case 'evaluateInCallFrame':
-					var args = JSON.parse(arguments[3]);
-					var frameId = args[0];
-					var expr = args[1];
-					//HACK: protect against evaluating known dangerous expressions,
-					// i.e. ones that crash node
-					if (['require', 'exports', 'module', '__filename', '__dirname'].indexOf(expr) > -1) {
-						WebInspector.Callback.processCallback(arguments[0], null);
-					}
-					else {
-						WebInspector.InspectorController.evaluate(expr, arguments[0], frameId);
-					}
-					break;
-				default:
-					// so the callback list doesn't leak
-					WebInspector.Callback.processCallback(arguments[0], null);
-					break;
-			}
-    },
-
-    releaseWrapperObjectGroup: function()
-    {
-    },
-
-    setInjectedScriptSource: function()
-    {
-    },
-    
-    addScriptToEvaluateOnLoad: function()
-    {
-    },
-
-    removeAllScriptsToEvaluateOnLoad: function()
-    {
-    },
-
-    performSearch: function()
-    {
-    },
-
-    searchCanceled: function()
-    {
+        var _decode = function(local) 
+        {
+          var n = local.name || 'arguments[' + argi + ']';
+          argi += 1;
+          var p = {name: n};
+          switch (local.value.type) {
+            case 'object':
+              p.value = {
+                description: local.value.className,
+                hasChildren: true,
+                injectedScriptId: local.value.ref
+                };
+              break;
+            case 'function':
+              p.value = {
+                description: 'function ' + n + '()',
+                hasChildren: true,
+                injectedScriptId: local.value.ref
+                };
+              break;
+            case 'undefined':
+              p.value = {description: 'undefined'};
+              break;
+            case 'null':
+              p.value = {description: 'null'};
+              break;
+            default:
+              p.value = {description: local.value.value};
+              break;
+          }
+          return p;
+        };
+        if (id.scopeId !== undefined) {
+          var x = JSON.parse(arguments[3]);
+          if(x[0] && x[0].isLocal)
+          {
+            var obj = x[0];
+            var props = obj.locals.map(_decode);
+            var argi = 0;
+            props = props.concat(obj.arguments.map(_decode));
+            WebInspector.Callback.processCallback(arguments[0], props);
+          }
+          else {
+            WebInspector.InspectorController.getScope(id.frameId, id.scopeId, arguments[0]);
+          }
+        }
+        else {
+          WebInspector.InspectorController.lookup(id, arguments[0]);
+        }
+        break;
+      case 'evaluate':
+        var expr = JSON.parse(arguments[3])[0];
+        WebInspector.InspectorController.evaluate(expr, arguments[0]);
+        break;
+      case 'evaluateInCallFrame':
+        var args = JSON.parse(arguments[3]);
+        var frameId = args[0];
+        var expr = args[1];
+        //HACK: protect against evaluating known dangerous expressions,
+        // i.e. ones that crash node
+        if (['require', 'exports', 'module', '__filename', '__dirname'].indexOf(expr) > -1) {
+          WebInspector.Callback.processCallback(arguments[0], null);
+        }
+        else {
+          WebInspector.InspectorController.evaluate(expr, arguments[0], frameId);
+        }
+        break;
+      default:
+        // so the callback list doesn't leak
+        WebInspector.Callback.processCallback(arguments[0], null);
+        break;
     }
+  },
+
+  releaseWrapperObjectGroup: function()
+  {
+  },
+
+  setInjectedScriptSource: function()
+  {
+  },
+  
+  addScriptToEvaluateOnLoad: function()
+  {
+  },
+
+  removeAllScriptsToEvaluateOnLoad: function()
+  {
+  },
+
+  performSearch: function()
+  {
+  },
+
+  searchCanceled: function()
+  {
+  }
 }
 
 InspectorBackend = new WebInspector.InspectorBackendStub();

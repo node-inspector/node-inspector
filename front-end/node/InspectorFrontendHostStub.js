@@ -32,102 +32,102 @@ if (!window.InspectorFrontendHost) {
 
 WebInspector.InspectorFrontendHostStub = function()
 {
-    this._attachedWindowHeight = 0;
-    this.showContextMenu = function(event, items) {
-    	if(chrome && chrome.experimental) {
-		  	chrome.experimental.contextMenus.removeAll();
-		  	items.forEach(function(item) {
-						chrome.experimental.contextMenus.create({
-							title: item.label,
-							onclick: function() {
-								WebInspector.contextMenuItemSelected(item.id);
-							}
-						});
-		  	});
-    	}    	
-    };
+  this._attachedWindowHeight = 0;
+  this.showContextMenu = function(event, items) {
+    if(chrome && chrome.experimental) {
+      chrome.experimental.contextMenus.removeAll();
+      items.forEach(function(item) {
+        chrome.experimental.contextMenus.create({
+          title: item.label,
+          onclick: function() {
+            WebInspector.contextMenuItemSelected(item.id);
+          }
+        });
+      });
+    }
+  };
 }
 
 WebInspector.InspectorFrontendHostStub.prototype = {
-    platform: function()
-    {
-        var match = navigator.userAgent.match(/Windows NT/);
-        if (match)
-            return "windows";
-        match = navigator.userAgent.match(/Mac OS X/);
-        if (match)
-            return "mac";
-        return "linux";
-    },
+  platform: function()
+  {
+    var match = navigator.userAgent.match(/Windows NT/);
+    if (match)
+      return "windows";
+    match = navigator.userAgent.match(/Mac OS X/);
+    if (match)
+      return "mac";
+    return "linux";
+  },
 
-    port: function()
-    {
-        return "unknown";
-    },
+  port: function()
+  {
+    return "unknown";
+  },
 
-    bringToFront: function()
-    {
-        this._windowVisible = true;
-    },
+  bringToFront: function()
+  {
+    this._windowVisible = true;
+  },
 
-    closeWindow: function()
-    {
-        this._windowVisible = false;
-    },
+  closeWindow: function()
+  {
+    this._windowVisible = false;
+  },
 
-    attach: function()
-    {
-    },
+  attach: function()
+  {
+  },
 
-    detach: function()
-    {
-    },
+  detach: function()
+  {
+  },
 
-    search: function(sourceRow, query)
-    {
-    },
+  search: function(sourceRow, query)
+  {
+  },
 
-    setAttachedWindowHeight: function(height)
-    {
-    },
+  setAttachedWindowHeight: function(height)
+  {
+  },
 
-    moveWindowBy: function(x, y)
-    {
-    },
+  moveWindowBy: function(x, y)
+  {
+  },
 
-    loaded: function()
-    {
-    	document.getElementById("dock-status-bar-item").style.display='none';
-    	WebInspector.populateApplicationSettings();
-    	WebInspector.applicationSettings.installSetting("scriptsSidebarWidth", "scripts-sidebar-width", 250);
-    	WebInspector.applicationSettings.installSetting("consoleSidebarWidth", "console-sidebar-width", 250);    	
-    	WebInspector.showScriptsPanel();
-    	WebInspector.panels.scripts._pauseOnExceptionButton.disabled = true;
-    	WebInspector.panels.scripts._enableDebugging();
-    },
+  loaded: function()
+  {
+    document.getElementById("dock-status-bar-item").style.display='none';
+    WebInspector.populateApplicationSettings();
+    WebInspector.applicationSettings.installSetting("scriptsSidebarWidth", "scripts-sidebar-width", 250);
+    WebInspector.applicationSettings.installSetting("consoleSidebarWidth", "console-sidebar-width", 250);    	
+    WebInspector.showScriptsPanel();
+    WebInspector.panels.scripts._pauseOnExceptionButton.disabled = true;
+    WebInspector.panels.scripts._enableDebugging();
+  },
 
-    localizedStringsURL: function()
-    {
-        return undefined;
-    },
+  localizedStringsURL: function()
+  {
+    return undefined;
+  },
 
-    hiddenPanels: function()
-    {
-        return "elements,resources,timeline,profiles,storage,audits";
-    },
+  hiddenPanels: function()
+  {
+    return "elements,resources,timeline,profiles,storage,audits";
+  },
 
-    inspectedURLChanged: function(url)
-    {
-    },
+  inspectedURLChanged: function(url)
+  {
+  },
 
-    copyText: function()
-    {
-    },
+  copyText: function()
+  {
+  },
 
-    canAttachWindow: function()
-    {
-        return false;
-    }
+  canAttachWindow: function()
+  {
+    return false;
+  }
 }
 
 InspectorFrontendHost = new WebInspector.InspectorFrontendHostStub();
