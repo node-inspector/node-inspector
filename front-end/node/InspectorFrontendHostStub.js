@@ -102,7 +102,7 @@ WebInspector.InspectorFrontendHostStub.prototype = {
     WebInspector.applicationSettings.installSetting("scriptsSidebarWidth", "scripts-sidebar-width", 250);
     WebInspector.applicationSettings.installSetting("consoleSidebarWidth", "console-sidebar-width", 250);    	
     WebInspector.showScriptsPanel();
-    WebInspector.panels.scripts._pauseOnExceptionButton.disabled = true;
+    WebInspector.panels.scripts._pauseOnExceptionButton.element.style.display = 'none';
     WebInspector.panels.scripts._enableDebugging();
   },
 
