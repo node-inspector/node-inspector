@@ -24,7 +24,7 @@ As an example lets debug test/hello.js, from the root project directory (node-in
 1. start the inspector like this:
     > node bin/inspector.js --start=test/hello.js
 
-2. open http://localhost:8080 in your favorite WebKit based browser
+2. open http://127.0.0.1:8080 in your favorite WebKit based browser
 
 3. you should now see the javascript source from nodeJS
 
@@ -41,7 +41,7 @@ external node process.
 2. start the inspector:
 		> node bin/inspector.js --debug-port=7878 --agent-port=8000
 
-3. open http://localhost:8000
+3. open http://127.0.0.1:8000
 
 ## Options
 

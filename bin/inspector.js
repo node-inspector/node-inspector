@@ -34,7 +34,15 @@ function parseBody() {
     current.body = buffer.slice(0, current.contentLength);
     buffer = buffer.slice(current.contentLength);
     if (current.body.length > 0 && wsServer) {
-      wsServer.broadcast(current.body);
+      if (wsServer.manager.length === 0) {
+        var msg = JSON.parse(current.body);
+        if (msg.type === 'event' && msg.event === 'break') {
+          request('{"seq":0,"type":"request","command":"continue"}');
+        }
+      }
+      else {
+        wsServer.broadcast(current.body);
+      }
     }
     current = false;
     parse();
