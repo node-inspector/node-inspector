@@ -1,135 +1,9 @@
 #!/usr/bin/env node
 
-var net = require('net'),
-    http = require('http'),
-    sys = require('sys'),
-    path = require('path'),
-    ws = require('../lib/ws'),
-    paperboy = require('../lib/paperboy'),
-    spawn = require('child_process').spawn;
+var sys = require('sys'),
+    session = require('./session');
 
-//////////////////////////////////////////////////////////
-//	Node side
-
-var seq = 0;
-var buffer = '';
-var current = false;
-
-function request(data) {
-  var message = 'Content-Length: ' + data.length + '\r\n\r\n' + data;
-  debug.write(message);
-}
-
-function makeMessage() {
-  return {
-    headersDone: false,
-    headers: null,
-    contentLength: 0,
-    body: ''
-  };
-}
-
-function parseBody() {
-  if (buffer.length >= current.contentLength) {
-    current.body = buffer.slice(0, current.contentLength);
-    buffer = buffer.slice(current.contentLength);
-    if (current.body.length > 0 && wsServer) {
-      if (wsServer.manager.length === 0) {
-        var msg = JSON.parse(current.body);
-        if (msg.type === 'event' && msg.event === 'break') {
-          request('{"seq":0,"type":"request","command":"continue"}');
-        }
-      }
-      else {
-        wsServer.broadcast(current.body);
-      }
-    }
-    current = false;
-    parse();
-  }
-}
-
-function parse() {
-  if (current && current.headersDone) {
-    parseBody();
-    return;
-  }
-
-  if (!current) current = makeMessage();
-
-  var offset = buffer.indexOf('\r\n\r\n');
-  if (offset > 0) {
-    current.headersDone = true;
-    current.headers = buffer.substr(0, offset+4);
-    var m = /Content-Length: (\d+)/.exec(current.headers);
-    if (m[1]) {
-      current.contentLength = parseInt(m[1], 10);
-    }
-    else {
-      sys.debug('no Content-Length');
-    }
-    buffer = buffer.slice(offset+4);
-    parse();
-  }
-}
-
-function attachDebugger() {
-  var conn = conn = net.createConnection(debugPort);
-  conn.setEncoding('ascii');
-
-  conn.on('data', function(data) {
-    buffer += data;
-    parse();
-  });
-
-  conn.on('end', function() {
-    process.exit();
-  });
-  return conn;
-}
-
-var debug = null;
-
-///////////////////////////////////////////////////////////
-//	Browser side
-
-var WEBROOT = path.join(path.dirname(__filename), '../front-end');
-
-function staticFile(req, res) {
-  paperboy
-    .deliver(WEBROOT, req, res)
-    .error(function(statCode,msg) {
-      res.writeHead(statCode, {'Content-Type': 'text/plain'});
-      res.end("Error: " + statCode);
-    })
-    .otherwise(function(err) {
-      var statCode = 404;
-      res.writeHead(statCode, {'Content-Type': 'text/plain'});
-      res.end();
-    });
-}
-
-var httpServer = http.createServer(staticFile);
-
-var wsServer = ws.createServer({ debug: false }, httpServer);
-
-wsServer.on('connection', function(conn) {
-  if (debug == null) {
-    debug = attachDebugger();
-  }
-  conn.on('message', function(msg) {
-    request(msg);
-  });
-});
-
-////////////////////////////////////////////////////////
-//	Startup
-
-var fileToDebug = null;
-var port = 8080;
-var flag = '--debug=';
-var debugPort = 5858;
-var fwd = false;
+var options = {};
 
 process.argv.forEach(function(arg) {
   if (arg.indexOf('--') > -1) {
@@ -137,17 +11,17 @@ process.argv.forEach(function(arg) {
     if (parts.length > 1) {
       switch(parts[0]) {
         case '--start':
-          fileToDebug = parts[1];
+          options.file = parts[1];
           break;
         case '--start-brk':
-          fileToDebug = parts[1];
-          flag = '--debug-brk=';
+          options.file = parts[1];
+          brk = true;
           break;
         case '--agent-port':
-          port = parseInt(parts[1], 10);
+          options.webPort = parseInt(parts[1], 10);
           break;
         case '--debug-port':
-          debugPort = parseInt(parts[1], 10);
+          options.debugPort = parseInt(parts[1], 10);
           break;
         default:
           console.log('unknown option: ' + parts[0]);
@@ -155,7 +29,7 @@ process.argv.forEach(function(arg) {
       }
     }
     else if (parts[0] === '--fwd-io') {
-      fwd = true;
+      options.fwdio = true;
     }
     else if (parts[0] === '--help') {
       console.log('Usage: node [node_options] debug-agent.js [options]');
@@ -170,42 +44,10 @@ process.argv.forEach(function(arg) {
   }
 });
 
-// spawn the process to debug
-if (fileToDebug != null) {
-  console.log('starting ' + fileToDebug);
+var ds = session.createSession(options);
 
-  flag = flag + debugPort;
-  var debugProcess = spawn('node_g', [flag, fileToDebug]);
-
-  if (fwd) {
-    debugProcess.stdout.setEncoding('utf8');
-    debugProcess.stdout.on('data', function(data) {
-      sys.print(data);
-      wsServer.broadcast(JSON.stringify({
-        seq: 0,
-        type: 'event',
-        event: 'stdout',
-        body: data
-      }));
-    });
-
-    debugProcess.stderr.setEncoding('utf8');
-    debugProcess.stderr.on('data', function(data) {
-      console.error(data);
-      wsServer.broadcast(JSON.stringify({
-        seq: 0,
-        type: 'event',
-        event: 'stderr',
-        body: data
-      }));
-    });
-  }
-
-  debugProcess.on('exit', function(code) {
-    console.log(fileToDebug + ' exited with code ' + code);
-  });
-}
-
-// listen for clients
-console.log('visit http://localhost:' + port + ' to start debugging');
-wsServer.listen(port);
+ds.on('close', function() {
+  console.log('session closed');
+  process.exit();
+});
+console.log('visit http://127.0.0.1:' + ds.webPort + ' to start debugging');
