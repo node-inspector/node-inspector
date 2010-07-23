@@ -158,23 +158,22 @@ WebInspector.InspectorBackendStub.prototype = {
 
   enableDebugger: function()
   {
-        WebInspector.InspectorController.initialize();
+    WebInspector.nodeDebugger.connect();
   },
 
   disableDebugger: function()
   {
-      WebInspector.InspectorController.close();
+    WebInspector.nodeDebugger.close();
   },
 
   setBreakpoint: function(callId, sourceID, line, enabled, condition)
   {
-        WebInspector.InspectorController.setBreakpoint(callId, sourceID, line, enabled, condition);
-    WebInspector.didSetBreakpoint(callId, true, line);
+    WebInspector.nodeDebugger.setBreakpoint(callId, sourceID, line, enabled, condition);
   },
 
   removeBreakpoint: function(sourceID, line)
   {
-    WebInspector.InspectorController.clearBreakpoint(sourceID, line);
+    WebInspector.nodeDebugger.clearBreakpoint(sourceID, line);
   },
 
   activateBreakpoints: function()
@@ -199,7 +198,7 @@ WebInspector.InspectorBackendStub.prototype = {
 
   pause: function()
   {
-    WebInspector.InspectorController.pause();
+    WebInspector.nodeDebugger.pause();
   },
 
   setPauseOnExceptionsState: function(value)
@@ -219,7 +218,7 @@ WebInspector.InspectorBackendStub.prototype = {
 
   resume: function()
   {
-    WebInspector.InspectorController.resume();
+    WebInspector.nodeDebugger.resume();
   },
 
   enableProfiler: function()
@@ -260,17 +259,17 @@ WebInspector.InspectorBackendStub.prototype = {
 
   stepIntoStatement: function()
   {
-    WebInspector.InspectorController.resume('in');
+    WebInspector.nodeDebugger.resume('in');
   },
 
   stepOutOfFunction: function()
   {
-    WebInspector.InspectorController.resume('out');
+    WebInspector.nodeDebugger.resume('out');
   },
 
   stepOverStatement: function()
   {
-    WebInspector.InspectorController.resume('next');
+    WebInspector.nodeDebugger.resume('next');
   },
 
   saveApplicationSettings: function()
@@ -332,16 +331,16 @@ WebInspector.InspectorBackendStub.prototype = {
             WebInspector.Callback.processCallback(arguments[0], props);
           }
           else {
-            WebInspector.InspectorController.getScope(id.frameId, id.scopeId, arguments[0]);
+            WebInspector.nodeDebugger.getScope(id.frameId, id.scopeId, arguments[0]);
           }
         }
         else {
-          WebInspector.InspectorController.lookup(id, arguments[0]);
+          WebInspector.nodeDebugger.lookup(id, arguments[0]);
         }
         break;
       case 'evaluate':
         var expr = JSON.parse(arguments[3])[0];
-        WebInspector.InspectorController.evaluate(expr, arguments[0]);
+        WebInspector.nodeDebugger.evaluate(expr, arguments[0]);
         break;
       case 'evaluateInCallFrame':
         var args = JSON.parse(arguments[3]);
@@ -353,7 +352,7 @@ WebInspector.InspectorBackendStub.prototype = {
           WebInspector.Callback.processCallback(arguments[0], null);
         }
         else {
-          WebInspector.InspectorController.evaluate(expr, arguments[0], frameId);
+          WebInspector.nodeDebugger.evaluate(expr, arguments[0], frameId);
         }
         break;
       default:

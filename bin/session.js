@@ -46,7 +46,7 @@ exports.createSession = function(options) {
   var httpServer = http.createServer(staticFile);
   var wsServer = ws.createServer(null, httpServer);
   var debug = null;
-  
+
   wsServer.on('connection', function(conn) {
     if (!debug) {
       // first connection
@@ -62,13 +62,9 @@ exports.createSession = function(options) {
     conn.on('message', function(msg) {
       debug.request(msg);
     });
+    session.emit('connection', conn);
   });
-  
-  wsServer.on('close', function() {
-    wsServer = null;
-    session.close();
-  });
-  
+
   if (settings.file) {
     var flag = '--debug=';
     if (options.brk) flag = '--debug-brk=';
@@ -101,7 +97,7 @@ exports.createSession = function(options) {
     }
   }
   wsServer.listen(settings.webPort);
-  
+
   var session = Object.create(events.EventEmitter.prototype, {
     close: {
       value: function()
@@ -113,6 +109,6 @@ exports.createSession = function(options) {
       }}});
   session.__defineGetter__('webPort', function() { return settings.webPort; });
   session.__defineGetter__('debugPort', function() { return settings.debugPort; });
-  
+
   return session;
 };

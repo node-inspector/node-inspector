@@ -46,6 +46,180 @@ WebInspector.InspectorFrontendHostStub = function()
       });
     }
   };
+    //TODO find a place for these
+  function _valueOf(value) {
+    var p = {};
+    switch (value.type) {
+      case 'object':
+        p.value = {
+          description: value.className,
+          hasChildren: true,
+          injectedScriptId: value.ref || value.handle,
+          type: 'object'
+          };
+        break;
+      case 'function':
+        p.value = {
+          description: value.text || 'function()',
+          hasChildren: true,
+          injectedScriptId: value.ref || value.handle,
+          type: 'function'
+          };
+        break;
+      case 'undefined':
+        p.value = {description: 'undefined'};
+        break;
+      case 'null':
+        p.value = {description: 'null'};
+        break;
+      default:
+        p.value = {description: value.value};
+        break;
+    }
+    return p;
+  };
+  
+  function _property(prop) {
+    var p = controller._valueOf(prop.value);
+    p.name = String(prop.name);
+    return p;
+  };
+  
+  function refToProperties(ref) {
+    if (ref) {
+      return ref.properties.map(controller._property);
+    }
+  };
+  
+  var debugr = WebInspector.nodeDebugger;
+  debugr.on('scripts', function(msg) {
+    msg.body.forEach(function(s) {
+      WebInspector.parsedScriptSource(s.id, s.name, s.source, s.lineOffset, 0);
+    });
+    debugr.listBreakpoints();
+  });
+  debugr.on('scope', function(msg) {
+    WebInspector.Callback.processCallback(msg.callId, refToProperties(msg.body.object));
+  });
+  debugr.on('suspend', function(msg) {
+    if (msg.success && !msg.running) {
+      debugr.getBacktrace();
+    }
+  });
+  debugr.on('lookup', function(msg) {
+    var ref = msg.body[Object.keys(msg.body)[0]];
+    WebInspector.Callback.processCallback(msg.callId, controller.refToProperties(ref));
+  });
+  debugr.on('evaluate', function(msg) {
+    if (msg.success) {
+      WebInspector.Callback.processCallback(msg.callId, _valueOf(msg.body));
+    }
+    else {
+      WebInspector.Callback.processCallback(msg.callId, {value: msg.message, isException: true});
+    }
+  });
+  debugr.on('setbreakpoint', function(msg) {
+    WebInspector.didSetBreakpoint(msg.callId.callId, true, msg.callId.line);
+  });
+  debugr.on('clearbreakpoint', function(msg) {
+  
+  });
+  debugr.on('listbreakpoints', function(msg) {
+    WebInspector.breakpointManager.reset();
+    msg.body.breakpoints.forEach(function(bp) {
+      if(bp.type === 'scriptId') {
+        var l = bp.line + 1;
+        var url = WebInspector.panels.scripts._sourceIDMap[bp.script_id].sourceURL;
+        WebInspector.breakpointManager.setBreakpoint(bp.script_id, url, l, !!bp.active, bp.condition)
+      }
+    });
+  });
+  debugr.on('backtrace', function(msg) {
+    var callFrames = msg.body.frames.map(function(frame) {
+      var f = {
+        type: 'function',
+        functionName: frame.func.inferredName,
+        sourceID: frame.func.scriptId,
+        line: frame.line + 1,
+        id: frame.index
+      };
+      f.scopeChain = frame.scopes.map(function(scope) {
+        var c = {};
+        switch (scope.type) {
+          case 0:
+            break;
+          case 1:
+            c.isLocal = true;
+            c.thisObject = {description: frame.receiver.className, hasChildren: true, injectedScriptId: frame.receiver.ref};
+            c.locals = frame.locals;
+            c.arguments = frame.arguments;
+            break;
+          case 2:
+            c.isWithBlock = true;
+            break;
+          case 3:
+            c.isClosure = true;
+            break;
+          case 4:
+            c.isElement = true;
+            break;
+          default:
+            break;
+        }
+        c.injectedScriptId = {frameId: frame.index, scopeId: scope.index, isLocal: !!c.isLocal};
+        return c;
+      });
+      return f;
+    });
+    WebInspector.pausedScript(callFrames);
+  });
+  debugr.on('continue', function(msg) {
+  
+  });
+  debugr.on('frame', function(msg) {
+  
+  });
+  debugr.on('scopes', function(msg) {
+  
+  });
+  debugr.on('source', function(msg) {
+  
+  });
+  debugr.on('version', function(msg) {
+  
+  });
+  debugr.on('profile', function(msg) {
+  
+  });
+  
+  // events
+  debugr.on('break', function(msg) {
+    debugr.getBacktrace();
+  });
+  debugr.on('exception', function(msg) {
+    WebInspector.addConsoleMessage({
+      source: WebInspector.ConsoleMessage.MessageSource.JS,
+      type: WebInspector.ConsoleMessage.MessageType.Log,
+      level: WebInspector.ConsoleMessage.MessageLevel.Error,
+      repeatCount: 1,
+      message: 'exception: ' + msg.body});
+  });
+  debugr.on('stdout', function(msg) {
+    WebInspector.addConsoleMessage({
+      source: WebInspector.ConsoleMessage.MessageSource.JS,
+      type: WebInspector.ConsoleMessage.MessageType.Log,
+      level: WebInspector.ConsoleMessage.MessageLevel.Log,
+      repeatCount: 1,
+      message: 'stdout: ' + msg.body});
+  });
+  debugr.on('stderr', function(msg) {
+    WebInspector.addConsoleMessage({
+      source: WebInspector.ConsoleMessage.MessageSource.JS,
+      type: WebInspector.ConsoleMessage.MessageType.Log,
+      level: WebInspector.ConsoleMessage.MessageLevel.Error,
+      repeatCount: 1,
+      message: 'stderr: ' + msg.body});
+  });
 }
 
 WebInspector.InspectorFrontendHostStub.prototype = {
