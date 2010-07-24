@@ -327,8 +327,19 @@ WebInspector.InspectorBackendStub.prototype = {
             var obj = x[0];
             var props = obj.locals.map(_decode);
             var argi = 0;
-            props = props.concat(obj.arguments.map(_decode));
-            WebInspector.Callback.processCallback(arguments[0], props);
+            var args = obj.arguments.map(_decode);
+            args.forEach(function(arg) {
+              if (!props.some(function(p) { return arg.name === p.name; })) {
+                props.push(arg);
+              }
+            });
+            try {
+              WebInspector.Callback.processCallback(arguments[0], props);
+            }
+            catch(e)
+            {
+              console.error(JSON.stringify(e));
+            }
           }
           else {
             WebInspector.nodeDebugger.getScope(id.frameId, id.scopeId, arguments[0]);
