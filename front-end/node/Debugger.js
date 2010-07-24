@@ -1,6 +1,5 @@
 WebInspector.nodeDebugger = (function() {
   var socket = null;
-  var seq = 1;
   var callbacks = {};
   var breakpoints = {};
   var listeners = {};
@@ -24,7 +23,7 @@ WebInspector.nodeDebugger = (function() {
 
   function makeRequest(command, params) {
     var msg = {
-      seq: seq++,
+      seq: Math.floor((Math.random() * 999999999999)),
       type: 'request',
       command: command
     }
@@ -86,7 +85,8 @@ WebInspector.nodeDebugger = (function() {
           arguments: {
             breakpoint: bp,
             enabled: enabled,
-            condition: condition}});
+            condition: condition,
+            id: sourceID + ':' + line}}, callId);
       }
       else {
         sendRequest('setbreakpoint',{
@@ -96,13 +96,14 @@ WebInspector.nodeDebugger = (function() {
             line: line - 1,
             enabled: enabled,
             condition: condition
-          }}, {id: sourceID + ':' + line, line: line, callId: callId});
+          }}, callId);
       }
     },
     clearBreakpoint: function(sourceID, line) {
       var id = sourceID + ':' + line;
       sendRequest('clearbreakpoint', {
-        arguments: { breakpoint: breakpoints[id] }}, id);
+        arguments: { breakpoint: breakpoints[id],
+                     id: id }}, id);
     },
     listBreakpoints: function() {
       sendRequest('listbreakpoints');
@@ -147,11 +148,17 @@ WebInspector.nodeDebugger = (function() {
   };
 
   debugr.on('setbreakpoint', function(msg) {
-    breakpoints[msg.callId.id] = msg.body.breakpoint;
+    if (msg.arguments) {
+      var a = msg.arguments;
+      breakpoints[a.target + ':' + (a.line + 1)] = msg.body.breakpoint;
+    }
   });
   
   debugr.on('clearbreakpoint', function(msg) {
-    delete breakpoints[msg.callId];
+    if (msg.arguments) {
+      var a = msg.arguments;
+      delete breakpoints[a.id]
+    }
   });
   
   debugr.on('listbreakpoints', function(msg) {

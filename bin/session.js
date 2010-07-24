@@ -46,21 +46,89 @@ exports.createSession = function(options) {
   var httpServer = http.createServer(staticFile);
   var wsServer = ws.createServer(null, httpServer);
   var debug = null;
+  var breakpoints = {};
+  var pending = {};
+  var direct = ['scripts',
+                'scope',
+                'lookup',
+                'evaluate',
+                'backtrace',
+                'listbreakpoints'];
+
+  function breakpointReturnFilter(msg) {
+    switch (msg.command) {
+      case 'setbreakpoint':
+      case 'clearbreakpoint':
+      case 'changebreakpoint':
+        msg.arguments = breakpoints[msg.request_seq];
+        delete breakpoints[msg.request_seq];
+        break;
+      default:
+        break;
+    }
+    return msg;
+  }
+  
+  function breakpointRequestFilter(msg) {
+    switch (msg.command) {
+      case 'setbreakpoint':
+      case 'clearbreakpoint':
+      case 'changebreakpoint':
+        breakpoints[msg.seq] = msg.arguments;
+        break;
+      default:
+        break;
+    }
+    return msg;
+  }
+
+  function getConnection(msg) {
+    var conn = pending[msg.request_seq];
+    delete pending[msg.request_seq];
+    return conn;
+  }
+  
+  function handleRequest(conn, data) {
+    var msg = JSON.parse(data);
+    if (direct.indexOf(msg.command) > -1) {
+      pending[msg.seq] = conn;
+    }
+    else {
+      breakpointRequestFilter(msg);
+    }
+    debug.request(data);
+  }
+
+  function handleMessage(msg) {
+    if (msg.type === 'response' && direct.indexOf(msg.command) > -1) {
+      var conn = getConnection(msg);
+      if (conn) {
+        conn.write(JSON.stringify(msg));
+      }
+      else {
+        console.error('forgot who to reply to');
+      }
+    }
+    else {
+      var bmsg = breakpointReturnFilter(msg);
+      wsServer.broadcast(JSON.stringify(bmsg));
+    }
+  }
 
   wsServer.on('connection', function(conn) {
     if (!debug) {
       // first connection
       debug = debugr.attachDebugger(settings.debugPort);
-      debug.on('data', function(data) {
-        wsServer.broadcast(JSON.stringify(data));
+      debug.on('data', function(msg) {
+        handleMessage(msg);
       });
       debug.on('close', function() {
         debug = null;
         session.close();
       });
     }
-    conn.on('message', function(msg) {
-      debug.request(msg);
+    conn.on('message', function(data) {
+      handleRequest(conn, data);
     });
     session.emit('connection', conn);
   });

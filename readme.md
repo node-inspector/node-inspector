@@ -6,6 +6,7 @@ Node Inspector is a debugger interface for nodeJS using the WebKit Web Inspector
 
 * [nodeJS](http://github.com/ry/node)
   - versions: 0.1.100 - 0.1.101
+* A WebKit based browser: Chrome, Safari, OmniWeb, etc.
 
 ### Setup
 
@@ -18,7 +19,7 @@ Node Inspector is a debugger interface for nodeJS using the WebKit Web Inspector
 
 ### Debugging
 
-(NEW) There are two ways to use node-inspector. First I'll describe the easy way. 
+There are two ways to use node-inspector. First I'll describe the easy way. 
 As an example lets debug test/hello.js, from the root project directory (node-inspector)
 
 1. start the inspector like this:
@@ -43,6 +44,8 @@ external node process.
 
 3. open http://127.0.0.1:8000
 
+For more information on getting started see the [wiki](http://wiki.github.com/dannycoates/node-inspector/getting-started-from-scratch)
+
 ## Options
 
 		--start=[file]		starts [file] in a child process with node_g --debug
@@ -53,7 +56,7 @@ external node process.
 
 ## Extensions
 
-This project started as a Chrome extension. For more info see the wiki.
+This project started as a Chrome extension. For more info see the [wiki](http://wiki.github.com/dannycoates/node-inspector/google-chrome-extension).
 
 ## Cool stuff
 
@@ -63,12 +66,11 @@ This project started as a Chrome extension. For more info see the wiki.
 
 ## Known Issues
 
-This is pre-alpha quality code, so use at your own risk:
+This is alpha quality code, so use at your own risk:
 
 * while not stopped at a breakpoint the console doesn't always behave as you might expect
 * pause on exceptions doesn't play nice with the node event loop
 * closing the inspector does not stop debugging, you must stop inspector.js manually
-* opening more than one inspector window causes trouble
 
 ## Other Ideas
 
@@ -79,10 +81,8 @@ This is pre-alpha quality code, so use at your own risk:
 ## TODOS
 
 * save application settings
-* single instance only
 * debug-agent needs a lot of work
 * try out live edit
-* Safari 5 extension
 
 ## Thanks
 

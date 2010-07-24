@@ -30,6 +30,9 @@
 
 if (!window.InspectorFrontendHost) {
 
+//FIXME temporary hack for the taskbar color
+WebInspector._platformFlavor = WebInspector.PlatformFlavor.MacTiger;
+
 WebInspector.InspectorFrontendHostStub = function()
 {
   this._attachedWindowHeight = 0;
@@ -46,7 +49,7 @@ WebInspector.InspectorFrontendHostStub = function()
       });
     }
   };
-    //TODO find a place for these
+  //TODO find a place for these
   function _valueOf(value) {
     var p = {};
     switch (value.type) {
@@ -80,14 +83,14 @@ WebInspector.InspectorFrontendHostStub = function()
   };
   
   function _property(prop) {
-    var p = controller._valueOf(prop.value);
+    var p = _valueOf(prop.value);
     p.name = String(prop.name);
     return p;
   };
   
   function refToProperties(ref) {
     if (ref) {
-      return ref.properties.map(controller._property);
+      return ref.properties.map(_property);
     }
   };
   
@@ -97,6 +100,9 @@ WebInspector.InspectorFrontendHostStub = function()
       WebInspector.parsedScriptSource(s.id, s.name, s.source, s.lineOffset, 0);
     });
     debugr.listBreakpoints();
+    if (!msg.running) {
+      debugr.getBacktrace();
+    }
   });
   debugr.on('scope', function(msg) {
     WebInspector.Callback.processCallback(msg.callId, refToProperties(msg.body.object));
@@ -108,7 +114,7 @@ WebInspector.InspectorFrontendHostStub = function()
   });
   debugr.on('lookup', function(msg) {
     var ref = msg.body[Object.keys(msg.body)[0]];
-    WebInspector.Callback.processCallback(msg.callId, controller.refToProperties(ref));
+    WebInspector.Callback.processCallback(msg.callId, refToProperties(ref));
   });
   debugr.on('evaluate', function(msg) {
     if (msg.success) {
@@ -119,10 +125,34 @@ WebInspector.InspectorFrontendHostStub = function()
     }
   });
   debugr.on('setbreakpoint', function(msg) {
-    WebInspector.didSetBreakpoint(msg.callId.callId, true, msg.callId.line);
+    if (msg.callId) {
+      var a = msg.arguments;
+      WebInspector.didSetBreakpoint(msg.callId, true, a.line + 1);
+    }
+    else {
+      // a different window set a breakpoint
+      debugr.listBreakpoints();
+    }
   });
   debugr.on('clearbreakpoint', function(msg) {
-  
+    var bp = WebInspector.breakpointManager._breakpoints[msg.arguments.id];
+    if (bp) {
+      WebInspector.breakpointManager._removeBreakpoint(bp);
+    }
+  });
+  debugr.on('changebreakpoint', function(msg) {
+    if (msg.callId == null) {
+      var bp = WebInspector.breakpointManager._breakpoints[msg.arguments.id];
+      if (bp) {
+        bp._enabled = msg.arguments.enabled;
+        if(bp.enabled) {
+          bp.dispatchEventToListeners("enabled");
+        }
+        else {
+          bp.dispatchEventToListeners("disabled");
+        }
+      }
+    }
   });
   debugr.on('listbreakpoints', function(msg) {
     WebInspector.breakpointManager.reset();
@@ -174,7 +204,12 @@ WebInspector.InspectorFrontendHostStub = function()
     WebInspector.pausedScript(callFrames);
   });
   debugr.on('continue', function(msg) {
-  
+    if(WebInspector.panels.scripts._paused) {
+      var panel = WebInspector.panels.scripts;
+      panel._paused = false;
+      panel._waitingToPause = false;
+      panel._clearInterface();
+    }
   });
   debugr.on('frame', function(msg) {
   
