@@ -137,7 +137,9 @@ exports.createSession = function(options) {
     var flag = '--debug=';
     if (options.brk) flag = '--debug-brk=';
     flag += settings.debugPort;
-    var proc = spawn('node_g', [flag, settings.file]);
+    var profile = '';
+    if (options.profile) profile = '--prof --prof_lazy';
+    var proc = spawn('node_g', [flag, profile, settings.file]);
     proc.on('exit', function(code, signal) {
       proc = null;
       console.log('proc exited with code: ' + code + ' signal: ' + signal);

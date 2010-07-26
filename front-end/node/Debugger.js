@@ -144,6 +144,15 @@ WebInspector.nodeDebugger = (function() {
         args.global = true;
       }
       sendRequest('evaluate', {arguments: args}, callId);
+    },
+    takeHeapSnapshot: function() {
+      sendRequest('profile', {arguments: {command: 'resume', modules: 65542, tag: 0}});
+    },
+    startProfiling: function() {
+      sendRequest('profile', {arguments: {command: 'resume', modules: 1, tag: 0}});
+    },
+    stopProfiling: function() {
+      sendRequest('profile', {arguments: {command: 'pause', modules: 1, tag: 0}});
     }
   };
 

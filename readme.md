@@ -11,11 +11,11 @@ Node Inspector is a debugger interface for nodeJS using the WebKit Web Inspector
 ### Setup
 
 1. make a debug build of node
-    > ./configure --debug
-    
-    > make
-    
-    > make install
+		./configure --debug
+		make
+		make install
+
+If you get an error like: `Build failed: Missing node signature for...` try `make distclean` then try again.
 
 ### Debugging
 
@@ -23,7 +23,7 @@ There are two ways to use node-inspector. First I'll describe the easy way.
 As an example lets debug test/hello.js, from the root project directory (node-inspector)
 
 1. start the inspector like this:
-    > node bin/inspector.js --start=test/hello.js
+		node bin/inspector.js --start=test/hello.js
 
 2. open http://127.0.0.1:8080 in your favorite WebKit based browser
 
@@ -32,15 +32,15 @@ As an example lets debug test/hello.js, from the root project directory (node-in
 4. set some breakpoints, see what happens
 
 
-This will start a child process (node_g --debug test/hello.js) and host the inspector 
+This will start a child process `node_g --debug test/hello.js` and host the inspector 
 interface at http://localhost:8080. The other way is to connect the inspector to an 
 external node process.
 
 1. start a node process:
-		> node_g --debug=7878 test/hello.js
+		node_g --debug=7878 test/hello.js
 		
 2. start the inspector:
-		> node bin/inspector.js --debug-port=7878 --agent-port=8000
+		node bin/inspector.js --debug-port=7878 --agent-port=8000
 
 3. open http://127.0.0.1:8000
 

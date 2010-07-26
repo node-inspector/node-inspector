@@ -31,6 +31,9 @@ process.argv.forEach(function(arg) {
     else if (parts[0] === '--fwd-io') {
       options.fwdio = true;
     }
+    else if (parts[0] === '--profile') {
+      options.profile = true;
+    }
     else if (parts[0] === '--help') {
       console.log('Usage: node [node_options] debug-agent.js [options]');
       console.log('Options:');

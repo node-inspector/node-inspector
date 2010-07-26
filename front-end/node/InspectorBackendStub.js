@@ -233,10 +233,12 @@ WebInspector.InspectorBackendStub.prototype = {
 
   startProfiling: function()
   {
+    WebInspector.nodeDebugger.startProfiling();
   },
 
   stopProfiling: function()
   {
+    WebInspector.nodeDebugger.stopProfiling();//
   },
 
   getProfileHeaders: function(callId)
@@ -250,6 +252,7 @@ WebInspector.InspectorBackendStub.prototype = {
 
   takeHeapSnapshot: function()
   {
+    WebInspector.nodeDebugger.takeHeapSnapshot();
   },
 
   databaseTableNames: function(database)
