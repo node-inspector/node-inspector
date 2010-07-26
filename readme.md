@@ -85,6 +85,7 @@ This is alpha quality code, so use at your own risk:
 * save application settings
 * debug-agent needs a lot of work
 * try out live edit
+* profiler panel
 
 ## Thanks
 
