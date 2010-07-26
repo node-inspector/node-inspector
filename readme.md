@@ -24,10 +24,12 @@ As an example lets debug test/hello.js, from the root project directory (node-in
 
 1. start the inspector like this:
 		node bin/inspector.js --start=test/hello.js
-  * Note: --start path must be relative to the current working directory or absolute
+
+> Note: --start path must be relative to the current working directory or absolute
 
 2. open http://127.0.0.1:8080 in your favorite WebKit based browser
-  * Chrome 5 users **MUST** use 127.0.0.1 **NOT** localhost or the browser will not connect to the debugger
+
+> Chrome 5 users **MUST** use 127.0.0.1 **NOT** localhost or the browser will not connect to the debugger
 
 3. you should now see the javascript source from nodeJS
 
