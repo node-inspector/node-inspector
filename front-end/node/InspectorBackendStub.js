@@ -206,9 +206,9 @@ WebInspector.InspectorBackendStub.prototype = {
     WebInspector.updatePauseOnExceptionsState(value);
   },
 
-  editScriptSource: function()
+  editScriptSource: function(callId, sourceID, newContext)
   {
-    WebInspector.didEditScriptSource(callId, false);
+    WebInspector.nodeDebugger.liveEdit(callId, sourceID, newContext);
   },
 
   getScriptSource: function(callId, sourceID)
@@ -282,11 +282,9 @@ WebInspector.InspectorBackendStub.prototype = {
   saveSessionSettings: function()
   {
   },
-  
-  
+
   dispatchOnInjectedScript: function()
   {
-    console.log("injected: " + JSON.stringify(arguments));
     switch(arguments[2]) {
       case 'getProperties':
         var id = arguments[1];

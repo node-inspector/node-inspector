@@ -153,6 +153,14 @@ WebInspector.nodeDebugger = (function() {
     },
     stopProfiling: function() {
       sendRequest('profile', {arguments: {command: 'pause', modules: 1, tag: 0}});
+    },
+    liveEdit: function(callId, sourceID, newContext) {
+      var args = {
+        script_id: sourceID,
+        preview_only: false,
+        new_source: newContext
+      };
+      sendRequest('changelive', {arguments: args}, {id: callId, body: newContext});
     }
   };
 

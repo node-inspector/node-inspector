@@ -211,6 +211,9 @@ WebInspector.InspectorFrontendHostStub = function()
       panel._clearInterface();
     }
   });
+  debugr.on('changelive', function(msg) {
+    WebInspector.didEditScriptSource(msg.callId.id, msg.success, msg.message ||msg.callId.body);
+  });
   debugr.on('frame', function(msg) {
   
   });
@@ -306,6 +309,11 @@ WebInspector.InspectorFrontendHostStub.prototype = {
 
   loaded: function()
   {
+    Preferences.samplingCPUProfiler = true;
+    Preferences.heapProfilerPresent = true;
+    Preferences.debuggerAlwaysEnabled = true;
+    Preferences.profilerAlwaysEnabled = true;
+    Preferences.canEditScriptSource = true;
     document.getElementById("dock-status-bar-item").style.display='none';
     WebInspector.populateApplicationSettings();
     WebInspector.applicationSettings.installSetting("scriptsSidebarWidth", "scripts-sidebar-width", 250);
@@ -322,7 +330,7 @@ WebInspector.InspectorFrontendHostStub.prototype = {
 
   hiddenPanels: function()
   {
-    return "elements,resources,timeline,profiles,storage,audits";
+    return "elements,resources,timeline,storage,audits";
   },
 
   inspectedURLChanged: function(url)
