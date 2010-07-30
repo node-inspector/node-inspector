@@ -99,8 +99,7 @@ WebInspector.InspectorFrontendHostStub = function()
     msg.body.forEach(function(s) {
       WebInspector.parsedScriptSource(s.id, s.name, s.source, s.lineOffset, 0);
     });
-    debugr.listBreakpoints();
-    if (!msg.running) {
+    if (!msg.running && !WebInspector.panels.scripts._paused) {
       debugr.getBacktrace();
     }
   });
@@ -212,7 +211,13 @@ WebInspector.InspectorFrontendHostStub = function()
     }
   });
   debugr.on('changelive', function(msg) {
-    WebInspector.didEditScriptSource(msg.callId.id, msg.success, msg.message ||msg.callId.body);
+    if (msg.callId) {
+      WebInspector.didEditScriptSource(msg.callId.id, msg.success, msg.message ||msg.callId.body);
+    }
+    else {
+      WebInspector.panels.scripts.reset();
+      WebInspector.nodeDebugger.getScripts();
+    }
   });
   debugr.on('frame', function(msg) {
   

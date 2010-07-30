@@ -15,7 +15,7 @@ process.argv.forEach(function(arg) {
           break;
         case '--start-brk':
           options.file = parts[1];
-          brk = true;
+          options.brk = true;
           break;
         case '--agent-port':
           options.webPort = parseInt(parts[1], 10);

@@ -65,8 +65,8 @@ WebInspector.nodeDebugger = (function() {
       socket.onopen = function() {
         console.log('socket open');
         WebInspector.debuggerWasEnabled();
-        sendRequest('scripts', {
-          arguments: { includeSource: true, types: 4 }});
+        debugr.getScripts();
+        debugr.listBreakpoints();
       };
     },
     close: function() {
@@ -77,6 +77,10 @@ WebInspector.nodeDebugger = (function() {
       var list = listeners[event] || [];
       list.push(callback);
       listeners[event] = list;
+    },
+    getScripts: function() {
+      sendRequest('scripts', {
+        arguments: { includeSource: true, types: 4 }});
     },
     setBreakpoint: function(callId, sourceID, line, enabled, condition) {
       var bp = breakpoints[sourceID + ':' + line];
