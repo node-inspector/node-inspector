@@ -322,7 +322,7 @@ WebInspector.InspectorFrontendHostStub.prototype = {
     document.getElementById("dock-status-bar-item").style.display='none';
     WebInspector.populateApplicationSettings();
     WebInspector.applicationSettings.installSetting("scriptsSidebarWidth", "scripts-sidebar-width", 250);
-    WebInspector.applicationSettings.installSetting("consoleSidebarWidth", "console-sidebar-width", 250);    	
+    WebInspector.applicationSettings.installSetting("consoleSidebarWidth", "console-sidebar-width", 250);
     WebInspector.showScriptsPanel();
     WebInspector.panels.scripts._pauseOnExceptionButton.element.style.display = 'none';
     WebInspector.panels.scripts._enableDebugging();

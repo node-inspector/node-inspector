@@ -13,13 +13,16 @@ function makeMessage() {
 ///////////////////////////////////////////////////////////
 //  exports
 
-exports.attachDebugger = function(port) {
-  var connected = false;
-  var buffer = '';
-  var msg = false;
-  var conn = net.createConnection(port);
+exports.attachDebugger = function (port) {
+  var connected = false,
+      buffer = '',
+      msg = false,
+      conn = net.createConnection(port),
+      debugr,
+      offset,
+      m;
   conn.setEncoding('ascii');
-  
+
   function parse() {
     if (msg && msg.headersDone) {
       //parse body
@@ -35,57 +38,61 @@ exports.attachDebugger = function(port) {
       }
       return;
     }
-    if (!msg) msg = makeMessage();
+    if (!msg) {
+      msg = makeMessage();
+    }
 
-    var offset = buffer.indexOf('\r\n\r\n');
+    offset = buffer.indexOf('\r\n\r\n');
     if (offset > 0) {
       msg.headersDone = true;
-      msg.headers = buffer.substr(0, offset+4);
-      var m = /Content-Length: (\d+)/.exec(msg.headers);
+      msg.headers = buffer.substr(0, offset + 4);
+      m = /Content-Length: (\d+)/.exec(msg.headers);
       if (m[1]) {
         msg.contentLength = parseInt(m[1], 10);
       }
       else {
         sys.debug('no Content-Length');
       }
-      buffer = buffer.slice(offset+4);
+      buffer = buffer.slice(offset + 4);
       parse();
     }
   }
 
-  var debugr = Object.create(events.EventEmitter.prototype, {
+  debugr = Object.create(events.EventEmitter.prototype, {
     request: {
-      value: function(data)
+      value: function (data)
       {
         if (connected) {
           var message = 'Content-Length: ' + data.length + '\r\n\r\n' + data;
           conn.write(message);
         }
-      }},
+      }
+    },
     close: {
-      value: function()
+      value: function ()
       {
         conn.end();
-      }}
-    });
+      }
+    }
+  });
 
-  debugr.__defineGetter__('connected', function() { return connected; });
+  debugr.__defineGetter__('connected', function () { return connected; });
 
-  conn.on('connect', function() {
+  conn.on('connect', function () {
     connected = true;
     debugr.emit('connect');
   });
 
-  conn.on('data', function(data) {
+  conn.on('data', function (data) {
     buffer += data;
     parse();
   });
 
-  conn.on('end', function() {
+  conn.on('end', function () {
     debugr.close();
   });
   
-  conn.on('close', function() {
+  conn.on('close', function () {
     connected = false;
     debugr.emit('close');
   });

@@ -44,7 +44,7 @@ external node process.
 		node_g --debug=7878 test/hello.js
 		
 2. start the inspector:
-		node bin/inspector.js --debug-port=7878 --agent-port=8000
+		node bin/inspector.js --debug-port=7878 --web-port=8000
 
 3. open http://127.0.0.1:8000
 
@@ -55,7 +55,7 @@ For more information on getting started see the [wiki](http://wiki.github.com/da
 		--start=[file]        starts [file] in a child process with node_g --debug
 		                      [file] path can be absolute or relative to $PWD
 		--start-brk=[file]    same as start with --debug-brk
-		--agent-port=[port]   port to host the inspector (default 8080)
+		--web-port=[port]     port to host the inspector (default 8080)
 		--debug-port=[port]   v8 debug port to connect to (default 5858)
 		--fwd-io              forward stdout and stderr from the child process to inspector console
 
@@ -79,16 +79,9 @@ This is alpha quality code, so use at your own risk:
 * pause on exceptions doesn't play nice with the node event loop
 * closing the inspector does not stop debugging, you must stop inspector.js manually
 
-## Other Ideas
-
-* the inspector could be extended to provide collaborative debugging with
-  multiple inspectors connected to the same debug session.
-* use a native node extension instead of the inspector.js as a separate process
-
 ## TODOS
 
 * save application settings
-* debug-agent needs a lot of work
 * profiler panel
 
 ## Thanks

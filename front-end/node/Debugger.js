@@ -1,8 +1,9 @@
 WebInspector.nodeDebugger = (function() {
-  var socket = null;
-  var callbacks = {};
-  var breakpoints = {};
-  var listeners = {};
+  var socket = null,
+      callbacks = {},
+      breakpoints = {},
+      listeners = {},
+      debugr;
   
   function takeCallId(request_seq) {
     var callId = callbacks[request_seq];
@@ -11,9 +12,9 @@ WebInspector.nodeDebugger = (function() {
   }
 
   function dispatch(data) {
-    var msg = JSON.parse(data);
-    var cmd = msg.command || msg.event;
-    msg['callId'] = takeCallId(msg.request_seq);
+    var msg = JSON.parse(data),
+        cmd = msg.command || msg.event;
+    msg.callId = takeCallId(msg.request_seq);
     if (listeners[cmd]) {
       listeners[cmd].forEach(function(callback) {
         callback.call(this, msg);
@@ -26,7 +27,7 @@ WebInspector.nodeDebugger = (function() {
       seq: Math.floor((Math.random() * 999999999999)),
       type: 'request',
       command: command
-    }
+    };
     if (params) {
       Object.keys(params).forEach(function(key) {
         msg[key] = params[key];
@@ -43,13 +44,14 @@ WebInspector.nodeDebugger = (function() {
     socket.send(JSON.stringify(msg));
   }
 
-  var debugr = {
+  debugr = {
     connect: function() {
+      var addr;
       if (['http:', 'https:'].indexOf(window.location.protocol) > -1) {
-        var addr = window.location.host;
+        addr = window.location.host;
       }
       else {
-        var addr = '127.0.0.1:8080'; //FIXME
+        addr = '127.0.0.1:8080'; //FIXME
       }
       socket = new WebSocket('ws://' + addr);
       socket.onmessage = function(event) {
@@ -120,8 +122,9 @@ WebInspector.nodeDebugger = (function() {
       sendRequest('suspend');
     },
     resume: function(step) {
+      var params;
       if(step) {
-        var params = {arguments: { stepaction: step }};
+        params = {arguments: { stepaction: step }};
       }
       sendRequest('continue', params);
     },
@@ -178,7 +181,7 @@ WebInspector.nodeDebugger = (function() {
   debugr.on('clearbreakpoint', function(msg) {
     if (msg.arguments) {
       var a = msg.arguments;
-      delete breakpoints[a.id]
+      delete breakpoints[a.id];
     }
   });
   
@@ -186,8 +189,8 @@ WebInspector.nodeDebugger = (function() {
     breakpoints = {};
     msg.body.breakpoints.forEach(function(bp) {
       if(bp.type === 'scriptId') {
-        var l = bp.line + 1;
-        var url = WebInspector.panels.scripts._sourceIDMap[bp.script_id].sourceURL;
+        var l = bp.line + 1,
+            url = WebInspector.panels.scripts._sourceIDMap[bp.script_id].sourceURL;
         breakpoints[bp.script_id + ':' + l] = bp.number;
       }
     });
