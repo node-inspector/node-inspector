@@ -80,9 +80,10 @@ WebInspector.nodeDebugger = (function() {
       list.push(callback);
       listeners[event] = list;
     },
-    getScripts: function() {
-      sendRequest('scripts', {
-        arguments: { includeSource: true, types: 4 }});
+    getScripts: function(ids) {
+      var args = { arguments: { includeSource: true, types: 4 }};
+      if(ids) { args.arguments.ids = ids; }
+      sendRequest('scripts', args);
     },
     setBreakpoint: function(callId, sourceID, line, enabled, condition) {
       var bp = breakpoints[sourceID + ':' + line];

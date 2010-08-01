@@ -237,6 +237,11 @@ WebInspector.InspectorFrontendHostStub = function()
   
   // events
   debugr.on('break', function(msg) {
+    var scripts = WebInspector.panels.scripts._sourceIDMap,
+        id = msg.body.script.id;
+    if(scripts[id] == null) {
+      debugr.getScripts([id]);
+    }
     debugr.getBacktrace();
   });
   debugr.on('exception', function(msg) {
