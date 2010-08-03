@@ -67,6 +67,7 @@ This project started as a Chrome extension. For more info see the [wiki](http://
 
 * the WebKit Web Inspector debugger is a great js debugger interface, it works just as well for node
 * uses a WebSocket to connect to debug-agent, so no polling for breaks
+* remote debugging
 * javascript top to bottom :)
 
 ## Known Issues
@@ -74,7 +75,6 @@ This project started as a Chrome extension. For more info see the [wiki](http://
 This is alpha quality code, so use at your own risk:
 
 * be careful about viewing the contents of Buffer objects, each byte is displayed as an individual array element, for anything but tiny Buffers this will take too long to render
-* if the 'this' object in a call frame is the global object, expanding it yield nothing
 * while not stopped at a breakpoint the console doesn't always behave as you might expect
 * pause on exceptions doesn't play nice with the node event loop
 * closing the inspector does not stop debugging, you must stop inspector.js manually

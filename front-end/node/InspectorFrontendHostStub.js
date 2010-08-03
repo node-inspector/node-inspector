@@ -75,6 +75,9 @@ WebInspector.InspectorFrontendHostStub = function()
       case 'null':
         p.value = {description: 'null'};
         break;
+      case 'script':
+        p.value = {description: value.text};
+        break;
       default:
         p.value = {description: value.value};
         break;
@@ -83,14 +86,35 @@ WebInspector.InspectorFrontendHostStub = function()
   };
   
   function _property(prop) {
-    var p = _valueOf(prop.value);
-    p.name = String(prop.name);
+    var p = {};
+    if (prop.value != null) {
+      p = _valueOf(prop.value);
+      p.name = String(prop.name);
+    }
+    else if (prop.ref != null) {
+      p.value = {
+        description: '',
+        hasChildren: true,
+        injectedScriptId: prop.ref,
+        type: 'object'
+      };
+      p.name = String(prop.name);
+    }
+    else {
+      p = _valueOf(prop);
+      p.name = String(prop.name);
+    }
     return p;
   };
   
   function refToProperties(ref) {
     if (ref) {
-      return ref.properties.map(_property);
+      if (ref.properties) {
+        return ref.properties.map(_property);
+      }
+      else {
+        return [_property(ref)];
+      }
     }
   };
   
