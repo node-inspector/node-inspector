@@ -154,13 +154,19 @@ WebInspector.nodeDebugger = (function() {
       sendRequest('evaluate', {arguments: args}, callId);
     },
     takeHeapSnapshot: function() {
-      sendRequest('profile', {arguments: {command: 'resume', modules: 65542, tag: 0}});
+      sendRequest('profile', {arguments: {command: 'resume', modules: 65542, tag: 1}});
     },
     startProfiling: function() {
       sendRequest('profile', {arguments: {command: 'resume', modules: 1, tag: 0}});
     },
     stopProfiling: function() {
       sendRequest('profile', {arguments: {command: 'pause', modules: 1, tag: 0}});
+    },
+    enableProfiler: function() {
+      //sendRequest('enableprof');
+    },
+    getLogLines: function(pos, callId) {
+      sendRequest('getloglines', {position: pos}, callId);
     },
     liveEdit: function(callId, sourceID, newContext) {
       var args = {

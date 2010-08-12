@@ -1,2 +1,5 @@
 ._*
 v8.log
+native/build
+bin/.*
+native/.*

@@ -1,6 +1,8 @@
 var http = require('http'),
     sys = require('sys');
 
+require('../bin/heap-helper');
+
 var x = 0;
 http.createServer(function (req, res) {
   x += 1;

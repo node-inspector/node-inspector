@@ -223,6 +223,7 @@ WebInspector.InspectorBackendStub.prototype = {
 
   enableProfiler: function()
   {
+    WebInspector.nodeDebugger.enableProfiler();
     WebInspector.profilerWasEnabled();
   },
 
@@ -243,16 +244,32 @@ WebInspector.InspectorBackendStub.prototype = {
 
   getProfileHeaders: function(callId)
   {
-    WebInspector.didGetProfileHeaders(callId, []);
+    console.log(callId);
+    WebInspector.didGetProfileHeaders(callId, [{uid:1337, typeId:"cpu", title:"elite profile" }]);
   },
 
   getProfile: function(callId, uid)
   {
+    console.log(uid);
   },
 
   takeHeapSnapshot: function()
   {
     WebInspector.nodeDebugger.takeHeapSnapshot();
+  },
+  
+  getProfilerLogLines: function(callId, pos)
+  {
+    WebInspector.nodeDebugger.getLogLines(pos, callId);
+  },
+  
+  profilerAgent: null,
+  getProfilerAgent: function()
+  {
+    if (this.profilerAgent == null) {
+      this.profilerAgent = new devtools.ProfilerAgent();
+    }
+    return this.profilerAgent;
   },
 
   databaseTableNames: function(database)

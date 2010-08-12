@@ -60,6 +60,7 @@ WebInspector.InspectorFrontendHostStub = function()
           injectedScriptId: value.ref || value.handle,
           type: 'object'
           };
+        
         break;
       case 'function':
         p.value = {
@@ -258,6 +259,9 @@ WebInspector.InspectorFrontendHostStub = function()
   debugr.on('profile', function(msg) {
   
   });
+  debugr.on('getloglines', function(msg) {
+    WebInspector.didGetProfilerLogLines(msg.callId, msg.body.position, msg.body.lines);
+  });
   
   // events
   debugr.on('break', function(msg) {
@@ -364,7 +368,7 @@ WebInspector.InspectorFrontendHostStub.prototype = {
 
   hiddenPanels: function()
   {
-    return "elements,resources,timeline,profiles,storage,audits";
+    return "elements,resources,timeline,storage,audits";
   },
 
   inspectedURLChanged: function(url)
