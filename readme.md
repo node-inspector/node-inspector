@@ -5,7 +5,7 @@ Node Inspector is a debugger interface for nodeJS using the WebKit Web Inspector
 ### Requirements
 
 * [nodeJS](http://github.com/ry/node)
-  - versions: 0.1.100 or later
+  - versions: 0.1.101 or later
 * A WebKit based browser: Chrome, Safari, OmniWeb, etc.
 
 ### Setup
@@ -48,7 +48,7 @@ external node process.
 
 3. open http://127.0.0.1:8000
 
-For more information on getting started see the [wiki](http://wiki.github.com/dannycoates/node-inspector/getting-started-from-scratch)
+For more information on getting started see the [wiki](http://github.com/dannycoates/node-inspector/wiki/Getting-Started---from-scratch)
 
 ## Options
 
@@ -61,7 +61,7 @@ For more information on getting started see the [wiki](http://wiki.github.com/da
 
 ## Extensions
 
-This project started as a Chrome extension. For more info see the [wiki](http://wiki.github.com/dannycoates/node-inspector/google-chrome-extension).
+This project started as a Chrome extension. For more info see the [wiki](http://github.com/dannycoates/node-inspector/wiki/Google-Chrome-Extension).
 
 ## Cool stuff
 
