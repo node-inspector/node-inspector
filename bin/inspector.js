@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 var sys = require('sys'),
-    session = require('./session');
+    session = require('../lib/session');
 
 var options = {};
 

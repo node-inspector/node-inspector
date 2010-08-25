@@ -110,7 +110,21 @@ WebInspector.InspectorFrontendHostStub = function()
   function refToProperties(ref) {
     if (ref) {
       if (ref.properties) {
-        return ref.properties.map(_property);
+        var props = ref.properties.map(_property);
+        if(ref.protoObject) {
+          props.push(
+          {
+            name:'__proto__'
+          , value: 
+            {
+              description: ref.protoObject.className
+            , hasChildren: true
+            , injectedScriptId: ref.protoObject.ref
+            , type: ref.protoObject.type
+            }
+          });
+        }
+        return props;
       }
       else {
         return [_property(ref)];
