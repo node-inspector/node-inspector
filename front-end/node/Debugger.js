@@ -45,6 +45,7 @@ WebInspector.nodeDebugger = (function() {
   }
 
   debugr = {
+    port: 5858,
     connect: function() {
       var addr;
       if (['http:', 'https:'].indexOf(window.location.protocol) > -1) {
@@ -53,7 +54,7 @@ WebInspector.nodeDebugger = (function() {
       else {
         addr = '127.0.0.1:8080'; //FIXME
       }
-      socket = new WebSocket('ws://' + addr);
+      socket = new WebSocket('ws://' + addr + '/testme');
       socket.onmessage = function(event) {
         dispatch(event.data);
       };
@@ -66,9 +67,7 @@ WebInspector.nodeDebugger = (function() {
       };
       socket.onopen = function() {
         console.log('socket open');
-        WebInspector.debuggerWasEnabled();
-        debugr.getScripts();
-        debugr.listBreakpoints();
+        debugr.attach(debugr.port);
       };
     },
     close: function() {
@@ -79,6 +78,10 @@ WebInspector.nodeDebugger = (function() {
       var list = listeners[event] || [];
       list.push(callback);
       listeners[event] = list;
+    },
+    attach: function(port, options) {
+      var args = { arguments: { debugPort: port }};
+      sendRequest('attach', args);
     },
     getScripts: function(ids) {
       var args = { arguments: { includeSource: true, types: 4 }};
@@ -171,6 +174,22 @@ WebInspector.nodeDebugger = (function() {
       sendRequest('changelive', {arguments: args}, {id: callId, body: newContext});
     }
   };
+  
+  debugr.on('attach', function(msg) {
+    if (msg.success) {
+      WebInspector.debuggerWasEnabled();
+      debugr.getScripts();
+      debugr.listBreakpoints();
+    }
+    else {
+      var err = msg.message;
+      if (err.match(/ECONNREFUSED/)) {
+        err = 'Node not listening on port ' + debugr.port + '.\nIs it running with --debug?';
+      }
+      WebInspector.panels.scripts.panelEnablerView.error.textContent = err;
+      debugr.close();
+    }
+  });
 
   debugr.on('setbreakpoint', function(msg) {
     if (msg.arguments) {

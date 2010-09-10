@@ -8,56 +8,39 @@ Node Inspector is a debugger interface for nodeJS using the WebKit Web Inspector
   - versions: 0.1.101 or later
 * A WebKit based browser: Chrome, Safari, OmniWeb, etc.
 
-### Setup
+### Install
 
-1. make a debug build of node
-		./configure --debug
-		make
-		make install
+* With npm
+  - npm install node-inspector
 
-If you get an error like: `Build failed: Missing node signature for...` try `make distclean` then try again.
+* From source
+  - git clone http://github.com/dannycoates/node-inspector.git
 
 ### Debugging
 
-There are two ways to use node-inspector. First I'll describe the easy way. 
 As an example lets debug test/hello.js, from the root project directory (node-inspector)
 
-1. start the inspector like this:
-		node bin/inspector.js --start=test/hello.js
+2. start the inspector in the background
+		node bin/inspector.js &
 
-    > Note: --start path must be relative to the current working directory or absolute
+    > or with npm just run `node-inspector &`
 
-2. open http://127.0.0.1:8080 in your favorite WebKit based browser
+1. start the node instance to debug
+		node --debug test/hello.js
+
+3. open http://127.0.0.1:8080 in your favorite WebKit based browser
 
     > Chrome 5 users **MUST** use 127.0.0.1 **NOT** localhost or the browser will not connect to the debugger
 
-3. you should now see the javascript source from nodeJS
+4. you should now see the javascript source from nodeJS
 
-4. set some breakpoints, see what happens
-
-
-This will start a child process `node_g --debug test/hello.js` and host the inspector 
-interface at http://localhost:8080. The other way is to connect the inspector to an 
-external node process.
-
-1. start a node process:
-		node_g --debug=7878 test/hello.js
-		
-2. start the inspector:
-		node bin/inspector.js --debug-port=7878 --web-port=8000
-
-3. open http://127.0.0.1:8000
+5. set some breakpoints, see what happens
 
 For more information on getting started see the [wiki](http://github.com/dannycoates/node-inspector/wiki/Getting-Started---from-scratch)
 
 ## Options
 
-		--start=[file]        starts [file] in a child process with node_g --debug
-		                      [file] path can be absolute or relative to $PWD
-		--start-brk=[file]    same as start with --debug-brk
 		--web-port=[port]     port to host the inspector (default 8080)
-		--debug-port=[port]   v8 debug port to connect to (default 5858)
-		--fwd-io              forward stdout and stderr from the child process to inspector console
 
 ## Extensions
 

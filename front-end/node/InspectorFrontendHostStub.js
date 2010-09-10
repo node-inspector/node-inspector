@@ -168,6 +168,7 @@ WebInspector.InspectorFrontendHostStub = function()
     }
     else {
       // a different window set a breakpoint
+      WebInspector.panels.scripts.sidebarPanes.breakpoints.reset();
       debugr.listBreakpoints();
     }
   });

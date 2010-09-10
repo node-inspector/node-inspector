@@ -6,7 +6,8 @@ var
   path = require('path');
 
 exports.filepath = function (webroot, url) {
-  fp = path.normalize(path.join(webroot, (url === '/')  ? 'index.html' : url));
+  var suffix = '/';
+  fp = path.normalize(path.join(webroot, (url.match(suffix+"$")==suffix)  ? url+'index.html' : url));
   //Sanitize input, make sure people can't use .. to get above webroot
   if (fp.substr(0,webroot.length + 1) != webroot + '/')
     return(['Permission Denied', null]);

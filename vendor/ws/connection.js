@@ -1,52 +1,83 @@
-
+/*-----------------------------------------------
+  Requirements:
+-----------------------------------------------*/
 var sys = require("sys")
-  , events = require("events")
+  , Url = require("url")
+  , Events = require("events")
   , Buffer = require("buffer").Buffer
   , Crypto = require("crypto");
-
-
-/*-----------------------------------------------
-  Debugged
------------------------------------------------*/
-var debug;
 
 /*-----------------------------------------------
   The Connection:
 -----------------------------------------------*/
 module.exports = Connection;
 
-function Connection(server, req, socket, upgradeHead){
+// Our connection instance:
+function Connection(server, req, socket, data){
   this.debug = server.debug;
 
   if (this.debug) {
-    debug = function () { sys.error('\033[90mWS: ' + Array.prototype.join.call(arguments, ", ") + "\033[39m"); };
+    debug = function (id, data) { sys.error('\033[90mWS: ' + Array.prototype.join.call(arguments, ", ") + "\033[39m"); };
   } else {
-    debug = function () { };
+    debug = function (id, data) { };
   }
+
+  Events.EventEmitter.call(this);
 
   this._req = req;
   this._server = server;
-  this._upgradeHead = upgradeHead;
-  this.id = this._req.socket.remotePort;
+  this.headers = this._req.headers;
+  
+  var _firstFrame = false;
 
-  events.EventEmitter.call(this);
+  Object.defineProperties(this, {
+    id: {
+      get: function(){ return this._req.socket.remotePort }
+    },
 
-  this.version = this.getVersion();
+    version: {
+      get: function(){
+        if(this._req.headers["sec-websocket-key1"] && this._req.headers["sec-websocket-key2"]){
+          return "draft76";
+        } else {
+          return "draft75";
+        }
+      }
+    }
+  });
 
+
+  if(server.options.datastore){
+    var storage;
+
+    if(typeof server.options.datastore === "object" || typeof server.options.datastore === "function"){
+      storage = server.options.datastore;
+    } else if(server.options.datastore === true){
+      storage = require("./mem-store");
+    } else {
+      storage = false;
+    }
+  }
+
+  // Start to process the connection
   if( !checkVersion(this)) {
     this.reject("Invalid version.");
   } else {
-    debug(this.id, this.version+" connection");
+    var connection = this
+      , parser;
+
+    // Let the debug mode know that we have a connection:
+    this.debug && debug(this.id, this.version+" connection");
 
     // Set the initial connecting state.
     this.state(1);
 
-    var connection = this;
     // Handle incoming data:
-    var parser = new Parser(this);
-    req.socket.addListener("data", function(data){
-      if(connection._state == 2){
-        connection._upgradeHead = data;
+    parser = new Parser(this);
+
+    socket.addListener("data", function(data){
+      if(data.length == 2 && data[0] == 0xFF && data[1] == 0x00){
+        connection.state(5);
       } else {
         parser.write(data);
       }
@@ -54,20 +85,52 @@ function Connection(server, req, socket, upgradeHead){
 
     // Handle the end of the stream, and set the state
     // appropriately to notify the correct events.
-    req.socket.addListener("end", function(){
+    socket.addListener("end", function(){
+      connection.state(5);
+    });
+
+    socket.addListener('timeout', function () {
+      debug(connection.id, "timed out");
+      server.emit("timeout", connection);
+      connection.emit("timeout");
+    });
+
+    socket.addListener("error", function(e){
+      server.emit("error", connection, e);
+      connection.emit("error", e);
       connection.state(5);
     });
 
     // Setup the connection manager's state change listeners:
-    this.addListener("stateChange", function(state, oldstate){
-      if(state == 5){
+    this.addListener("stateChange", function(state, laststate){
+      //debug(connection.id, "Change state: "+laststate+" => "+state);
+      if(state === 4){
+        if(storage && storage.create){
+          connection.storage = storage.create();
+        } else if(storage){
+          connection.storage = storage;
+        }
+
+        server.manager.attach(connection.id, connection);
+        server.emit("connection", connection);
+        
+        if(_firstFrame){
+          parser.write(_firstFrame);
+          delete _firstFrame;
+        }
+        
+      } else if(state === 5){
+        connection.close();
+      } else if(state === 6 && laststate === 5){
+
+        if(connection.storage && connection.storage.disconnect){
+          connection.storage.disconnect(connection.id);
+        }
+
         server.manager.detach(connection.id, function(){
           server.emit("close", connection);
           connection.emit("close");
         });
-      } else if(state == 4){
-        server.manager.attach(connection.id, connection);
-        server.emit("connection", connection);
       }
     });
 
@@ -87,58 +150,54 @@ function Connection(server, req, socket, upgradeHead){
     //      but in the case it does happen, then the state is set to waiting for
     //      the upgradeHead.
     //
-    //      HANDLING FOR THIS EDGE CASE IS NOT IMPLEMENTED.
-    //
-    if((this.version == "draft75") || (this.version == "draft76" && this._upgradeHead && this._upgradeHead.length == 8)){
+    if(this.version == "draft75"){
       this.handshake();
-    } else {
-      this.state(2);
-      debug(this.id, "waiting.");
+    }
+    
+    if(this.version == "draft76"){
+      if(data.length >= 8){
+        this._upgradeHead = data.slice(0, 8);
+        
+        _firstFrame = data.slice(8, data.length);
+        
+        this.handshake();
+      } else {
+        this.reject("Missing key3");
+      }
     }
   }
 };
 
-sys.inherits(Connection, events.EventEmitter);
-
-// <<DEPRECATED
-
-var warned = false;
-Object.defineProperty(Connection.prototype, "_id", {
-  get: function(){
-    if(!warned){
-      sys.error('`Connection._id` will be removed in future versions of Node, please use `Connection.id`.');
-      warned = true;
-    }
-
-    return this.id;
-  }
-});
-
-// DEPRECATED>>
+sys.inherits(Connection, Events.EventEmitter);
 
 /*-----------------------------------------------
   Various utility style functions:
 -----------------------------------------------*/
 var writeSocket = function(socket, data, encoding) {
   if(socket.writable){
-    socket.write(data, encoding);
-    return true;
+    try {
+      socket.write(data, encoding);
+      return true;
+    } catch(e){
+      debug(null, "Error on write: "+e.toString());
+      return false;
+    }
   }
   return false;
 };
 
 var closeClient = function(client){
+  client._req.socket.flush();
   client._req.socket.end();
   client._req.socket.destroy();
-  client.state(5);
-  debug(client.id, "closed");
+  debug(client.id, "socket closed");
+  client.state(6);
 };
 
 function checkVersion(client){
-  var server_version = client._server.options.version.toLowerCase()
-    , client_version = client.version = client.version || client.getVersion();
+  var server_version = client._server.options.version.toLowerCase();
 
-  return (server_version == "auto" || server_version == client_version);
+  return (server_version == "auto" || server_version == client.version);
 };
 
 
@@ -164,18 +223,18 @@ function websocket_origin(){
 };
 
 function websocket_location(){
-  var location = "",
-      secure = this._req.socket.secure,
-      request_host = this._req.headers.host.split(":"),
-      port = request_host[1];
-
-  if(secure){
-    location += "wss://";
-  } else {
-    location += "ws://";
+  if(this._req.headers["host"] === undefined){
+    this.reject("Missing host header");
+    return;
   }
+  
+  var location = ""
+    , secure = this._req.socket.secure
+    , host = this._req.headers.host.split(":")
+    , port = host[1] !== undefined ? host[1] : (secure ? 443 : 80);
 
-  location += request_host[0]
+  location += secure ? "wss://" : "ws://";
+  location += host[0];
 
   if(!secure && port != 80 || secure && port != 443){
     location += ":"+port;
@@ -193,7 +252,8 @@ function websocket_location(){
   2. waiting
   3. handshaking
   4, connected
-  5. closed
+  5. closing
+  6. closed
 -----------------------------------------------*/
 Connection.prototype._state = 0;
 
@@ -208,15 +268,6 @@ Connection.prototype.state = function(state){
     this.emit("stateChange", this._state, oldstate);
   }
 };
-
-Connection.prototype.getVersion = function(){
-  if(this._req.headers["sec-websocket-key1"] && this._req.headers["sec-websocket-key2"]){
-    return "draft76";
-  } else {
-    return "draft75";
-  }
-};
-
 
 Connection.prototype.write = function(data){
   var socket = this._req.socket;
@@ -238,6 +289,8 @@ Connection.prototype.write = function(data){
   }
   return false;
 };
+
+Connection.prototype.send = Connection.prototype.write;
 
 Connection.prototype.broadcast = function(data){
   var conn = this;
@@ -261,22 +314,21 @@ Connection.prototype.close = function(){
 
 
 Connection.prototype.reject = function(reason){
-  debug(this.id, "rejected. Reason: "+reason);
+  this.debug && debug(this.id, "rejected. Reason: "+reason);
 
   this.emit("rejected");
   closeClient(this);
 };
 
-
 Connection.prototype.handshake = function(){
   if(this._state < 3){
-    debug(this.id, this.version+" handshake");
+    this.debug && debug(this.id, this.version+" handshake");
 
     this.state(3);
 
     doHandshake[this.version].call(this);
   } else {
-    debug(this.id, "Already handshaked.");
+    this.debug && debug(this.id, "Already handshaked.");
   }
 };
 
@@ -284,60 +336,68 @@ Connection.prototype.handshake = function(){
   Do the handshake.
 -----------------------------------------------*/
 var doHandshake = {
-  /* Using draft75, work out and send the handshake. */
+  // Using draft75, work out and send the handshake.
   draft75: function(){
-    var res = "HTTP/1.1 101 Web Socket Protocol Handshake\r\n"
-            + "Upgrade: WebSocket\r\n"
-            + "Connection: Upgrade\r\n"
-            + "WebSocket-Origin: "+websocket_origin.call(this)+"\r\n"
-            + "WebSocket-Location: "+websocket_location.call(this);
+    var location = websocket_location.call(this), res;
+    
+    if(location){
+      res = "HTTP/1.1 101 Web Socket Protocol Handshake\r\n"
+          + "Upgrade: WebSocket\r\n"
+          + "Connection: Upgrade\r\n"
+          + "WebSocket-Origin: "+websocket_origin.call(this)+"\r\n"
+          + "WebSocket-Location: "+location;
 
-    if(this._server.options.subprotocol && typeof this._server.options.subprotocol == "string") {
-      res += "\r\nWebSocket-Protocol: "+this._server.options.subprotocol;
+      if(this._server.options.subprotocol && typeof this._server.options.subprotocol == "string") {
+        res += "\r\nWebSocket-Protocol: "+this._server.options.subprotocol;
+      }
+
+      writeSocket(this._req.socket, res+"\r\n\r\n", "ascii");
+      this.state(4);
     }
-
-    writeSocket(this._req.socket, res+"\r\n\r\n", "ascii");
-    this.state(4);
   },
 
-  /* Using draft76 (security model), work out and send the handshake. */
+  // Using draft76 (security model), work out and send the handshake.
   draft76: function(){
-    var data = "HTTP/1.1 101 WebSocket Protocol Handshake\r\n"
-            + "Upgrade: WebSocket\r\n"
-            + "Connection: Upgrade\r\n"
-            + "Sec-WebSocket-Origin: "+websocket_origin.call(this)+"\r\n"
-            + "Sec-WebSocket-Location: "+websocket_location.call(this);
+    var location = websocket_location.call(this), res;
+    
+    if(location){
+      res = "HTTP/1.1 101 WebSocket Protocol Handshake\r\n"
+          + "Upgrade: WebSocket\r\n"
+          + "Connection: Upgrade\r\n"
+          + "Sec-WebSocket-Origin: "+websocket_origin.call(this)+"\r\n"
+          + "Sec-WebSocket-Location: "+location;
 
-    if(this._server.options.subprotocol && typeof this._server.options.subprotocol == "string") {
-      data += "\r\nSec-WebSocket-Protocol: "+this._server.options.subprotocol;
-    }
+      if(this._server.options.subprotocol && typeof this._server.options.subprotocol == "string") {
+        res += "\r\nSec-WebSocket-Protocol: "+this._server.options.subprotocol;
+      }
 
-    var strkey1 = this._req.headers['sec-websocket-key1']
-      , strkey2 = this._req.headers['sec-websocket-key2']
+      var strkey1 = this._req.headers['sec-websocket-key1']
+        , strkey2 = this._req.headers['sec-websocket-key2']
 
-      , numkey1 = parseInt(strkey1.replace(/[^\d]/g, ""), 10)
-      , numkey2 = parseInt(strkey2.replace(/[^\d]/g, ""), 10)
+        , numkey1 = parseInt(strkey1.replace(/[^\d]/g, ""), 10)
+        , numkey2 = parseInt(strkey2.replace(/[^\d]/g, ""), 10)
 
-      , spaces1 = strkey1.replace(/[^\ ]/g, "").length
-      , spaces2 = strkey2.replace(/[^\ ]/g, "").length;
+        , spaces1 = strkey1.replace(/[^\ ]/g, "").length
+        , spaces2 = strkey2.replace(/[^\ ]/g, "").length;
 
 
-    if (spaces1 == 0 || spaces2 == 0 || numkey1 % spaces1 != 0 || numkey2 % spaces2 != 0) {
-      this.reject("WebSocket contained an invalid key -- closing connection.");
-    } else {
-      var hash = Crypto.createHash("md5")
-        , key1 = pack(parseInt(numkey1/spaces1))
-        , key2 = pack(parseInt(numkey2/spaces2));
+      if (spaces1 == 0 || spaces2 == 0 || numkey1 % spaces1 != 0 || numkey2 % spaces2 != 0) {
+        this.reject("WebSocket contained an invalid key -- closing connection.");
+      } else {
+        var hash = Crypto.createHash("md5")
+          , key1 = pack(parseInt(numkey1/spaces1))
+          , key2 = pack(parseInt(numkey2/spaces2));
 
-      hash.update(key1);
-      hash.update(key2);
-      hash.update(this._upgradeHead.toString("binary"));
+        hash.update(key1);
+        hash.update(key2);
+        hash.update(this._upgradeHead.toString("binary"));
 
-      data += "\r\n\r\n";
-      data += hash.digest("binary");
+        res += "\r\n\r\n";
+        res += hash.digest("binary");
 
-      writeSocket(this._req.socket, data, "binary");
-      this.state(4);
+        writeSocket(this._req.socket, res, "binary");
+        this.state(4);
+      }
     }
   }
 };
