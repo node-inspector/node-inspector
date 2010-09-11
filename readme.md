@@ -10,22 +10,18 @@ Node Inspector is a debugger interface for nodeJS using the WebKit Web Inspector
 
 ### Install
 
-* With npm
-  - npm install node-inspector
-
-* From source
-  - git clone http://github.com/dannycoates/node-inspector.git
+* With [npm](http://github.com/isaacs/npm)
+		npm install node-inspector
+* Or from [source](http://github.com/dannycoates/node-inspector/wiki/Getting-Started---from-scratch)
 
 ### Debugging
 
 As an example lets debug test/hello.js, from the root project directory (node-inspector)
 
-2. start the inspector in the background
-		node bin/inspector.js &
+1. start the inspector in the background
+		node-inspector &
 
-    > or with npm just run `node-inspector &`
-
-1. start the node instance to debug
+2. start the node instance to debug
 		node --debug test/hello.js
 
 3. open http://127.0.0.1:8080 in your favorite WebKit based browser
@@ -42,16 +38,14 @@ For more information on getting started see the [wiki](http://github.com/dannyco
 
 		--web-port=[port]     port to host the inspector (default 8080)
 
-## Extensions
-
-This project started as a Chrome extension. For more info see the [wiki](http://github.com/dannycoates/node-inspector/wiki/Google-Chrome-Extension).
-
 ## Cool stuff
 
 * the WebKit Web Inspector debugger is a great js debugger interface, it works just as well for node
-* uses a WebSocket to connect to debug-agent, so no polling for breaks
+* uses WebSockets, so no polling for breaks
 * remote debugging
 * javascript top to bottom :)
+* [edit running code](http://github.com/dannycoates/node-inspector/wiki/LiveEdit)
+* [collaborative debugging](http://github.com/dannycoates/node-inspector/wiki/Collaborative-Debugging)
 
 ## Known Issues
 
@@ -60,7 +54,7 @@ This is alpha quality code, so use at your own risk:
 * be careful about viewing the contents of Buffer objects, each byte is displayed as an individual array element, for anything but tiny Buffers this will take too long to render
 * while not stopped at a breakpoint the console doesn't always behave as you might expect
 * pause on exceptions doesn't play nice with the node event loop
-* closing the inspector does not stop debugging, you must stop inspector.js manually
+* closing the browser does not stop debugging, you must stop node-inspector manually
 
 ## TODOS
 
