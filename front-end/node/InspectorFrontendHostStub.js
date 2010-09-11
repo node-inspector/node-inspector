@@ -36,19 +36,6 @@ WebInspector._platformFlavor = WebInspector.PlatformFlavor.MacTiger;
 WebInspector.InspectorFrontendHostStub = function()
 {
   this._attachedWindowHeight = 0;
-  this.showContextMenu = function(event, items) {
-    if(chrome && chrome.experimental) {
-      chrome.experimental.contextMenus.removeAll();
-      items.forEach(function(item) {
-        chrome.experimental.contextMenus.create({
-          title: item.label,
-          onclick: function() {
-            WebInspector.contextMenuItemSelected(item.id);
-          }
-        });
-      });
-    }
-  };
   //TODO find a place for these
   function _valueOf(value) {
     var p = {};
