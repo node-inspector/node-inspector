@@ -30,7 +30,13 @@ As an example lets debug test/hello.js, from the root project directory (node-in
 
 4. you should now see the javascript source from nodeJS
 
-5. set some breakpoints, see what happens
+5. select the hello.js script and set some breakpoints (far left line numbers)
+
+6. now open http://127.0.0.1:8124/ in a new tab then go back to inspector tab
+
+7. click "Step over next function call" and observe changes in the RHS panel
+
+8. then watch http://www.youtube.com/watch?v=AOnK3NVnxL8
 
 For more information on getting started see the [wiki](http://github.com/dannycoates/node-inspector/wiki/Getting-Started---from-scratch)
 
