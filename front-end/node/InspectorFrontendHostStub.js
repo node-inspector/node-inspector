@@ -36,19 +36,6 @@ WebInspector._platformFlavor = WebInspector.PlatformFlavor.MacTiger;
 WebInspector.InspectorFrontendHostStub = function()
 {
   this._attachedWindowHeight = 0;
-  this.showContextMenu = function(event, items) {
-    if(chrome && chrome.experimental) {
-      chrome.experimental.contextMenus.removeAll();
-      items.forEach(function(item) {
-        chrome.experimental.contextMenus.create({
-          title: item.label,
-          onclick: function() {
-            WebInspector.contextMenuItemSelected(item.id);
-          }
-        });
-      });
-    }
-  };
   //TODO find a place for these
   function _valueOf(value) {
     var p = {};
@@ -111,7 +98,21 @@ WebInspector.InspectorFrontendHostStub = function()
   function refToProperties(ref) {
     if (ref) {
       if (ref.properties) {
-        return ref.properties.map(_property);
+        var props = ref.properties.map(_property);
+        if(ref.protoObject) {
+          props.push(
+          {
+            name:'__proto__'
+          , value: 
+            {
+              description: ref.protoObject.className
+            , hasChildren: true
+            , injectedScriptId: ref.protoObject.ref
+            , type: ref.protoObject.type
+            }
+          });
+        }
+        return props;
       }
       else {
         return [_property(ref)];
@@ -155,6 +156,7 @@ WebInspector.InspectorFrontendHostStub = function()
     }
     else {
       // a different window set a breakpoint
+      WebInspector.panels.scripts.sidebarPanes.breakpoints.reset();
       debugr.listBreakpoints();
     }
   });
@@ -259,7 +261,7 @@ WebInspector.InspectorFrontendHostStub = function()
   debugr.on('profile', function(msg) {
   
   });
-  debugr.on('getloglines', function(msg) {
+  debugr.on('logLines', function(msg) {
     WebInspector.didGetProfilerLogLines(msg.callId, msg.body.position, msg.body.lines);
   });
   
