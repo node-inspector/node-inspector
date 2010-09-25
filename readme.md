@@ -36,7 +36,7 @@ As an example lets debug test/hello.js, from the root project directory (node-in
 
 7. click "Step over next function call" and observe changes in the RHS panel
 
-8. then watch http://www.youtube.com/watch?v=AOnK3NVnxL8
+8. then watch the [screencast](http://www.youtube.com/watch?v=AOnK3NVnxL8)
 
 For more information on getting started see the [wiki](http://github.com/dannycoates/node-inspector/wiki/Getting-Started---from-scratch)
 
