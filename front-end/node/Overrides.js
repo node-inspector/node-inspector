@@ -1,6 +1,5 @@
 (function() {
   window.addEventListener("load", function() {
-    //var box = document.createElement('input');
     WebInspector.WatchExpressionsSection.NewWatchExpression = "''";
     
     var panel = WebInspector.panels.scripts.panelEnablerView;

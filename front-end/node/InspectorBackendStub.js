@@ -203,7 +203,7 @@ WebInspector.InspectorBackendStub.prototype = {
 
   setPauseOnExceptionsState: function(value)
   {
-    WebInspector.updatePauseOnExceptionsState(value);
+    WebInspector.nodeDebugger.setPauseOnExceptions(value);
   },
 
   editScriptSource: function(callId, sourceID, newContext)
