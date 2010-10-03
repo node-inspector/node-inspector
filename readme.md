@@ -59,7 +59,6 @@ This is alpha quality code, so use at your own risk:
 
 * be careful about viewing the contents of Buffer objects, each byte is displayed as an individual array element, for anything but tiny Buffers this will take too long to render
 * while not stopped at a breakpoint the console doesn't always behave as you might expect
-* pause on exceptions doesn't play nice with the node event loop
 * closing the browser does not stop debugging, you must stop node-inspector manually
 
 ## TODOS
