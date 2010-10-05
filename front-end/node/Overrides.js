@@ -2,6 +2,7 @@
   window.addEventListener("load", function() {
     WebInspector.WatchExpressionsSection.NewWatchExpression = "''";
 
+    //Source Frame 
     WebInspector.SourceFrame.prototype._mouseDown = function(event)
     {
         this._resetHoverTimer();
@@ -34,15 +35,16 @@
         event.preventDefault();
     };
 
-    var panel = WebInspector.panels.scripts.panelEnablerView;
-    panel.choicesForm.removeChild(panel.disclaimerElement);
-    panel.choicesForm.removeChild(panel.enabledForSession.parentNode);
-    panel.choicesForm.removeChild(panel.enabledAlways.parentNode);
-    panel.headerElement.textContent = "all your node are belong to us";
-    panel.enableButton.textContent = 'Connect to Node';
+    //Script Panel
+    var sPanel = WebInspector.panels.scripts.panelEnablerView;
+    sPanel.choicesForm.removeChild(sPanel.disclaimerElement);
+    sPanel.choicesForm.removeChild(sPanel.enabledForSession.parentNode);
+    sPanel.choicesForm.removeChild(sPanel.enabledAlways.parentNode);
+    sPanel.headerElement.textContent = "all your node are belong to us";
+    sPanel.enableButton.textContent = 'Connect to Node';
     var div = document.createElement('div');
-    panel.error = document.createElement('h3');
-    panel.error.style.color = 'red';
+    sPanel.error = document.createElement('h3');
+    sPanel.error.style.color = 'red';
     var plabel = document.createElement('label');
     plabel.style.left = '65px';
     var port = document.createElement('input');
@@ -52,12 +54,30 @@
     plabel.appendChild(document.createTextNode('Debug port: '));
     plabel.appendChild(port);
     div.appendChild(plabel);
-    panel.choicesForm.insertBefore(div, panel.enableButton);
-    panel.choicesForm.appendChild(panel.error);
+    sPanel.choicesForm.insertBefore(div, sPanel.enableButton);
+    sPanel.choicesForm.appendChild(sPanel.error);
 
-    panel.enableButton.addEventListener("click", function() {
-      panel.error.textContent = ' ';
+    sPanel.enableButton.addEventListener("click", function() {
+      sPanel.error.textContent = ' ';
       WebInspector.nodeDebugger.port = parseInt(port.value, 10);
+    }, false);
+    
+    //Profile Panel
+    var pPanel = WebInspector.panels.profiles.panelEnablerView;
+    pPanel.choicesForm.removeChild(pPanel.disclaimerElement);
+    pPanel.choicesForm.removeChild(pPanel.enabledForSession.parentNode);
+    pPanel.choicesForm.removeChild(pPanel.enabledAlways.parentNode);
+    pPanel.headerElement.textContent = 'Enter the path to the V8 log file';
+    pPanel.enableButton.textContent = 'Set';
+    var path = document.createElement('input');
+    path.style.width = '300px';
+    path.type = 'text';
+    path.value = '/absolute/path/to/your/v8.log';
+    var dv = document.createElement('div');
+    dv.appendChild(path);
+    pPanel.choicesForm.insertBefore(dv, pPanel.enableButton);
+    path.addEventListener('blur', function() {
+      WebInspector.nodeDebugger.logPath = path.value;
     }, false);
   }, false);
 }())

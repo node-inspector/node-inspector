@@ -369,7 +369,7 @@ WebInspector.InspectorFrontendHostStub.prototype = {
 
   loaded: function()
   {
-    Preferences.samplingCPUProfiler = true;
+    Preferences.samplingCPUProfiler = false;
     Preferences.heapProfilerPresent = true;
     Preferences.debuggerAlwaysEnabled = true;
     Preferences.profilerAlwaysEnabled = true;

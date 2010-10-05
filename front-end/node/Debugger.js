@@ -47,6 +47,7 @@ WebInspector.nodeDebugger = (function() {
   debugr = {
     port: 5858,
     pauseOnExceptions: false,
+    logPath: '',
     connect: function() {
       var addr;
       if (['http:', 'https:'].indexOf(window.location.protocol) > -1) {
@@ -180,7 +181,7 @@ WebInspector.nodeDebugger = (function() {
       sendRequest('profile', {arguments: {command: 'pause', modules: 1, tag: 0}});
     },
     enableProfiler: function() {
-      //sendRequest('enableprof');
+      sendRequest('setLog', {arguments: {path:this.logPath}});
     },
     getLogLines: function(pos, callId) {
       sendRequest('logLines', {arguments: {position: pos}}, callId);
