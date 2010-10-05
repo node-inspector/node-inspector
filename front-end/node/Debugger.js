@@ -46,6 +46,7 @@ WebInspector.nodeDebugger = (function() {
 
   debugr = {
     port: 5858,
+    pauseOnExceptions: false,
     connect: function() {
       var addr;
       if (['http:', 'https:'].indexOf(window.location.protocol) > -1) {
@@ -125,6 +126,19 @@ WebInspector.nodeDebugger = (function() {
     pause: function() {
       sendRequest('suspend');
     },
+    setPauseOnExceptions: function(value) {
+      var params = {
+        arguments: {
+          flags: [{
+            name:'breakOnCaughtException',
+            value: value === 1}]
+         }
+       };
+      sendRequest('flags', params);
+    },
+    getFlags: function() {
+      sendRequest('flags', {arguments:{}});
+    },
     resume: function(step) {
       var params;
       if(step) {
@@ -186,6 +200,7 @@ WebInspector.nodeDebugger = (function() {
       WebInspector.debuggerWasEnabled();
       debugr.getScripts();
       debugr.listBreakpoints();
+      debugr.getFlags();
     }
     else {
       var err = msg.message;

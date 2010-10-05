@@ -264,6 +264,17 @@ WebInspector.InspectorFrontendHostStub = function()
   debugr.on('logLines', function(msg) {
     WebInspector.didGetProfilerLogLines(msg.callId, msg.body.position, msg.body.lines);
   });
+  debugr.on('flags', function(msg) {
+    if (msg.success) {
+      var value = 0;
+      if(msg.body.flags.some(function (x) {
+          return x.name === 'breakOnCaughtException' && x.value})) {
+        value = 1;
+      }
+      debugr.pauseOnExceptions = !!value;
+      WebInspector.updatePauseOnExceptionsState(value);
+    }
+  });
   
   // events
   debugr.on('break', function(msg) {
@@ -275,12 +286,21 @@ WebInspector.InspectorFrontendHostStub = function()
     debugr.getBacktrace();
   });
   debugr.on('exception', function(msg) {
+    if (debugr.pauseOnExceptions) {
+      var scripts = WebInspector.panels.scripts._sourceIDMap,
+        id = msg.body.script.id;
+      if(scripts[id] == null) {
+        debugr.getScripts([id]);
+      }
+      debugr.getBacktrace();
+    }
+    var text = msg.body && msg.body.exception && msg.body.exception.text;
     WebInspector.addConsoleMessage({
       source: WebInspector.ConsoleMessage.MessageSource.JS,
       type: WebInspector.ConsoleMessage.MessageType.Log,
       level: WebInspector.ConsoleMessage.MessageLevel.Error,
       repeatCount: 1,
-      message: 'exception: ' + msg.body});
+      message: text });
   });
   debugr.on('stdout', function(msg) {
     WebInspector.addConsoleMessage({
@@ -359,7 +379,6 @@ WebInspector.InspectorFrontendHostStub.prototype = {
     WebInspector.applicationSettings.installSetting("scriptsSidebarWidth", "scripts-sidebar-width", 250);
     WebInspector.applicationSettings.installSetting("consoleSidebarWidth", "console-sidebar-width", 250);
     WebInspector.showScriptsPanel();
-    WebInspector.panels.scripts._pauseOnExceptionButton.element.style.display = 'none';
     WebInspector.panels.scripts._enableDebugging();
   },
 

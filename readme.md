@@ -36,7 +36,7 @@ As an example lets debug test/hello.js, from the root project directory (node-in
 
 7. click "Step over next function call" and observe changes in the RHS panel
 
-8. then watch http://www.youtube.com/watch?v=AOnK3NVnxL8
+8. then watch the [screencast](http://www.youtube.com/watch?v=AOnK3NVnxL8)
 
 For more information on getting started see the [wiki](http://github.com/dannycoates/node-inspector/wiki/Getting-Started---from-scratch)
 
@@ -59,7 +59,6 @@ This is alpha quality code, so use at your own risk:
 
 * be careful about viewing the contents of Buffer objects, each byte is displayed as an individual array element, for anything but tiny Buffers this will take too long to render
 * while not stopped at a breakpoint the console doesn't always behave as you might expect
-* pause on exceptions doesn't play nice with the node event loop
 * closing the browser does not stop debugging, you must stop node-inspector manually
 
 ## TODOS
