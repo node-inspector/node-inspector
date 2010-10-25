@@ -64,6 +64,11 @@ WebInspector.InspectorFrontendHostStub.prototype = {
         this._windowVisible = false;
     },
 
+    disconnectFromBackend: function()
+    {
+        this._windowVisible = false;
+    },
+
     attach: function()
     {
     },
@@ -81,6 +86,10 @@ WebInspector.InspectorFrontendHostStub.prototype = {
     },
 
     moveWindowBy: function(x, y)
+    {
+    },
+
+    setExtensionAPI: function(script)
     {
     },
 
@@ -109,6 +118,10 @@ WebInspector.InspectorFrontendHostStub.prototype = {
     canAttachWindow: function()
     {
         return false;
+    },
+
+    sendMessageToBackend: function(message)
+    {
     }
 }
 

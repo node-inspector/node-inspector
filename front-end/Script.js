@@ -62,11 +62,14 @@ WebInspector.Script.prototype = {
     {
         if (!this.source)
             return 0;
+        if (this._linesCount)
+            return this._linesCount;
         this._linesCount = 0;
         var lastIndex = this.source.indexOf("\n");
         while (lastIndex !== -1) {
             lastIndex = this.source.indexOf("\n", lastIndex + 1)
             this._linesCount++;
         }
+        return this._linesCount;
     }
 }

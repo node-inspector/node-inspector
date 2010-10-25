@@ -29,7 +29,10 @@
 
 WebInspector.ResourcesPanel = function()
 {
-    WebInspector.AbstractTimelinePanel.call(this, "resources");
+    WebInspector.Panel.call(this, "resources");
+
+    this._items = [];
+    this._staleItems = [];
 
     this._createPanelEnabler();
 
@@ -47,6 +50,8 @@ WebInspector.ResourcesPanel = function()
     this.filter(this.filterAllElement, false);
     this.graphsTreeElement.children[0].select();
     this._resourceTrackingEnabled = false;
+
+    this.sidebarElement.addEventListener("contextmenu", this._contextMenu.bind(this), true);
 }
 
 WebInspector.ResourcesPanel.prototype = {
@@ -80,32 +85,325 @@ WebInspector.ResourcesPanel.prototype = {
         return (this.itemsGraphsElement.hasStyleClass("filter-all") || this.itemsGraphsElement.hasStyleClass("filter-" + categoryName.toLowerCase()));
     },
 
+    get items()
+    {
+        return this._items;
+    },
+
+    createInterface: function()
+    {
+        this.containerElement = document.createElement("div");
+        this.containerElement.id = "resources-container";
+        this.containerElement.addEventListener("scroll", this._updateDividersLabelBarPosition.bind(this), false);
+        this.element.appendChild(this.containerElement);
+
+        this.createSidebar(this.containerElement, this.element);
+        this.sidebarElement.id = "resources-sidebar";
+        this.populateSidebar();
+
+        this._containerContentElement = document.createElement("div");
+        this._containerContentElement.id = "resources-container-content";
+        this.containerElement.appendChild(this._containerContentElement);
+
+        this.summaryBar = new WebInspector.SummaryBar(this.categories);
+        this.summaryBar.element.id = "resources-summary";
+        this._containerContentElement.appendChild(this.summaryBar.element);
+
+        this._timelineGrid = new WebInspector.TimelineGrid();
+        this._containerContentElement.appendChild(this._timelineGrid.element);
+        this.itemsGraphsElement = this._timelineGrid.itemsGraphsElement;
+    },
+
+    createFilterPanel: function()
+    {
+        this.filterBarElement = document.createElement("div");
+        this.filterBarElement.id = "resources-filter";
+        this.filterBarElement.className = "scope-bar";
+        this.element.appendChild(this.filterBarElement);
+
+        function createFilterElement(category)
+        {
+            if (category === "all")
+                var label = WebInspector.UIString("All");
+            else if (this.categories[category])
+                var label = this.categories[category].title;
+
+            var categoryElement = document.createElement("li");
+            categoryElement.category = category;
+            categoryElement.addStyleClass(category);
+            categoryElement.appendChild(document.createTextNode(label));
+            categoryElement.addEventListener("click", this._updateFilter.bind(this), false);
+            this.filterBarElement.appendChild(categoryElement);
+
+            return categoryElement;
+        }
+
+        this.filterAllElement = createFilterElement.call(this, "all");
+
+        // Add a divider
+        var dividerElement = document.createElement("div");
+        dividerElement.addStyleClass("scope-bar-divider");
+        this.filterBarElement.appendChild(dividerElement);
+
+        for (var category in this.categories)
+            createFilterElement.call(this, category);
+    },
+
+    showCategory: function(category)
+    {
+        var filterClass = "filter-" + category.toLowerCase();
+        this.itemsGraphsElement.addStyleClass(filterClass);
+        this.itemsTreeElement.childrenListElement.addStyleClass(filterClass);
+    },
+
+    hideCategory: function(category)
+    {
+        var filterClass = "filter-" + category.toLowerCase();
+        this.itemsGraphsElement.removeStyleClass(filterClass);
+        this.itemsTreeElement.childrenListElement.removeStyleClass(filterClass);
+    },
+
+    filter: function(target, selectMultiple)
+    {
+        function unselectAll()
+        {
+            for (var i = 0; i < this.filterBarElement.childNodes.length; ++i) {
+                var child = this.filterBarElement.childNodes[i];
+                if (!child.category)
+                    continue;
+
+                child.removeStyleClass("selected");
+                this.hideCategory(child.category);
+            }
+        }
+
+        if (target === this.filterAllElement) {
+            if (target.hasStyleClass("selected")) {
+                // We can't unselect All, so we break early here
+                return;
+            }
+
+            // If All wasn't selected, and now is, unselect everything else.
+            unselectAll.call(this);
+        } else {
+            // Something other than All is being selected, so we want to unselect All.
+            if (this.filterAllElement.hasStyleClass("selected")) {
+                this.filterAllElement.removeStyleClass("selected");
+                this.hideCategory("all");
+            }
+        }
+
+        if (!selectMultiple) {
+            // If multiple selection is off, we want to unselect everything else
+            // and just select ourselves.
+            unselectAll.call(this);
+
+            target.addStyleClass("selected");
+            this.showCategory(target.category);
+            return;
+        }
+
+        if (target.hasStyleClass("selected")) {
+            // If selectMultiple is turned on, and we were selected, we just
+            // want to unselect ourselves.
+            target.removeStyleClass("selected");
+            this.hideCategory(target.category);
+        } else {
+            // If selectMultiple is turned on, and we weren't selected, we just
+            // want to select ourselves.
+            target.addStyleClass("selected");
+            this.showCategory(target.category);
+        }
+    },
+
+    _updateFilter: function(e)
+    {
+        var isMac = WebInspector.isMac();
+        var selectMultiple = false;
+        if (isMac && e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey)
+            selectMultiple = true;
+        if (!isMac && e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey)
+            selectMultiple = true;
+
+        this.filter(e.target, selectMultiple);
+
+        // When we are updating our filtering, scroll to the top so we don't end up
+        // in blank graph under all the resources.
+        this.containerElement.scrollTop = 0;
+
+        var searchField = document.getElementById("search");
+        WebInspector.doPerformSearch(searchField.value, WebInspector.shortSearchWasForcedByKeyEvent, false, true);
+    },
+
+    _updateDividersLabelBarPosition: function()
+    {
+        const scrollTop = this.containerElement.scrollTop;
+        const offsetHeight = this.summaryBar.element.offsetHeight;
+        const dividersTop = (scrollTop < offsetHeight ? offsetHeight : scrollTop);
+        this._timelineGrid.setScrollAndDividerTop(scrollTop, dividersTop);
+    },
+
+    get needsRefresh()
+    {
+        return this._needsRefresh;
+    },
+
+    set needsRefresh(x)
+    {
+        if (this._needsRefresh === x)
+            return;
+
+        this._needsRefresh = x;
+
+        if (x) {
+            if (this.visible && !("_refreshTimeout" in this))
+                this._refreshTimeout = setTimeout(this.refresh.bind(this), 500);
+        } else {
+            if ("_refreshTimeout" in this) {
+                clearTimeout(this._refreshTimeout);
+                delete this._refreshTimeout;
+            }
+        }
+    },
+
+    refreshIfNeeded: function()
+    {
+        if (this.needsRefresh)
+            this.refresh();
+    },
+
+    resize: function()
+    {
+        WebInspector.Panel.prototype.resize.call(this);
+
+        this.updateGraphDividersIfNeeded();
+    },
+
+    invalidateAllItems: function()
+    {
+        this._staleItems = this._items.slice();
+    },
+
+    get calculator()
+    {
+        return this._calculator;
+    },
+
+    set calculator(x)
+    {
+        if (!x || this._calculator === x)
+            return;
+
+        this._calculator = x;
+        this._calculator.reset();
+
+        this._staleItems = this._items.slice();
+        this.refresh();
+    },
+
+    addItem: function(item)
+    {
+        this._items.push(item);
+        this.refreshItem(item);
+    },
+
+    removeItem: function(item)
+    {
+        this._items.remove(item, true);
+
+        if (item._itemsTreeElement) {
+            this.itemsTreeElement.removeChild(item._itemsTreeElement);
+            this.itemsGraphsElement.removeChild(item._itemsTreeElement._itemGraph.graphElement);
+        }
+
+        delete item._itemsTreeElement;
+        this.adjustScrollPosition();
+    },
+
+    refreshItem: function(item)
+    {
+        this._staleItems.push(item);
+        this.needsRefresh = true;
+    },
+
+    revealAndSelectItem: function(item)
+    {
+        if (item._itemsTreeElement) {
+            item._itemsTreeElement.reveal();
+            item._itemsTreeElement.select(true);
+        }
+    },
+
+    sortItems: function(sortingFunction)
+    {
+        var sortedElements = [].concat(this.itemsTreeElement.children);
+        sortedElements.sort(sortingFunction);
+
+        var sortedElementsLength = sortedElements.length;
+        for (var i = 0; i < sortedElementsLength; ++i) {
+            var treeElement = sortedElements[i];
+            if (treeElement === this.itemsTreeElement.children[i])
+                continue;
+
+            var wasSelected = treeElement.selected;
+            this.itemsTreeElement.removeChild(treeElement);
+            this.itemsTreeElement.insertChild(treeElement, i);
+            if (wasSelected)
+                treeElement.select(true);
+
+            var graphElement = treeElement._itemGraph.graphElement;
+            this.itemsGraphsElement.insertBefore(graphElement, this.itemsGraphsElement.children[i]);
+        }
+    },
+
+    adjustScrollPosition: function()
+    {
+        // Prevent the container from being scrolled off the end.
+        if ((this.containerElement.scrollTop + this.containerElement.offsetHeight) > this.sidebarElement.offsetHeight)
+            this.containerElement.scrollTop = (this.sidebarElement.offsetHeight - this.containerElement.offsetHeight);
+    },
+
+    addEventDivider: function(divider)
+    {
+        this._timelineGrid.addEventDivider(divider);
+    },
+
+    hideEventDividers: function()
+    {
+        this._timelineGrid.hideEventDividers();
+    },
+
+    showEventDividers: function()
+    {
+        this._timelineGrid.showEventDividers();
+    },
+
     populateSidebar: function()
     {
-        var timeGraphItem = new WebInspector.SidebarTreeElement("resources-time-graph-sidebar-item", WebInspector.UIString("Time"));
-        timeGraphItem.onselect = this._graphSelected.bind(this);
+        this.timeGraphItem = new WebInspector.SidebarTreeElement("resources-time-graph-sidebar-item", WebInspector.UIString("Time"));
+        this.timeGraphItem.onselect = this._graphSelected.bind(this);
 
         var transferTimeCalculator = new WebInspector.ResourceTransferTimeCalculator();
         var transferDurationCalculator = new WebInspector.ResourceTransferDurationCalculator();
 
-        timeGraphItem.sortingOptions = [
-            { name: WebInspector.UIString("Sort by Start Time"), sortingFunction: WebInspector.ResourceSidebarTreeElement.CompareByAscendingStartTime, calculator: transferTimeCalculator },
-            { name: WebInspector.UIString("Sort by Response Time"), sortingFunction: WebInspector.ResourceSidebarTreeElement.CompareByAscendingResponseReceivedTime, calculator: transferTimeCalculator },
-            { name: WebInspector.UIString("Sort by End Time"), sortingFunction: WebInspector.ResourceSidebarTreeElement.CompareByAscendingEndTime, calculator: transferTimeCalculator },
-            { name: WebInspector.UIString("Sort by Duration"), sortingFunction: WebInspector.ResourceSidebarTreeElement.CompareByDescendingDuration, calculator: transferDurationCalculator },
-            { name: WebInspector.UIString("Sort by Latency"), sortingFunction: WebInspector.ResourceSidebarTreeElement.CompareByDescendingLatency, calculator: transferDurationCalculator },
+        this.timeGraphItem.sortingOptions = [
+            { name: WebInspector.UIString("Sort by Start Time"), sortingFunction: WebInspector.ResourceSidebarTreeElement.CompareByAscendingStartTime, calculator: transferTimeCalculator, optionName: "startTime" },
+            { name: WebInspector.UIString("Sort by Response Time"), sortingFunction: WebInspector.ResourceSidebarTreeElement.CompareByAscendingResponseReceivedTime, calculator: transferTimeCalculator, optionName: "responseTime" },
+            { name: WebInspector.UIString("Sort by End Time"), sortingFunction: WebInspector.ResourceSidebarTreeElement.CompareByAscendingEndTime, calculator: transferTimeCalculator, optionName: "endTime" },
+            { name: WebInspector.UIString("Sort by Duration"), sortingFunction: WebInspector.ResourceSidebarTreeElement.CompareByDescendingDuration, calculator: transferDurationCalculator, optionName: "duration" },
+            { name: WebInspector.UIString("Sort by Latency"), sortingFunction: WebInspector.ResourceSidebarTreeElement.CompareByDescendingLatency, calculator: transferDurationCalculator, optionName: "latency" },
         ];
 
-        timeGraphItem.isBarOpaqueAtLeft = false;
-        timeGraphItem.selectedSortingOptionIndex = 1;
+        this.timeGraphItem.isBarOpaqueAtLeft = false;
+        this.timeGraphItem.selectedSortingOptionIndex = 1;
 
         this.sizeGraphItem = new WebInspector.SidebarTreeElement("resources-size-graph-sidebar-item", WebInspector.UIString("Size"));
         this.sizeGraphItem.onselect = this._graphSelected.bind(this);
 
         var transferSizeCalculator = new WebInspector.ResourceTransferSizeCalculator();
         this.sizeGraphItem.sortingOptions = [
-            { name: WebInspector.UIString("Sort by Transfer Size"), sortingFunction: WebInspector.ResourceSidebarTreeElement.CompareByDescendingTransferSize, calculator: transferSizeCalculator },
-            { name: WebInspector.UIString("Sort by Size"), sortingFunction: WebInspector.ResourceSidebarTreeElement.CompareByDescendingSize, calculator: transferSizeCalculator },
+            { name: WebInspector.UIString("Sort by Transfer Size"), sortingFunction: WebInspector.ResourceSidebarTreeElement.CompareByDescendingTransferSize, calculator: transferSizeCalculator, optionName: "transferSize" },
+            { name: WebInspector.UIString("Sort by Size"), sortingFunction: WebInspector.ResourceSidebarTreeElement.CompareByDescendingSize, calculator: transferSizeCalculator, optionName: "size" },
         ];
 
         this.sizeGraphItem.isBarOpaqueAtLeft = true;
@@ -114,7 +412,7 @@ WebInspector.ResourcesPanel.prototype = {
         this.graphsTreeElement = new WebInspector.SidebarSectionTreeElement(WebInspector.UIString("GRAPHS"), {}, true);
         this.sidebarTree.appendChild(this.graphsTreeElement);
 
-        this.graphsTreeElement.appendChild(timeGraphItem);
+        this.graphsTreeElement.appendChild(this.timeGraphItem);
         this.graphsTreeElement.appendChild(this.sizeGraphItem);
         this.graphsTreeElement.expand();
 
@@ -160,6 +458,32 @@ WebInspector.ResourcesPanel.prototype = {
         this.largerResourcesButton.toggled = WebInspector.applicationSettings.resourcesLargeRows;
         if (!WebInspector.applicationSettings.resourcesLargeRows)
             this._setLargerResources(WebInspector.applicationSettings.resourcesLargeRows);
+        this._loadSortOptions();
+    },
+
+    _loadSortOptions: function()
+    {
+        var newOptions = WebInspector.applicationSettings.resourcesSortOptions;
+        if (!newOptions)
+            return;
+
+        this._loadSortOptionForGraph(this.timeGraphItem, newOptions.timeOption || "responseTime");
+        this._loadSortOptionForGraph(this.sizeGraphItem, newOptions.sizeOption || "transferSize");
+    },
+
+    _loadSortOptionForGraph: function(graphItem, newOptionName)
+    {
+        var sortingOptions = graphItem.sortingOptions;
+        for (var i = 0; i < sortingOptions.length; ++i) {
+            if (sortingOptions[i].optionName === newOptionName) {
+                graphItem.selectedSortingOptionIndex = i;
+                // Propagate the option change down to the currently selected option.
+                if (this._lastSelectedGraphTreeElement === graphItem) {
+                    this._lastSelectedGraphTreeElement = null;
+                    this._graphSelected(graphItem);
+                }
+            }
+        }
     },
 
     get mainResourceLoadTime()
@@ -195,7 +519,10 @@ WebInspector.ResourcesPanel.prototype = {
 
     show: function()
     {
-        WebInspector.AbstractTimelinePanel.prototype.show.call(this);
+        WebInspector.Panel.prototype.show.call(this);
+
+        this._updateDividersLabelBarPosition();
+        this.refreshIfNeeded();
 
         var visibleView = this.visibleView;
         if (this.visibleResource) {
@@ -228,7 +555,7 @@ WebInspector.ResourcesPanel.prototype = {
         var resourcesLength = this._resources.length;
         for (var i = 0; i < resourcesLength; ++i) {
             var resource = this._resources[i];
-            if (!resource._itemsTreeElement)
+            if (!resource._itemsTreeElement || !resource._itemsTreeElement.selectable)
                 continue;
             var resourceView = this.resourceViewForResource(resource);
             if (!resourceView.performSearch || resourceView === visibleView)
@@ -301,7 +628,44 @@ WebInspector.ResourcesPanel.prototype = {
 
     refresh: function()
     {
-        WebInspector.AbstractTimelinePanel.prototype.refresh.call(this);
+        this.needsRefresh = false;
+
+        var staleItemsLength = this._staleItems.length;
+
+        var boundariesChanged = false;
+
+        for (var i = 0; i < staleItemsLength; ++i) {
+            var item = this._staleItems[i];
+            if (!item._itemsTreeElement) {
+                // Create the timeline tree element and graph.
+                item._itemsTreeElement = this.createItemTreeElement(item);
+                item._itemsTreeElement._itemGraph = this.createItemGraph(item);
+
+                this.itemsTreeElement.appendChild(item._itemsTreeElement);
+                this.itemsGraphsElement.appendChild(item._itemsTreeElement._itemGraph.graphElement);
+            }
+
+            if (item._itemsTreeElement.refresh)
+                item._itemsTreeElement.refresh();
+
+            if (this.calculator.updateBoundaries(item))
+                boundariesChanged = true;
+        }
+
+        if (boundariesChanged) {
+            // The boundaries changed, so all item graphs are stale.
+            this._staleItems = this._items.slice();
+            staleItemsLength = this._staleItems.length;
+        }
+
+
+        const isBarOpaqueAtLeft = this.sidebarTree.selectedTreeElement && this.sidebarTree.selectedTreeElement.isBarOpaqueAtLeft;
+        for (var i = 0; i < staleItemsLength; ++i)
+            this._staleItems[i]._itemsTreeElement._itemGraph.refresh(this.calculator, isBarOpaqueAtLeft);
+
+        this._staleItems = [];
+
+        this.updateGraphDividersIfNeeded();
 
         this._sortResourcesIfNeeded();
         this._updateSummaryGraph();
@@ -345,7 +709,28 @@ WebInspector.ResourcesPanel.prototype = {
             }
         }
 
-        WebInspector.AbstractTimelinePanel.prototype.reset.call(this);
+        // Begin reset timeline
+        this.containerElement.scrollTop = 0;
+
+        if (this._calculator)
+            this._calculator.reset();
+
+        if (this._items) {
+            var itemsLength = this._items.length;
+            for (var i = 0; i < itemsLength; ++i) {
+                var item = this._items[i];
+                delete item._itemsTreeElement;
+            }
+        }
+
+        this._items = [];
+        this._staleItems = [];
+
+        this.itemsTreeElement.removeChildren();
+        this.itemsGraphsElement.removeChildren();
+
+        this.updateGraphDividersIfNeeded(true);
+        // End reset timeline.
         
         this.mainResourceLoadTime = -1;
         this.mainResourceDOMContentTime = -1;
@@ -557,7 +942,12 @@ WebInspector.ResourcesPanel.prototype = {
 
     updateGraphDividersIfNeeded: function(force)
     {
-        var proceed = WebInspector.AbstractTimelinePanel.prototype.updateGraphDividersIfNeeded.call(this, force);
+        var proceed = true;
+        if (!this.visible) {
+            this.needsRefresh = true;
+            proceed = false;
+        } else
+            proceed = this._timelineGrid.updateDividers(force, this.calculator);
         
         if (!proceed)
             return;
@@ -618,11 +1008,12 @@ WebInspector.ResourcesPanel.prototype = {
             option.label = sortingOption.name;
             option.sortingFunction = sortingOption.sortingFunction;
             option.calculator = sortingOption.calculator;
+            option.optionName = sortingOption.optionName;
             this.sortingSelectElement.appendChild(option);
         }
 
         this.sortingSelectElement.selectedIndex = treeElement.selectedSortingOptionIndex;
-        this._changeSortingFunction();
+        this._doChangeSortingFunction();
 
         this.closeVisibleResource();
         this.containerElement.scrollTop = 0;
@@ -658,7 +1049,21 @@ WebInspector.ResourcesPanel.prototype = {
 
     _changeSortingFunction: function()
     {
-        var selectedOption = this.sortingSelectElement[this.sortingSelectElement.selectedIndex];
+        this._doChangeSortingFunction();
+        WebInspector.applicationSettings.resourcesSortOptions = {timeOption: this._selectedOptionNameForGraph(this.timeGraphItem), sizeOption: this._selectedOptionNameForGraph(this.sizeGraphItem)};
+    },
+
+    _selectedOptionNameForGraph: function(graphItem)
+    {
+        return graphItem.sortingOptions[graphItem.selectedSortingOptionIndex].optionName;
+    },
+
+    _doChangeSortingFunction: function()
+    {
+        var selectedIndex = this.sortingSelectElement.selectedIndex;
+        if (this._lastSelectedGraphTreeElement)
+            this._lastSelectedGraphTreeElement.selectedSortingOptionIndex = selectedIndex;
+        var selectedOption = this.sortingSelectElement[selectedIndex];
         this.sortingFunction = selectedOption.sortingFunction;
         this.calculator = this.summaryBar.calculator = selectedOption.calculator;
     },
@@ -696,8 +1101,7 @@ WebInspector.ResourcesPanel.prototype = {
     updateMainViewWidth: function(width)
     {
         this.viewsContainerElement.style.left = width + "px";
-
-        WebInspector.AbstractTimelinePanel.prototype.updateMainViewWidth.call(this, width);
+        this._containerContentElement.style.left = width + "px";
         this.resize();
     },
 
@@ -710,27 +1114,29 @@ WebInspector.ResourcesPanel.prototype = {
 
     _toggleResourceTracking: function(optionalAlways)
     {
+        function callback(newState) {
+            if (newState)
+                WebInspector.panels.resources.resourceTrackingWasEnabled();
+            else
+                WebInspector.panels.resources.resourceTrackingWasDisabled();
+        }
+
         if (this._resourceTrackingEnabled) {
             this.largerResourcesButton.visible = false;
             this.sortingSelectElement.visible = false;
             WebInspector.resources = {};
             WebInspector.resourceURLMap = {};
-            InspectorBackend.disableResourceTracking(true);
+            InspectorBackend.setResourceTrackingEnabled(false, true, callback);
         } else {
             this.largerResourcesButton.visible = true;
             this.sortingSelectElement.visible = true;
-            InspectorBackend.enableResourceTracking(!!optionalAlways);
+            InspectorBackend.setResourceTrackingEnabled(true, !!optionalAlways, callback);
         }
     },
 
     get _resources()
     {
         return this.items;
-    },
-
-    searchIteratesOverViews: function()
-    {
-        return true;
     },
 
     elementsToRestoreScrollPositionsFor: function()
@@ -751,61 +1157,83 @@ WebInspector.ResourcesPanel.prototype = {
     {
         var tableElement = document.createElement("table");
         var resource = anchor.parentElement.resource;
-        var data = [];
+        var rows = [];
 
-        if (resource.timing.proxyDuration !== -1) {
-            data.push(WebInspector.UIString("Proxy"));
-            data.push(Number.secondsToString(resource.timing.proxyDuration));
+        function addRow(title, start, end, color)
+        {
+            var row = {};
+            row.title = title;
+            row.start = start;
+            row.end = end;
+            rows.push(row);
         }
 
-        if (resource.timing.dnsDuration !== -1) {
-            data.push(WebInspector.UIString("DNS Lookup"));
-            data.push(Number.secondsToString(resource.timing.dnsDuration));
+        if (resource.timing.proxyStart !== -1)
+            addRow(WebInspector.UIString("Proxy"), resource.timing.proxyStart, resource.timing.proxyEnd);
+
+        if (resource.timing.dnsStart !== -1) {
+            addRow(WebInspector.UIString("DNS Lookup"), resource.timing.dnsStart, resource.timing.dnsEnd);
         }
 
-        if (resource.timing.connectDuration !== -1) {
-            if (resource.connectionReused) {
-                data.push(WebInspector.UIString("Blocking"));
-                data.push(Number.secondsToString(resource.timing.connectDuration));
-            } else {
-                data.push(WebInspector.UIString("Connecting"));
+        if (resource.timing.connectStart !== -1) {
+            if (resource.connectionReused)
+                addRow(WebInspector.UIString("Blocking"), resource.timing.connectStart, resource.timing.connectEnd);
+            else {
+                var connectStart = resource.timing.connectStart;
                 // Connection includes DNS, subtract it here.
-                var connectDuration = resource.timing.connectDuration;
-                if (resource.timing.dnsDuration !== -1)
-                    connectDuration -= resource.timing.dnsDuration;
-                data.push(Number.secondsToString(connectDuration));
+                if (resource.timing.dnsStart !== -1)
+                    connectStart += resource.timing.dnsEnd - resource.timing.dnsStart;
+                addRow(WebInspector.UIString("Connecting"), connectStart, resource.timing.connectEnd);
             }
         }
 
-        if (resource.timing.sslDuration !== -1) {
-            data.push(WebInspector.UIString("SSL"));
-            data.push(Number.secondsToString(resource.timing.sslDuration));
-        }
+        if (resource.timing.sslStart !== -1)
+            addRow(WebInspector.UIString("SSL"), resource.timing.sslStart, resource.timing.sslEnd);
 
-        data.push(WebInspector.UIString("Sending"));
-        data.push(Number.secondsToString(resource.timing.sendDuration));
+        var sendStart = resource.timing.sendStart;
+        if (resource.timing.sslStart !== -1)
+            sendStart += resource.timing.sslEnd - resource.timing.sslStart;
+        
+        addRow(WebInspector.UIString("Sending"), resource.timing.sendStart, resource.timing.sendEnd);
+        addRow(WebInspector.UIString("Waiting"), resource.timing.sendEnd, resource.timing.receiveHeadersEnd);
+        addRow(WebInspector.UIString("Receiving"), (resource.responseReceivedTime - resource.timing.requestTime) * 1000, (resource.endTime - resource.timing.requestTime) * 1000);
 
-        data.push(WebInspector.UIString("Waiting"));
-        // Waiting includes SSL, subtract it here.
-        var waitDuration = resource.timing.waitDuration;
-        if (resource.timing.sslDuration !== -1)
-            waitDuration -= resource.timing.sslDuration;
-        data.push(Number.secondsToString(waitDuration));
+        const chartWidth = 200;
+        var total = (resource.endTime - resource.timing.requestTime) * 1000;
+        var scale = chartWidth / total;
 
-        data.push(WebInspector.UIString("Receiving"));
-        data.push(Number.secondsToString(resource.endTime - resource.responseReceivedTime));
-
-        for (var i = 0; i < data.length; i += 2) {
+        for (var i = 0; i < rows.length; ++i) {
             var tr = document.createElement("tr");
             tableElement.appendChild(tr);
 
             var td = document.createElement("td");
-            td.textContent = data[i];
+            td.textContent = rows[i].title;
             tr.appendChild(td);
 
             td = document.createElement("td");
-            td.align = "right";
-            td.textContent = data[i + 1];
+            td.width = chartWidth + "px";
+
+            var row = document.createElement("div");
+            row.className = "resource-timing-row";
+            td.appendChild(row);
+
+            var bar = document.createElement("span");
+            bar.className = "resource-timing-bar";
+            bar.style.left = scale * rows[i].start + "px";
+            bar.style.right = scale * (total - rows[i].end) + "px";
+            bar.style.backgroundColor = rows[i].color;
+            bar.textContent = "\u200B"; // Important for 0-time items to have 0 width.
+            row.appendChild(bar);
+
+            var title = document.createElement("span");
+            title.className = "resource-timing-bar-title";
+            if (total - rows[i].end < rows[i].start)
+                title.style.right = (scale * (total - rows[i].end) + 3) + "px";
+            else
+                title.style.left = (scale * rows[i].start + 3) + "px";
+            title.textContent = Number.millisToString(rows[i].end - rows[i].start);
+            row.appendChild(title);
+
             tr.appendChild(td);
         }
 
@@ -818,21 +1246,129 @@ WebInspector.ResourcesPanel.prototype = {
     {
         WebInspector.Panel.prototype.hide.call(this);
         this._popoverHelper.hidePopup();
+    },
+
+    _contextMenu: function(event)
+    {
+        var contextMenu = new WebInspector.ContextMenu();
+        var resourceTreeItem = event.target.enclosingNodeOrSelfWithClass("resource-sidebar-tree-item");
+        var resource;
+        if (resourceTreeItem && resourceTreeItem.treeElement)
+            resource = resourceTreeItem.treeElement.representedObject;
+
+        var needSeparator = false;
+        // createBlobURL is enabled conditionally, do not expose resource export if it's not available.
+        if (typeof window.createBlobURL === "function" && Preferences.resourceExportEnabled) {
+            if (resource)
+                contextMenu.appendItem(WebInspector.UIString("Export to HAR"), this._exportResource.bind(this, resource));
+            contextMenu.appendItem(WebInspector.UIString("Export all to HAR"), this._exportAll.bind(this));
+            needSeparator = true;
+        }
+
+        if (resource && resource.category === WebInspector.resourceCategories.xhr) {
+            if (needSeparator)
+                contextMenu.appendSeparator();
+            contextMenu.appendItem(WebInspector.UIString("Set XHR Breakpoint"), WebInspector.breakpointManager.createXHRBreakpoint.bind(WebInspector.breakpointManager, resource.url));
+        }
+
+        contextMenu.show(event);
+    },
+
+    _exportAll: function()
+    {
+        var harArchive = {
+            log: (new WebInspector.HARLog()).build()
+        }
+        offerFileForDownload(JSON.stringify(harArchive));
+    },
+
+    _exportResource: function(resource)
+    {
+        var har = (new WebInspector.HAREntry(resource)).build();
+        offerFileForDownload(JSON.stringify(har));
     }
 }
 
-WebInspector.ResourcesPanel.prototype.__proto__ = WebInspector.AbstractTimelinePanel.prototype;
+WebInspector.ResourcesPanel.prototype.__proto__ = WebInspector.Panel.prototype;
 
 WebInspector.getResourceContent = function(identifier, callback)
 {
-    InspectorBackend.getResourceContent(WebInspector.Callback.wrap(callback), identifier);
+    InspectorBackend.getResourceContent(identifier, false, callback);
 }
 
-WebInspector.didGetResourceContent = WebInspector.Callback.processCallback;
+WebInspector.ResourceBaseCalculator = function()
+{
+}
+
+WebInspector.ResourceBaseCalculator.prototype = {
+    computeSummaryValues: function(items)
+    {
+        var total = 0;
+        var categoryValues = {};
+
+        var itemsLength = items.length;
+        for (var i = 0; i < itemsLength; ++i) {
+            var item = items[i];
+            var value = this._value(item);
+            if (typeof value === "undefined")
+                continue;
+            if (!(item.category.name in categoryValues))
+                categoryValues[item.category.name] = 0;
+            categoryValues[item.category.name] += value;
+            total += value;
+        }
+
+        return {categoryValues: categoryValues, total: total};
+    },
+
+    computeBarGraphPercentages: function(item)
+    {
+        return {start: 0, middle: 0, end: (this._value(item) / this.boundarySpan) * 100};
+    },
+
+    computeBarGraphLabels: function(item)
+    {
+        const label = this.formatValue(this._value(item));
+        return {left: label, right: label, tooltip: label};
+    },
+
+    get boundarySpan()
+    {
+        return this.maximumBoundary - this.minimumBoundary;
+    },
+
+    updateBoundaries: function(item)
+    {
+        this.minimumBoundary = 0;
+
+        var value = this._value(item);
+        if (typeof this.maximumBoundary === "undefined" || value > this.maximumBoundary) {
+            this.maximumBoundary = value;
+            return true;
+        }
+        return false;
+    },
+
+    reset: function()
+    {
+        delete this.minimumBoundary;
+        delete this.maximumBoundary;
+    },
+
+    _value: function(item)
+    {
+        return 0;
+    },
+
+    formatValue: function(value)
+    {
+        return value.toString();
+    }
+}
 
 WebInspector.ResourceTimeCalculator = function(startAtZero)
 {
-    WebInspector.AbstractTimelineCalculator.call(this);
+    WebInspector.ResourceBaseCalculator.call(this);
     this.startAtZero = startAtZero;
 }
 
@@ -997,7 +1533,7 @@ WebInspector.ResourceTimeCalculator.prototype = {
     }
 }
 
-WebInspector.ResourceTimeCalculator.prototype.__proto__ = WebInspector.AbstractTimelineCalculator.prototype;
+WebInspector.ResourceTimeCalculator.prototype.__proto__ = WebInspector.ResourceBaseCalculator.prototype;
 
 WebInspector.ResourceTransferTimeCalculator = function()
 {
@@ -1044,7 +1580,7 @@ WebInspector.ResourceTransferDurationCalculator.prototype.__proto__ = WebInspect
 
 WebInspector.ResourceTransferSizeCalculator = function()
 {
-    WebInspector.AbstractTimelineCalculator.call(this);
+    WebInspector.ResourceBaseCalculator.call(this);
 }
 
 WebInspector.ResourceTransferSizeCalculator.prototype = {
@@ -1091,7 +1627,7 @@ WebInspector.ResourceTransferSizeCalculator.prototype = {
     }
 }
 
-WebInspector.ResourceTransferSizeCalculator.prototype.__proto__ = WebInspector.AbstractTimelineCalculator.prototype;
+WebInspector.ResourceTransferSizeCalculator.prototype.__proto__ = WebInspector.ResourceBaseCalculator.prototype;
 
 WebInspector.ResourceSidebarTreeElement = function(resource)
 {
@@ -1125,7 +1661,7 @@ WebInspector.ResourceSidebarTreeElement.prototype = {
     
     ondblclick: function(event)
     {
-        InjectedScriptAccess.getDefault().openInInspectedWindow(this.resource.url, function() {});
+        InspectorBackend.openInInspectedWindow(this.resource.url);
     },
 
     ondragstart: function(event) {

@@ -32,8 +32,6 @@ WebInspector.AuditsPanel = function()
 {
     WebInspector.Panel.call(this, "audits");
 
-    this._constructCategories();
-
     this.createSidebar();
     this.auditsTreeElement = new WebInspector.SidebarSectionTreeElement("", {}, true);
     this.sidebarTree.appendChild(this.auditsTreeElement);
@@ -54,7 +52,11 @@ WebInspector.AuditsPanel = function()
     this.viewsContainerElement.id = "audit-views";
     this.element.appendChild(this.viewsContainerElement);
 
-    this._launcherView = new WebInspector.AuditLauncherView(this.categoriesById, this.initiateAudit.bind(this));
+    this._constructCategories();
+
+    this._launcherView = new WebInspector.AuditLauncherView(this.initiateAudit.bind(this));
+    for (id in this.categoriesById)
+        this._launcherView.addCategory(this.categoriesById[id]);
 }
 
 WebInspector.AuditsPanel.prototype = {
@@ -104,6 +106,17 @@ WebInspector.AuditsPanel.prototype = {
         this._launcherView.resourceFinished(resource);
     },
 
+    addCategory: function(category)
+    {
+        this.categoriesById[category.id] = category;
+        this._launcherView.addCategory(category);
+    },
+
+    getCategory: function(id)
+    {
+        return this.categoriesById[id];
+    },
+
     _constructCategories: function()
     {
         this._auditCategoriesById = {};
@@ -147,7 +160,7 @@ WebInspector.AuditsPanel.prototype = {
             var category = categories[i];
             var result = new WebInspector.AuditCategoryResult(category);
             results.push(result);
-            category.runRules(resources, ruleResultReadyCallback.bind(null, result));
+            category.run(resources, ruleResultReadyCallback.bind(null, result));
         }
     },
 
@@ -220,7 +233,7 @@ WebInspector.AuditsPanel.prototype = {
     {
         this.visibleView = this._launcherView;
     },
-    
+
     get visibleView()
     {
         return this._visibleView;
@@ -311,7 +324,7 @@ WebInspector.AuditCategory.prototype = {
         this._rules.push(rule);
     },
 
-    runRules: function(resources, callback)
+    run: function(resources, callback)
     {
         this._ensureInitialized();
         for (var i = 0; i < this._rules.length; ++i)

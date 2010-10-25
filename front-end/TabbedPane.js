@@ -33,7 +33,7 @@ WebInspector.TabbedPane = function(element)
     this.element = element || document.createElement("div");
 
     this.tabsElement = document.createElement("div");
-    this.tabsElement.className = "scope-bar";
+    this.tabsElement.className = "tabbed-pane-header";
     this.element.appendChild(this.tabsElement);
 
     this._tabObjects = {};

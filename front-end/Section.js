@@ -82,15 +82,12 @@ WebInspector.Section.prototype = {
         if (this._subtitle === x)
             return;
         this._subtitle = x;
-        this.subtitleElement.setAttribute("data-uncopyable", x);
+        this.subtitleElement.textContent = x;
     },
 
-    get subtitleAsText()
+    get subtitleAsTextForTest()
     {
-        var result = "";
-        var data = this.subtitleElement.getAttribute("data-uncopyable");
-        if (data)
-            result += data;
+        var result = this.subtitleElement.textContent;
         var child = this.subtitleElement.querySelector("[data-uncopyable]");
         if (child) {
             var linkData = child.getAttribute("data-uncopyable");

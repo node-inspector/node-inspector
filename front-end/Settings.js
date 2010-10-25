@@ -42,67 +42,85 @@ var Preferences = {
     showColorNicknames: true,
     debuggerAlwaysEnabled: false,
     profilerAlwaysEnabled: false,
-    auditsPanelEnabled: true,
-    appCacheEnabled: true
-}
-
-WebInspector.populateApplicationSettings = function(settingsString)
-{
-    WebInspector.applicationSettings._load(settingsString);
-    WebInspector.applicationSettings.installSetting("eventListenersFilter", "event-listeners-filter", "all");
-    WebInspector.applicationSettings.installSetting("colorFormat", "color-format", "hex");
-    WebInspector.applicationSettings.installSetting("resourcesLargeRows", "resources-large-rows", true);
-    WebInspector.applicationSettings.installSetting("watchExpressions", "watch-expressions", []);
-    WebInspector.applicationSettings.installSetting("lastViewedScriptFile", "last-viewed-script-file");
-    WebInspector.applicationSettings.installSetting("showInheritedComputedStyleProperties", "show-inherited-computed-style-properties", false);
-    WebInspector.applicationSettings.installSetting("showUserAgentStyles", "show-user-agent-styles", true);
-    WebInspector.applicationSettings.installSetting("resourceViewTab", "resource-view-tab", "content");
-    WebInspector.applicationSettings.installSetting("consoleHistory", "console-history", []);
-
-    WebInspector.applicationSettings.dispatchEventToListeners("loaded");
-}
-
-WebInspector.populateSessionSettings = function(settingsString)
-{
-    WebInspector.sessionSettings._load(settingsString);
-    WebInspector.sessionSettings.dispatchEventToListeners("loaded");
+    onlineDetectionEnabled: true,
+    nativeInstrumentationEnabled: false,
+    resourceExportEnabled: false,
+    networkPanelEnabled: false
 }
 
 WebInspector.Settings = function(sessionScope)
 {
     this._sessionScope = sessionScope;
-    this._defaultValues = {};
+    this._store = {};
+}
+
+WebInspector.Settings.initialize = function()
+{
+    WebInspector.applicationSettings = new WebInspector.Settings(false);
+    WebInspector.sessionSettings = new WebInspector.Settings(true);
+
+    function populateApplicationSettings(settingsString)
+    {
+        WebInspector.applicationSettings._load(settingsString);
+        WebInspector.applicationSettings.installSetting("eventListenersFilter", "event-listeners-filter", "all");
+        WebInspector.applicationSettings.installSetting("colorFormat", "color-format", "hex");
+        WebInspector.applicationSettings.installSetting("resourcesLargeRows", "resources-large-rows", true);
+        WebInspector.applicationSettings.installSetting("watchExpressions", "watch-expressions", []);
+        WebInspector.applicationSettings.installSetting("lastViewedScriptFile", "last-viewed-script-file");
+        WebInspector.applicationSettings.installSetting("showInheritedComputedStyleProperties", "show-inherited-computed-style-properties", false);
+        WebInspector.applicationSettings.installSetting("showUserAgentStyles", "show-user-agent-styles", true);
+        WebInspector.applicationSettings.installSetting("resourceViewTab", "resource-view-tab", "content");
+        WebInspector.applicationSettings.installSetting("consoleHistory", "console-history", []);
+        WebInspector.applicationSettings.installSetting("resourcesSortOptions", "resources-sort-options", {timeOption: "responseTime", sizeOption: "transferSize"});
+
+        WebInspector.applicationSettings.dispatchEventToListeners("loaded");
+    }
+
+    function populateSessionSettings(settingsString)
+    {
+        WebInspector.sessionSettings._load(settingsString);
+        WebInspector.sessionSettings.dispatchEventToListeners("loaded");
+    }
+
+    InspectorBackend.getSettings(function(settings) {
+        populateApplicationSettings(settings.application);
+        populateSessionSettings(settings.session);
+    });
 }
 
 WebInspector.Settings.prototype = {
     reset: function()
     {
         this._store = {};
+        // FIXME: restore default values (bug 42820)
         this.dispatchEventToListeners("loaded");
     },
 
     _load: function(settingsString)
     {
         try {
-            this._store = JSON.parse(settingsString);
+            var loadedStore = JSON.parse(settingsString);
         } catch (e) {
             // May fail;
-            this._store = {};
+            loadedStore = {};
         }
+        if (!loadedStore)
+            return;
+        for (var propertyName in loadedStore)
+            this._store[propertyName] = loadedStore[propertyName];
     },
 
     installSetting: function(name, propertyName, defaultValue)
     {
         this.__defineGetter__(name, this._get.bind(this, propertyName));
         this.__defineSetter__(name, this._set.bind(this, propertyName));
-        this._defaultValues[propertyName] = defaultValue;
+        if (!(propertyName in this._store))
+            this._store[propertyName] = defaultValue;
     },
 
     _get: function(propertyName)
     {
-        if (propertyName in this._store)
-            return this._store[propertyName];
-        return this._defaultValues[propertyName];
+        return this._store[propertyName];
     },
 
     _set: function(propertyName, newValue)

@@ -96,19 +96,10 @@ WebInspector.ProfileDataGridNode.prototype = {
             cell.addStyleClass("highlight");
 
         if (this.profileNode.url) {
-            var fileName = WebInspector.displayNameForURL(this.profileNode.url);
-
-            var urlElement = document.createElement("a");
-            urlElement.className = "profile-node-file webkit-html-resource-link";
-            urlElement.href = this.profileNode.url;
-            urlElement.lineNumber = this.profileNode.lineNumber;
-            urlElement.preferredPanel = "scripts";
-
+            var lineNumber;
             if (this.profileNode.lineNumber > 0)
-                urlElement.textContent = fileName + ":" + this.profileNode.lineNumber;
-            else
-                urlElement.textContent = fileName;
-
+                lineNumber = this.profileNode.lineNumber;
+            var urlElement = WebInspector.linkifyResourceAsNode(this.profileNode.url, "scripts", lineNumber, "profile-node-file");
             cell.insertBefore(urlElement, cell.firstChild);
         }
 

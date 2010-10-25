@@ -371,7 +371,7 @@ WebInspector.AuditRules.UnusedCssRule.prototype = {
             return routineResult;
         }
 
-        InspectorBackend.getAllStyles(WebInspector.Callback.wrap(evalCallback));
+        InspectorBackend.getAllStyles(evalCallback);
     }
 }
 
@@ -693,7 +693,7 @@ WebInspector.AuditRules.ImageDimensionsRule.prototype = {
                 return callback(null);
             var context = {imagesLeft: imageIds.length, urlToNoDimensionCount: {}};
             for (var i = imageIds.length - 1; i >= 0; --i)
-                InspectorBackend.getStyles(WebInspector.Callback.wrap(imageStylesReady.bind(this, imageIds[i], context)), imageIds[i], true);
+                InspectorBackend.getStyles(imageIds[i], true, imageStylesReady.bind(this, imageIds[i], context));
         }
 
         function pushImageNodes()
@@ -724,9 +724,9 @@ WebInspector.AuditRules.CssInHeadRule = function()
 WebInspector.AuditRules.CssInHeadRule.prototype = {
     doRun: function(resources, result, callback)
     {
-        function evalCallback(evalResult, isException)
+        function evalCallback(evalResult)
         {
-            if (isException || !evalResult)
+            if (!evalResult)
                 return callback(null);
 
             var summary = result.addChild("");
@@ -800,9 +800,9 @@ WebInspector.AuditRules.StylesScriptsOrderRule = function()
 WebInspector.AuditRules.StylesScriptsOrderRule.prototype = {
     doRun: function(resources, result, callback)
     {
-        function evalCallback(resultValue, isException)
+        function evalCallback(resultValue)
         {
-            if (isException || !resultValue)
+            if (!resultValue)
                 return callback(null);
 
             var lateCssUrls = resultValue[0];

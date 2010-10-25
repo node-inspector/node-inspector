@@ -72,6 +72,11 @@ WebInspector.Panel.prototype = {
         return this._toolbarItem;
     },
 
+    get name()
+    {
+        return this._panelName;
+    },
+
     show: function()
     {
         WebInspector.View.prototype.show.call(this);
@@ -116,7 +121,7 @@ WebInspector.Panel.prototype = {
             document.getElementById("main-panels").appendChild(this.element);
     },
 
-    searchCanceled: function(startingNewSearch)
+    searchCanceled: function()
     {
         if (this._searchResults) {
             for (var i = 0; i < this._searchResults.length; ++i) {
@@ -238,11 +243,9 @@ WebInspector.Panel.prototype = {
         var currentView = this._searchResults[this._currentSearchResultIndex];
 
         if (currentView.showingLastSearchResult()) {
-            if (this.searchIteratesOverViews()) {
-                if (++this._currentSearchResultIndex >= this._searchResults.length)
-                    this._currentSearchResultIndex = 0;
-                currentView = this._searchResults[this._currentSearchResultIndex];
-            }
+            if (++this._currentSearchResultIndex >= this._searchResults.length)
+                this._currentSearchResultIndex = 0;
+            currentView = this._searchResults[this._currentSearchResultIndex];
             showFirstResult = true;
         }
 
@@ -273,11 +276,9 @@ WebInspector.Panel.prototype = {
         var currentView = this._searchResults[this._currentSearchResultIndex];
 
         if (currentView.showingFirstSearchResult()) {
-            if (this.searchIteratesOverViews()) {
-                if (--this._currentSearchResultIndex < 0)
-                    this._currentSearchResultIndex = (this._searchResults.length - 1);
-                currentView = this._searchResults[this._currentSearchResultIndex];
-            }
+            if (--this._currentSearchResultIndex < 0)
+                this._currentSearchResultIndex = (this._searchResults.length - 1);
+            currentView = this._searchResults[this._currentSearchResultIndex];
             showLastResult = true;
         }
 
@@ -405,11 +406,6 @@ WebInspector.Panel.prototype = {
     },
 
     showSourceLine: function(url, line)
-    {
-        return false;
-    },
-
-    searchIteratesOverViews: function()
     {
         return false;
     },

@@ -1,9 +1,9 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource prefix="/webkit/inspector">
     <file>inspector.html</file>
-    <file>AbstractTimelinePanel.js</file>
     <file>ApplicationCacheItemsView.js</file>
     <file>AuditCategories.js</file>
+    <file>AuditFormatters.js</file>
     <file>AuditLauncherView.js</file>
     <file>AuditResultView.js</file>
     <file>AuditRules.js</file>
@@ -34,21 +34,28 @@
     <file>ElementsPanel.js</file>
     <file>ElementsTreeOutline.js</file>
     <file>EventListenersSidebarPane.js</file>
+    <file>ExtensionAPI.js</file>
+    <file>ExtensionAuditCategory.js</file>
+    <file>ExtensionCommon.js</file>
+    <file>ExtensionPanel.js</file>
+    <file>ExtensionRegistryStub.js</file>
+    <file>ExtensionServer.js</file>
     <file>FontView.js</file>
+    <file>GoToLineDialog.js</file>
     <file>HAREntry.js</file>
+    <file>HeapSnapshotView.js</file>
     <file>HelpScreen.js</file>
     <file>ImageView.js</file>
     <file>InjectedFakeWorker.js</file>
     <file>InjectedScript.js</file>
     <file>InjectedScriptAccess.js</file>
     <file>inspector.js</file>
-    <file>InspectorBackendStub.js</file>
     <file>InspectorFrontendHostStub.js</file>
     <file>KeyboardShortcut.js</file>
     <file>MetricsSidebarPane.js</file>
+    <file>NetworkPanel.js</file>
     <file>Object.js</file>
     <file>ObjectPropertiesSection.js</file>
-    <file>ObjectProxy.js</file>
     <file>Panel.js</file>
     <file>PanelEnablerView.js</file>
     <file>Placard.js</file>
@@ -58,6 +65,7 @@
     <file>ProfileView.js</file>
     <file>PropertiesSection.js</file>
     <file>PropertiesSidebarPane.js</file>
+    <file>RemoteObject.js</file>
     <file>Resource.js</file>
     <file>ResourceCategory.js</file>
     <file>ResourcesPanel.js</file>
@@ -99,9 +107,12 @@
     <file>WelcomeView.js</file>
     <file>WorkersSidebarPane.js</file>
     <file>audits.css</file>
+    <file>goToLineDialog.css</file>
+    <file>heapProfiler.css</file>
     <file>helpScreen.css</file>
     <file>inspector.css</file>
     <file>inspectorSyntaxHighlight.css</file>
+    <file>networkPanel.css</file>
     <file>popover.css</file>
     <file>textViewer.css</file>
     <file>Images/applicationCache.png</file>
@@ -156,7 +167,9 @@
     <file>Images/grayConnectorPoint.png</file>
     <file>Images/largerResourcesButtonGlyph.png</file>
     <file>Images/localStorage.png</file>
+    <file>Images/networkIcon.png</file>
     <file>Images/nodeSearchButtonGlyph.png</file>
+    <file>Images/paneAddButtons.png</file>
     <file>Images/paneBottomGrow.png</file>
     <file>Images/paneBottomGrowActive.png</file>
     <file>Images/paneGrowHandleLine.png</file>
@@ -258,5 +271,6 @@
     <file>Images/warningOrangeDot.png</file>
     <file>Images/warningsErrors.png</file>
     <file>Images/whiteConnectorPoint.png</file>
+    <file alias="DebuggerScript.js">../../bindings/v8/DebuggerScript.js</file>
 </qresource>
 </RCC>

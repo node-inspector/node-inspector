@@ -52,14 +52,14 @@ WebInspector.MetricsSidebarPane.prototype = {
             var style = WebInspector.CSSStyleDeclaration.parseStyle(stylePayload);
             self._update(style);
         };
-        InspectorBackend.getComputedStyle(WebInspector.Callback.wrap(callback), node.id);
+        InspectorBackend.getComputedStyle(node.id, callback);
 
         var inlineStyleCallback = function(stylePayload) {
             if (!stylePayload)
                 return;
             self._inlineStyleId = stylePayload.id;
         };
-        InspectorBackend.getInlineStyle(WebInspector.Callback.wrap(inlineStyleCallback), node.id);
+        InspectorBackend.getInlineStyle(node.id, inlineStyleCallback);
     },
 
     _update: function(style)
@@ -210,7 +210,7 @@ WebInspector.MetricsSidebarPane.prototype = {
             self.update();
         };
 
-        InspectorBackend.setStyleProperty(WebInspector.Callback.wrap(callback), this._inlineStyleId, context.styleProperty, userInput);
+        InspectorBackend.setStyleProperty(this._inlineStyleId, context.styleProperty, userInput, callback);
     }
 }
 

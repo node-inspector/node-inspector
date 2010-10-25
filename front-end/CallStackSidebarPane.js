@@ -26,7 +26,7 @@
 WebInspector.CallStackSidebarPane = function()
 {
     WebInspector.SidebarPane.call(this, WebInspector.UIString("Call Stack"));
-    
+    WebInspector.breakpointManager.addEventListener("breakpoint-hit", this._breakpointHit, this);
 }
 
 WebInspector.CallStackSidebarPane.prototype = {
@@ -168,6 +168,16 @@ WebInspector.CallStackSidebarPane.prototype = {
         this._shortcuts[prevCallFrame.key] = this._selectPreviousCallFrameOnStack.bind(this);
 
         section.addRelatedKeys([ nextCallFrame.name, prevCallFrame.name ], WebInspector.UIString("Next/previous call frame"));
+    },
+
+    _breakpointHit:  function(event)
+    {
+        var breakpoint = event.data.breakpoint;
+
+        var statusMessageElement = document.createElement("div");
+        statusMessageElement.className = "info";
+        breakpoint.populateStatusMessageElement(statusMessageElement, event.data.eventData);
+        this.bodyElement.appendChild(statusMessageElement);
     }
 }
 

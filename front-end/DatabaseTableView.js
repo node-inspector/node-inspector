@@ -46,7 +46,7 @@ WebInspector.DatabaseTableView.prototype = {
 
     get statusBarItems()
     {
-        return [this.refreshButton];
+        return [this.refreshButton.element];
     },
 
     update: function()
@@ -54,11 +54,11 @@ WebInspector.DatabaseTableView.prototype = {
         this.database.executeSql("SELECT * FROM " + this.tableName, this._queryFinished.bind(this), this._queryError.bind(this));
     },
 
-    _queryFinished: function(result)
+    _queryFinished: function(columnNames, values)
     {
         this.element.removeChildren();
 
-        var dataGrid = WebInspector.panels.storage.dataGridForResult(result);
+        var dataGrid = WebInspector.panels.storage.dataGridForResult(columnNames, values);
         if (!dataGrid) {
             var emptyMsgElement = document.createElement("div");
             emptyMsgElement.className = "storage-table-empty";

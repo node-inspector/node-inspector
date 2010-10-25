@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 Google Inc. All rights reserved.
+ * Copyright (C) 2010 Google Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -28,43 +28,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-WebInspector.ObjectProxy = function(injectedScriptId, objectId, path, description, hasChildren)
+if (!window.InspectorExtensionRegistry) {
+
+WebInspector.InspectorExtensionRegistryStub = function()
 {
-    this.objectId = objectId;
-    this.injectedScriptId = injectedScriptId;
-    this.path = path || [];
-    this.description = description;
-    this.hasChildren = hasChildren;
 }
 
-WebInspector.ObjectProxy.wrapPrimitiveValue = function(value)
-{
-    var proxy = new WebInspector.ObjectProxy();
-    proxy.type = typeof value;
-    proxy.description = value;
-    return proxy;
-}
-
-WebInspector.ObjectProxy.getPropertiesAsync = function(objectProxy, propertiesToQueryFor, callback)
-{
-    function createPropertiesMapThenCallback(propertiesPayload)
+WebInspector.InspectorExtensionRegistryStub.prototype = {
+    getExtensionsAsync: function()
     {
-        if (!propertiesPayload) {
-            callback();
-            return;
-        }
+    }
+};
 
-        var result = [];
-        for (var i = 0; i < propertiesPayload.length; ++i)
-            if (propertiesToQueryFor.indexOf(propertiesPayload[i].name) !== -1)
-                result[propertiesPayload[i].name] = propertiesPayload[i].value.description;
-        callback(result);
-    };
-    InjectedScriptAccess.get(objectProxy.injectedScriptId).getProperties(objectProxy, true, false, createPropertiesMapThenCallback);
-}
+InspectorExtensionRegistry = new WebInspector.InspectorExtensionRegistryStub();
 
-WebInspector.ObjectPropertyProxy = function(name, value)
-{
-    this.name = name;
-    this.value = value;
 }

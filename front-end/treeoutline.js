@@ -399,7 +399,7 @@ TreeOutline.prototype._treeKeyDown = function(event)
 
     if (nextSelectedElement) {
         nextSelectedElement.reveal();
-        nextSelectedElement.select();
+        nextSelectedElement.select(false, true);
     }
 
     if (handled) {
@@ -482,8 +482,7 @@ TreeElement.prototype = {
 
     set title(x) {
         this._title = x;
-        if (this._listItemNode)
-            this._listItemNode.innerHTML = x;
+        this._setListItemNodeContent();
     },
 
     get tooltip() {
@@ -548,6 +547,20 @@ TreeElement.prototype = {
         this._shouldRefreshChildren = x;
         if (x && this.expanded)
             this.expand();
+    },
+
+    _setListItemNodeContent: function()
+    {
+        if (!this._listItemNode)
+            return;
+        if (!this._title || typeof this._title === "string")
+            this._listItemNode.innerHTML = this._title;
+        else {
+            this._listItemNode.removeChildren();
+            if (this._title.parentNode)
+                this._title.parentNode.removeChild(this._title);
+            this._listItemNode.appendChild(this._title);
+        }
     }
 }
 
@@ -566,7 +579,7 @@ TreeElement.prototype._attach = function()
 
         this._listItemNode = this.treeOutline._childrenListNode.ownerDocument.createElement("li");
         this._listItemNode.treeElement = this;
-        this._listItemNode.innerHTML = this._title;
+        this._setListItemNodeContent();
         this._listItemNode.title = this._tooltip ? this._tooltip : "";
 
         if (this.hidden)
@@ -638,6 +651,7 @@ TreeElement.treeElementToggled = function(event)
         else
             element.treeElement.expand();
     }
+    event.stopPropagation();
 }
 
 TreeElement.treeElementDoubleClicked = function(event)
@@ -780,10 +794,10 @@ TreeElement.prototype.revealed = function()
 
 TreeElement.prototype.selectOnMouseDown = function(event)
 {
-    this.select();
+    this.select(false, true);
 }
 
-TreeElement.prototype.select = function(supressOnSelect)
+TreeElement.prototype.select = function(supressOnSelect, selectedByUser)
 {
     if (!this.treeOutline || !this.selectable || this.selected)
         return;
@@ -798,7 +812,7 @@ TreeElement.prototype.select = function(supressOnSelect)
         this._listItemNode.addStyleClass("selected");
 
     if (this.onselect && !supressOnSelect)
-        this.onselect(this);
+        this.onselect(this, selectedByUser);
 }
 
 TreeElement.prototype.deselect = function(supressOnDeselect)

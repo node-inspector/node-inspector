@@ -32,7 +32,7 @@ WebInspector.PropertiesSection = function(title, subtitle)
     WebInspector.Section.call(this, title, subtitle);
 
     this.propertiesElement = document.createElement("ol");
-    this.propertiesElement.className = "properties source-code";
+    this.propertiesElement.className = "properties properties-tree source-code";
     this.propertiesElement.tabIndex = 0;
     this.propertiesTreeOutline = new TreeOutline(this.propertiesElement);
     this.propertiesTreeOutline.section = this;

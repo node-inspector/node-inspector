@@ -117,14 +117,20 @@ WebInspector.TextViewer.prototype = {
 
     highlightLine: function(lineNumber)
     {
-        if (typeof this._highlightedLine === "number") {
-            var chunk = this._makeLineAChunk(this._highlightedLine);
-            chunk.removeDecoration("webkit-highlighted-line");
-        }
+        this.clearLineHighlight();
         this._highlightedLine = lineNumber;
         this.revealLine(lineNumber);
         var chunk = this._makeLineAChunk(lineNumber);
         chunk.addDecoration("webkit-highlighted-line");
+    },
+
+    clearLineHighlight: function()
+    {
+        if (typeof this._highlightedLine === "number") {
+            var chunk = this._makeLineAChunk(this._highlightedLine);
+            chunk.removeDecoration("webkit-highlighted-line");
+            delete this._highlightedLine;
+        }
     },
 
     freeCachedElements: function()

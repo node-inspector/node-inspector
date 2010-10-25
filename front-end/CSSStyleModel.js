@@ -35,12 +35,12 @@ WebInspector.CSSStyleModel = function()
 WebInspector.CSSStyleModel.prototype = {
     getStylesAsync: function(nodeId, authOnly, userCallback)
     {
-        InspectorBackend.getStyles(WebInspector.Callback.wrap(userCallback), nodeId, authOnly);
+        InspectorBackend.getStyles(nodeId, authOnly, userCallback);
     },
 
     getComputedStyleAsync: function(nodeId, userCallback)
     {
-        InspectorBackend.getComputedStyle(WebInspector.Callback.wrap(userCallback), nodeId);
+        InspectorBackend.getComputedStyle(nodeId, userCallback);
     },
 
     setRuleSelector: function(ruleId, newContent, nodeId, successCallback, failureCallback)
@@ -53,7 +53,7 @@ WebInspector.CSSStyleModel.prototype = {
                 successCallback(WebInspector.CSSStyleDeclaration.parseRule(newRulePayload), doesAffectSelectedNode);
         }
 
-        InspectorBackend.setRuleSelector(WebInspector.Callback.wrap(callback), ruleId, newContent, nodeId);
+        InspectorBackend.setRuleSelector(ruleId, newContent, nodeId, callback);
     },
 
     addRule: function(nodeId, newContent, successCallback, failureCallback)
@@ -70,7 +70,7 @@ WebInspector.CSSStyleModel.prototype = {
             }
         }
 
-        InspectorBackend.addRule(WebInspector.Callback.wrap(callback), newContent, nodeId);
+        InspectorBackend.addRule(newContent, nodeId, callback);
     },
 
     toggleStyleEnabled: function(styleId, propertyName, disabled, userCallback)
@@ -86,12 +86,12 @@ WebInspector.CSSStyleModel.prototype = {
             userCallback(newStyle);
         }
 
-        InspectorBackend.toggleStyleEnabled(WebInspector.Callback.wrap(callback), styleId, propertyName, disabled);
+        InspectorBackend.toggleStyleEnabled(styleId, propertyName, disabled, callback);
     },
 
     setCSSText: function(styleId, cssText)
     {
-        InspectorBackend.setStyleText(WebInspector.Callback.wrap(null), styleId, cssText);
+        InspectorBackend.setStyleText(styleId, cssText);
     },
 
     applyStyleText: function(styleId, styleText, propertyName, successCallback, failureCallback)
@@ -106,6 +106,6 @@ WebInspector.CSSStyleModel.prototype = {
             }
         }
 
-        InspectorBackend.applyStyleText(WebInspector.Callback.wrap(callback), styleId, styleText, propertyName);
+        InspectorBackend.applyStyleText(styleId, styleText, propertyName, callback);
     }
 }

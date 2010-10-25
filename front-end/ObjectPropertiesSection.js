@@ -50,7 +50,7 @@ WebInspector.ObjectPropertiesSection.prototype = {
                 return;
             self.updateProperties(properties);
         };
-        InjectedScriptAccess.get(this.object.injectedScriptId).getProperties(this.object, this.ignoreHasOwnProperty, true, callback);
+        this.object.getProperties(this.ignoreHasOwnProperty, true, callback);
     },
 
     updateProperties: function(properties, rootTreeElementConstructor, rootPropertyComparer)
@@ -69,8 +69,10 @@ WebInspector.ObjectPropertiesSection.prototype = {
 
         this.propertiesTreeOutline.removeChildren();
 
-        for (var i = 0; i < properties.length; ++i)
+        for (var i = 0; i < properties.length; ++i) {
+            properties[i].parentObject = this.object;
             this.propertiesTreeOutline.appendChild(new rootTreeElementConstructor(properties[i]));
+        }
 
         if (!this.propertiesTreeOutline.children.length) {
             var title = "<div class=\"info\">" + this.emptyPlaceholder + "</div>";
@@ -152,7 +154,7 @@ WebInspector.ObjectPropertyTreeElement.prototype = {
                 this.appendChild(new this.treeOutline.section.treeElementConstructor(properties[i]));
             }
         };
-        InjectedScriptAccess.get(this.property.value.injectedScriptId).getProperties(this.property.value, false, true, callback.bind(this));
+        this.property.value.getOwnProperties(true, callback.bind(this));
     },
 
     ondblclick: function(event)
@@ -178,12 +180,12 @@ WebInspector.ObjectPropertyTreeElement.prototype = {
         this.valueElement = document.createElement("span");
         this.valueElement.className = "value";
         this.valueElement.textContent = this.property.value.description;
-        if (typeof this.property.value.propertyLength !== "undefined")
-            this.valueElement.textContent += " (" + this.property.value.propertyLength + ")";
         if (this.property.isGetter)
             this.valueElement.addStyleClass("dimmed");
-        if (this.property.isError)
+        if (this.property.value.isError())
             this.valueElement.addStyleClass("error");
+        if (this.property.value.type)
+            this.valueElement.addStyleClass("console-formatted-" + this.property.value.type);
 
         this.listItemElement.removeChildren();
 
@@ -260,7 +262,7 @@ WebInspector.ObjectPropertyTreeElement.prototype = {
                 self.updateSiblings();
             }
         };
-        InjectedScriptAccess.get(this.property.parentObjectProxy.injectedScriptId).setPropertyValue(this.property.parentObjectProxy, this.property.name, expression.trim(), callback);
+        this.property.parentObject.setPropertyValue(this.property.name, expression.trim(), callback);
     }
 }
 

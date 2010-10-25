@@ -28,10 +28,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-WebInspector.AuditLauncherView = function(categoriesById, runnerCallback)
+WebInspector.AuditLauncherView = function(runnerCallback)
 {
     WebInspector.View.call(this);
-    this._categoriesById = categoriesById;
     this._runnerCallback = runnerCallback;
     this._categoryIdPrefix = "audit-category-item-";
     this._auditRunning = false;
@@ -41,27 +40,16 @@ WebInspector.AuditLauncherView = function(categoriesById, runnerCallback)
     this._contentElement = document.createElement("div");
     this._contentElement.className = "audit-launcher-view-content";
     this.element.appendChild(this._contentElement);
+    this._boundCategoryClickListener = this._categoryClicked.bind(this);
 
     this._resetResourceCount();
 
-    function categorySortFunction(a, b)
-    {
-        var aTitle = a.displayName || "";
-        var bTitle = b.displayName || "";
-        return aTitle.localeCompare(bTitle);
-    }
-    var sortedCategories = [];
-    for (var id in this._categoriesById)
-        sortedCategories.push(this._categoriesById[id]);
-    sortedCategories.sort(categorySortFunction);
+    this._sortedCategories = [];
 
-    if (!sortedCategories.length) {
-        this._headerElement = document.createElement("h1");
-        this._headerElement.className = "no-audits";
-        this._headerElement.textContent = WebInspector.UIString("No audits to run");
-        this._contentElement.appendChild(this._headerElement);
-    } else
-        this._createLauncherUI(sortedCategories);
+    this._headerElement = document.createElement("h1");
+    this._headerElement.className = "no-audits";
+    this._headerElement.textContent = WebInspector.UIString("No audits to run");
+    this._contentElement.appendChild(this._headerElement);
 }
 
 WebInspector.AuditLauncherView.prototype = {
@@ -133,6 +121,30 @@ WebInspector.AuditLauncherView.prototype = {
         this._resetResourceCount();
     },
 
+    addCategory: function(category)
+    {
+        if (!this._sortedCategories.length)
+            this._createLauncherUI();
+
+        var categoryElement = this._createCategoryElement(category.displayName, category.id);
+        category._checkboxElement = categoryElement.firstChild;
+        if (this._selectAllCheckboxElement.checked) {
+            category._checkboxElement.checked = true;
+            ++this._currentCategoriesCount;
+        }
+
+        function compareCategories(a, b)
+        {
+            var aTitle = a.displayName || "";
+            var bTitle = b.displayName || "";
+            return aTitle.localeCompare(bTitle);
+        }
+        var insertBefore = insertionIndexForObjectInListSortedByFunction(category, this._sortedCategories, compareCategories);
+        this._categoriesElement.insertBefore(categoryElement, this._categoriesElement.children[insertBefore]);
+        this._sortedCategories.splice(insertBefore, 0, category);
+        this._updateButton();
+    },
+
     _setAuditRunning: function(auditRunning)
     {
         if (this._auditRunning === auditRunning)
@@ -146,10 +158,11 @@ WebInspector.AuditLauncherView.prototype = {
     {
         var catIds = [];
         var childNodes = this._categoriesElement.childNodes;
-        for (var id in this._categoriesById) {
-            if (this._categoriesById[id]._checkboxElement.checked)
-                catIds.push(id);
+        for (var category = 0; category < this._sortedCategories.length; ++category) {
+            if (this._sortedCategories[category]._checkboxElement.checked)
+                catIds.push(this._sortedCategories[category].id);
         }
+
         this._setAuditRunning(true);
         this._runnerCallback(catIds, this._auditPresentStateElement.checked, this._setAuditRunning.bind(this, false));
     },
@@ -159,14 +172,14 @@ WebInspector.AuditLauncherView.prototype = {
         var childNodes = this._categoriesElement.childNodes;
         for (var i = 0, length = childNodes.length; i < length; ++i)
             childNodes[i].firstChild.checked = checkCategories;
-        this._currentCategoriesCount = checkCategories ? this._totalCategoriesCount : 0;
+        this._currentCategoriesCount = checkCategories ? this._sortedCategories.length : 0;
         this._updateButton();
     },
 
     _categoryClicked: function(event)
     {
         this._currentCategoriesCount += event.target.checked ? 1 : -1;
-        this._selectAllCheckboxElement.checked = this._currentCategoriesCount === this._totalCategoriesCount;
+        this._selectAllCheckboxElement.checked = this._currentCategoriesCount === this._sortedCategories.length;
         this._updateButton();
     },
 
@@ -177,16 +190,22 @@ WebInspector.AuditLauncherView.prototype = {
 
         var element = document.createElement("input");
         element.type = "checkbox";
+        if (id !== "")
+            element.addEventListener("click", this._boundCategoryClickListener, false);
         labelElement.appendChild(element);
         labelElement.appendChild(document.createTextNode(title));
 
         return labelElement;
     },
 
-    _createLauncherUI: function(sortedCategories)
+    _createLauncherUI: function()
     {
         this._headerElement = document.createElement("h1");
         this._headerElement.textContent = WebInspector.UIString("Select audits to run");
+
+        for (var child = 0; child < this._contentElement.children.length; ++child)
+            this._contentElement.removeChild(this._contentElement.children[child]);
+
         this._contentElement.appendChild(this._headerElement);
 
         function handleSelectAllClick(event)
@@ -204,16 +223,6 @@ WebInspector.AuditLauncherView.prototype = {
         this._categoriesElement.className = "audit-categories-container";
         this._contentElement.appendChild(this._categoriesElement);
 
-        var boundCategoryClickListener = this._categoryClicked.bind(this);
-
-        for (var i = 0; i < sortedCategories.length; ++i) {
-            categoryElement = this._createCategoryElement(sortedCategories[i].displayName, sortedCategories[i].id);
-            categoryElement.firstChild.addEventListener("click", boundCategoryClickListener, false);
-            sortedCategories[i]._checkboxElement = categoryElement.firstChild;
-            this._categoriesElement.appendChild(categoryElement);
-        }
-
-        this._totalCategoriesCount = this._categoriesElement.childNodes.length;
         this._currentCategoriesCount = 0;
 
         var flexibleSpaceElement = document.createElement("div");

@@ -56,8 +56,10 @@ WebInspector.ElementsPanel = function()
         this.panel.updateProperties();
         this.panel.updateEventListeners();
 
-        if (this._focusedDOMNode)
+        if (this._focusedDOMNode) {
             InspectorBackend.addInspectedNode(this._focusedDOMNode.id);
+            WebInspector.extensionServer.notifyObjectSelected(this.panel.name, "DOMNode");
+        }
     };
 
     this.contentElement.appendChild(this.treeOutline.element);
@@ -72,6 +74,8 @@ WebInspector.ElementsPanel = function()
     this.sidebarPanes.styles = new WebInspector.StylesSidebarPane(this.sidebarPanes.computedStyle);
     this.sidebarPanes.metrics = new WebInspector.MetricsSidebarPane();
     this.sidebarPanes.properties = new WebInspector.PropertiesSidebarPane();
+    if (Preferences.nativeInstrumentationEnabled)
+        this.sidebarPanes.domBreakpoints = WebInspector.createDOMBreakpointsSidebarPane();
     this.sidebarPanes.eventListeners = new WebInspector.EventListenersSidebarPane();
 
     this.sidebarPanes.styles.onexpand = this.updateStyles.bind(this);
@@ -88,11 +92,8 @@ WebInspector.ElementsPanel = function()
     this.sidebarElement = document.createElement("div");
     this.sidebarElement.id = "elements-sidebar";
 
-    this.sidebarElement.appendChild(this.sidebarPanes.computedStyle.element);
-    this.sidebarElement.appendChild(this.sidebarPanes.styles.element);
-    this.sidebarElement.appendChild(this.sidebarPanes.metrics.element);
-    this.sidebarElement.appendChild(this.sidebarPanes.properties.element);
-    this.sidebarElement.appendChild(this.sidebarPanes.eventListeners.element);
+    for (var pane in this.sidebarPanes)
+        this.sidebarElement.appendChild(this.sidebarPanes[pane].element);
 
     this.sidebarResizeElement = document.createElement("div");
     this.sidebarResizeElement.className = "sidebar-resizer-vertical";
@@ -146,8 +147,8 @@ WebInspector.ElementsPanel.prototype = {
     {
         WebInspector.Panel.prototype.hide.call(this);
 
-        WebInspector.hoveredDOMNode = null;
-        InspectorBackend.disableSearchingForNode();
+        WebInspector.highlightDOMNode(0);
+        this.setSearchingForNode(false);
     },
 
     resize: function()
@@ -158,31 +159,26 @@ WebInspector.ElementsPanel.prototype = {
 
     reset: function()
     {
-        if (this.focusedDOMNode) {
-            this._selectedPathOnReset = [];
-            var node = this.focusedDOMNode;
-            while ("index" in node) {
-                this._selectedPathOnReset.push(node.nodeName);
-                this._selectedPathOnReset.push(node.index);
-                node = node.parentNode;
-            }
-            this._selectedPathOnReset.reverse();
-        }
+        if (this.focusedDOMNode)
+            this._selectedPathOnReset = this.focusedDOMNode.path();
 
         this.rootDOMNode = null;
         this.focusedDOMNode = null;
 
-        WebInspector.hoveredDOMNode = null;
+        WebInspector.highlightDOMNode(0);
 
         this.recentlyModifiedNodes = [];
 
         delete this.currentQuery;
-        this.searchCanceled();
+
+        if (Preferences.nativeInstrumentationEnabled)
+            this.sidebarPanes.domBreakpoints.reset();
     },
 
     setDocument: function(inspectedRootDocument)
     {
         this.reset();
+        this.searchCanceled();
 
         if (!inspectedRootDocument)
             return;
@@ -190,10 +186,9 @@ WebInspector.ElementsPanel.prototype = {
         inspectedRootDocument.addEventListener("DOMNodeInserted", this._nodeInserted.bind(this));
         inspectedRootDocument.addEventListener("DOMNodeRemoved", this._nodeRemoved.bind(this));
         inspectedRootDocument.addEventListener("DOMAttrModified", this._attributesUpdated.bind(this));
+        inspectedRootDocument.addEventListener("DOMCharacterDataModified", this._characterDataModified.bind(this));
 
-        this.treeOutline.suppressSelectHighlight = true;
         this.rootDOMNode = inspectedRootDocument;
-        this.treeOutline.suppressSelectHighlight = false;
 
         function selectNode(candidateFocusNode)
         {
@@ -203,11 +198,9 @@ WebInspector.ElementsPanel.prototype = {
             if (!candidateFocusNode)
                 return;
 
-            this.treeOutline.suppressSelectHighlight = true;
             this.focusedDOMNode = candidateFocusNode;
             if (this.treeOutline.selectedTreeElement)
                 this.treeOutline.selectedTreeElement.expand();
-            this.treeOutline.suppressSelectHighlight = false;
         }
 
         function selectLastSelectedNode(nodeId)
@@ -220,10 +213,9 @@ WebInspector.ElementsPanel.prototype = {
             selectNode.call(this, node);
         }
 
-        if (this._selectedPathOnReset) {
-            var callId = WebInspector.Callback.wrap(selectLastSelectedNode.bind(this));
-            InspectorBackend.pushNodeByPathToFrontend(callId, this._selectedPathOnReset);
-        } else
+        if (this._selectedPathOnReset)
+            InspectorBackend.pushNodeByPathToFrontend(this._selectedPathOnReset, selectLastSelectedNode.bind(this));
+        else
             selectNode.call(this);
         delete this._selectedPathOnReset;
     },
@@ -253,17 +245,24 @@ WebInspector.ElementsPanel.prototype = {
         this._matchesCountUpdateTimeout = null;
         this._searchQuery = query;
 
-        InspectorBackend.performSearch(whitespaceTrimmedQuery);
+        InspectorBackend.performSearch(whitespaceTrimmedQuery, false);
     },
 
-    searchingForNodeWasEnabled: function()
+    populateHrefContextMenu: function(contextMenu, event, anchorElement)
     {
-        this._nodeSearchButton.toggled = true;
-    },
+        if (!anchorElement.href)
+            return false;
 
-    searchingForNodeWasDisabled: function()
-    {
-        this._nodeSearchButton.toggled = false;
+        var resourceURL = WebInspector.resourceURLForRelatedNode(this.focusedDOMNode, anchorElement.href);
+        if (!resourceURL)
+            return false;
+
+        // Add resource-related actions.
+        // Keep these consistent with those added in WebInspector.StylesSidebarPane.prototype._populateHrefContextMenu().
+        contextMenu.appendItem(WebInspector.UIString("Open Link in New Window"), WebInspector.openResource.bind(null, resourceURL, false));
+        if (WebInspector.resourceForURL(resourceURL))
+            contextMenu.appendItem(WebInspector.UIString("Open Link in Resources Panel"), WebInspector.openResource.bind(null, resourceURL, true));
+        return true;
     },
 
     _updateMatchesCount: function()
@@ -483,6 +482,13 @@ WebInspector.ElementsPanel.prototype = {
             this._updateModifiedNodesSoon();
     },
 
+    _characterDataModified: function(event)
+    {
+        this.recentlyModifiedNodes.push({node: event.target, updated: true});
+        if (this.visible)
+            this._updateModifiedNodesSoon();
+    },
+
     _nodeInserted: function(event)
     {
         this.recentlyModifiedNodes.push({node: event.target, parent: event.relatedNode, inserted: true});
@@ -566,7 +572,7 @@ WebInspector.ElementsPanel.prototype = {
         var nodeUnderMouse = document.elementFromPoint(event.pageX, event.pageY);
         var crumbElement = nodeUnderMouse.enclosingNodeOrSelfWithClass("crumb");
 
-        WebInspector.hoveredDOMNode = (crumbElement ? crumbElement.representedObject : null);
+        WebInspector.highlightDOMNode(crumbElement ? crumbElement.representedObject.id : 0);
 
         if ("_mouseOutOfCrumbsTimeout" in this) {
             clearTimeout(this._mouseOutOfCrumbsTimeout);
@@ -580,7 +586,7 @@ WebInspector.ElementsPanel.prototype = {
         if (nodeUnderMouse && nodeUnderMouse.isDescendant(this.crumbsElement))
             return;
 
-        WebInspector.hoveredDOMNode = null;
+        WebInspector.highlightDOMNode(0);
 
         this._mouseOutOfCrumbsTimeout = setTimeout(this.updateBreadcrumbSizes.bind(this), 1000);
     },
@@ -766,9 +772,17 @@ WebInspector.ElementsPanel.prototype = {
     {
         var link = document.createElement("span");
         link.className = "node-link";
-        link.addEventListener("click", WebInspector.updateFocusedNode.bind(WebInspector, node.id), false);
         this.decorateNodeLabel(node, link);
+        WebInspector.wireElementWithDOMNode(link, node.id);
         return link;
+    },
+
+    linkifyNodeById: function(nodeId)
+    {
+        var node = WebInspector.domAgent.nodeForId(nodeId);
+        if (!node)
+            return document.createTextNode(WebInspector.UIString("<node>"));
+        return this.linkifyNodeReference(node);
     },
 
     updateBreadcrumbSizes: function(focusedCrumb)
@@ -1136,12 +1150,29 @@ WebInspector.ElementsPanel.prototype = {
         this.treeOutline.updateSelection();
     },
 
+    updateFocusedNode: function(nodeId)
+    {
+        var node = WebInspector.domAgent.nodeForId(nodeId);
+        if (!node)
+            return;
+
+        this.focusedDOMNode = node;
+        this._nodeSearchButton.toggled = false;
+    },
+
+    _setSearchingForNode: function(enabled)
+    {
+        this._nodeSearchButton.toggled = enabled;
+    },
+
+    setSearchingForNode: function(enabled)
+    {
+        InspectorBackend.setSearchingForNode(enabled, this._setSearchingForNode.bind(this));
+    },
+
     toggleSearchingForNode: function()
     {
-        if (!this._nodeSearchButton.toggled)
-            InspectorBackend.enableSearchingForNode();
-        else
-            InspectorBackend.disableSearchingForNode();
+        this.setSearchingForNode(!this._nodeSearchButton.toggled);
     },
 
     elementsToRestoreScrollPositionsFor: function()

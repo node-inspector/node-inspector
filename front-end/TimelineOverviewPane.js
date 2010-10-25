@@ -33,8 +33,7 @@ WebInspector.TimelineOverviewPane = function(categories)
     this._categories = categories;
 
     this.statusBarFilters = document.createElement("div");
-    this.statusBarFilters.id = "timeline-view-status-bar-items";
-    this.statusBarFilters.addStyleClass("status-bar-item");
+    this.statusBarFilters.className = "status-bar-items";
     for (var categoryName in this._categories) {
         var category = this._categories[categoryName];
         this.statusBarFilters.appendChild(this._createTimelineCategoryStatusBarCheckbox(category, this._onCheckboxClicked.bind(this, category)));
@@ -197,6 +196,7 @@ WebInspector.TimelineOverviewPane.prototype = {
     updateMainViewWidth: function(width, records)
     {
         this._overviewGrid.element.style.left = width + "px";
+        this.statusBarFilters.style.left = Math.max(155, width) + "px";
     },
 
     reset: function()

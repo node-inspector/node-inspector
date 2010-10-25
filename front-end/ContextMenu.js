@@ -46,10 +46,17 @@ WebInspector.ContextMenu.prototype = {
         }
     },
 
-    appendItem: function(label, handler)
+    appendItem: function(label, handler, disabled)
     {
         var id = this._items.length;
-        this._items.push({id: id, label: label});
+        this._items.push({type: "item", id: id, label: label, enabled: !disabled});
+        this._handlers[id] = handler;
+    },
+
+    appendCheckboxItem: function(label, handler, checked, disabled)
+    {
+        var id = this._items.length;
+        this._items.push({type: "checkbox", id: id, label: label, checked: !!checked, enabled: !disabled});
         this._handlers[id] = handler;
     },
 
@@ -60,7 +67,7 @@ WebInspector.ContextMenu.prototype = {
             return;
         if (!("id" in this._items[this._items.length - 1]))
             return;
-        this._items.push({});
+        this._items.push({type: "separator"});
     },
 
     _itemSelected: function(id)

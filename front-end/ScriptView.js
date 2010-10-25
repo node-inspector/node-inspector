@@ -34,7 +34,7 @@ WebInspector.ScriptView = function(script)
     this._frameNeedsSetup = true;
     this._sourceFrameSetup = false;
     var canEditScripts = WebInspector.panels.scripts.canEditScripts();
-    this.sourceFrame = new WebInspector.SourceFrame(this.element, this._addBreakpoint.bind(this), this._removeBreakpoint.bind(this), canEditScripts ? this._editLine.bind(this) : null, this._continueToLine.bind(this));
+    this.sourceFrame = new WebInspector.SourceFrame(this.element, this._addBreakpoint.bind(this), canEditScripts ? this._editLine.bind(this) : null, this._continueToLine.bind(this));
 }
 
 WebInspector.ScriptView.prototype = {
@@ -56,10 +56,8 @@ WebInspector.ScriptView.prototype = {
 
         if (this.script.source)
             this._sourceFrameSetupFinished();
-        else {
-            var callbackId = WebInspector.Callback.wrap(this._didGetScriptSource.bind(this))
-            InspectorBackend.getScriptSource(callbackId, this.script.sourceID);
-        }
+        else
+            InspectorBackend.getScriptSource(this.script.sourceID, this._didGetScriptSource.bind(this));
     },
 
     _didGetScriptSource: function(source)
@@ -97,6 +95,8 @@ WebInspector.ScriptView.prototype = {
     _addBreakpoint: function(line)
     {
         WebInspector.breakpointManager.setBreakpoint(this.script.sourceID, this.script.sourceURL, line, true, "");
+        if (!WebInspector.panels.scripts.breakpointsActivated)
+            WebInspector.panels.scripts.toggleBreakpointsClicked();
     },
 
     _editLineComplete: function(newBody)
@@ -127,11 +127,9 @@ WebInspector.ScriptView.prototype = {
     showingFirstSearchResult: WebInspector.SourceView.prototype.showingFirstSearchResult,
     showingLastSearchResult: WebInspector.SourceView.prototype.showingLastSearchResult,
     _jumpToSearchResult: WebInspector.SourceView.prototype._jumpToSearchResult,
-    _removeBreakpoint: WebInspector.SourceView.prototype._removeBreakpoint,
     _editLine: WebInspector.SourceView.prototype._editLine,
     resize: WebInspector.SourceView.prototype.resize
 }
 
 WebInspector.ScriptView.prototype.__proto__ = WebInspector.View.prototype;
 
-WebInspector.didGetScriptSource = WebInspector.Callback.processCallback;

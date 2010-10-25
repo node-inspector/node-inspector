@@ -42,7 +42,7 @@ WebInspector.HAREntry.prototype = {
         return {
             pageref: this._resource.documentURL,
             startedDateTime: new Date(this._resource.startTime * 1000),
-            time: this._toMilliseconds(this._resource.duration),
+            time: WebInspector.HAREntry._toMilliseconds(this._resource.duration),
             request: this._buildRequest(),
             response: this._buildResponse(),
             // cache: {...}, -- Not supproted yet.
@@ -95,14 +95,34 @@ WebInspector.HAREntry.prototype = {
 
     _buildTimings: function()
     {
+        var waitForConnection = this._interval("connectStart", "connectEnd");
+        var blocked;
+        var connect;
+        var dns = this._interval("dnsStart", "dnsEnd");
+        var send = this._interval("sendStart", "sendEnd");
+        var ssl = this._interval("sslStart", "sslEnd");
+
+        if (ssl !== -1 && send !== -1)
+            send -= ssl;
+
+        if (this._resource.connectionReused) {
+            connect = -1;
+            blocked = waitForConnection;
+        } else {
+            blocked = 0;
+            connect = waitForConnection;
+            if (dns !== -1)
+                connect -= dns;
+        }
+
         return {
-            blocked: -1, // Not available.
-            dns: -1, // Not available.
-            connect: -1, // Not available.
-            send: -1, // Not available.
-            wait: this._toMilliseconds(this._resource.latency),
-            receive: this._toMilliseconds(this._resource.receiveDuration),
-            ssl: -1 // Not available.
+            blocked: blocked,
+            dns: dns,
+            connect: connect,
+            send: send,
+            wait: this._interval("sendEnd", "receiveHeadersEnd"),
+            receive: WebInspector.HAREntry._toMilliseconds(this._resource.receiveDuration),
+            ssl: ssl
         };
     },
 
@@ -116,11 +136,13 @@ WebInspector.HAREntry.prototype = {
 
     _buildPostData: function()
     {
-        return {
+        var res = {
             mimeType: this._resource.requestHeaderValue("Content-Type"),
-            params: this._buildParameters(this._resource.formParameters),
             text: this._resource.requestFormData
         };
+        if (this._resource.formParameters)
+           res.params = this._buildParameters(this._resource.formParameters);
+        return res;
     },
 
     _buildParameters: function(parameters)
@@ -128,8 +150,73 @@ WebInspector.HAREntry.prototype = {
         return parameters.slice();
     },
 
-    _toMilliseconds: function(time)
+    _interval: function(start, end)
     {
-        return time === -1 ? -1 : Math.round(time * 1000);
+        var timing = this._resource.timing;
+        if (!timing)
+            return -1;
+        var startTime = timing[start];
+        return typeof startTime !== "number" || startTime === -1 ? -1 : Math.round(timing[end] - startTime);
+    }
+};
+
+WebInspector.HAREntry._toMilliseconds = function(time)
+{
+    return time === -1 ? -1 : Math.round(time * 1000);
+}
+
+WebInspector.HARLog = function()
+{
+}
+
+WebInspector.HARLog.prototype = {
+    build: function()
+    {
+        var webKitVersion = /AppleWebKit\/([^ ]+)/.exec(window.navigator.userAgent);
+        
+        return {
+            version: "1.2",
+            creator: {
+                name: "WebInspector",
+                version: webKitVersion ? webKitVersion[1] : "n/a"
+            },
+            pages: this._buildPages(),
+            entries: Object.properties(WebInspector.resources).map(this._convertResource)
+        }
+    },
+
+    _buildPages: function()
+    {
+        return [
+            {
+                startedDateTime: new Date(WebInspector.mainResource.startTime * 1000),
+                id: WebInspector.mainResource.documentURL,
+                title: "",
+                pageTimings: this.buildMainResourceTimings()
+            }
+        ];
+    },
+
+    buildMainResourceTimings: function()
+    {
+        var resourcesPanel = WebInspector.panels.resources;
+        var startTime = WebInspector.mainResource.startTime;
+        return {
+             onContentLoad: this._pageEventTime(resourcesPanel.mainResourceDOMContentTime),
+             onLoad: this._pageEventTime(resourcesPanel.mainResourceLoadTime),
+        }
+    },
+
+    _convertResource: function(id)
+    {
+        return (new WebInspector.HAREntry(WebInspector.resources[id])).build();
+    },
+
+    _pageEventTime: function(time)
+    {
+        var startTime = WebInspector.mainResource.startTime;
+        if (time === -1 || startTime === -1)
+            return -1;
+        return WebInspector.HAREntry._toMilliseconds(time - startTime);
     }
 };

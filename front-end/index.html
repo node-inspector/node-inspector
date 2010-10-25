@@ -31,8 +31,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <title>nodeJS Inspector</title>
     <meta http-equiv="content-type" content="text/html; charset=utf-8">
     <link rel="stylesheet" type="text/css" href="audits.css">
+    <link rel="stylesheet" type="text/css" href="goToLineDialog.css">
+    <link rel="stylesheet" type="text/css" href="heapProfiler.css">
     <link rel="stylesheet" type="text/css" href="inspector.css">
     <link rel="stylesheet" type="text/css" href="inspectorSyntaxHighlight.css">
+    <link rel="stylesheet" type="text/css" href="networkPanel.css">
     <link rel="stylesheet" type="text/css" href="popover.css">
     <link rel="stylesheet" type="text/css" href="textViewer.css">
     <script type="text/javascript" src="utilities.js"></script>
@@ -41,6 +44,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <script type="text/javascript" src="node/Debugger.js"></script>
     <script type="text/javascript" src="node/InspectorBackendStub.js"></script>
     <script type="text/javascript" src="node/InspectorFrontendHostStub.js"></script>
+    <script type="text/javascript" src="ExtensionRegistryStub.js"></script>
     <script type="text/javascript" src="Object.js"></script>
     <script type="text/javascript" src="Settings.js"></script>
     <script type="text/javascript" src="CSSStyleModel.js"></script>
@@ -57,8 +61,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <script type="text/javascript" src="ChangesView.js"></script>
     <script type="text/javascript" src="ConsoleView.js"></script>
     <script type="text/javascript" src="Panel.js"></script>
-    <script type="text/javascript" src="TimelineGrid.js"></script>    
-    <script type="text/javascript" src="AbstractTimelinePanel.js"></script>
+    <script type="text/javascript" src="TimelineGrid.js"></script>
     <script type="text/javascript" src="Resource.js"></script>
     <script type="text/javascript" src="ResourceCategory.js"></script>
     <script type="text/javascript" src="Database.js"></script>
@@ -74,7 +77,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <script type="text/javascript" src="SidebarTreeElement.js"></script>
     <script type="text/javascript" src="Section.js"></script>
     <script type="text/javascript" src="PropertiesSection.js"></script>
-    <script type="text/javascript" src="ObjectProxy.js"></script>
+    <script type="text/javascript" src="RemoteObject.js"></script>
     <script type="text/javascript" src="ObjectPropertiesSection.js"></script>
     <script type="text/javascript" src="BreakpointsSidebarPane.js"></script>
     <script type="text/javascript" src="CallStackSidebarPane.js"></script>
@@ -92,17 +95,24 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <script type="text/javascript" src="StatusBarButton.js"></script>
     <script type="text/javascript" src="SummaryBar.js"></script>
     <script type="text/javascript" src="ElementsPanel.js"></script>
+    <script type="text/javascript" src="NetworkPanel.js"></script>
     <script type="text/javascript" src="ResourcesPanel.js"></script>
     <script type="text/javascript" src="InjectedFakeWorker.js"></script>
     <script type="text/javascript" src="ScriptsPanel.js"></script>
     <script type="text/javascript" src="StoragePanel.js"></script>
     <script type="text/javascript" src="ProfilesPanel.js"></script>
     <script type="text/javascript" src="ConsolePanel.js"></script>
+    <script type="text/javascript" src="ExtensionAPI.js"></script>
+    <script type="text/javascript" src="ExtensionAuditCategory.js"></script>
+    <script type="text/javascript" src="ExtensionCommon.js"></script>
+    <script type="text/javascript" src="ExtensionServer.js"></script>
+    <script type="text/javascript" src="ExtensionPanel.js"></script>
     <script type="text/javascript" src="AuditsPanel.js"></script>
     <script type="text/javascript" src="AuditResultView.js"></script>
     <script type="text/javascript" src="AuditLauncherView.js"></script>
     <script type="text/javascript" src="AuditRules.js"></script>
     <script type="text/javascript" src="AuditCategories.js"></script>
+    <script type="text/javascript" src="AuditFormatters.js"></script>
     <script type="text/javascript" src="ResourceView.js"></script>
     <script type="text/javascript" src="SourceFrame.js"></script>
     <script type="text/javascript" src="DOMSyntaxHighlighter.js"></script>
@@ -123,6 +133,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <script type="text/javascript" src="BottomUpProfileDataGridTree.js"></script>
     <script type="text/javascript" src="TopDownProfileDataGridTree.js"></script>
     <script type="text/javascript" src="ProfileView.js"></script>
+    <script type="text/javascript" src="HeapSnapshotView.js"></script>
     <script type="text/javascript" src="DOMAgent.js"></script>
     <script type="text/javascript" src="InjectedScript.js"></script>
     <script type="text/javascript" src="InjectedScriptAccess.js"></script>
@@ -131,6 +142,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <script type="text/javascript" src="TimelineOverviewPane.js"></script>
     <script type="text/javascript" src="TestController.js"></script>
     <script type="text/javascript" src="HelpScreen.js"></script>
+    <script type="text/javascript" src="GoToLineDialog.js"></script>
     <script type="text/javascript" src="ShortcutsHelp.js"></script>
     <script type="text/javascript" src="HAREntry.js"></script>
     <script type="text/javascript" src="node/Overrides.js"></script>

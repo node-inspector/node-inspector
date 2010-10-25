@@ -45,31 +45,43 @@ WebInspector.Resource.Type = {
     Script:     4,
     XHR:        5,
     Media:      6,
-    Other:      7,
+    WebSocket:  7,
+    Other:      8,
 
     isTextType: function(type)
     {
         return (type === this.Document) || (type === this.Stylesheet) || (type === this.Script) || (type === this.XHR);
     },
 
+    toUIString: function(type)
+    {
+        return WebInspector.UIString(WebInspector.Resource.Type.toString(type));
+    },
+
+    // Returns locale-independent string identifier of resource type (primarily for use in extension API).
+    // The IDs need to be kept in sync with webInspector.resoureces.Types object in ExtensionAPI.js.
     toString: function(type)
     {
         switch (type) {
             case this.Document:
-                return WebInspector.UIString("document");
+                return "document";
             case this.Stylesheet:
-                return WebInspector.UIString("stylesheet");
+                return "stylesheet";
             case this.Image:
-                return WebInspector.UIString("image");
+                return "image";
             case this.Font:
-                return WebInspector.UIString("font");
+                return "font";
             case this.Script:
-                return WebInspector.UIString("script");
+                return "script";
             case this.XHR:
-                return WebInspector.UIString("XHR");
+                return "XHR";
+            case this.Media:
+                return "media";
+            case this.WebSocket:
+                return "WebSocket";
             case this.Other:
             default:
-                return WebInspector.UIString("other");
+                return "other";
         }
     }
 }
@@ -363,6 +375,9 @@ WebInspector.Resource.prototype = {
             case WebInspector.Resource.Type.XHR:
                 this.category = WebInspector.resourceCategories.xhr;
                 break;
+            case WebInspector.Resource.Type.WebSocket:
+                this.category = WebInspector.resourceCategories.websocket;
+                break;
             case WebInspector.Resource.Type.Other:
             default:
                 this.category = WebInspector.resourceCategories.other;
@@ -575,7 +590,8 @@ WebInspector.Resource.prototype = {
 
         if (typeof this.type === "undefined"
          || this.type === WebInspector.Resource.Type.Other
-         || this.type === WebInspector.Resource.Type.XHR)
+         || this.type === WebInspector.Resource.Type.XHR
+         || this.type === WebInspector.Resource.Type.WebSocket)
             return true;
 
         if (this.mimeType in WebInspector.MIMETypes)
@@ -603,7 +619,7 @@ WebInspector.Resource.prototype = {
                         this.url,
                         null,
                         1,
-                        String.sprintf(WebInspector.Warnings.IncorrectMIMEType.message, WebInspector.Resource.Type.toString(this.type), this.mimeType),
+                        String.sprintf(WebInspector.Warnings.IncorrectMIMEType.message, WebInspector.Resource.Type.toUIString(this.type), this.mimeType),
                         null,
                         null);
                 break;

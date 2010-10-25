@@ -137,9 +137,9 @@ WebInspector.DatabaseQueryView.prototype = {
         this.database.executeSql(query, this._queryFinished.bind(this, query), this._queryError.bind(this, query));
     },
 
-    _queryFinished: function(query, result)
+    _queryFinished: function(query, columnNames, values)
     {
-        var dataGrid = WebInspector.panels.storage.dataGridForResult(result);
+        var dataGrid = WebInspector.panels.storage.dataGridForResult(columnNames, values);
         var trimmedQuery = query.trim();
 
         if (dataGrid) {
@@ -154,7 +154,7 @@ WebInspector.DatabaseQueryView.prototype = {
 
     _queryError: function(query, error)
     {
-        if (error.code == 1)
+        if (error.message)
             var message = error.message;
         else if (error.code == 2)
             var message = WebInspector.UIString("Database no longer has expected version.");

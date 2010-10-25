@@ -1,404 +1,135 @@
-/*
- * Copyright (C) 2009 Google Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *	   * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *	   * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *	   * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+/* InspectorBackendStub.js */
 
-if (!window.InspectorBackend) {
+// Copyright (c) 2010 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 
 WebInspector.InspectorBackendStub = function()
 {
-  this._attachedWindowHeight = 0;
-  this._timelineEnabled = false;
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "populateScriptObjects", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "getSettings", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "getInspectorState", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "storeLastActivePanel", "arguments": {"panelName": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "saveApplicationSettings", "arguments": {"settings": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "saveSessionSettings", "arguments": {"settings": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "setSearchingForNode", "arguments": {"enabled": "boolean"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "setMonitoringXHREnabled", "arguments": {"enable": "boolean"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "setResourceTrackingEnabled", "arguments": {"enabled": "boolean","always": "boolean"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "getResourceContent", "arguments": {"identifier": "number","encode": "boolean"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "reloadPage", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "startTimelineProfiler", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "stopTimelineProfiler", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Backend", "command": "enableDebugger", "arguments": {"always": "boolean"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "disableDebugger", "arguments": {"always": "boolean"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Debug", "command": "setBreakpoint", "arguments": {"sourceID": "string","lineNumber": "number","enabled": "boolean","condition": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Debug", "command": "removeBreakpoint", "arguments": {"sourceID": "string","lineNumber": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Debug", "command": "activateBreakpoints", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Debug", "command": "deactivateBreakpoints", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Debug", "command": "pause", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Debug", "command": "resume", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Debug", "command": "stepOverStatement", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Debug", "command": "stepIntoStatement", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Debug", "command": "stepOutOfFunction", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Debug", "command": "setPauseOnExceptionsState", "arguments": {"pauseOnExceptionsState": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Debug", "command": "editScriptSource", "arguments": {"sourceID": "string","newContent": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Debug", "command": "getScriptSource", "arguments": {"sourceID": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "setNativeBreakpoint", "arguments": {"breakpoint": "object"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "removeNativeBreakpoint", "arguments": {"breakpointId": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "enableProfiler", "arguments": {"always": "boolean"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "disableProfiler", "arguments": {"always": "boolean"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Profiler", "command": "startProfiling", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Profiler", "command": "stopProfiling", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Profiler", "command": "getProfileHeaders", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Profiler", "command": "getProfile", "arguments": {"type": "string","uid": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Profiler", "command": "removeProfile", "arguments": {"type": "string","uid": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Profiler", "command": "clearProfiles", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Profiler", "command": "takeHeapSnapshot", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Backend", "command": "setInjectedScriptSource", "arguments": {"scriptSource": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Backend", "command": "dispatchOnInjectedScript", "arguments": {"injectedScriptId": "number","methodName": "string","arguments": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "addScriptToEvaluateOnLoad", "arguments": {"scriptSource": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "removeAllScriptsToEvaluateOnLoad", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "getChildNodes", "arguments": {"nodeId": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "setAttribute", "arguments": {"elementId": "number","name": "string","value": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "removeAttribute", "arguments": {"elementId": "number","name": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "setTextNodeValue", "arguments": {"nodeId": "number","value": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "getEventListenersForNode", "arguments": {"nodeId": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "copyNode", "arguments": {"nodeId": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "removeNode", "arguments": {"nodeId": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "changeTagName", "arguments": {"nodeId": "number","newTagName": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "getOuterHTML", "arguments": {"nodeId": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "setOuterHTML", "arguments": {"nodeId": "number","outerHTML": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "addInspectedNode", "arguments": {"nodeId": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "performSearch", "arguments": {"query": "string","runSynchronously": "boolean"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "searchCanceled", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "pushNodeByPathToFrontend", "arguments": {"path": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "setDOMBreakpoint", "arguments": {"nodeId": "number","type": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "removeDOMBreakpoint", "arguments": {"nodeId": "number","type": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "clearConsoleMessages", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "highlightDOMNode", "arguments": {"nodeId": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "hideDOMNodeHighlight", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "openInInspectedWindow", "arguments": {"url": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "getStyles", "arguments": {"nodeId": "number","authOnly": "boolean"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "getAllStyles", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "getInlineStyle", "arguments": {"nodeId": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "getComputedStyle", "arguments": {"nodeId": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "getStyleSheet", "arguments": {"styleSheetId": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "getStyleSourceData", "arguments": {"styleSheetId": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "applyStyleText", "arguments": {"styleId": "number","styleText": "string","propertyName": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "setStyleText", "arguments": {"styleId": "number","styleText": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "setStyleProperty", "arguments": {"styleId": "number","name": "string","value": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "toggleStyleEnabled", "arguments": {"styleId": "number","propertyName": "string","disabled": "boolean"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "setRuleSelector", "arguments": {"ruleId": "number","selector": "string","selectedNodeId": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "addRule", "arguments": {"selector": "string","selectedNodeId": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "DOM", "command": "getSupportedCSSProperties", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "getCookies", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "deleteCookie", "arguments": {"cookieName": "string","domain": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "ApplicationCache", "command": "getApplicationCaches", "arguments": {}}');
+    this._registerDelegate('{"seq": 0, "domain": "Backend", "command": "releaseWrapperObjectGroup", "arguments": {"injectedScriptId": "number","objectGroup": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "didEvaluateForTestInFrontend", "arguments": {"testCallId": "number","jsonResult": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Backend", "command": "getDatabaseTableNames", "arguments": {"databaseId": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Backend", "command": "executeSQL", "arguments": {"databaseId": "number","query": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "getDOMStorageEntries", "arguments": {"storageId": "number"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "setDOMStorageItem", "arguments": {"storageId": "number","key": "string","value": "string"}}');
+    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "removeDOMStorageItem", "arguments": {"storageId": "number","key": "string"}}');
 }
 
 WebInspector.InspectorBackendStub.prototype = {
-  wrapCallback: function(func)
-  {
-    return func;
-  },
+    _registerDelegate: function(commandInfo)
+    {
+        var commandObject = JSON.parse(commandInfo);
+        this[commandObject.command] = this.sendMessageToBackend.bind(this, commandInfo);
+    },
 
-  closeWindow: function()
-  {
-    this._windowVisible = false;
-  },
+    sendMessageToBackend: function()
+    {
+        var args = Array.prototype.slice.call(arguments);
+        var request = JSON.parse(args.shift());
 
-  attach: function()
-  {
-  },
-
-  detach: function()
-  {
-  },
-
-  storeLastActivePanel: function(panel)
-  {
-  },
-
-  clearConsoleMessages: function()
-  {
-    WebInspector.console.clearMessages();
-  },
-
-  getOuterHTML: function()
-  {
-  },
-
-  setOuterHTML: function()
-  {
-  },
-
-  addInspectedNode: function()
-  {
-  },
-
-  search: function(sourceRow, query)
-  {
-  },
-
-  moveByUnrestricted: function(x, y)
-  {
-  },
-
-  getResourceContent: function(callId, identifier)
-  {
-    WebInspector.didGetResourceContent(callId, "");
-  },
-
-  highlightDOMNode: function(node)
-  {
-  },
-
-  hideDOMNodeHighlight: function()
-  {
-  },
-
-  inspectedWindow: function()
-  {
-    return window;
-  },
-
-  loaded: function()
-  {
-  },
-
-  localizedStringsURL: function()
-  {
-    return undefined;
-  },
-
-  windowUnloading: function()
-  {
-    return false;
-  },
-
-  hiddenPanels: function()
-  {
-    return "";
-  },
-
-  enableResourceTracking: function()
-  {
-    WebInspector.resourceTrackingWasEnabled();
-  },
-
-  disableResourceTracking: function()
-  {
-    WebInspector.resourceTrackingWasDisabled();
-  },
-
-
-  enableSearchingForNode: function()
-  {
-    WebInspector.searchingForNodeWasEnabled();
-  },
-
-  disableSearchingForNode: function()
-  {
-    WebInspector.searchingForNodeWasDisabled();
-  },
-
-  enableMonitoringXHR: function()
-  {
-    WebInspector.monitoringXHRWasEnabled();
-  },
-
-  disableMonitoringXHR: function()
-  {
-    WebInspector.monitoringXHRWasDisabled();
-  },
-
-  reloadPage: function()
-  {
-  },
-
-  enableDebugger: function()
-  {
-    WebInspector.nodeDebugger.connect();
-  },
-
-  disableDebugger: function()
-  {
-    WebInspector.nodeDebugger.close();
-  },
-
-  setBreakpoint: function(callId, sourceID, line, enabled, condition)
-  {
-    WebInspector.nodeDebugger.setBreakpoint(callId, sourceID, line, enabled, condition);
-  },
-
-  removeBreakpoint: function(sourceID, line)
-  {
-    WebInspector.nodeDebugger.clearBreakpoint(sourceID, line);
-  },
-
-  activateBreakpoints: function()
-  {
-    var bps = WebInspector.breakpointManager._breakpoints;
-    Object.keys(bps).forEach(
-      function(key) {
-        bps[key].enabled = true;
-      });
-    this._breakpointsActivated = true;
-  },
-
-  deactivateBreakpoints: function()
-  {
-    var bps = WebInspector.breakpointManager._breakpoints;
-    Object.keys(bps).forEach(
-      function(key) {
-        bps[key].enabled = false;
-      });
-    this._breakpointsActivated = false;
-  },
-
-  pause: function()
-  {
-    WebInspector.nodeDebugger.pause();
-  },
-
-  setPauseOnExceptionsState: function(value)
-  {
-    WebInspector.nodeDebugger.setPauseOnExceptions(value);
-  },
-
-  editScriptSource: function(callId, sourceID, newContext)
-  {
-    WebInspector.nodeDebugger.liveEdit(callId, sourceID, newContext);
-  },
-
-  getScriptSource: function(callId, sourceID)
-  {
-    WebInspector.didGetScriptSource(callId, null);
-  },
-
-  resume: function()
-  {
-    WebInspector.nodeDebugger.resume();
-  },
-
-  enableProfiler: function()
-  {
-    WebInspector.profilerWasEnabled();
-  },
-
-  disableProfiler: function()
-  {
-    WebInspector.profilerWasDisabled();
-  },
-
-  startProfiling: function()
-  {
-    WebInspector.nodeDebugger.startProfiling();
-  },
-
-  stopProfiling: function()
-  {
-    WebInspector.nodeDebugger.stopProfiling();//
-  },
-
-  getProfileHeaders: function(callId)
-  {
-    WebInspector.didGetProfileHeaders(callId, []);
-  },
-
-  getProfile: function(callId, uid)
-  {
-  },
-
-  takeHeapSnapshot: function()
-  {
-    WebInspector.nodeDebugger.takeHeapSnapshot();
-  },
-
-  databaseTableNames: function(database)
-  {
-    return [];
-  },
-
-  stepIntoStatement: function()
-  {
-    WebInspector.nodeDebugger.resume('in');
-  },
-
-  stepOutOfFunction: function()
-  {
-    WebInspector.nodeDebugger.resume('out');
-  },
-
-  stepOverStatement: function()
-  {
-    WebInspector.nodeDebugger.resume('next');
-  },
-
-  saveApplicationSettings: function()
-  {
-  },
-
-  saveSessionSettings: function()
-  {
-  },
-
-  dispatchOnInjectedScript: function()
-  {
-    switch(arguments[2]) {
-      case 'getProperties':
-        var id = arguments[1];
-    
-        var _decode = function(local) 
-        {
-          var n = local.name || 'arguments[' + argi + ']';
-          argi += 1;
-          var p = {name: n};
-          switch (local.value.type) {
-            case 'object':
-              p.value = {
-                description: local.value.className,
-                hasChildren: true,
-                injectedScriptId: local.value.ref
-                };
-              break;
-            case 'function':
-              p.value = {
-                description: 'function ' + n + '()',
-                hasChildren: true,
-                injectedScriptId: local.value.ref
-                };
-              break;
-            case 'undefined':
-              p.value = {description: 'undefined'};
-              break;
-            case 'null':
-              p.value = {description: 'null'};
-              break;
-            default:
-              p.value = {description: local.value.value};
-              break;
-          }
-          return p;
-        };
-        if (id.scopeId !== undefined) {
-          var x = JSON.parse(arguments[3]);
-          if(x[0] && x[0].isLocal)
-          {
-            var obj = x[0];
-            var props = obj.locals.map(_decode);
-            var argi = 0;
-            var args = obj.arguments.map(_decode);
-            args.forEach(function(arg) {
-              if (!props.some(function(p) { return arg.name === p.name; })) {
-                props.push(arg);
-              }
-            });
-            try {
-              WebInspector.Callback.processCallback(arguments[0], props);
+        for (var key in request.arguments) {
+            if (args.length === 0) {
+                console.error("Protocol Error: Invalid number of arguments for 'InspectorBackend.%s' call. It should have the next arguments '%s'.", request.command, JSON.stringify(request.arguments));
+                return;
             }
-            catch(e)
-            {
-              console.error(JSON.stringify(e));
+            var value = args.shift();
+            if (typeof value !== request.arguments[key]) {
+                console.error("Protocol Error: Invalid type of argument '%s' for 'InspectorBackend.%s' call. It should be '%s' but it is '%s'.", key, request.command, request.arguments[key], typeof value);
+                return;
             }
-          }
-          else {
-            WebInspector.nodeDebugger.getScope(id.frameId, id.scopeId, arguments[0]);
-          }
+            request.arguments[key] = value;
         }
-        else {
-          WebInspector.nodeDebugger.lookup(id, arguments[0]);
+
+        if (args.length === 1) {
+            if (typeof args[0] !== "function" && typeof args[0] !== "undefined") {
+                console.error("Protocol Error: Optional callback argument for 'InspectorBackend.%s' call should be a function but its type is '%s'.", request.command, typeof args[0]);
+                return;
+            }
+            request.seq = WebInspector.Callback.wrap(args[0]);
         }
-        break;
-      case 'evaluate':
-        var expr = JSON.parse(arguments[3])[0];
-        WebInspector.nodeDebugger.evaluate(expr, arguments[0]);
-        break;
-      case 'evaluateInCallFrame':
-        var args = JSON.parse(arguments[3]);
-        var frameId = args[0];
-        var expr = args[1];
-        //HACK: protect against evaluating known dangerous expressions,
-        // i.e. ones that crash node
-        if (['require', 'exports', 'module', '__filename', '__dirname'].indexOf(expr) > -1) {
-          WebInspector.Callback.processCallback(arguments[0], null);
-        }
-        else {
-          WebInspector.nodeDebugger.evaluate(expr, arguments[0], frameId);
-        }
-        break;
-      default:
-        // so the callback list doesn't leak
-        WebInspector.Callback.processCallback(arguments[0], null);
-        break;
+
+        var message = JSON.stringify(request);
+        InspectorFrontendHost.sendMessageToBackend(message);
     }
-  },
-
-  releaseWrapperObjectGroup: function()
-  {
-  },
-
-  setInjectedScriptSource: function()
-  {
-  },
-  
-  addScriptToEvaluateOnLoad: function()
-  {
-  },
-
-  removeAllScriptsToEvaluateOnLoad: function()
-  {
-  },
-
-  performSearch: function()
-  {
-  },
-
-  searchCanceled: function()
-  {
-  }
 }
 
 InspectorBackend = new WebInspector.InspectorBackendStub();
-
-}

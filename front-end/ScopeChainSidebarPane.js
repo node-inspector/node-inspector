@@ -60,7 +60,7 @@ WebInspector.ScopeChainSidebarPane.prototype = {
                 emptyPlaceholder = WebInspector.UIString("No Variables");
                 subtitle = null;
                 if (scopeObjectProxy.thisObject)
-                    extraProperties = [ new WebInspector.ObjectPropertyProxy("this", scopeObjectProxy.thisObject) ];
+                    extraProperties = [ new WebInspector.RemoteObjectProperty("this", WebInspector.RemoteObject.fromPayload(scopeObjectProxy.thisObject)) ];
             } else if (scopeObjectProxy.isClosure) {
                 title = WebInspector.UIString("Closure");
                 emptyPlaceholder = WebInspector.UIString("No Variables");
@@ -77,7 +77,7 @@ WebInspector.ScopeChainSidebarPane.prototype = {
             if (!title || title === subtitle)
                 subtitle = null;
 
-            var section = new WebInspector.ObjectPropertiesSection(scopeObjectProxy, title, subtitle, emptyPlaceholder, true, extraProperties, WebInspector.ScopeVariableTreeElement);
+            var section = new WebInspector.ObjectPropertiesSection(WebInspector.RemoteObject.fromPayload(scopeObjectProxy), title, subtitle, emptyPlaceholder, true, extraProperties, WebInspector.ScopeVariableTreeElement);
             section.editInSelectedCallFrameWhenPaused = true;
             section.pane = this;
 

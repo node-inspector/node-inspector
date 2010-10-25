@@ -176,7 +176,8 @@ WebInspector.ResourceView.prototype = {
         this.tabbedPane.selectTabById("content");
         if ("resize" in this)
             this.resize();
-        this.contentTabSelected();
+        if (this.hasContentTab())
+            this.contentTabSelected();
     },
 
     _refreshURL: function()
@@ -278,13 +279,19 @@ WebInspector.ResourceView.prototype = {
 
     _refreshRequestHeaders: function()
     {
-        this._refreshHeaders(WebInspector.UIString("Request Headers"), this.resource.sortedRequestHeaders, this.requestHeadersTreeElement);
+        var additionalRow = null;
+        if (typeof this.resource.webSocketRequestKey3 !== "undefined")
+            additionalRow = {header: "(Key3)", value: this.resource.webSocketRequestKey3};
+        this._refreshHeaders(WebInspector.UIString("Request Headers"), this.resource.sortedRequestHeaders, additionalRow, this.requestHeadersTreeElement);
         this._refreshFormData();
     },
 
     _refreshResponseHeaders: function()
     {
-        this._refreshHeaders(WebInspector.UIString("Response Headers"), this.resource.sortedResponseHeaders, this.responseHeadersTreeElement);
+        var additionalRow = null;
+        if (typeof this.resource.webSocketChallengeResponse !== "undefined")
+            additionalRow = {header: "(Challenge Response)", value: this.resource.webSocketChallengeResponse};
+        this._refreshHeaders(WebInspector.UIString("Response Headers"), this.resource.sortedResponseHeaders, additionalRow, this.responseHeadersTreeElement);
     },
 
     _refreshHTTPInformation: function()
@@ -315,7 +322,7 @@ WebInspector.ResourceView.prototype = {
         }
     },
     
-    _refreshHeaders: function(title, headers, headersTreeElement)
+    _refreshHeaders: function(title, headers, additionalRow, headersTreeElement)
     {
         headersTreeElement.removeChildren();
 
@@ -327,6 +334,15 @@ WebInspector.ResourceView.prototype = {
         for (var i = 0; i < length; ++i) {
             var title = "<div class=\"header-name\">" + headers[i].header.escapeHTML() + ":</div>";
             title += "<div class=\"header-value source-code\">" + headers[i].value.escapeHTML() + "</div>"
+
+            var headerTreeElement = new TreeElement(title, null, false);
+            headerTreeElement.selectable = false;
+            headersTreeElement.appendChild(headerTreeElement);
+        }
+
+        if (additionalRow) {
+            var title = "<div class=\"header-name\">" + additionalRow.header.escapeHTML() + ":</div>";
+            title += "<div class=\"header-value source-code\">" + additionalRow.value.escapeHTML() + "</div>"
 
             var headerTreeElement = new TreeElement(title, null, false);
             headerTreeElement.selectable = false;

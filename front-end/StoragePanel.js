@@ -49,18 +49,17 @@ WebInspector.StoragePanel = function(database)
     this.sidebarTree.appendChild(this.cookieListTreeElement);
     this.cookieListTreeElement.expand();
 
-    if (Preferences.appCacheEnabled) {
-        this.applicationCacheListTreeElement = new WebInspector.SidebarSectionTreeElement(WebInspector.UIString("APPLICATION CACHE"), {}, true);
-        this.sidebarTree.appendChild(this.applicationCacheListTreeElement);
-        this.applicationCacheListTreeElement.expand();
-    }
-
+    
+    this.applicationCacheListTreeElement = new WebInspector.SidebarSectionTreeElement(WebInspector.UIString("APPLICATION CACHE"), {}, true);
+    this.sidebarTree.appendChild(this.applicationCacheListTreeElement);
+    this.applicationCacheListTreeElement.expand();
+    
     this.storageViews = document.createElement("div");
     this.storageViews.id = "storage-views";
     this.element.appendChild(this.storageViews);
 
     this.storageViewStatusBarItemsContainer = document.createElement("div");
-    this.storageViewStatusBarItemsContainer.id = "storage-view-status-bar-items";
+    this.storageViewStatusBarItemsContainer.className = "status-bar-items";
 
     this.reset();
 }
@@ -111,8 +110,7 @@ WebInspector.StoragePanel.prototype = {
         this.sessionStorageListTreeElement.removeChildren();
         this.cookieListTreeElement.removeChildren();
 
-        if (Preferences.appCacheEnabled)
-            this.applicationCacheListTreeElement.removeChildren();
+        this.applicationCacheListTreeElement.removeChildren();
 
         this.storageViews.removeChildren();
 
@@ -150,8 +148,6 @@ WebInspector.StoragePanel.prototype = {
 
     addApplicationCache: function(domain)
     {
-        if (!Preferences.appCacheEnabled)
-            return;
         var applicationCacheTreeElement = new WebInspector.ApplicationCacheSidebarTreeElement(domain);
         this.applicationCacheListTreeElement.appendChild(applicationCacheTreeElement);
     },
@@ -302,32 +298,28 @@ WebInspector.StoragePanel.prototype = {
         database.getTableNames(tableNamesCallback);
     },
 
-    dataGridForResult: function(rows)
+    dataGridForResult: function(columnNames, values)
     {
-        if (!rows.length)
+        var numColumns = columnNames.length;
+        if (!numColumns)
             return null;
 
         var columns = {};
-        var numColumns = 0;
 
-        for (var columnIdentifier in rows[0]) {
+        for (var i = 0; i < columnNames.length; ++i) {
             var column = {};
-            column.width = columnIdentifier.length;
-            column.title = columnIdentifier;
+            column.width = columnNames[i].length;
+            column.title = columnNames[i];
             column.sortable = true;
 
-            columns[columnIdentifier] = column;
-            ++numColumns;
+            columns[columnNames[i]] = column;
         }
 
         var nodes = [];
-        var length = rows.length;
-        for (var i = 0; i < length; ++i) {
+        for (var i = 0; i < values.length / numColumns; ++i) {
             var data = {};
-
-            var row = rows[i];
-            for (var columnIdentifier in row)
-                data[columnIdentifier] = row[columnIdentifier];
+            for (var j = 0; j < columnNames.length; ++j)
+                data[columnNames[j]] = values[numColumns * i + j];
 
             var node = new WebInspector.DataGridNode(data, false);
             node.selectable = false;

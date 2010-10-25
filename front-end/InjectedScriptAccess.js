@@ -29,13 +29,29 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-function InjectedScriptAccess(injectedScriptId) {
-    this._injectedScriptId = injectedScriptId;
+function InjectedScriptAccess(worldId) {
+    this._worldId = worldId;
 }
 
-InjectedScriptAccess.get = function(injectedScriptId)
+InjectedScriptAccess.get = function(worldId)
 {
-    return new InjectedScriptAccess(injectedScriptId);
+    if (typeof worldId === "number")
+        return new InjectedScriptAccess(worldId);
+
+    console.assert(false, "Access to injected script with no id");
+}
+
+InjectedScriptAccess.getForNode = function(node)
+{
+    // FIXME: do something.
+    return InjectedScriptAccess.get(-node.id);
+}
+
+InjectedScriptAccess.getForObjectId = function(objectId)
+{
+    // FIXME: move to native layer.
+    var tokens = objectId.split(":");
+    return InjectedScriptAccess.get(parseInt(tokens[0]));
 }
 
 InjectedScriptAccess.getDefault = function()
@@ -60,9 +76,7 @@ InjectedScriptAccess._installHandler = function(methodName, async)
             else
                 WebInspector.console.addMessage(WebInspector.ConsoleMessage.createTextMessage("Error dispatching: " + methodName));
         }
-        var callId = WebInspector.Callback.wrap(myCallback);
-
-        InspectorBackend.dispatchOnInjectedScript(callId, this._injectedScriptId, methodName, argsString, !!async);
+        InspectorBackend.dispatchOnInjectedScript(this._worldId, methodName, argsString, myCallback);
     };
 }
 
@@ -72,16 +86,11 @@ InjectedScriptAccess._installHandler = function(methodName, async)
 // We keep these sorted.
 InjectedScriptAccess._installHandler("evaluate");
 InjectedScriptAccess._installHandler("evaluateInCallFrame");
+InjectedScriptAccess._installHandler("evaluateOnSelf");
 InjectedScriptAccess._installHandler("getCompletions");
 InjectedScriptAccess._installHandler("getProperties");
 InjectedScriptAccess._installHandler("getPrototypes");
-InjectedScriptAccess._installHandler("openInInspectedWindow");
 InjectedScriptAccess._installHandler("pushNodeToFrontend");
+InjectedScriptAccess._installHandler("resolveNode");
+InjectedScriptAccess._installHandler("getNodeProperties");
 InjectedScriptAccess._installHandler("setPropertyValue");
-InjectedScriptAccess._installHandler("evaluateOnSelf");
-
-// Some methods can't run synchronously even on the injected script side (such as DB transactions).
-// Mark them as asynchronous here.
-InjectedScriptAccess._installHandler("executeSql", true);
-
-WebInspector.didDispatchOnInjectedScript = WebInspector.Callback.processCallback;

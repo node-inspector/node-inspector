@@ -1,3 +1,5 @@
+/* InspectorFrontendHostStub.js */
+
 /*
  * Copyright (C) 2009 Google Inc. All rights reserved.
  *
@@ -30,376 +32,100 @@
 
 if (!window.InspectorFrontendHost) {
 
-//FIXME temporary hack for the taskbar color
-WebInspector._platformFlavor = WebInspector.PlatformFlavor.MacTiger;
-
 WebInspector.InspectorFrontendHostStub = function()
 {
-  this._attachedWindowHeight = 0;
-  //TODO find a place for these
-  function _valueOf(value) {
-    var p = {};
-    switch (value.type) {
-      case 'object':
-        p.value = {
-          description: value.className,
-          hasChildren: true,
-          injectedScriptId: value.ref || value.handle,
-          type: 'object'
-          };
-        break;
-      case 'function':
-        p.value = {
-          description: value.text || 'function()',
-          hasChildren: true,
-          injectedScriptId: value.ref || value.handle,
-          type: 'function'
-          };
-        break;
-      case 'undefined':
-        p.value = {description: 'undefined'};
-        break;
-      case 'null':
-        p.value = {description: 'null'};
-        break;
-      case 'script':
-        p.value = {description: value.text};
-        break;
-      default:
-        p.value = {description: value.value};
-        break;
-    }
-    return p;
-  };
-  
-  function _property(prop) {
-    var p = {};
-    if (prop.value != null) {
-      p = _valueOf(prop.value);
-      p.name = String(prop.name);
-    }
-    else if (prop.ref != null) {
-      p.value = {
-        description: '',
-        hasChildren: true,
-        injectedScriptId: prop.ref,
-        type: 'object'
-      };
-      p.name = String(prop.name);
-    }
-    else {
-      p = _valueOf(prop);
-      p.name = String(prop.name);
-    }
-    return p;
-  };
-  
-  function refToProperties(ref) {
-    if (ref) {
-      if (ref.properties) {
-        var props = ref.properties.map(_property);
-        if(ref.protoObject) {
-          props.push(
-          {
-            name:'__proto__'
-          , value: 
-            {
-              description: ref.protoObject.className
-            , hasChildren: true
-            , injectedScriptId: ref.protoObject.ref
-            , type: ref.protoObject.type
-            }
-          });
-        }
-        return props;
-      }
-      else {
-        return [_property(ref)];
-      }
-    }
-  };
-  
-  var debugr = WebInspector.nodeDebugger;
-  debugr.on('scripts', function(msg) {
-    msg.body.forEach(function(s) {
-      WebInspector.parsedScriptSource(s.id, s.name, s.source, s.lineOffset, 0);
-    });
-    if (!msg.running && !WebInspector.panels.scripts._paused) {
-      debugr.getBacktrace();
-    }
-  });
-  debugr.on('scope', function(msg) {
-    WebInspector.Callback.processCallback(msg.callId, refToProperties(msg.body.object));
-  });
-  debugr.on('suspend', function(msg) {
-    if (msg.success && !msg.running) {
-      debugr.getBacktrace();
-    }
-  });
-  debugr.on('lookup', function(msg) {
-    var ref = msg.body[Object.keys(msg.body)[0]];
-    WebInspector.Callback.processCallback(msg.callId, refToProperties(ref));
-  });
-  debugr.on('evaluate', function(msg) {
-    if (msg.success) {
-      WebInspector.Callback.processCallback(msg.callId, _valueOf(msg.body));
-    }
-    else {
-      WebInspector.Callback.processCallback(msg.callId, {value: msg.message, isException: true});
-    }
-  });
-  debugr.on('setbreakpoint', function(msg) {
-    if (msg.callId) {
-      var a = msg.arguments;
-      WebInspector.didSetBreakpoint(msg.callId, true, a.line + 1);
-    }
-    else {
-      // a different window set a breakpoint
-      WebInspector.panels.scripts.sidebarPanes.breakpoints.reset();
-      debugr.listBreakpoints();
-    }
-  });
-  debugr.on('clearbreakpoint', function(msg) {
-    var bp = WebInspector.breakpointManager._breakpoints[msg.arguments.id];
-    if (bp) {
-      WebInspector.breakpointManager._removeBreakpoint(bp);
-    }
-  });
-  debugr.on('changebreakpoint', function(msg) {
-    if (msg.callId == null) {
-      var bp = WebInspector.breakpointManager._breakpoints[msg.arguments.id];
-      if (bp) {
-        bp._enabled = msg.arguments.enabled;
-        if(bp.enabled) {
-          bp.dispatchEventToListeners("enabled");
-        }
-        else {
-          bp.dispatchEventToListeners("disabled");
-        }
-      }
-    }
-  });
-  debugr.on('listbreakpoints', function(msg) {
-    WebInspector.breakpointManager.reset();
-    msg.body.breakpoints.forEach(function(bp) {
-      if(bp.type === 'scriptId') {
-        var l = bp.line + 1;
-        var url = WebInspector.panels.scripts._sourceIDMap[bp.script_id].sourceURL;
-        WebInspector.breakpointManager.setBreakpoint(bp.script_id, url, l, !!bp.active, bp.condition)
-      }
-    });
-  });
-  debugr.on('backtrace', function(msg) {
-    var callFrames = msg.body.frames.map(function(frame) {
-      var f = {
-        type: 'function',
-        functionName: frame.func.inferredName,
-        sourceID: frame.func.scriptId,
-        line: frame.line + 1,
-        id: frame.index
-      };
-      f.scopeChain = frame.scopes.map(function(scope) {
-        var c = {};
-        switch (scope.type) {
-          case 0:
-            break;
-          case 1:
-            c.isLocal = true;
-            c.thisObject = {description: frame.receiver.className, hasChildren: true, injectedScriptId: frame.receiver.ref};
-            c.locals = frame.locals;
-            c.arguments = frame.arguments;
-            break;
-          case 2:
-            c.isWithBlock = true;
-            break;
-          case 3:
-            c.isClosure = true;
-            break;
-          case 4:
-            c.isElement = true;
-            break;
-          default:
-            break;
-        }
-        c.injectedScriptId = {frameId: frame.index, scopeId: scope.index, isLocal: !!c.isLocal};
-        return c;
-      });
-      return f;
-    });
-    WebInspector.pausedScript(callFrames);
-  });
-  debugr.on('continue', function(msg) {
-    if(WebInspector.panels.scripts._paused) {
-      var panel = WebInspector.panels.scripts;
-      panel._paused = false;
-      panel._waitingToPause = false;
-      panel._clearInterface();
-    }
-  });
-  debugr.on('changelive', function(msg) {
-    if (msg.callId) {
-      WebInspector.didEditScriptSource(msg.callId.id, msg.success, msg.message ||msg.callId.body);
-    }
-    else {
-      WebInspector.panels.scripts.reset();
-      WebInspector.nodeDebugger.getScripts();
-    }
-  });
-  debugr.on('frame', function(msg) {
-  
-  });
-  debugr.on('scopes', function(msg) {
-  
-  });
-  debugr.on('source', function(msg) {
-  
-  });
-  debugr.on('version', function(msg) {
-  
-  });
-  debugr.on('profile', function(msg) {
-  
-  });
-  debugr.on('flags', function(msg) {
-    if (msg.success) {
-      var value = 0;
-      if(msg.body.flags.some(function (x) {
-          return x.name === 'breakOnCaughtException' && x.value})) {
-        value = 1;
-      }
-      debugr.pauseOnExceptions = !!value;
-      WebInspector.updatePauseOnExceptionsState(value);
-    }
-  });
-  
-  // events
-  debugr.on('break', function(msg) {
-    var scripts = WebInspector.panels.scripts._sourceIDMap,
-        id = msg.body.script.id;
-    if(scripts[id] == null) {
-      debugr.getScripts([id]);
-    }
-    debugr.getBacktrace();
-  });
-  debugr.on('exception', function(msg) {
-    if (debugr.pauseOnExceptions) {
-      var scripts = WebInspector.panels.scripts._sourceIDMap,
-        id = msg.body.script.id;
-      if(scripts[id] == null) {
-        debugr.getScripts([id]);
-      }
-      debugr.getBacktrace();
-    }
-    var text = msg.body && msg.body.exception && msg.body.exception.text;
-    WebInspector.addConsoleMessage({
-      source: WebInspector.ConsoleMessage.MessageSource.JS,
-      type: WebInspector.ConsoleMessage.MessageType.Log,
-      level: WebInspector.ConsoleMessage.MessageLevel.Error,
-      repeatCount: 1,
-      message: text });
-  });
-  debugr.on('stdout', function(msg) {
-    WebInspector.addConsoleMessage({
-      source: WebInspector.ConsoleMessage.MessageSource.JS,
-      type: WebInspector.ConsoleMessage.MessageType.Log,
-      level: WebInspector.ConsoleMessage.MessageLevel.Log,
-      repeatCount: 1,
-      message: 'stdout: ' + msg.body});
-  });
-  debugr.on('stderr', function(msg) {
-    WebInspector.addConsoleMessage({
-      source: WebInspector.ConsoleMessage.MessageSource.JS,
-      type: WebInspector.ConsoleMessage.MessageType.Log,
-      level: WebInspector.ConsoleMessage.MessageLevel.Error,
-      repeatCount: 1,
-      message: 'stderr: ' + msg.body});
-  });
+    this._attachedWindowHeight = 0;
 }
 
+WebInspector._platformFlavor = WebInspector.PlatformFlavor.MacLeopard;
+
 WebInspector.InspectorFrontendHostStub.prototype = {
-  platform: function()
-  {
-    var match = navigator.userAgent.match(/Windows NT/);
-    if (match)
-      return "windows";
-    match = navigator.userAgent.match(/Mac OS X/);
-    if (match)
-      return "mac";
-    return "linux";
-  },
+    platform: function()
+    {
+        var match = navigator.userAgent.match(/Windows NT/);
+        if (match)
+            return "windows";
+        match = navigator.userAgent.match(/Mac OS X/);
+        if (match)
+            return "mac";
+        return "linux";
+    },
 
-  port: function()
-  {
-    return "qt";
-  },
+    port: function()
+    {
+        return "qt";
+    },
 
-  bringToFront: function()
-  {
-    this._windowVisible = true;
-  },
+    bringToFront: function()
+    {
+        this._windowVisible = true;
+    },
 
-  closeWindow: function()
-  {
-    this._windowVisible = false;
-  },
+    closeWindow: function()
+    {
+        this._windowVisible = false;
+    },
 
-  attach: function()
-  {
-  },
+    disconnectFromBackend: function()
+    {
+        this._windowVisible = false;
+    },
 
-  detach: function()
-  {
-  },
+    attach: function()
+    {
+    },
 
-  search: function(sourceRow, query)
-  {
-  },
+    detach: function()
+    {
+    },
 
-  setAttachedWindowHeight: function(height)
-  {
-  },
+    search: function(sourceRow, query)
+    {
+    },
 
-  moveWindowBy: function(x, y)
-  {
-  },
+    setAttachedWindowHeight: function(height)
+    {
+    },
 
-  loaded: function()
-  {
-    Preferences.samplingCPUProfiler = true;
-    Preferences.heapProfilerPresent = true;
-    Preferences.debuggerAlwaysEnabled = true;
-    Preferences.profilerAlwaysEnabled = true;
-    Preferences.canEditScriptSource = true;
-    document.getElementById("dock-status-bar-item").style.display='none';
-    WebInspector.populateApplicationSettings();
-    WebInspector.applicationSettings.installSetting("scriptsSidebarWidth", "scripts-sidebar-width", 250);
-    WebInspector.applicationSettings.installSetting("consoleSidebarWidth", "console-sidebar-width", 250);
-    WebInspector.showScriptsPanel();
-    WebInspector.panels.scripts._enableDebugging();
-  },
+    moveWindowBy: function(x, y)
+    {
+    },
 
-  localizedStringsURL: function()
-  {
-    return undefined;
-  },
+    setExtensionAPI: function(script)
+    {
+    },
 
-  hiddenPanels: function()
-  {
-    return "elements,resources,timeline,profiles,storage,audits";
-  },
+    loaded: function()
+    {
+      document.getElementById("dock-status-bar-item").style.display='none';
+    },
 
-  inspectedURLChanged: function(url)
-  {
-  },
+    localizedStringsURL: function()
+    {
+        return undefined;
+    },
 
-  copyText: function()
-  {
-  },
+    hiddenPanels: function()
+    {
+        return "elements,timeline,profiles,storage,audits";
+    },
 
-  canAttachWindow: function()
-  {
-    return false;
-  }
+    inspectedURLChanged: function(url)
+    {
+    },
+
+    copyText: function()
+    {
+    },
+
+    canAttachWindow: function()
+    {
+        return false;
+    },
+
+    sendMessageToBackend: function(message)
+    {
+    }
 }
 
 InspectorFrontendHost = new WebInspector.InspectorFrontendHostStub();

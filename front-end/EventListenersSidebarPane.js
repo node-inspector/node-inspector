@@ -183,23 +183,27 @@ WebInspector.EventListenerBar = function(eventListener, nodeId)
     this._setFunctionSubtitle();
     this.editable = false;
     this.element.className = "event-bar"; /* Changed from "section" */
-    this.propertiesElement.className = "event-properties"; /* Changed from "properties" */
+    this.propertiesElement.className = "event-properties properties-tree source-code"; /* Changed from "properties" */
 }
 
 WebInspector.EventListenerBar.prototype = {
     update: function()
     {
-        var properties = [];
-        for (var propertyName in this.eventListener) {
-            // Just build properties in place - no need to reach out for injected script.
-            var value = this.eventListener[propertyName];
-            if (value instanceof WebInspector.DOMNode)
-                value = new WebInspector.ObjectProxy(value.injectedScriptId, value.id, [], appropriateSelectorForNode(value), true);
-            else
-                value = WebInspector.ObjectProxy.wrapPrimitiveValue(value);
-            properties.push(new WebInspector.ObjectPropertyProxy(propertyName, value));
+        function updateWithNodeObject(nodeObject)
+        {
+            var properties = [];
+            if (nodeObject)
+                properties.push(new WebInspector.RemoteObjectProperty("node", nodeObject));
+
+            for (var propertyName in this.eventListener) {
+                var value = WebInspector.RemoteObject.fromPrimitiveValue(this.eventListener[propertyName]);
+                properties.push(new WebInspector.RemoteObjectProperty(propertyName, value));
+            }
+            this.updateProperties(properties);
         }
-        this.updateProperties(properties);
+        var node = this.eventListener.node;
+        delete this.eventListener.node;
+        WebInspector.RemoteObject.resolveNode(node, updateWithNodeObject.bind(this));
     },
 
     _setNodeTitle: function()

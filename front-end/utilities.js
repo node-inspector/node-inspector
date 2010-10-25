@@ -26,18 +26,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-Object.proxyType = function(objectProxy)
-{
-    if (objectProxy === null)
-        return "null";
-
-    var type = typeof objectProxy;
-    if (type !== "object" && type !== "function")
-        return type;
-
-    return objectProxy.type;
-}
-
 Object.properties = function(obj)
 {
     var properties = [];
@@ -188,8 +176,9 @@ Element.prototype.removeStyleClass = function(className)
     if (index === -1)
         return;
 
-    var newClassName = " " + this.className + " ";
-    this.className = newClassName.replace(" " + className + " ", " ");
+    this.className = this.className.split(" ").filter(function(s) {
+        return s && s !== className;
+    }).join(" ");
 }
 
 Element.prototype.removeMatchingStyleClasses = function(classNameRegex)
@@ -273,7 +262,8 @@ Element.prototype.query = function(query)
 
 Element.prototype.removeChildren = function()
 {
-    this.innerHTML = "";
+    if (this.firstChild)
+        this.textContent = "";
 }
 
 Element.prototype.isInsertionCaretInside = function()
@@ -638,6 +628,11 @@ function parentNode(node)
     return node.parentNode;
 }
 
+Number.millisToString = function(ms, formatterFunction, higherResolution)
+{
+    return Number.secondsToString(ms / 1000, formatterFunction, higherResolution);
+}
+
 Number.secondsToString = function(seconds, formatterFunction, higherResolution)
 {
     if (!formatterFunction)
@@ -737,12 +732,6 @@ Array.convert = function(list)
 
 function insertionIndexForObjectInListSortedByFunction(anObject, aList, aFunction)
 {
-    // indexOf returns (-lowerBound - 1). Taking (-result - 1) works out to lowerBound.
-    return (-indexOfObjectInListSortedByFunction(anObject, aList, aFunction) - 1);
-}
-
-function indexOfObjectInListSortedByFunction(anObject, aList, aFunction)
-{
     var first = 0;
     var last = aList.length - 1;
     var floor = Math.floor;
@@ -765,9 +754,7 @@ function indexOfObjectInListSortedByFunction(anObject, aList, aFunction)
         }
     }
 
-    // By returning 1 less than the negative lower search bound, we can reuse this function
-    // for both indexOf and insertionIndexFor, with some simple arithmetic.
-    return (-first - 1);
+    return first;
 }
 
 String.sprintf = function(format)
@@ -840,7 +827,7 @@ String.tokenizeFormatString = function(format)
 String.standardFormatters = {
     d: function(substitution)
     {
-        if (typeof substitution == "object" && Object.proxyType(substitution) === "number")
+        if (typeof substitution == "object" && WebInspector.RemoteObject.type(substitution) === "number")
             substitution = substitution.description;
         substitution = parseInt(substitution);
         return !isNaN(substitution) ? substitution : 0;
@@ -848,7 +835,7 @@ String.standardFormatters = {
 
     f: function(substitution, token)
     {
-        if (typeof substitution == "object" && Object.proxyType(substitution) === "number")
+        if (typeof substitution == "object" && WebInspector.RemoteObject.type(substitution) === "number")
             substitution = substitution.description;
         substitution = parseFloat(substitution);
         if (substitution && token.precision > -1)
@@ -858,7 +845,7 @@ String.standardFormatters = {
 
     s: function(substitution)
     {
-        if (typeof substitution == "object" && Object.proxyType(substitution) !== "null")
+        if (typeof substitution == "object" && WebInspector.RemoteObject.type(substitution) !== "null")
             substitution = substitution.description;
         return substitution;
     },
@@ -996,4 +983,13 @@ function createSearchRegex(query)
         regex += "[" + char + "]";
     }
     return new RegExp(regex, "i");
+}
+
+function offerFileForDownload(contents)
+{
+    var builder = new BlobBuilder();
+    builder.append(contents);
+    var blob = builder.getBlob("application/octet-stream");
+    var url = window.createBlobURL(blob);
+    window.open(url);
 }

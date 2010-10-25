@@ -81,15 +81,22 @@ WebInspector.AuditCategoryResultPane = function(categoryResult)
 WebInspector.AuditCategoryResultPane.prototype = {
     _appendResult: function(parentTreeElement, result)
     {
-        var title = result.value;
-        if (result.violationCount)
-            title = String.sprintf("%s (%d)", title, result.violationCount);
+        var title = "";
+        
+        if (typeof result.value === "string") {
+            title = result.value;
+            if (result.violationCount)
+                title = String.sprintf("%s (%d)", title, result.violationCount);
+        }
 
         var treeElement = new TreeElement(title, null, !!result.children);
         parentTreeElement.appendChild(treeElement);
 
         if (result.className)
             treeElement.listItemElement.addStyleClass(result.className);
+        if (typeof result.value !== "string")
+            treeElement.listItemElement.appendChild(WebInspector.applyFormatters(result.value));
+
         if (result.children) {
             for (var i = 0; i < result.children.length; ++i)
                 this._appendResult(treeElement, result.children[i]);

@@ -33,10 +33,6 @@ WebInspector.DOMNode = function(doc, payload) {
     this.ownerDocument = doc;
 
     this.id = payload.id;
-    // injectedScriptId is a node is for DOM nodes which should be converted
-    // to corresponding InjectedScript by the inspector backend. We indicate
-    // this by making injectedScriptId negative.
-    this.injectedScriptId = -payload.id;
     this.nodeType = payload.nodeType;
     this.nodeName = payload.nodeName;
     this.localName = payload.localName;
@@ -64,6 +60,8 @@ WebInspector.DOMNode = function(doc, payload) {
     this.style = null;
     this._matchedCSSRules = [];
 
+    this.breakpoints = {};
+
     if (this.nodeType === Node.ELEMENT_NODE) {
         // HTML and BODY from internal iframes should not overwrite top-level ones.
         if (!this.ownerDocument.documentElement && this.nodeName === "HTML")
@@ -76,8 +74,12 @@ WebInspector.DOMNode = function(doc, payload) {
         this.publicId = payload.publicId;
         this.systemId = payload.systemId;
         this.internalSubset = payload.internalSubset;
-    } else if (this.nodeType === Node.DOCUMENT_NODE)
+    } else if (this.nodeType === Node.DOCUMENT_NODE) {
         this.documentURL = payload.documentURL;
+    } else if (this.nodeType === Node.ATTRIBUTE_NODE) {
+        this.name = payload.name;
+        this.value = payload.value;
+    }
 }
 
 WebInspector.DOMNode.prototype = {
@@ -98,13 +100,7 @@ WebInspector.DOMNode.prototype = {
     set nodeValue(value) {
         if (this.nodeType != Node.TEXT_NODE)
             return;
-        var self = this;
-        var callback = function()
-        {
-            self._nodeValue = value;
-            self.textContent = value;
-        };
-        this.ownerDocument._domAgent.setTextNodeValueAsync(this, value, callback);
+        this.ownerDocument._domAgent.setTextNodeValueAsync(this, value, function() {});
     },
 
     getAttribute: function(name)
@@ -141,6 +137,18 @@ WebInspector.DOMNode.prototype = {
             }
         };
         this.ownerDocument._domAgent.removeAttributeAsync(this, name, callback);
+    },
+
+    path: function()
+    {
+        var path = [];
+        var node = this;
+        while (node && "index" in node && node.nodeName.length) {
+            path.push([node.index, node.nodeName]);
+            node = node.parentNode;
+        }
+        path.reverse();
+        return path.join(",");
     },
 
     _setAttributesPayload: function(attrs)
@@ -310,26 +318,25 @@ WebInspector.DOMAgent.prototype = {
         function mycallback() {
             callback(parent.children);
         }
-        var callId = WebInspector.Callback.wrap(mycallback);
-        InspectorBackend.getChildNodes(callId, parent.id);
+        InspectorBackend.getChildNodes(parent.id, mycallback);
     },
 
     setAttributeAsync: function(node, name, value, callback)
     {
         var mycallback = this._didApplyDomChange.bind(this, node, callback);
-        InspectorBackend.setAttribute(WebInspector.Callback.wrap(mycallback), node.id, name, value);
+        InspectorBackend.setAttribute(node.id, name, value, mycallback);
     },
 
     removeAttributeAsync: function(node, name, callback)
     {
         var mycallback = this._didApplyDomChange.bind(this, node, callback);
-        InspectorBackend.removeAttribute(WebInspector.Callback.wrap(mycallback), node.id, name);
+        InspectorBackend.removeAttribute(node.id, name, mycallback);
     },
 
     setTextNodeValueAsync: function(node, text, callback)
     {
         var mycallback = this._didApplyDomChange.bind(this, node, callback);
-        InspectorBackend.setTextNodeValue(WebInspector.Callback.wrap(mycallback), node.id, text);
+        InspectorBackend.setTextNodeValue(node.id, text, mycallback);
     },
 
     _didApplyDomChange: function(node, callback, success)
@@ -351,6 +358,15 @@ WebInspector.DOMAgent.prototype = {
         this.document._fireDomEvent("DOMAttrModified", event);
     },
 
+    _characterDataModified: function(nodeId, newValue)
+    {
+        var node = this._idToDOMNode[nodeId];
+        node._nodeValue = newValue;
+        node.textContent = newValue;
+        var event = { target : node };
+        this.document._fireDomEvent("DOMCharacterDataModified", event);
+    },
+
     nodeForId: function(nodeId)
     {
         return this._idToDOMNode[nodeId];
@@ -363,6 +379,7 @@ WebInspector.DOMAgent.prototype = {
             this.document = new WebInspector.DOMDocument(this, this._window, payload);
             this._idToDOMNode[payload.id] = this.document;
             this._bindNodes(this.document.children);
+            WebInspector.breakpointManager.restoreDOMBreakpoints();
         } else
             this.document = null;
         WebInspector.panels.elements.setDocument(this.document);
@@ -419,6 +436,17 @@ WebInspector.DOMAgent.prototype = {
         var event = { target : node, relatedNode : parent };
         this.document._fireDomEvent("DOMNodeRemoved", event);
         delete this._idToDOMNode[nodeId];
+        this._removeBreakpoints(node);
+    },
+
+    _removeBreakpoints: function(node)
+    {
+        for (var type in node.breakpoints)
+            node.breakpoints[type].remove();
+        if (!node.children)
+            return;
+        for (var i = 0; i < node.children.length; ++i)
+            this._removeBreakpoints(node.children[i]);
     }
 }
 
@@ -433,8 +461,7 @@ WebInspector.ApplicationCache.getApplicationCachesAsync = function(callback)
             callback(applicationCaches);
     }
 
-    var callId = WebInspector.Callback.wrap(mycallback);
-    InspectorBackend.getApplicationCaches(callId);
+    InspectorBackend.getApplicationCaches(mycallback);
 }
 
 WebInspector.Cookies = {}
@@ -449,8 +476,7 @@ WebInspector.Cookies.getCookiesAsync = function(callback)
             callback(cookies, true);
     }
 
-    var callId = WebInspector.Callback.wrap(mycallback);
-    InspectorBackend.getCookies(callId);
+    InspectorBackend.getCookies(mycallback);
 }
 
 WebInspector.Cookies.buildCookiesFromString = function(rawCookieString)
@@ -500,9 +526,7 @@ WebInspector.EventListeners.getEventListenersForNodeAsync = function(node, callb
 {
     if (!node)
         return;
-
-    var callId = WebInspector.Callback.wrap(callback);
-    InspectorBackend.getEventListenersForNode(callId, node.id);
+    InspectorBackend.getEventListenersForNode(node.id, callback);
 }
 
 WebInspector.CSSStyleDeclaration = function(payload)
@@ -651,6 +675,11 @@ WebInspector.attributesUpdated = function()
     this.domAgent._attributesUpdated.apply(this.domAgent, arguments);
 }
 
+WebInspector.characterDataModified = function()
+{
+    this.domAgent._characterDataModified.apply(this.domAgent, arguments);
+}
+
 WebInspector.setDocument = function()
 {
     this.domAgent._setDocument.apply(this.domAgent, arguments);
@@ -680,29 +709,3 @@ WebInspector.childNodeRemoved = function()
 {
     this.domAgent._childNodeRemoved.apply(this.domAgent, arguments);
 }
-
-WebInspector.didGetApplicationCaches = WebInspector.Callback.processCallback;
-WebInspector.didGetCookies = WebInspector.Callback.processCallback;
-WebInspector.didGetChildNodes = WebInspector.Callback.processCallback;
-WebInspector.didPerformSearch = WebInspector.Callback.processCallback;
-WebInspector.didApplyDomChange = WebInspector.Callback.processCallback;
-WebInspector.didRemoveAttribute = WebInspector.Callback.processCallback;
-WebInspector.didSetTextNodeValue = WebInspector.Callback.processCallback;
-WebInspector.didRemoveNode = WebInspector.Callback.processCallback;
-WebInspector.didChangeTagName = WebInspector.Callback.processCallback;
-WebInspector.didGetOuterHTML = WebInspector.Callback.processCallback;
-WebInspector.didSetOuterHTML = WebInspector.Callback.processCallback;
-WebInspector.didPushNodeByPathToFrontend = WebInspector.Callback.processCallback;
-WebInspector.didGetEventListenersForNode = WebInspector.Callback.processCallback;
-
-WebInspector.didGetStyles = WebInspector.Callback.processCallback;
-WebInspector.didGetAllStyles = WebInspector.Callback.processCallback;
-WebInspector.didGetStyleSheet = WebInspector.Callback.processCallback;
-WebInspector.didGetInlineStyle = WebInspector.Callback.processCallback;
-WebInspector.didGetComputedStyle = WebInspector.Callback.processCallback;
-WebInspector.didApplyStyleText = WebInspector.Callback.processCallback;
-WebInspector.didSetStyleText = WebInspector.Callback.processCallback;
-WebInspector.didSetStyleProperty = WebInspector.Callback.processCallback;
-WebInspector.didToggleStyleEnabled = WebInspector.Callback.processCallback;
-WebInspector.didSetRuleSelector = WebInspector.Callback.processCallback;
-WebInspector.didAddRule = WebInspector.Callback.processCallback;

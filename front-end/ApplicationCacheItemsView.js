@@ -41,12 +41,14 @@ WebInspector.ApplicationCacheItemsView = function(treeElement, appcacheDomain)
     this.refreshButton = new WebInspector.StatusBarButton(WebInspector.UIString("Refresh"), "refresh-storage-status-bar-item");
     this.refreshButton.addEventListener("click", this._refreshButtonClicked.bind(this), false);
 
-    this.connectivityIcon = document.createElement("img");
-    this.connectivityIcon.className = "storage-application-cache-connectivity-icon";
-    this.connectivityIcon.src = "";
-    this.connectivityMessage = document.createElement("span");
-    this.connectivityMessage.className = "storage-application-cache-connectivity";
-    this.connectivityMessage.textContent = "";
+    if (Preferences.onlineDetectionEnabled) {
+        this.connectivityIcon = document.createElement("img");
+        this.connectivityIcon.className = "storage-application-cache-connectivity-icon";
+        this.connectivityIcon.src = "";
+        this.connectivityMessage = document.createElement("span");
+        this.connectivityMessage.className = "storage-application-cache-connectivity";
+        this.connectivityMessage.textContent = "";
+    }
 
     this.divider = document.createElement("span");
     this.divider.className = "status-bar-item status-bar-divider";
@@ -72,11 +74,18 @@ WebInspector.ApplicationCacheItemsView = function(treeElement, appcacheDomain)
 WebInspector.ApplicationCacheItemsView.prototype = {
     get statusBarItems()
     {
-        return [
-            this.refreshButton.element, this.deleteButton.element,
-            this.connectivityIcon, this.connectivityMessage, this.divider,
-            this.statusIcon, this.statusMessage
-        ];
+        if (Preferences.onlineDetectionEnabled) {
+            return [
+                this.refreshButton.element, this.deleteButton.element,
+                this.connectivityIcon, this.connectivityMessage, this.divider,
+                this.statusIcon, this.statusMessage
+            ];
+        } else {
+            return [
+                this.refreshButton.element, this.deleteButton.element, this.divider,
+                this.statusIcon, this.statusMessage
+            ];
+        }
     },
 
     show: function(parentElement)
@@ -114,12 +123,14 @@ WebInspector.ApplicationCacheItemsView.prototype = {
 
     updateNetworkState: function(isNowOnline)
     {
-        if (isNowOnline) {
-            this.connectivityIcon.src = "Images/successGreenDot.png";
-            this.connectivityMessage.textContent = WebInspector.UIString("Online");
-        } else {
-            this.connectivityIcon.src = "Images/errorRedDot.png";
-            this.connectivityMessage.textContent = WebInspector.UIString("Offline");
+        if (Preferences.onlineDetectionEnabled) {
+            if (isNowOnline) {
+                this.connectivityIcon.src = "Images/successGreenDot.png";
+                this.connectivityMessage.textContent = WebInspector.UIString("Online");
+            } else {
+                this.connectivityIcon.src = "Images/errorRedDot.png";
+                this.connectivityMessage.textContent = WebInspector.UIString("Offline");
+            }
         }
     },
 

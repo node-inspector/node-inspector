@@ -42,15 +42,20 @@ WebInspector.Callback.prototype = {
         return callbackId;
     },
 
-    processCallback: function(callbackId, opt_vararg)
+    processResponse: function(callbackId, args)
     {
-        var args = Array.prototype.slice.call(arguments, 1);
         var callback = this._callbacks[callbackId];
         callback.apply(null, args);
+        delete this._callbacks[callbackId];
+    },
+
+    removeResponseCallbackEntry: function(callbackId)
+    {
         delete this._callbacks[callbackId];
     }
 }
 
 WebInspector.Callback._INSTANCE = new WebInspector.Callback();
 WebInspector.Callback.wrap = WebInspector.Callback._INSTANCE.wrap.bind(WebInspector.Callback._INSTANCE);
-WebInspector.Callback.processCallback = WebInspector.Callback._INSTANCE.processCallback.bind(WebInspector.Callback._INSTANCE);
+WebInspector.processResponse = WebInspector.Callback._INSTANCE.processResponse.bind(WebInspector.Callback._INSTANCE);
+WebInspector.removeResponseCallbackEntry = WebInspector.Callback._INSTANCE.removeResponseCallbackEntry.bind(WebInspector.Callback._INSTANCE);

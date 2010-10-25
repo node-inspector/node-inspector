@@ -1,27 +1,4 @@
-WebInspector.CSSCompletions = (function() {
-    var used = {};
-    var properties = [];
-    var style = document.documentElement.style;
-    var list = document.defaultView.getComputedStyle(document.documentElement, "");
-    var length = list.length;
-    for (var i = 0; i < length; ++i)
-        used[properties[i] = list[i]] = true;
-
-    for (var i = 0, end = length; i < length; ++i) {
-        var propertyWords = properties[i].split("-");
-        var j = propertyWords.length;
-        while (--j) {
-            propertyWords.pop();
-            var shorthand = propertyWords.join("-");
-            if (!(shorthand in used) && style[shorthand] !== undefined) {
-                used[shorthand] = true;
-                properties[end++] = shorthand;
-            }
-        }
-    }
-
-    return properties.sort();
-})();
+WebInspector.CSSCompletions = [];
 
 WebInspector.CSSCompletions.startsWith = function(prefix)
 {
@@ -44,6 +21,8 @@ WebInspector.CSSCompletions.firstStartsWith = function(prefix)
 WebInspector.CSSCompletions._firstIndexOfPrefix = function(prefix)
 {
     if (!prefix)
+        return -1;
+    if (!this.length)
         return -1;
 
     var maxIndex = this.length - 1;
@@ -99,4 +78,11 @@ WebInspector.CSSCompletions._closest = function(str, prefix, shift)
     var j = propertiesWithPrefix.indexOf(str);
     j = (j + propertiesWithPrefix.length + shift) % propertiesWithPrefix.length;
     return propertiesWithPrefix[j];
+}
+
+WebInspector.CSSCompletions._load = function(properties)
+{
+    for (var i = 0; i < properties.length; ++i)
+        WebInspector.CSSCompletions.push(properties[i]);
+    WebInspector.CSSCompletions.sort();
 }

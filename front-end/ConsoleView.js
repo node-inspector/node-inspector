@@ -64,7 +64,7 @@ WebInspector.ConsoleView = function(drawer)
 
     function createDividerElement() {
         var dividerElement = document.createElement("div");
-        dividerElement.addStyleClass("divider");
+        dividerElement.addStyleClass("scope-bar-divider");
         this.filterBarElement.appendChild(dividerElement);
     }
 
@@ -342,7 +342,7 @@ WebInspector.ConsoleView.prototype = {
         var injectedScriptAccess;
         if (WebInspector.panels.scripts && WebInspector.panels.scripts.paused) {
             var selectedCallFrame = WebInspector.panels.scripts.sidebarPanes.callstack.selectedCallFrame;
-            injectedScriptAccess = InjectedScriptAccess.get(selectedCallFrame.injectedScriptId);
+            injectedScriptAccess = InjectedScriptAccess.get(selectedCallFrame.worldId);
         } else
             injectedScriptAccess = InjectedScriptAccess.getDefault();
         injectedScriptAccess.getCompletions(expressionString, includeInspectorCommandLineAPI, callFrameId, reportCompletions);
@@ -400,10 +400,13 @@ WebInspector.ConsoleView.prototype = {
         }
 
         var contextMenu = new WebInspector.ContextMenu();
-        if (!WebInspector.monitoringXHREnabled)
-            contextMenu.appendItem(WebInspector.UIString("Enable XMLHttpRequest logging"), InspectorBackend.enableMonitoringXHR.bind(InspectorBackend));
-        else
-            contextMenu.appendItem(WebInspector.UIString("Disable XMLHttpRequest logging"), InspectorBackend.disableMonitoringXHR.bind(InspectorBackend));
+
+        function monitoringXHRWasChanged(newState)
+        {
+            WebInspector.monitoringXHREnabled = newState;
+        }
+        var itemAction = InspectorBackend.setMonitoringXHREnabled.bind(InspectorBackend, !WebInspector.monitoringXHREnabled, monitoringXHRWasChanged);
+        contextMenu.appendCheckboxItem(WebInspector.UIString("XMLHttpRequest logging"), itemAction, WebInspector.monitoringXHREnabled);
         contextMenu.appendItem(WebInspector.UIString("Clear Console"), this.requestClearMessages.bind(this));
         contextMenu.show(event);
     },
@@ -511,14 +514,14 @@ WebInspector.ConsoleView.prototype = {
 
         function evalCallback(result)
         {
-            callback(result.value, result.isException);
+            callback(WebInspector.RemoteObject.fromPayload(result));
         };
         InjectedScriptAccess.getDefault().evaluate(expression, objectGroup, evalCallback);
     },
 
     _enterKeyPressed: function(event)
     {
-        if (event.altKey)
+        if (event.altKey || event.ctrlKey)
             return;
 
         event.preventDefault();
@@ -534,7 +537,7 @@ WebInspector.ConsoleView.prototype = {
         this.addMessage(commandMessage);
 
         var self = this;
-        function printResult(result, exception)
+        function printResult(result)
         {
             self.prompt.history.push(str);
             self.prompt.historyOffset = 0;
@@ -542,7 +545,7 @@ WebInspector.ConsoleView.prototype = {
 
             WebInspector.applicationSettings.consoleHistory = self.prompt.history.slice(-30);
 
-            self.addMessage(new WebInspector.ConsoleCommandResult(result, exception, commandMessage));
+            self.addMessage(new WebInspector.ConsoleCommandResult(result, commandMessage));
         }
         this.evalInInspectedWindow(str, "console", printResult);
     },
@@ -550,7 +553,7 @@ WebInspector.ConsoleView.prototype = {
     _format: function(output, forceObjectFormat)
     {
         var isProxy = (output != null && typeof output === "object");
-        var type = (forceObjectFormat ? "object" : Object.proxyType(output));
+        var type = (forceObjectFormat ? "object" : WebInspector.RemoteObject.type(output));
 
         var formatter = this._customFormatters[type];
         if (!formatter || !isProxy) {
@@ -589,12 +592,12 @@ WebInspector.ConsoleView.prototype = {
             elem.appendChild(treeOutline.element);
         }
 
-        InjectedScriptAccess.get(object.injectedScriptId).pushNodeToFrontend(object, printNode);
+        object.pushNodeToFrontend(printNode);
     },
 
     _formatarray: function(arr, elem)
     {
-        InjectedScriptAccess.get(arr.injectedScriptId).getProperties(arr, false, false, this._printArray.bind(this, elem));
+        arr.getOwnProperties(false, this._printArray.bind(this, elem));
     },
 
     _formatstring: function(output, elem)
@@ -637,9 +640,8 @@ WebInspector.ConsoleView.prototype = {
 
     _formatAsArrayEntry: function(output)
     {
-        var type = Object.proxyType(output);
         // Prevent infinite expansion of cross-referencing arrays.
-        return this._format(output, type === "array");
+        return this._format(output, WebInspector.RemoteObject.type(output) === "array");
     }
 }
 
@@ -672,9 +674,30 @@ WebInspector.ConsoleMessage.prototype = {
     _formatMessage: function()
     {
         switch (this.type) {
+            case WebInspector.ConsoleMessage.MessageType.Assert:
             case WebInspector.ConsoleMessage.MessageType.Trace:
-                this.formattedMessage = this._createStackTraceElement();
-                this.formattedMessage.addStyleClass("trace-message");
+            case WebInspector.ConsoleMessage.MessageType.UncaughtException:
+                var ol = document.createElement("ol");
+                ol.addStyleClass("stack-trace");
+                var treeOutline = new TreeOutline(ol);
+                var messageText;
+                if (this.type === WebInspector.ConsoleMessage.MessageType.Assert)
+                    messageText = this._format(this._parameters);
+                else if (this.type === WebInspector.ConsoleMessage.MessageType.Trace)
+                    messageText = document.createTextNode("console.trace()");
+                else
+                    messageText = document.createTextNode(this._messageText);
+
+                var content = document.createElement("div");
+                this._addMessageHeader(content, messageText);
+                var root = new TreeElement(content, null, true);
+                content.treeElementForTest = root;
+                treeOutline.appendChild(root);
+                if (this.type === WebInspector.ConsoleMessage.MessageType.Trace)
+                    root.expand();
+
+                this._populateStackTraceTreeElement(root);
+                this.formattedMessage = ol;
                 break;
             case WebInspector.ConsoleMessage.MessageType.Object:
                 var obj = this._parameters ? this._parameters[0] : undefined;
@@ -704,12 +727,15 @@ WebInspector.ConsoleMessage.prototype = {
 
         // Formatting code below assumes that parameters are all wrappers whereas frontend console
         // API allows passing arbitrary values as messages (strings, numbers, etc.). Wrap them here.
-        for (var i = 0; i < parameters.length; ++i)
-            if (typeof parameters[i] !== "object" && typeof parameters[i] !== "function")
-                parameters[i] = WebInspector.ObjectProxy.wrapPrimitiveValue(parameters[i]);
+        for (var i = 0; i < parameters.length; ++i) {
+            if (typeof parameters[i] === "object")
+                parameters[i] = WebInspector.RemoteObject.fromPayload(parameters[i]);
+            else
+                parameters[i] = WebInspector.RemoteObject.fromPrimitiveValue(parameters[i]);
+        }
 
         // There can be string log and string eval result. We distinguish between them based on message type.
-        var shouldFormatMessage = Object.proxyType(parameters[0]) === "string" && this.type !== WebInspector.ConsoleMessage.MessageType.Result;
+        var shouldFormatMessage = WebInspector.RemoteObject.type(parameters[0]) === "string" && this.type !== WebInspector.ConsoleMessage.MessageType.Result;
 
         // Multiple parameters with the first being a format string. Save unused substitutions.
         if (shouldFormatMessage) {
@@ -825,26 +851,12 @@ WebInspector.ConsoleMessage.prototype = {
             return element;
         }
 
-        if (this.type === WebInspector.ConsoleMessage.MessageType.Trace) {
+        if (this.type === WebInspector.ConsoleMessage.MessageType.Trace ||
+            this.type === WebInspector.ConsoleMessage.MessageType.Assert ||
+            this.type === WebInspector.ConsoleMessage.MessageType.UncaughtException)
             element.appendChild(this.formattedMessage);
-        } else {
-            if (this.url && this.url !== "undefined") {
-                var urlElement = WebInspector.linkifyResourceAsNode(this.url, "scripts", this.line, "console-message-url"); 
-                element.appendChild(urlElement);
-            }
-
-            var messageTextElement = document.createElement("span");
-            messageTextElement.className = "console-message-text source-code";
-            if (this.type === WebInspector.ConsoleMessage.MessageType.Assert)
-                messageTextElement.appendChild(document.createTextNode(WebInspector.UIString("Assertion failed: ")));
-            messageTextElement.appendChild(this.formattedMessage);
-            element.appendChild(messageTextElement);
-
-            if (this._stackTrace) {
-                var ol = this._createStackTraceElement();
-                element.appendChild(ol);
-            }
-        }
+        else
+            this._addMessageHeader(element, this.formattedMessage);
 
         if (this.repeatCount > 1)
             this._updateRepeatCount();
@@ -852,29 +864,39 @@ WebInspector.ConsoleMessage.prototype = {
         return element;
     },
 
-    _createStackTraceElement: function()
+    _populateStackTraceTreeElement: function(parentTreeElement)
     {
-        var ol = document.createElement("ol");
-        ol.addStyleClass("stack-trace");
-        var treeOutline = new TreeOutline(ol);
         for (var i = 0; i < this._stackTrace.length; i++) {
             var frame = this._stackTrace[i];
 
-            var li = document.createElement("li");
+            var content = document.createElement("div");
             var messageTextElement = document.createElement("span");
             messageTextElement.className = "console-message-text source-code";
             var functionName = frame.functionName || WebInspector.UIString("(anonymous function)");
             messageTextElement.appendChild(document.createTextNode(functionName));
-            li.appendChild(messageTextElement);
+            content.appendChild(messageTextElement);
 
             var urlElement = WebInspector.linkifyResourceAsNode(frame.sourceURL, "scripts", frame.lineNumber, "console-message-url"); 
-            li.appendChild(urlElement);
+            content.appendChild(urlElement);
 
-
-            var treeElement = new TreeElement(li.innerHTML);
-            treeOutline.appendChild(treeElement);
+            var treeElement = new TreeElement(content);
+            parentTreeElement.appendChild(treeElement);
         }
-        return ol;
+    },
+
+    _addMessageHeader: function(parentElement, formattedMessage)
+    {
+        if (this.url && this.url !== "undefined") {
+            var urlElement = WebInspector.linkifyResourceAsNode(this.url, "scripts", this.line, "console-message-url"); 
+            parentElement.appendChild(urlElement);
+        }
+
+        var messageTextElement = document.createElement("span");
+        messageTextElement.className = "console-message-text source-code";
+        if (this.type === WebInspector.ConsoleMessage.MessageType.Assert)
+            messageTextElement.appendChild(document.createTextNode(WebInspector.UIString("Assertion failed: ")));
+        messageTextElement.appendChild(formattedMessage);
+        parentElement.appendChild(messageTextElement);
     },
 
     _updateRepeatCount: function() {
@@ -915,6 +937,7 @@ WebInspector.ConsoleMessage.prototype = {
         var typeString;
         switch (this.type) {
             case WebInspector.ConsoleMessage.MessageType.Log:
+            case WebInspector.ConsoleMessage.MessageType.UncaughtException:
                 typeString = "Log";
                 break;
             case WebInspector.ConsoleMessage.MessageType.Object:
@@ -994,7 +1017,8 @@ WebInspector.ConsoleMessage.MessageType = {
     StartGroupCollapsed: 4,
     EndGroup: 5,
     Assert: 6,
-    Result: 7
+    UncaughtException: 7,
+    Result: 8
 }
 
 WebInspector.ConsoleMessage.MessageLevel = {
@@ -1026,21 +1050,11 @@ WebInspector.ConsoleCommand.prototype = {
     }
 }
 
-WebInspector.ConsoleCommandResult = function(result, exception, originatingCommand)
+WebInspector.ConsoleCommandResult = function(result, originatingCommand)
 {
-    var level = (exception ? WebInspector.ConsoleMessage.MessageLevel.Error : WebInspector.ConsoleMessage.MessageLevel.Log);
-    var message = result;
-    if (exception) {
-        // Distinguish between strings and errors (no need to quote latter).
-        message = WebInspector.ObjectProxy.wrapPrimitiveValue(result);
-        message.type = "error";
-    }
-    var line = (exception ? result.line : -1);
-    var url = (exception ? result.sourceURL : null);
-
+    var level = (result.isError() ? WebInspector.ConsoleMessage.MessageLevel.Error : WebInspector.ConsoleMessage.MessageLevel.Log);
     this.originatingCommand = originatingCommand;
-
-    WebInspector.ConsoleMessage.call(this, WebInspector.ConsoleMessage.MessageSource.JS, WebInspector.ConsoleMessage.MessageType.Result, level, line, url, null, 1, null, [message]);
+    WebInspector.ConsoleMessage.call(this, WebInspector.ConsoleMessage.MessageSource.JS, WebInspector.ConsoleMessage.MessageType.Result, level, -1, null, null, 1, null, [result]);
 }
 
 WebInspector.ConsoleCommandResult.prototype = {
@@ -1077,7 +1091,7 @@ WebInspector.ConsoleGroup.prototype = {
 
         if (msg.type === WebInspector.ConsoleMessage.MessageType.StartGroup || msg.type === WebInspector.ConsoleMessage.MessageType.StartGroupCollapsed) {
             this.messagesElement.parentNode.insertBefore(element, this.messagesElement);
-            element.addEventListener("click", this._titleClicked.bind(this), true);
+            element.addEventListener("click", this._titleClicked.bind(this), false);
             var groupElement = element.enclosingNodeOrSelfWithClass("console-group");
             if (groupElement && msg.type === WebInspector.ConsoleMessage.MessageType.StartGroupCollapsed)
                 groupElement.addStyleClass("collapsed");
@@ -1105,3 +1119,4 @@ WebInspector.ConsoleGroup.prototype = {
         event.preventDefault();
     }
 }
+

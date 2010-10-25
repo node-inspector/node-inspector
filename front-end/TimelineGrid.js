@@ -55,6 +55,7 @@ WebInspector.TimelineGrid.prototype = {
         return this._itemsGraphsElement;
     },
 
+    
     updateDividers: function(force, calculator, paddingLeft)
     {
         var dividerCount = Math.round(this._dividersElement.offsetWidth / 64);
@@ -88,10 +89,21 @@ WebInspector.TimelineGrid.prototype = {
                 dividersLabelBarElementClientWidth = this._dividersLabelBarElement.clientWidth;
             }
 
-            if (i === dividerCount)
+            if (i === (paddingLeft ? 0 : 1)) {
+                divider.addStyleClass("first");
+                dividerLabelBar.addStyleClass("first");
+            } else {
+                divider.removeStyleClass("first");
+                dividerLabelBar.removeStyleClass("first");
+            }
+
+            if (i === dividerCount) {
                 divider.addStyleClass("last");
-            else
+                dividerLabelBar.addStyleClass("last");
+            } else {
                 divider.removeStyleClass("last");
+                dividerLabelBar.removeStyleClass("last");
+            }
 
             var left = paddingLeft + clientWidth * (i / dividerCount);
             var percentLeft = 100 * left / dividersLabelBarElementClientWidth;
