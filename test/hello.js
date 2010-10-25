@@ -1,5 +1,4 @@
-var http = require('http'),
-    sys = require('sys');
+var http = require('http');
 
 var x = 0;
 http.createServer(function (req, res) {
