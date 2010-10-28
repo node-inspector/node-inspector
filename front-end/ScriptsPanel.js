@@ -136,9 +136,9 @@ WebInspector.ScriptsPanel = function()
         this.sidebarPanes.domBreakpoints = WebInspector.createDOMBreakpointsSidebarPane();
         this.sidebarPanes.xhrBreakpoints = WebInspector.createXHRBreakpointsSidebarPane();
     }
-    this.sidebarPanes.eventListenerBreakpoints = new WebInspector.EventListenerBreakpointsSidebarPane();
+    //this.sidebarPanes.eventListenerBreakpoints = new WebInspector.EventListenerBreakpointsSidebarPane();
 
-    this.sidebarPanes.workers = new WebInspector.WorkersSidebarPane();
+    //this.sidebarPanes.workers = new WebInspector.WorkersSidebarPane();
 
     for (var pane in this.sidebarPanes)
         this.sidebarElement.appendChild(this.sidebarPanes[pane].element);
@@ -469,8 +469,8 @@ WebInspector.ScriptsPanel.prototype = {
                 this.sidebarPanes.domBreakpoints.reset();
                 this.sidebarPanes.xhrBreakpoints.reset();
             }
-            this.sidebarPanes.eventListenerBreakpoints.reset();
-            this.sidebarPanes.workers.reset();
+            //this.sidebarPanes.eventListenerBreakpoints.reset();
+            //this.sidebarPanes.workers.reset();
         }
     },
 
