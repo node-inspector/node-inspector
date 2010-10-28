@@ -10,6 +10,7 @@ WebInspector.loaded = function() {
 };
 
 Preferences.canEditScriptSource = true;
+WebInspector.WatchExpressionsSection.NewWatchExpression = "''";
 /*
 (function() {
   window.addEventListener("load", function() {
