@@ -8,10 +8,8 @@
 WebInspector.InspectorBackendStub = function()
 {
     this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "populateScriptObjects", "arguments": {}}');
-    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "getSettings", "arguments": {}}');
     this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "getInspectorState", "arguments": {}}');
     this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "storeLastActivePanel", "arguments": {"panelName": "string"}}');
-    this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "saveApplicationSettings", "arguments": {"settings": "string"}}');
     this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "saveSessionSettings", "arguments": {"settings": "string"}}');
     this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "setSearchingForNode", "arguments": {"enabled": "boolean"}}');
     this._registerDelegate('{"seq": 0, "domain": "Controller", "command": "setMonitoringXHREnabled", "arguments": {"enable": "boolean"}}');
@@ -99,6 +97,21 @@ WebInspector.InspectorBackendStub.prototype = {
     {
         var commandObject = JSON.parse(commandInfo);
         this[commandObject.command] = this.sendMessageToBackend.bind(this, commandInfo);
+    },
+
+    saveApplicationSettings: function(settings)
+    {
+      localStorage.setItem('appSettings', settings);
+    },
+
+    getSettings: function(callback)
+    {
+      var defaults = "{\"scripts-sidebar-width\":230,\"event-listeners-filter\":\"all\",\"color-format\":\"hex\",\"resources-large-rows\":true,\"watch-expressions\":[],\"last-viewed-script-file\":\"file:///home/danny/research/test.html\",\"show-inherited-computed-style-properties\":false,\"show-user-agent-styles\":true,\"resource-view-tab\":\"content\",\"console-history\":[],\"resources-sort-options\":{\"timeOption\":\"responseTime\",\"sizeOption\":\"transferSize\"}}",
+          settings = {
+            application: localStorage.getItem('appSettings') || defaults,
+            session: "{}"
+          };
+      callback.apply(null, [settings]);
     },
 
     sendMessageToBackend: function()

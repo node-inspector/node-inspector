@@ -8,6 +8,8 @@ WebInspector.loaded = function() {
   }
   return;
 };
+
+Preferences.canEditScriptSource = true;
 /*
 (function() {
   window.addEventListener("load", function() {
