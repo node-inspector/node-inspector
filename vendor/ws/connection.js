@@ -306,8 +306,8 @@ Connection.prototype.close = function(){
   var socket = this._req.socket;
 
   if(this._state == 4 && socket.writable){
-    writeSocket(socket, "\x00", "binary");
     writeSocket(socket, "\xff", "binary");
+    writeSocket(socket, "\x00", "binary");
   }
   closeClient(this);
 };

@@ -32,6 +32,9 @@ exports.createServer = function(options){
   return new Server(options);
 };
 
+exports._Manager = Manager;
+exports._Connection = Connection;
+
 /*-----------------------------------------------
   WebSocket Server Implementation:
 -----------------------------------------------*/

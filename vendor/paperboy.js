@@ -6,13 +6,15 @@ var
   path = require('path');
 
 exports.filepath = function (webroot, url) {
-  var suffix = '/';
-  fp = path.normalize(path.join(webroot, (url.match(suffix+"$")==suffix)  ? url+'index.html' : url));
+  // Unescape URL to prevent security holes
+  url = decodeURIComponent(url);
+  // Append index.html if path ends with '/'
+  fp = path.normalize(path.join(webroot, (url.match(/\/$/)=='/')  ? url+'index.html' : url));
   //Sanitize input, make sure people can't use .. to get above webroot
   if (fp.substr(0,webroot.length + 1) != webroot + '/')
     return(['Permission Denied', null]);
   else
-    return([null, decodeURIComponent(fp)]);
+    return([null, fp]);
 };
 
 exports.streamFile = function (filepath, headerFields, stat, res, req, emitter) {
@@ -108,13 +110,22 @@ exports.deliver = function (webroot, req, res) {
     };
     
   process.nextTick(function() {
+    // Create default error and otherwise callbacks if none were given.
+    errorCallback = errorCallback || function(statCode) {
+      res.writeHead(statCode, {'Content-Type': 'text/html'});
+      res.end("<h1>HTTP " + statCode + "</h1>");
+    };
+    otherwiseCallback = otherwiseCallback || function() {
+      res.writeHead(404, {'Content-Type': 'text/html'});
+      res.end("<h1>HTTP 404 File not found</h1>");
+    };
+
     //If file is in a directory outside of the webroot, deny the request
     if (fpErr) {
       statCode = 403;
       if (beforeCallback)
         beforeCallback();
-      if (errorCallback) 
-        errorCallback(403, 'Forbidden');
+      errorCallback(403, 'Forbidden');
     }
     else {
       fs.stat(filepath, function (err, stat) {
@@ -126,7 +137,7 @@ exports.deliver = function (webroot, req, res) {
             otherwiseCallback(exactErr);
         } else {
           //The before callback can abort the transfer by returning false
-          cancel = beforeCallback && (beforeCallback() === false);
+          var cancel = beforeCallback && (beforeCallback() === false);
           if (cancel && otherwiseCallback) {
             otherwiseCallback();
           }
