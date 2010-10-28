@@ -1,5 +1,5 @@
 WebInspector.loaded = function() {
-  WebInspector.socket = new WebSocket("ws://" + window.location.host);
+  WebInspector.socket = new WebSocket("ws://" + window.location.host + '/debug?port=' + WebInspector.queryParamsObject.port);
   WebInspector.socket.onmessage = function(message) { WebInspector_syncDispatch(message.data); }
   WebInspector.socket.onerror = function(error) { console.error(error); }
   WebInspector.socket.onopen = function() {
