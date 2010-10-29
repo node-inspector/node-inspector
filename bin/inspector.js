@@ -34,4 +34,4 @@ ds.on('close', function () {
   console.log('session closed');
   process.exit();
 });
-console.log('visit http://127.0.0.1:' + ds.webPort + ' to start debugging');
+console.log('visit http://127.0.0.1:' + ds.webPort + '/debug?port=5858 to start debugging');
