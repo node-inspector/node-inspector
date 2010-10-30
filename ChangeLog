@@ -1,0 +1,44 @@
+v0.1.0
+
+* Require node 0.3+
+
+* Improved Scope Variables display
+  - Better object type info
+  - Inlined Array / Buffer lengths
+
+* Automatically saved application setting
+  - last file shown
+  - console history
+  - watch expressions
+
+* Console object completion on .
+
+* Updated Web Inspector base
+
+* Moved debugger port to query string i.e. /debug?port=5858
+
+* New front-end <-> back-end message protocol
+
+
+v0.0.4
+
+* ctrl+click line number for conditional breakpoints
+
+* enable pause on all exceptions button
+
+
+v0.0.3
+
+* handle multi-byte characters from debugger (Issue 12)
+
+
+v0.0.2
+
+* removed --start --debug-port --fwd-io flags
+
+* added debugger port UI
+
+
+v0.0.1
+
+* added to npm registry

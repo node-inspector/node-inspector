@@ -1,10 +1,10 @@
 {
     "name": "node-inspector",
-    "version": "0.0.4",
+    "version": "0.1.0",
     "description": "Web Inspector based nodeJS debugger",
     "homepage": "http://github.com/dannycoates/node-inspector",
     "author": "Danny Coates <dannycoates@gmail.com>",
     "keywords": ["debugger", "inspector"],
-    "engines" : { "node": ">= 0.1.101" },
+    "engines" : { "node": ">=0.3.0" },
     "bin" : { "node-inspector" : "./bin/inspector.js" }
 }
