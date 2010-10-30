@@ -5,8 +5,8 @@ Node Inspector is a debugger interface for nodeJS using the WebKit Web Inspector
 ### Requirements
 
 * [nodeJS](http://github.com/ry/node)
-  - versions: 0.1.101 or later
-* A WebKit based browser: Chrome, Safari, OmniWeb, etc.
+  - versions: 0.3.0 or later
+* A WebKit based browser: Chrome, Safari, etc.
 
 ### Install
 
@@ -24,7 +24,7 @@ As an example lets debug test/hello.js, from the root project directory (node-in
 2. start the node instance to debug
 		node --debug test/hello.js
 
-3. open http://127.0.0.1:8080 in your favorite WebKit based browser
+3. open http://127.0.0.1:8080/debug?port=5858 in your favorite WebKit based browser
 
     > Chrome 5 users **MUST** use 127.0.0.1 **NOT** localhost or the browser will not connect to the debugger
 
@@ -51,7 +51,6 @@ For more information on getting started see the [wiki](http://github.com/dannyco
 * remote debugging
 * javascript top to bottom :)
 * [edit running code](http://github.com/dannycoates/node-inspector/wiki/LiveEdit)
-* [collaborative debugging](http://github.com/dannycoates/node-inspector/wiki/Collaborative-Debugging)
 
 ## Known Issues
 
@@ -63,7 +62,6 @@ This is alpha quality code, so use at your own risk:
 
 ## TODOS
 
-* save application settings
 * profiler panel
 
 ## Thanks
