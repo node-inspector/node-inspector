@@ -27,14 +27,11 @@ function Connection(server, req, socket, data){
   this._req = req;
   this._server = server;
   this.headers = this._req.headers;
-  
+  this.id = server.manager.createId(this._req.socket.remotePort);
+
   var _firstFrame = false;
 
   Object.defineProperties(this, {
-    id: {
-      get: function(){ return this._req.socket.remotePort }
-    },
-
     version: {
       get: function(){
         if(this._req.headers["sec-websocket-key1"] && this._req.headers["sec-websocket-key2"]){
@@ -96,10 +93,17 @@ function Connection(server, req, socket, data){
     });
 
     socket.addListener("error", function(e){
-      server.emit("error", connection, e);
-      connection.emit("error", e);
-      connection.state(5);
+      if(e.errno == 32){
+        connection.state(5);
+        closeClient(connection);
+        connection.state(6);
+      } else {
+        manager.emit("error", connection, e);
+        connection.emit("error", e);
+        connection.state(5);
+      }
     });
+
 
     // Setup the connection manager's state change listeners:
     this.addListener("stateChange", function(state, laststate){
@@ -113,12 +117,12 @@ function Connection(server, req, socket, data){
 
         server.manager.attach(connection.id, connection);
         server.emit("connection", connection);
-        
+
         if(_firstFrame){
           parser.write(_firstFrame);
           delete _firstFrame;
         }
-        
+
       } else if(state === 5){
         connection.close();
       } else if(state === 6 && laststate === 5){
@@ -153,13 +157,13 @@ function Connection(server, req, socket, data){
     if(this.version == "draft75"){
       this.handshake();
     }
-    
+
     if(this.version == "draft76"){
       if(data.length >= 8){
         this._upgradeHead = data.slice(0, 8);
-        
+
         _firstFrame = data.slice(8, data.length);
-        
+
         this.handshake();
       } else {
         this.reject("Missing key3");
@@ -227,7 +231,7 @@ function websocket_location(){
     this.reject("Missing host header");
     return;
   }
-  
+
   var location = ""
     , secure = this._req.socket.secure
     , host = this._req.headers.host.split(":")
@@ -339,7 +343,7 @@ var doHandshake = {
   // Using draft75, work out and send the handshake.
   draft75: function(){
     var location = websocket_location.call(this), res;
-    
+
     if(location){
       res = "HTTP/1.1 101 Web Socket Protocol Handshake\r\n"
           + "Upgrade: WebSocket\r\n"
@@ -359,7 +363,7 @@ var doHandshake = {
   // Using draft76 (security model), work out and send the handshake.
   draft76: function(){
     var location = websocket_location.call(this), res;
-    
+
     if(location){
       res = "HTTP/1.1 101 WebSocket Protocol Handshake\r\n"
           + "Upgrade: WebSocket\r\n"

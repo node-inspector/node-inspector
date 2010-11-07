@@ -16,6 +16,7 @@ function Manager(showDebug){
   this._head = null;
   this._tail = null;
   this._length = 0;
+  this._counter = 0;
 };
 
 Object.defineProperty(Manager.prototype, "length", {
@@ -24,6 +25,9 @@ Object.defineProperty(Manager.prototype, "length", {
   }
 });
 
+Manager.prototype.createId = function(remotePort) {
+  return process.pid + "" + remotePort + "" + (this._counter++);
+};
 
 Manager.prototype.attach = function(id, client){
   var connection = {
