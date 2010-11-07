@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 
-var sys = require('sys'),
-    dserver = require('../lib/debug-server');
-
-var options = {};
+var dserver = require('../lib/debug-server'),
+    options = {};
 
 process.argv.forEach(function (arg) {
+  var parts;
   if (arg.indexOf('--') > -1) {
-    var parts = arg.split('=');
+    parts = arg.split('=');
     if (parts.length > 1) {
       switch (parts[0]) {
       case '--web-port':
@@ -28,10 +27,7 @@ process.argv.forEach(function (arg) {
   }
 });
 
-var ds = dserver.createServer(options);
-
-ds.on('close', function () {
+dserver.create(options).on('close', function () {
   console.log('session closed');
   process.exit();
 });
-console.log('visit http://127.0.0.1:' + ds.webPort + '/debug?port=5858 to start debugging');
