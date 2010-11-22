@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 var dserver = require('../lib/debug-server'),
+    fs = require('fs'),
+    path = require('path'),
     options = {};
 
 process.argv.forEach(function (arg) {
@@ -27,7 +29,16 @@ process.argv.forEach(function (arg) {
   }
 });
 
-dserver.create(options).on('close', function () {
-  console.log('session closed');
-  process.exit();
+fs.readFile(path.join(__dirname, '../config.json'), function(err, data) {
+  var config;
+  if (err) {
+    config = {};
+  }
+  else {
+    config = JSON.parse(data);
+  }
+  dserver.create(options, config).on('close', function () {
+    console.log('session closed');
+    process.exit();
+  });
 });

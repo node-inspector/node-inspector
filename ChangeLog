@@ -1,3 +1,14 @@
+v0.1.1
+
+* Fixed pause button with node 0.3.1+
+
+* Fixed page refresh with node 0.3.1+
+
+* Shortened script file names in script list
+
+* Updated node-websocket-server library
+
+
 v0.1.0
 
 * Require node 0.3+
