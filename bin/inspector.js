@@ -32,6 +32,7 @@ process.argv.forEach(function (arg) {
 fs.readFile(path.join(__dirname, '../config.json'), function(err, data) {
   var config;
   if (err) {
+    console.warn("could not load config.json\n" + err.toString());
     config = {};
   }
   else {
@@ -41,6 +42,12 @@ fs.readFile(path.join(__dirname, '../config.json'), function(err, data) {
         return new RegExp(s, 'i');
       });
     }
+  }
+  if (!config.webPort) {
+    config.webPort = 8080;
+  }
+  if (!config.debugPort) {
+    config.debugPort = 5858;
   }
   dserver.create(options, config).on('close', function () {
     console.log('session closed');

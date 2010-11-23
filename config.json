@@ -1,3 +1,5 @@
 {
+  "webPort": 8080,
+  "debugPort": 5858,
   "hidden": []
 }
