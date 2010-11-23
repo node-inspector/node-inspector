@@ -36,6 +36,11 @@ fs.readFile(path.join(__dirname, '../config.json'), function(err, data) {
   }
   else {
     config = JSON.parse(data);
+    if (config.hidden) {
+      config.hidden = config.hidden.map(function(s) {
+        return new RegExp(s, 'i');
+      });
+    }
   }
   dserver.create(options, config).on('close', function () {
     console.log('session closed');

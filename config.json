@@ -1,16 +1,3 @@
 {
-  "hidden": [
-    "buffer.js",
-    "dns.js",
-    "events.js",
-    "freelist.js",
-    "fs.js",
-    "http.js",
-    "net.js",
-    "node.js",
-    "path.js",
-    "stream.js",
-    "timers.js",
-    "util.js"
-  ]
+  "hidden": []
 }
