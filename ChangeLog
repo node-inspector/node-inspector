@@ -1,3 +1,15 @@
+v0.1.2
+
+* option to save changes from liveEdit
+
+* option to hide files from inspector
+
+* added config.json
+  - webPort (port to host inspector interface)
+  - debugPort (default debugger port to connect to)
+  - saveLiveEdit (save changes to files edited with liveEdit)
+  - hidden (regexp strings of files to hide from interface)
+
 v0.1.1
 
 * Fixed pause button with node 0.3.1+

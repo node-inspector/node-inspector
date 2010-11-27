@@ -1,5 +1,6 @@
 {
   "webPort": 8080,
   "debugPort": 5858,
+  "saveLiveEdit": false,
   "hidden": []
 }
