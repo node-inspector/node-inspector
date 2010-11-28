@@ -41,6 +41,11 @@ WebInspector.RemoteObject.fromPrimitiveValue = function(value)
     return new WebInspector.RemoteObject(null, typeof value, value);
 }
 
+WebInspector.RemoteObject.fromLocalObject = function(value)
+{
+    return new WebInspector.LocalJSONObject(value);
+}
+
 WebInspector.RemoteObject.resolveNode = function(node, callback)
 {
     function mycallback(object)
@@ -135,4 +140,63 @@ WebInspector.RemoteObjectProperty = function(name, value)
 {
     this.name = name;
     this.value = value;
+}
+
+// The below is a wrapper around a local object that provides an interface comaptible
+// with RemoteObject, to be used by the UI code (primarily ObjectPropertiesSection).
+// Note that only JSON-compliant objects are currently supported, as there's no provision
+// for traversing prototypes, extracting class names via constuctor, handling properties
+// or functions.
+
+WebInspector.LocalJSONObject = function(value)
+{
+    this._value = value;
+}
+
+WebInspector.LocalJSONObject.prototype = {
+    get description()
+    {
+        var type = this.type;
+        switch (type) {
+            case "array":
+                return "[" + this._value.length + "]";
+            case "object":
+                return this.hasChildren ? "{...}" : "{ }";
+            default:
+                return JSON.stringify(this._value);
+        }
+    },
+
+    get type()
+    {
+        if (this._value === null)
+            return "null";
+        if (this._value instanceof Array)
+            return "array";
+        return typeof this._value;
+    },
+
+    get hasChildren()
+    {
+        return typeof this._value === "object" && this._value !== null && Object.keys(this._value).length;
+    },
+
+    getOwnProperties: function(abbreviate, callback)
+    {
+        return this.getProperties(false, abbreviate, callback);
+    },
+
+    getProperties: function(ignoreHasOwnProperty, abbreviate, callback)
+    {
+        function buildProperty(propName)
+        {
+            return new WebInspector.RemoteObjectProperty(propName, new WebInspector.LocalJSONObject(this._value[propName]));
+        }
+        callback(Object.keys(this._value).map(buildProperty.bind(this)));
+    },
+
+    isError: function()
+    {
+        return false;
+    }
 }

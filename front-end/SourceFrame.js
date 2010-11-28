@@ -87,6 +87,16 @@ WebInspector.SourceFrame.prototype = {
             this._updateExecutionLine(previousLine);
     },
 
+    markDiff: function(diffData)
+    {
+        if (this._diffLines && this._textViewer)
+            this._removeDiffDecorations();
+
+        this._diffLines = diffData;
+        if (this._textViewer)
+            this._updateDiffDecorations();
+    },
+
     revealLine: function(lineNumber)
     {
         if (this._textViewer)
@@ -161,6 +171,17 @@ WebInspector.SourceFrame.prototype = {
         return this._textModel;
     },
 
+    get scrollTop()
+    {
+        return this._textViewer ? this._textViewer.element.scrollTop : 0;
+    },
+
+    set scrollTop(scrollTop)
+    {
+        if (this._textViewer)
+            this._textViewer.element.scrollTop = scrollTop;
+    },
+
     highlightLine: function(line)
     {
         if (this._textViewer)
@@ -199,6 +220,7 @@ WebInspector.SourceFrame.prototype = {
         this._addExistingMessagesToSource();
         this._addExistingBreakpointsToSource();
         this._updateExecutionLine();
+        this._updateDiffDecorations();
         this._textViewer.resize();
 
         if (this._lineNumberToReveal) {
@@ -317,6 +339,33 @@ WebInspector.SourceFrame.prototype = {
 
         if (this._executionLine < this._textModel.linesCount)
             this._textViewer.addDecoration(this._executionLine - 1, "webkit-execution-line");
+    },
+
+    _updateDiffDecorations: function()
+    {
+        if (!this._diffLines)
+            return;
+
+        function addDecorations(textViewer, lines, className)
+        {
+            for (var i = 0; i < lines.length; ++i)
+                textViewer.addDecoration(lines[i], className);
+        }
+        addDecorations(this._textViewer, this._diffLines.added, "webkit-added-line");
+        addDecorations(this._textViewer, this._diffLines.removed, "webkit-removed-line");
+        addDecorations(this._textViewer, this._diffLines.changed, "webkit-changed-line");
+    },
+
+    _removeDiffDecorations: function()
+    {
+        function removeDecorations(textViewer, lines, className)
+        {
+            for (var i = 0; i < lines.length; ++i)
+                textViewer.removeDecoration(lines[i], className);
+        }
+        removeDecorations(this._textViewer, this._diffLines.added, "webkit-added-line");
+        removeDecorations(this._textViewer, this._diffLines.removed, "webkit-removed-line");
+        removeDecorations(this._textViewer, this._diffLines.changed, "webkit-changed-line");
     },
 
     _addExistingMessagesToSource: function()

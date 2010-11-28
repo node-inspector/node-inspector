@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2007, 2008 Apple Inc.  All rights reserved.
  * Copyright (C) 2008, 2009 Anthony Ricaud <rik@webkit.org>
- * Copyright (C) 2009, 2010 Google Inc. All rights reserved.
+ * Copyright (C) 2010 Google Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,6 +36,9 @@ WebInspector.NetworkPanel = function()
     this.sidebarElement.className = "network-sidebar";
 
     this._resources = [];
+    this._resourcesById = {};
+    this._resourcesByURL = {};
+    this._lastIdentifier = 0;
     this._staleResources = [];
     this._resourceGridNodes = {};
     this._mainResourceLoadTime = -1;
@@ -51,8 +54,12 @@ WebInspector.NetworkPanel = function()
     this._viewsContainerElement = document.createElement("div");
     this._viewsContainerElement.id = "network-views";
     this._viewsContainerElement.className = "hidden";
-
     this.element.appendChild(this._viewsContainerElement);
+
+    this._closeButtonElement = document.createElement("button");
+    this._closeButtonElement.id = "network-close-button";
+    this._closeButtonElement.addEventListener("click", this._toggleGridMode.bind(this), false);
+    this._viewsContainerElement.appendChild(this._closeButtonElement);
 
     this._createSortingFunctions();
     this._createTable();
@@ -61,7 +68,12 @@ WebInspector.NetworkPanel = function()
     this._createFilterStatusBarItems();
     this._createSummaryBar();
 
+    if (!WebInspector.settings.resourcesLargeRows)
+        this._setLargerResources(WebInspector.settings.resourcesLargeRows);
+
     this._popoverHelper = new WebInspector.PopoverHelper(this.element, this._getPopoverAnchor.bind(this), this._showPopover.bind(this), true);
+    // Enable faster hint.
+    this._popoverHelper.setTimeout(100);
 
     this.calculator = new WebInspector.NetworkTransferTimeCalculator();
     this._filter(this._filterAllElement, false);
@@ -77,7 +89,7 @@ WebInspector.NetworkPanel.prototype = {
 
     get statusBarItems()
     {
-        return [this._largerResourcesButton.element, this._clearButton.element, this._filterBarElement];
+        return [this._largerResourcesButton.element, this._preserveLogToggle.element, this._clearButton.element, this._filterBarElement];
     },
 
     isCategoryVisible: function(categoryName)
@@ -97,11 +109,13 @@ WebInspector.NetworkPanel.prototype = {
         this._positionSummaryBar();
     },
 
-    updateSidebarWidth: function()
+    updateSidebarWidth: function(width)
     {
         if (!this._viewingResourceMode)
             return;
-        WebInspector.Panel.prototype.updateSidebarWidth.apply(this, arguments);
+        WebInspector.Panel.prototype.updateSidebarWidth.call(this, width);
+        if (this._summaryBarElement.parentElement === this.element)
+            this._summaryBarElement.style.width = width + "px";
     },
 
     updateMainViewWidth: function(width)
@@ -120,28 +134,37 @@ WebInspector.NetworkPanel.prototype = {
     _positionSummaryBar: function()
     {
         // Position the total bar.
-        const rowHeight = 22;
-        const summaryBarHeight = 22;
-        var offsetHeight = this.element.offsetHeight;
 
-        var parentElement = this._summaryBarElement.parentElement;
-
-        if (this._summaryBarElement.parentElement !== this.element && offsetHeight > (this._dataGrid.children.length - 1) * rowHeight + summaryBarHeight) {
-            this._dataGrid.removeChild(this._summaryBarRowNode);
+        var fillerRow = this._dataGrid.dataTableBody.lastChild;
+        if (this._summaryBarElement.parentElement !== this.element && fillerRow.offsetHeight > 0) {
+            // Glue status to bottom.
+            if (this._summaryBarRowNode) {
+                this._dataGrid.removeChild(this._summaryBarRowNode);
+                delete this._summaryBarRowNode;
+            }
             this._summaryBarElement.addStyleClass("network-summary-bar-bottom");
-            delete this._summaryBarRowNode;
+            this._summaryBarElement.style.setProperty("width", this.sidebarElement.offsetWidth + "px");
             this.element.appendChild(this._summaryBarElement);
             this._dataGrid.element.style.bottom = "20px";
             return;
         }
 
-        if (!this._summaryBarRowNode && offsetHeight - summaryBarHeight < this._dataGrid.children.length * rowHeight) {
+        if (!this._summaryBarRowNode && !fillerRow.offsetHeight) {
+            // Glue status to table.
             this._summaryBarRowNode = new WebInspector.NetworkTotalGridNode(this._summaryBarElement);
             this._summaryBarElement.removeStyleClass("network-summary-bar-bottom");
+            this._summaryBarElement.style.removeProperty("width");
             this._dataGrid.appendChild(this._summaryBarRowNode);
             this._dataGrid.element.style.bottom = 0;
             this._sortItems();
         }
+    },
+
+    _resetSummaryBar: function()
+    {
+        delete this._summaryBarRowNode;
+        this._summaryBarElement.parentElement.removeChild(this._summaryBarElement);
+        this._updateSummaryBar();
     },
 
     _createTimelineGrid: function()
@@ -169,21 +192,21 @@ WebInspector.NetworkPanel.prototype = {
 
         columns.type.title = WebInspector.UIString("Type");
         columns.type.sortable = true;
-        columns.type.width = "7%";
+        columns.type.width = "10%";
 
         columns.size.titleDOMFragment = this._makeHeaderFragment(WebInspector.UIString("Size"), WebInspector.UIString("Transfer"));
         columns.size.sortable = true;
         columns.size.width = "10%";
         columns.size.aligned = "right";
 
-        columns.time.titleDOMFragment = this._makeHeaderFragment(WebInspector.UIString("Time"), WebInspector.UIString("Duration"));
+        columns.time.titleDOMFragment = this._makeHeaderFragment(WebInspector.UIString("Time"), WebInspector.UIString("Latency"));
         columns.time.sortable = true;
         columns.time.width = "10%";
         columns.time.aligned = "right";
 
         columns.timeline.title = "";
         columns.timeline.sortable = false;
-        columns.timeline.width = "40%";
+        columns.timeline.width = "37%";
         columns.timeline.sort = "ascending";
 
         this._dataGrid = new WebInspector.DataGrid(columns);
@@ -240,7 +263,7 @@ WebInspector.NetworkPanel.prototype = {
         timelineSorting.appendChild(option);
 
         var header = this._dataGrid.headerTableHeader("timeline");
-        header.firstChild.appendChild(timelineSorting);
+        header.replaceChild(timelineSorting, header.firstChild);
 
         timelineSorting.addEventListener("click", function(event) { event.stopPropagation() }, false);
         timelineSorting.addEventListener("change", this._sortByTimeline.bind(this), false);
@@ -349,20 +372,37 @@ WebInspector.NetworkPanel.prototype = {
     {
         this._positionSummaryBar(); // Grid is growing.
         var numRequests = this._resources.length;
+
+        if (!numRequests) {
+            if (this._summaryBarElement._isDisplayingWarning)
+                return;
+            this._summaryBarElement._isDisplayingWarning = true;
+
+            var img = document.createElement("img");
+            img.src = "Images/warningIcon.png";
+            this._summaryBarElement.removeChildren();
+            this._summaryBarElement.appendChild(img);
+            this._summaryBarElement.appendChild(document.createTextNode(" "));
+            this._summaryBarElement.appendChild(document.createTextNode(
+                WebInspector.UIString("No requests captured. Reload the page to see detailed information on the network activity.")));
+            return;
+        }
+        delete this._summaryBarElement._isDisplayingWarning;
+
         var transferSize = 0;
         var baseTime = -1;
         var maxTime = -1;
         for (var i = 0; i < this._resources.length; ++i) {
             var resource = this._resources[i];
-            transferSize += resource.cached ? 0 : resource.transferSize;
-            if (resource === WebInspector.mainResource)
+            transferSize += (resource.cached || !resource.transferSize) ? 0 : resource.transferSize;
+            if (resource.isMainResource)
                 baseTime = resource.startTime;
             if (resource.endTime > maxTime) 
                 maxTime = resource.endTime;
         }
         var text = String.sprintf(WebInspector.UIString("%d requests"), numRequests);
         text += "  \u2758  " + String.sprintf(WebInspector.UIString("%s transferred"), Number.bytesToString(transferSize));
-        if (baseTime !== -1 && this._mainResourceLoadTime !== -1 && this._mainResourceDOMContentTime !== -1) {
+        if (baseTime !== -1 && this._mainResourceLoadTime !== -1 && this._mainResourceDOMContentTime !== -1 && this._mainResourceDOMContentTime > baseTime) {
             text += "  \u2758  " + String.sprintf(WebInspector.UIString("%s (onload: %s, DOMContentLoaded: %s)"),
                         Number.secondsToString(maxTime - baseTime),
                         Number.secondsToString(this._mainResourceLoadTime - baseTime),
@@ -393,9 +433,7 @@ WebInspector.NetworkPanel.prototype = {
             selectMultiple = true;
 
         this._filter(e.target, selectMultiple);
-
-        var searchField = document.getElementById("search");
-        WebInspector.doPerformSearch(searchField.value, WebInspector.shortSearchWasForcedByKeyEvent, false, true);
+        this._positionSummaryBar();
     },
 
     _filter: function(target, selectMultiple)
@@ -570,26 +608,17 @@ WebInspector.NetworkPanel.prototype = {
         this._timelineGrid.addEventDivider(divider);
     },
 
-    get resourceTrackingEnabled()
-    {
-        return this._resourceTrackingEnabled;
-    },
-
     _createStatusbarButtons: function()
     {
+        this._preserveLogToggle = new WebInspector.StatusBarButton(WebInspector.UIString("Preserve Log upon Navigation"), "record-profile-status-bar-item");
+        this._preserveLogToggle.addEventListener("click", this._onPreserveLogClicked.bind(this), false);
+
         this._clearButton = new WebInspector.StatusBarButton(WebInspector.UIString("Clear"), "clear-status-bar-item");
-        this._clearButton.addEventListener("click", this.reset.bind(this), false);
+        this._clearButton.addEventListener("click", this._reset.bind(this), false);
 
         this._largerResourcesButton = new WebInspector.StatusBarButton(WebInspector.UIString("Use small resource rows."), "network-larger-resources-status-bar-item");
-        WebInspector.applicationSettings.addEventListener("loaded", this._settingsLoaded, this);
+        this._largerResourcesButton.toggled = WebInspector.settings.resourcesLargeRows;
         this._largerResourcesButton.addEventListener("click", this._toggleLargerResources.bind(this), false);
-    },
-
-    _settingsLoaded: function()
-    {
-        this._largerResourcesButton.toggled = WebInspector.applicationSettings.resourcesLargeRows;
-        if (!WebInspector.applicationSettings.resourcesLargeRows)
-            this._setLargerResources(WebInspector.applicationSettings.resourcesLargeRows);
     },
 
     set mainResourceLoadTime(x)
@@ -614,27 +643,11 @@ WebInspector.NetworkPanel.prototype = {
     show: function()
     {
         WebInspector.Panel.prototype.show.call(this);
-
         this._refreshIfNeeded();
 
-        var visibleView = this.visibleView;
-        if (this.visibleResource) {
-            this.visibleView.headersVisible = true;
+        if (this.visibleView)
             this.visibleView.show(this._viewsContainerElement);
-        } else if (visibleView)
-            visibleView.show();
 
-        // Hide any views that are visible that are not this panel's current visible view.
-        // This can happen when a ResourceView is visible in the Scripts panel then switched
-        // to the this panel.
-        var resourcesLength = this._resources.length;
-        for (var i = 0; i < resourcesLength; ++i) {
-            var resource = this._resources[i];
-            var view = resource._resourcesView;
-            if (!view || view === visibleView)
-                continue;
-            view.visible = false;
-        }
         this._dataGrid.updateWidths();
         this._positionSummaryBar();
     },
@@ -669,13 +682,6 @@ WebInspector.NetworkPanel.prototype = {
         WebInspector.Panel.prototype.performSearch.call(this, query);
     },
 
-    get visibleView()
-    {
-        if (this.visibleResource)
-            return this.visibleResource._resourcesView;
-        return null;
-    },
-
     refresh: function()
     {
         this._needsRefresh = false;
@@ -684,8 +690,8 @@ WebInspector.NetworkPanel.prototype = {
             delete this._refreshTimeout;
         }
 
+        var wasScrolledToLastRow = this._dataGrid.isScrolledToLastRow();
         var staleItemsLength = this._staleResources.length;
-
         var boundariesChanged = false;
 
         for (var i = 0; i < staleItemsLength; ++i) {
@@ -716,42 +722,36 @@ WebInspector.NetworkPanel.prototype = {
         this._sortItems();
         this._updateSummaryBar();
         this._dataGrid.updateWidths();
+
+        if (wasScrolledToLastRow)
+            this._dataGrid.scrollToLastRow();
+    },
+
+    _onPreserveLogClicked: function(e)
+    {
+        this._preserveLogToggle.toggled = !this._preserveLogToggle.toggled;
     },
 
     reset: function()
+    {
+        if (!this._preserveLogToggle.toggled)
+            this._reset();
+    },
+
+    _reset: function()
     {
         this._popoverHelper.hidePopup();
         this._closeVisibleResource();
 
         this._toggleGridMode();
 
-        delete this.currentQuery;
-        this.searchCanceled();
-
-        if (this._resources) {
-            var resourcesLength = this._resources.length;
-            for (var i = 0; i < resourcesLength; ++i) {
-                var resource = this._resources[i];
-
-                resource.warnings = 0;
-                resource.errors = 0;
-
-                delete resource._resourcesView;
-            }
-        }
-
         // Begin reset timeline
         if (this._calculator)
             this._calculator.reset();
 
-        if (this._resources) {
-            var itemsLength = this._resources.length;
-            for (var i = 0; i < itemsLength; ++i) {
-                var item = this._resources[i];
-            }
-        }
-
         this._resources = [];
+        this._resourcesById = {};
+        this._resourcesByURL = {};
         this._staleResources = [];
         this._resourceGridNodes = {};
 
@@ -764,55 +764,58 @@ WebInspector.NetworkPanel.prototype = {
         this._mainResourceDOMContentTime = -1;
  
         this._viewsContainerElement.removeChildren();
+        this._viewsContainerElement.appendChild(this._closeButtonElement);
+        this._resetSummaryBar();
     },
 
-    addResource: function(resource)
+    get resources()
     {
-        this._resources.push(resource);
-        this.refreshResource(resource);
+        return this._resourcesById;
     },
 
     refreshResource: function(resource)
     {
+        if (!resource.identifier)
+            resource.identifier = "network:" + this._lastIdentifier++;
+
+        if (!this._resourcesById[resource.identifier]) {
+            this._resources.push(resource);
+            this._resourcesById[resource.identifier] = resource;
+            this._resourcesByURL[resource.url] = resource;
+
+            // Pull all the redirects of the main resource upon commit load.
+            if (resource.redirects) {
+                for (var i = 0; i < resource.redirects.length; ++i)
+                    this.refreshResource(resource.redirects[i]);
+            }
+        }
+
         this._staleResources.push(resource);
         this._scheduleRefresh();
-
-        if (!resource || !resource._resourcesView)
+        
+        if (!resource)
             return;
 
-        if (this._resourceViewTypeMatchesResource(resource, resource._resourcesView))
+        var oldView = WebInspector.ResourceManager.existingResourceViewForResource(resource);
+        if (!oldView)
             return;
 
-        var newView = this._createResourceView(resource);
-        if (newView.__proto__ === resource._resourcesView.__proto__)
+        if (WebInspector.ResourceManager.resourceViewTypeMatchesResource(resource))
             return;
 
-        if (!this.currentQuery && this._resourceGridNode(resource))
-            this._resourceGridNode(resource).updateErrorsAndWarnings();
-
-        var oldView = resource._resourcesView;
-        var oldViewParentNode = oldView.visible ? oldView.element.parentNode : null;
-
-        resource._resourcesView.detach();
-        delete resource._resourcesView;
-
-        resource._resourcesView = newView;
-
-        newView.headersVisible = oldView.headersVisible;
-
-        if (oldViewParentNode)
-            newView.show(oldViewParentNode);
-
-        WebInspector.panels.scripts.viewRecreated(oldView, newView);
+        var newView = WebInspector.ResourceManager.recreateResourceView(resource);
+        if (this.visibleView === oldView)
+            this.visibleView = newView;
     },
 
     canShowSourceLine: function(url, line)
     {
-        return false;
+        return !!this._resourcesByURL[url];
     },
 
     showSourceLine: function(url, line)
     {
+        this._showResource(this._resourcesByURL[url], line);
     },
 
     _showResource: function(resource, line)
@@ -824,22 +827,15 @@ WebInspector.NetworkPanel.prototype = {
 
         this._toggleViewingResourceMode();
 
-        if (this.visibleResource && this.visibleResource._resourcesView)
-            this.visibleResource._resourcesView.hide();
-
-        var view = this._resourceViewForResource(resource);
-        view.headersVisible = true;
-        view.show(this._viewsContainerElement);
-
-        if (line) {
-            view.selectContentTab(true);
-            if (view.revealLine)
-                view.revealLine(line);
-            if (view.highlightLine)
-                view.highlightLine(line);
+        if (this.visibleView) {
+            this.visibleView.detach();
+            delete this.visibleView;
         }
 
-        this.visibleResource = resource;
+        var view = new WebInspector.NetworkItemView(resource);
+        view.show(this._viewsContainerElement);
+        this.visibleView = view;
+
         this.updateSidebarWidth();
     },
 
@@ -847,9 +843,10 @@ WebInspector.NetworkPanel.prototype = {
     {
         this.element.removeStyleClass("viewing-resource");
 
-        if (this.visibleResource && this.visibleResource._resourcesView)
-            this.visibleResource._resourcesView.hide();
-        delete this.visibleResource;
+        if (this.visibleView) {
+            this.visibleView.detach();
+            delete this.visibleView;
+        }
 
         if (this._lastSelectedGraphTreeElement)
             this._lastSelectedGraphTreeElement.select(true);
@@ -857,19 +854,10 @@ WebInspector.NetworkPanel.prototype = {
         this.updateSidebarWidth();
     },
 
-    _resourceViewForResource: function(resource)
-    {
-        if (!resource)
-            return null;
-        if (!resource._resourcesView)
-            resource._resourcesView = this._createResourceView(resource);
-        return resource._resourcesView;
-    },
-
     _toggleLargerResources: function()
     {
-        WebInspector.applicationSettings.resourcesLargeRows = !WebInspector.applicationSettings.resourcesLargeRows;
-        this._setLargerResources(WebInspector.applicationSettings.resourcesLargeRows);
+        WebInspector.settings.resourcesLargeRows = !WebInspector.settings.resourcesLargeRows;
+        this._setLargerResources(WebInspector.settings.resourcesLargeRows);
     },
 
     _setLargerResources: function(enabled)
@@ -879,46 +867,14 @@ WebInspector.NetworkPanel.prototype = {
             this._largerResourcesButton.title = WebInspector.UIString("Use large resource rows.");
             this._dataGrid.element.addStyleClass("small");
             this._timelineGrid.element.addStyleClass("small");
+            this._viewsContainerElement.addStyleClass("small");
         } else {
             this._largerResourcesButton.title = WebInspector.UIString("Use small resource rows.");
             this._dataGrid.element.removeStyleClass("small");
             this._timelineGrid.element.removeStyleClass("small");
+            this._viewsContainerElement.removeStyleClass("small");
         }
-    },
-
-    _createResourceView: function(resource)
-    {
-        switch (resource.category) {
-            case WebInspector.resourceCategories.documents:
-            case WebInspector.resourceCategories.stylesheets:
-            case WebInspector.resourceCategories.scripts:
-            case WebInspector.resourceCategories.xhr:
-                return new WebInspector.SourceView(resource);
-            case WebInspector.resourceCategories.images:
-                return new WebInspector.ImageView(resource);
-            case WebInspector.resourceCategories.fonts:
-                return new WebInspector.FontView(resource);
-            default:
-                return new WebInspector.ResourceView(resource);
-        }
-    },
-
-    _resourceViewTypeMatchesResource: function(resource, resourceView)
-    {
-        switch (resource.category) {
-            case WebInspector.resourceCategories.documents:
-            case WebInspector.resourceCategories.stylesheets:
-            case WebInspector.resourceCategories.scripts:
-            case WebInspector.resourceCategories.xhr:
-                return resourceView instanceof WebInspector.SourceView;
-            case WebInspector.resourceCategories.images:
-                return resourceView instanceof WebInspector.ImageView;
-            case WebInspector.resourceCategories.fonts:
-                return resourceView instanceof WebInspector.FontView;
-            default:
-                return resourceView instanceof WebInspector.ResourceView;
-        }
-        return false;
+        this._positionSummaryBar();
     },
 
     _getPopoverAnchor: function(element)
@@ -932,87 +888,8 @@ WebInspector.NetworkPanel.prototype = {
 
     _showPopover: function(anchor)
     {
-        var tableElement = document.createElement("table");
         var resource = anchor.parentElement.resource;
-        var rows = [];
-
-        function addRow(title, start, end, color)
-        {
-            var row = {};
-            row.title = title;
-            row.start = start;
-            row.end = end;
-            rows.push(row);
-        }
-
-        if (resource.timing.proxyStart !== -1)
-            addRow(WebInspector.UIString("Proxy"), resource.timing.proxyStart, resource.timing.proxyEnd);
-
-        if (resource.timing.dnsStart !== -1)
-            addRow(WebInspector.UIString("DNS Lookup"), resource.timing.dnsStart, resource.timing.dnsEnd);
-
-        if (resource.timing.connectStart !== -1) {
-            if (resource.connectionReused)
-                addRow(WebInspector.UIString("Blocking"), resource.timing.connectStart, resource.timing.connectEnd);
-            else {
-                var connectStart = resource.timing.connectStart;
-                // Connection includes DNS, subtract it here.
-                if (resource.timing.dnsStart !== -1)
-                    connectStart += resource.timing.dnsEnd - resource.timing.dnsStart;
-                addRow(WebInspector.UIString("Connecting"), connectStart, resource.timing.connectEnd);
-            }
-        }
-
-        if (resource.timing.sslStart !== -1)
-            addRow(WebInspector.UIString("SSL"), resource.timing.sslStart, resource.timing.sslEnd);
-
-        var sendStart = resource.timing.sendStart;
-        if (resource.timing.sslStart !== -1)
-            sendStart += resource.timing.sslEnd - resource.timing.sslStart;
-        
-        addRow(WebInspector.UIString("Sending"), resource.timing.sendStart, resource.timing.sendEnd);
-        addRow(WebInspector.UIString("Waiting"), resource.timing.sendEnd, resource.timing.receiveHeadersEnd);
-        addRow(WebInspector.UIString("Receiving"), (resource.responseReceivedTime - resource.timing.requestTime) * 1000, (resource.endTime - resource.timing.requestTime) * 1000);
-
-        const chartWidth = 200;
-        var total = (resource.endTime - resource.timing.requestTime) * 1000;
-        var scale = chartWidth / total;
-
-        for (var i = 0; i < rows.length; ++i) {
-            var tr = document.createElement("tr");
-            tableElement.appendChild(tr);
-
-            var td = document.createElement("td");
-            td.textContent = rows[i].title;
-            tr.appendChild(td);
-
-            td = document.createElement("td");
-            td.width = chartWidth + "px";
-
-            var row = document.createElement("div");
-            row.className = "network-timing-row";
-            td.appendChild(row);
-
-            var bar = document.createElement("span");
-            bar.className = "network-timing-bar";
-            bar.style.left = scale * rows[i].start + "px";
-            bar.style.right = scale * (total - rows[i].end) + "px";
-            bar.style.backgroundColor = rows[i].color;
-            bar.textContent = "\u200B"; // Important for 0-time items to have 0 width.
-            row.appendChild(bar);
-
-            var title = document.createElement("span");
-            title.className = "network-timing-bar-title";
-            if (total - rows[i].end < rows[i].start)
-                title.style.right = (scale * (total - rows[i].end) + 3) + "px";
-            else
-                title.style.left = (scale * rows[i].start + 3) + "px";
-            title.textContent = Number.millisToString(rows[i].end - rows[i].start);
-            row.appendChild(title);
-
-            tr.appendChild(td);
-        }
-
+        var tableElement = WebInspector.ResourceTimingView.createTimingTable(resource);
         var popover = new WebInspector.Popover(tableElement);
         popover.show(anchor);
         return popover;
@@ -1027,6 +904,9 @@ WebInspector.NetworkPanel.prototype = {
             this._viewsContainerElement.addStyleClass("hidden");
             this.sidebarElement.style.right = 0;
             this.sidebarElement.style.removeProperty("width");
+            this._summaryBarElement.style.removeProperty("width");
+            if (this._dataGrid.selectedNode)
+                this._dataGrid.selectedNode.selected = false;
         }
 
         if (this._briefGrid) {
@@ -1056,10 +936,10 @@ WebInspector.NetworkPanel.prototype = {
             widths.name = 20;
             widths.method = 7;
             widths.status = 8;
-            widths.type = 7;
+            widths.type = 10;
             widths.size = 10;
             widths.time = 10;
-            widths.timeline = 40;
+            widths.timeline = 37;
         }
 
         this._dataGrid.showColumn("timeline");
@@ -1096,11 +976,6 @@ WebInspector.NetworkPanel.prototype = {
 }
 
 WebInspector.NetworkPanel.prototype.__proto__ = WebInspector.Panel.prototype;
-
-WebInspector.getResourceContent = function(identifier, callback)
-{
-    InspectorBackend.getResourceContent(identifier, false, callback);
-}
 
 WebInspector.NetworkBaseCalculator = function()
 {
@@ -1401,16 +1276,19 @@ WebInspector.NetworkDataGridNode.prototype = {
         this._sizeCell = this._createDivInTD("size");
         this._timeCell = this._createDivInTD("time");
         this._createTimelineCell();
+        this._nameCell.addEventListener("click", this.select.bind(this), false);
     },
 
     select: function()
     {
-        WebInspector.DataGridNode.prototype.select.apply(this, arguments);
         this._panel._showResource(this._resource);
+        WebInspector.DataGridNode.prototype.select.apply(this, arguments);
     },
 
     get selectable()
     {
+        if (!this._panel._viewingResourceMode)
+            return false;
         if (!this._panel._hiddenCategories.all)
             return true;
         if (this._panel._hiddenCategories[this._resource.category.name])
@@ -1432,7 +1310,6 @@ WebInspector.NetworkDataGridNode.prototype = {
     {
         this._graphElement = document.createElement("div");
         this._graphElement.className = "network-graph-side";
-        this._graphElement.addEventListener("mouseover", this._refreshLabelPositions.bind(this), false);
 
         this._barAreaElement = document.createElement("div");
         //    this._barAreaElement.className = "network-graph-bar-area hidden";
@@ -1448,6 +1325,7 @@ WebInspector.NetworkDataGridNode.prototype = {
         this._barRightElement.className = "network-graph-bar";
         this._barAreaElement.appendChild(this._barRightElement);
 
+
         this._labelLeftElement = document.createElement("div");
         this._labelLeftElement.className = "network-graph-label waiting";
         this._barAreaElement.appendChild(this._labelLeftElement);
@@ -1455,6 +1333,8 @@ WebInspector.NetworkDataGridNode.prototype = {
         this._labelRightElement = document.createElement("div");
         this._labelRightElement.className = "network-graph-label";
         this._barAreaElement.appendChild(this._labelRightElement);
+
+        this._graphElement.addEventListener("mouseover", this._refreshLabelPositions.bind(this), false);
 
         this._timelineCell = document.createElement("td");
         this._timelineCell.className = "timeline-column";
@@ -1497,7 +1377,15 @@ WebInspector.NetworkDataGridNode.prototype = {
         if (this._resource.category === WebInspector.resourceCategories.images) {
             var previewImage = document.createElement("img");
             previewImage.className = "image-network-icon-preview";
-            previewImage.src = this._resource.url;
+
+            function onResourceContent()
+            {
+                previewImage.src = this._resource.contentURL;
+            }
+            if (Preferences.useDataURLForResourceImageIcons)
+                this._resource.requestContent(onResourceContent.bind(this));
+            else
+                previewImage.src = this._resource.url;
 
             var iconElement = document.createElement("div");
             iconElement.className = "icon";
@@ -1534,6 +1422,14 @@ WebInspector.NetworkDataGridNode.prototype = {
     {
         this._statusCell.removeChildren();
 
+        var fromCache = this._resource.cached;
+        if (fromCache) {
+            this._statusCell.textContent = WebInspector.UIString("(from cache)");
+            this._statusCell.addStyleClass("network-dim-cell");
+            return;
+        }
+
+        this._statusCell.removeStyleClass("network-dim-cell");
         if (this._resource.statusCode) {
             this._statusCell.appendChild(document.createTextNode(this._resource.statusCode));
             this._statusCell.removeStyleClass("network-dim-cell");
@@ -1582,8 +1478,6 @@ WebInspector.NetworkDataGridNode.prototype = {
     refreshGraph: function(calculator)
     {
         var percentages = calculator.computeBarGraphPercentages(this._resource);
-        var labels = calculator.computeBarGraphLabels(this._resource);
-
         this._percentages = percentages;
 
         this._barAreaElement.removeStyleClass("hidden");
@@ -1599,6 +1493,7 @@ WebInspector.NetworkDataGridNode.prototype = {
         this._barLeftElement.style.setProperty("right", (100 - percentages.end) + "%");
         this._barRightElement.style.setProperty("left", percentages.middle + "%");
 
+        var labels = calculator.computeBarGraphLabels(this._resource);
         this._labelLeftElement.textContent = labels.left;
         this._labelRightElement.textContent = labels.right;
 
@@ -1611,6 +1506,8 @@ WebInspector.NetworkDataGridNode.prototype = {
 
     _refreshLabelPositions: function()
     {
+        if (!this._percentages)
+            return;
         this._labelLeftElement.style.removeProperty("left");
         this._labelLeftElement.style.removeProperty("right");
         this._labelLeftElement.removeStyleClass("before");

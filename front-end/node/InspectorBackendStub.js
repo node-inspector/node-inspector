@@ -90,6 +90,8 @@ WebInspector.InspectorBackendStub = function()
     this._ignore('{"seq": 0, "domain": "Controller", "command": "getDOMStorageEntries", "arguments": {"storageId": "number"}}');
     this._ignore('{"seq": 0, "domain": "Controller", "command": "setDOMStorageItem", "arguments": {"storageId": "number","key": "string","value": "string"}}');
     this._ignore('{"seq": 0, "domain": "Controller", "command": "removeDOMStorageItem", "arguments": {"storageId": "number","key": "string"}}');
+    this._ignore('{"seq": 0, "domain": "Controller", "command": "cachedResources"}');
+    this._ignore('{"seq": 0, "domain": "Controller", "command": "setConsoleMessagesEnabled"}');
 }
 
 WebInspector.InspectorBackendStub.prototype = {

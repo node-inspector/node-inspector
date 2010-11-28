@@ -139,7 +139,7 @@ WebInspector.DatabaseQueryView.prototype = {
 
     _queryFinished: function(query, columnNames, values)
     {
-        var dataGrid = WebInspector.panels.storage.dataGridForResult(columnNames, values);
+        var dataGrid = WebInspector.panels.resources.dataGridForResult(columnNames, values);
         var trimmedQuery = query.trim();
 
         if (dataGrid) {
@@ -149,7 +149,7 @@ WebInspector.DatabaseQueryView.prototype = {
         }
 
         if (trimmedQuery.match(/^create /i) || trimmedQuery.match(/^drop table /i))
-            WebInspector.panels.storage.updateDatabaseTables(this.database);
+            WebInspector.panels.resources.updateDatabaseTables(this.database);
     },
 
     _queryError: function(query, error)

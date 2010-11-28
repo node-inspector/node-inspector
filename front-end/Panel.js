@@ -34,7 +34,7 @@ WebInspector.Panel = function(name)
     this.element.addStyleClass(name);
     this._panelName = name;
 
-    WebInspector.applicationSettings.installSetting(this._sidebarWidthSettingName(), this._panelName + "-sidebar-width", undefined);
+    WebInspector.settings.installApplicationSetting(this._sidebarWidthSettingName(), undefined);
 }
 
 // Should by in sync with style declarations.
@@ -377,7 +377,7 @@ WebInspector.Panel.prototype = {
 
     restoreSidebarWidth: function()
     {
-        var sidebarWidth = WebInspector.applicationSettings[this._sidebarWidthSettingName()];
+        var sidebarWidth = WebInspector.settings[this._sidebarWidthSettingName()];
         this.updateSidebarWidth(sidebarWidth);
     },
 
@@ -385,7 +385,7 @@ WebInspector.Panel.prototype = {
     {
         if (!this.sidebarElement)
             return;
-        WebInspector.applicationSettings[this._sidebarWidthSettingName()] = this.sidebarElement.offsetWidth;
+        WebInspector.settings[this._sidebarWidthSettingName()] = this.sidebarElement.offsetWidth;
     },
 
     updateMainViewWidth: function(width)

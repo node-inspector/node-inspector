@@ -34,12 +34,12 @@ WebInspector.FontView = function(resource)
 }
 
 WebInspector.FontView.prototype = {
-    hasContentTab: function()
+    hasContent: function()
     {
         return true;
     },
 
-    contentTabSelected: function()
+    _createContentIfNeeded: function()
     {
         if (this.fontPreviewElement)
             return;
@@ -51,7 +51,7 @@ WebInspector.FontView.prototype = {
         document.head.appendChild(this.fontStyleElement);
 
         this.fontPreviewElement = document.createElement("div");
-        this.contentElement.appendChild(this.fontPreviewElement);
+        this.element.appendChild(this.fontPreviewElement);
 
         this.fontPreviewElement.style.setProperty("font-family", uniqueFontName, null);
         this.fontPreviewElement.innerHTML = "ABCDEFGHIJKLM<br>NOPQRSTUVWXYZ<br>abcdefghijklm<br>nopqrstuvwxyz<br>1234567890";
@@ -63,12 +63,14 @@ WebInspector.FontView.prototype = {
     show: function(parentElement)
     {
         WebInspector.ResourceView.prototype.show.call(this, parentElement);
+        this._createContentIfNeeded();
         this.updateFontPreviewSize();
     },
 
     resize: function()
     {
         this.updateFontPreviewSize();
+        WebInspector.ResourceView.prototype.resize.call(this);
     },
 
     updateFontPreviewSize: function()
@@ -85,7 +87,7 @@ WebInspector.FontView.prototype = {
         const width = this.fontPreviewElement.offsetWidth;
 
         // Subtract some padding. This should match the padding in the CSS plus room for the scrollbar.
-        const containerWidth = this.contentElement.offsetWidth - 50;
+        const containerWidth = this.element.offsetWidth - 50;
 
         if (!height || !width || !containerWidth) {
             this.fontPreviewElement.style.removeProperty("font-size");

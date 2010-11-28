@@ -2,7 +2,7 @@
     -webkit-mask-image: url(Images/largerResourcesButtonGlyph.png);
 }
 
-.network.panel .data-grid {
+.network-sidebar .data-grid {
     border: none;
     position: absolute;
     top: 0;
@@ -12,47 +12,51 @@
     font-size: 11px;
 }
 
-.network.panel .data-grid table.data {
+.network-sidebar .data-grid table.data {
     -webkit-background-size: 1px 82px;
     background-image: -webkit-gradient(linear, left top, left bottom, from(rgba(0, 0, 0, 0)), color-stop(0.5, rgba(0, 0, 0, 0)), color-stop(0.5, rgba(0, 0, 0, 0.05)), to(rgba(0, 0, 0, 0.05)));
     font-size: 11px;
 }
 
-.network.panel .data-grid.small table.data {
+.network-sidebar .data-grid.small table.data {
     -webkit-background-size: 1px 42px;
 }
 
-.network.panel .data-grid td {
+.network-sidebar .data-grid td:not(.network-summary) {
     line-height: 17px;
+    height: 37px;
     border-right: 1px solid rgb(210, 210, 210);
-    -webkit-user-select: none;
     vertical-align: middle;
 }
 
-.network.panel .data-grid th {
+.network-sidebar .data-grid.small td {
+    height: 17px;
+}
+
+.network-sidebar .data-grid th {
     border-bottom: 1px solid rgb(64%, 64%, 64%);
     height: 30px;
     font-size: 11px;
     font-weight: bold;
 }
 
-.network.panel .data-grid.small th {
+.network-sidebar .data-grid.small th {
     height: 22px;
 }
 
-.network.panel .data-grid th, .network.panel .data-grid th.sort-descending, .network.panel .data-grid th.sort-ascending {
+.network-sidebar .data-grid th, .network.panel .data-grid th.sort-descending, .network.panel .data-grid th.sort-ascending {
     background: -webkit-gradient(linear, left top, left bottom, from(rgb(236, 236, 236)), to(rgb(217, 217, 217)));
 }
 
-.network.panel .data-grid .data-container {
+.network-sidebar .data-grid .data-container {
     top: 31px;
 }
 
-.network.panel .data-grid.small .data-container {
+.network-sidebar .data-grid.small .data-container {
     top: 23px;
 }
 
-.network.panel .data-grid select {
+.network-sidebar .data-grid select {
     -webkit-appearance: none;
     background-color: transparent;
     border: none;
@@ -60,100 +64,114 @@
     font-size: 11px;
     font-weight: bold;
 }
-.network.panel .data-grid td.name-column {
-    font-weight: bold;
+
+.network-sidebar .data-grid tr.filler {
+    background-color: white;
 }
 
-.network.panel .data-grid td.method-column,
-.network.panel .data-grid td.status-column,
-.network.panel .data-grid td.type-column,
-.network.panel .data-grid td.size-column,
-.network.panel .data-grid td.time-column {
+.network-sidebar .data-grid td.name-column {
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.network.panel:not(.viewing-resource) .network-sidebar td.name-column:hover {
+    text-decoration: underline;
+}
+
+.network-sidebar .data-grid td.method-column,
+.network-sidebar .data-grid td.status-column,
+.network-sidebar .data-grid td.type-column,
+.network-sidebar .data-grid td.size-column,
+.network-sidebar .data-grid td.time-column {
     background-color: rgba(0, 0, 0, 0.07);
 }
 
-.network.panel .data-grid td.size-column,
-.network.panel .data-grid td.time-column {
+.network-sidebar .data-grid td.size-column,
+.network-sidebar .data-grid td.time-column {
     text-align: right;
 }
 
-.network.panel .small .network-graph-side {
+.network-sidebar .small .network-graph-side {
     height: 14px;
 }
 
-.network.panel .data-grid th.sortable:active {
+.network-sidebar .data-grid th.sortable:active {
     background-image: none;
 }
 
 .network-cell-subtitle {
     font-weight: normal;
-    color: grey;
+    color: gray;
+}
+
+.network-sidebar tr.selected .network-cell-subtitle {
+    color: white;
 }
 
 .network-header-subtitle {
-    color: grey;
+    color: gray;
 }
 
-.network.panel .data-grid.small .network-cell-subtitle,
-.network.panel .data-grid.small .network-header-subtitle
+.network-sidebar .data-grid.small .network-cell-subtitle,
+.network-sidebar .data-grid.small .network-header-subtitle
 {
     display: none;
 }
 
 /* Resource preview icons */
 
-.network.panel .data-grid .icon {
+.network-sidebar .data-grid .icon {
     content: url(Images/resourcePlainIcon.png);
 }
 
-.network.panel .data-grid.small .icon {
+.network-sidebar .data-grid.small .icon {
     content: url(Images/resourcePlainIconSmall.png);
 }
 
-.network.panel .network-category-scripts .icon {
+.network-sidebar .network-category-scripts .icon {
     content: url(Images/resourceJSIcon.png);
 }
 
-.network.panel .data-grid.small .network-category-scripts .icon {
+.network-sidebar .data-grid.small .network-category-scripts .icon {
     content: url(Images/resourceDocumentIconSmall.png);
 }
 
-.network.panel .network-category-documents .icon {
+.network-sidebar .network-category-documents .icon {
     content: url(Images/resourceDocumentIcon.png);
 }
 
-.network.panel .data-grid.small .network-category-documents .icon {
+.network-sidebar .data-grid.small .network-category-documents .icon {
     content: url(Images/resourceDocumentIconSmall.png);
 }
 
-.network.panel .network-category-stylesheets .icon {
+.network-sidebar .network-category-stylesheets .icon {
     content: url(Images/resourceCSSIcon.png);
 }
 
-.network.panel .data-grid.small .network-category-stylesheets .icon {
+.network-sidebar .data-grid.small .network-category-stylesheets .icon {
     content: url(Images/resourceDocumentIconSmall.png);
 }
 
-.network.panel .network-category-images .icon {
+.network-sidebar .network-category-images .icon {
     position: relative;
     background-image: url(Images/resourcePlainIcon.png);
     background-repeat: no-repeat;
     content: "";
 }
 
-.network.panel .network-category-images .icon {
+.network-sidebar .network-category-images .icon {
     position: relative;
     background-image: url(Images/resourcePlainIcon.png);
     background-repeat: no-repeat;
     content: "";
 }
 
-.network.panel .data-grid.small .network-category-images .icon {
+.network-sidebar .data-grid.small .network-category-images .icon {
     background-image: url(Images/resourcePlainIconSmall.png);
     content: "";
 }
 
-.network.panel .data-grid .icon {
+.network-sidebar .data-grid .icon {
     float: left;
     width: 32px;
     height: 32px;
@@ -161,12 +179,12 @@
     margin-right: 3px;
 }
 
-.network.panel .data-grid.small .icon {
+.network-sidebar .data-grid.small .icon {
     width: 16px;
     height: 16px;
 }
 
-.network.panel .image-network-icon-preview {
+.network-sidebar .image-network-icon-preview {
     position: absolute;
     margin: auto;
     top: 3px;
@@ -179,7 +197,7 @@
     min-height: 1px;
 }
 
-.network.panel .data-grid.small .image-network-icon-preview {
+.network-sidebar .data-grid.small .image-network-icon-preview {
     top: 2px;
     bottom: 1px;
     left: 3px;
@@ -352,7 +370,7 @@
 
 .network-timing-row {
     position: relative;
-    height: 12px;
+    height: 16px;
 }
 
 .network-timing-bar {
@@ -360,10 +378,14 @@
     background-color: red;
     border-left: 1px solid red;
     opacity: 0.4;
+    top: 0;
+    bottom: 0;
 }
 
 .network-timing-bar-title {
     position: absolute;
+    color: black;
+    top: 1px;
 }
 
 .network-dim-cell {
@@ -397,7 +419,7 @@
     z-index: 300;
 }
 
-.network.panel .network-timeline-grid.small .network-event-divider {
+.network-sidebar .network-timeline-grid.small .network-event-divider {
     top: 23px;
 }
 
@@ -409,36 +431,40 @@
     background-color: rgba(0, 0, 255, 0.5);
 }
 
-.network.panel .resources-dividers-label-bar {
+.network-sidebar .resources-dividers {
+    z-index: 0;
+}
+
+.network-sidebar .resources-dividers-label-bar {
     background-color: transparent;
     border: none;
     height: 30px;
     pointer-events: none;
 }
 
-.network.panel .network-timeline-grid.small .resources-dividers-label-bar {
+.network-sidebar .network-timeline-grid.small .resources-dividers-label-bar {
     height: 23px;
 }
 
-.network.panel .resources-divider-label {
+.network-sidebar .resources-divider-label {
     top: 0px;
     margin-top: -4px;
     color: black;
 }
 
-.network.panel .resources-dividers-label-bar .resources-divider {
+.network-sidebar .resources-dividers-label-bar .resources-divider {
     top: 23px;
 }
 
-.network.panel .network-timeline-grid.small .resources-dividers-label-bar .resources-divider {
+.network-sidebar .network-timeline-grid.small .resources-dividers-label-bar .resources-divider {
     top: 15px;
 }
 
-.network.panel .resources-divider.first .resources-divider-label {
+.network-sidebar .resources-divider.first .resources-divider-label {
     display: none;
 }
 
-.network.panel .resources-dividers-label-bar .resources-divider.first {
+.network-sidebar .resources-dividers-label-bar .resources-divider.first {
     background-color: transparent;
 }
 
@@ -473,10 +499,12 @@
     height: 20px;
     font-size: 11px;
     font-weight: bold;
-    padding-top: 1px;
+    padding-top: 3px;
     padding-left: 10px;
     z-index: 2000;
     white-space: pre;
+    overflow : hidden;
+    text-overflow : ellipsis;
 }
 
 .network-summary-bar-bottom {
@@ -491,14 +519,14 @@
     white-space: pre;
 }
 
-.network.panel .data-grid td.network-summary {
+.network-sidebar .data-grid td.network-summary {
     padding: 0;
 }
 
 /* Viewer */
 
-.network.panel.viewing-resource .data-grid td,
-.network.panel.viewing-resource .data-grid th {
+.network.panel.viewing-resource .network-sidebar .data-grid td,
+.network.panel.viewing-resource .network-sidebar .data-grid th {
     border-right: none;
 }
 
@@ -530,16 +558,47 @@
     left: 0;
 }
 
-.network.panel .data-grid.full-grid-mode .viewer-column {
+#network-close-button {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background-image: url(Images/closeButtons.png);
+    background-position: 0 0;
+    background-color: transparent;
+    border: 0 none transparent;
+    top: 8px;
+    left: 5px;
+    z-index: 10;
     display: none;
 }
 
-.network.panel .data-grid.brief-grid-mode .viewer-column,
-.network.panel .data-grid.brief-grid-mode .method-column,
-.network.panel .data-grid.brief-grid-mode .status-column,
-.network.panel .data-grid.brief-grid-mode .type-column,
-.network.panel .data-grid.brief-grid-mode .size-column,
-.network.panel .data-grid.brief-grid-mode .time-column {
+#network-views.small #network-close-button  {
+    top: 4px;
+}
+
+#network-close-button:hover {
+    background-position: 14px 0;
+}
+
+#network-close-button:active {
+    background-position: 28px 0;
+}
+
+.network.panel.viewing-resource #network-close-button  {
+    display: block;
+}
+
+
+.network-sidebar .data-grid.full-grid-mode .viewer-column {
+    display: none;
+}
+
+.network-sidebar .data-grid.brief-grid-mode .viewer-column,
+.network-sidebar .data-grid.brief-grid-mode .method-column,
+.network-sidebar .data-grid.brief-grid-mode .status-column,
+.network-sidebar .data-grid.brief-grid-mode .type-column,
+.network-sidebar .data-grid.brief-grid-mode .size-column,
+.network-sidebar .data-grid.brief-grid-mode .time-column {
     display: none;
 }
 
@@ -547,12 +606,12 @@
     display: none;
 }
 
-.network.panel .data-grid.viewing-resource-mode .method-column,
-.network.panel .data-grid.viewing-resource-mode .status-column,
-.network.panel .data-grid.viewing-resource-mode .type-column,
-.network.panel .data-grid.viewing-resource-mode .size-column,
-.network.panel .data-grid.viewing-resource-mode .time-column,
-.network.panel .data-grid.viewing-resource-mode .timeline-column {
+.network-sidebar .data-grid.viewing-resource-mode .method-column,
+.network-sidebar .data-grid.viewing-resource-mode .status-column,
+.network-sidebar .data-grid.viewing-resource-mode .type-column,
+.network-sidebar .data-grid.viewing-resource-mode .size-column,
+.network-sidebar .data-grid.viewing-resource-mode .time-column,
+.network-sidebar .data-grid.viewing-resource-mode .timeline-column {
     display: none;
 }
 
@@ -568,7 +627,7 @@
     display: none;
 }
 
-.network.panel.viewing-resource .data-grid-resizer {
+.network.panel.viewing-resource .network-sidebar .data-grid-resizer {
     display: none;
 }
 
@@ -577,20 +636,183 @@
     padding-top: 5px;
 }
 
-.network.panel .resource-view.headers-visible .resource-view-content {
-    top: 23px;
-}
-
 .network.panel:not(.viewing-resource) .data-grid tr.selected {
     background-color: transparent;
     color: black;
 }
 
-.network.panel .resource-view .tabbed-pane-header {
+#network-views .network-item-view .tabbed-pane-header {
+    height: 31px;
+    padding-top: 8px;
+    padding-left: 25px;
+    white-space: nowrap;
+}
+
+#network-views.small .network-item-view .tabbed-pane-header {
     height: 23px;
-    padding-top: 3px;
+    padding-top: 0;
 }
 
 .network.panel.viewing-resource .data-grid .data-container {
     padding-right: 0;
+}
+
+.network-item-view {
+    display: none;
+    position: absolute;
+    background: white;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.network-item-view.visible {
+    display: -webkit-box;
+}
+
+.network-item-view .tabbed-pane-header {
+    height: 20px;
+    background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(rgb(236, 236, 236)), to(rgb(217, 217, 217)));
+    border-bottom: 1px solid rgb(163, 163, 163);
+}
+
+.network-item-view .scope-bar li {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.resource-headers-view {
+    display: none;
+    padding: 6px;
+    -webkit-user-select: text;    
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: auto;
+}
+
+.resource-headers-view.visible {
+    display: block;
+}
+
+.resource-headers-view .outline-disclosure .parent {
+    -webkit-user-select: none;
+    font-weight: bold;
+}
+
+.resource-headers-view .outline-disclosure .children li {
+    white-space: nowrap;
+}
+
+.resource-headers-view .outline-disclosure li.expanded .header-count {
+    display: none;
+}
+
+.resource-headers-view .outline-disclosure .header-name {
+    color: rgb(33%, 33%, 33%);
+    display: inline-block;
+    margin-right: 0.5em;
+    font-weight: bold;
+    vertical-align: top;
+    white-space: pre-wrap;
+}
+
+.resource-headers-view .outline-disclosure .header-value {
+    display: inline;
+    margin-right: 100px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin-top: 1px;
+}
+
+.resource-headers-view .outline-disclosure .raw-form-data {
+    white-space: pre-wrap;
+}
+
+.resource-cookies-view {
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    overflow: auto;
+    padding: 12px;
+    height: 100%;
+}
+
+.resource-cookies-view.visible {
+    display: block;
+}
+
+.resource-cookies-view .data-grid {
+    height: 100%;
+}
+
+.resource-cookies-view .data-grid .row-group {
+    font-weight: bold;
+    font-size: 11px;
+}
+
+.resource-timing-view {
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    padding: 6px;
+    font-weight: bold;
+    font-size: 11px;
+    color: rgb(30%, 30%, 30%);
+}
+
+.resource-timing-view table {
+    border-spacing: 21px 0;
+}
+
+.resource-timing-view .network-timing-bar {
+    opacity: 1;
+}
+
+.resource-timing-view .network-timing-bar.proxy {
+    background-image: -webkit-gradient(linear, left top, left bottom, from(rgb(239, 228, 176)), to(rgb(139, 128, 76)));
+    border-left: 1px solid rgb(139, 128, 76);
+}
+
+.resource-timing-view .network-timing-bar.dns {
+    background-image: -webkit-gradient(linear, left top, left bottom, from(rgb(153, 208, 216)), to(rgb(81, 174, 189)));
+    border-left: 1px solid rgb(81, 174, 189);
+}
+
+.resource-timing-view .network-timing-bar.connecting {
+    background-image: -webkit-gradient(linear, left top, left bottom, from(rgb(203, 232, 145)), to(rgb(160, 214, 56)));
+    border-left: 1px solid rgb(160, 214, 56);
+}
+
+.resource-timing-view .network-timing-bar.ssl {
+    background-image: -webkit-gradient(linear, left top, left bottom, from(rgb(21, 232, 145)), to(rgb(216, 149, 132)));
+    border-left: 1px solid rgb(216, 149, 132);
+}
+
+.resource-timing-view .network-timing-bar.sending {
+    background-image: -webkit-gradient(linear, left top, left bottom, from(rgb(232, 192, 182)), to(rgb(216, 147, 130)));
+    border-left: 1px solid rgb(216, 147, 130);
+}
+
+.resource-timing-view .network-timing-bar.waiting {
+    background-image: -webkit-gradient(linear, left top, left bottom, from(rgb(188, 179, 208)), to(rgb(141, 125, 175)));
+    border-left: 1px solid rgb(141, 125, 175);
+}
+
+.resource-timing-view .network-timing-bar.receiving {
+    background-image: -webkit-gradient(linear, left top, left bottom, from(rgb(214, 214, 214)), to(rgb(182, 182, 182)));
+    border-left: 1px solid rgb(182, 182, 182);
+}
+
+.resource-timing-view.visible {
+    display: block;
 }

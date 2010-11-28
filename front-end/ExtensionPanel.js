@@ -80,3 +80,39 @@ WebInspector.ExtensionPanel.prototype = {
 }
 
 WebInspector.ExtensionPanel.prototype.__proto__ = WebInspector.Panel.prototype;
+
+WebInspector.ExtensionWatchSidebarPane = function(title, id)
+{
+    WebInspector.SidebarPane.call(this, title);
+    this._id = id;
+}
+
+WebInspector.ExtensionWatchSidebarPane.prototype = {
+    setObject: function(object, title)
+    {
+        this._setObject(WebInspector.RemoteObject.fromLocalObject(object), title);
+    },
+
+    setExpression: function(expression, title)
+    {
+        InjectedScriptAccess.getDefault().evaluate(expression, this._onEvaluate.bind(this, title));
+    },
+
+    _onEvaluate: function(title, result)
+    {
+        this._setObject(WebInspector.RemoteObject.fromPayload(result), title);
+    },
+
+    _setObject: function(object, title)
+    {
+        this.bodyElement.removeChildren();
+        var section = new WebInspector.ObjectPropertiesSection(object, title, null, true);
+        if (!title)
+            section.headerElement.addStyleClass("hidden");
+        section.expanded = true;
+        this.bodyElement.appendChild(section.element);
+        WebInspector.extensionServer.notifyExtensionWatchSidebarUpdated(this._id);
+    }
+}
+
+WebInspector.ExtensionWatchSidebarPane.prototype.__proto__ = WebInspector.SidebarPane.prototype;

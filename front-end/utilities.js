@@ -24,20 +24,10 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Contains diff method based on Javascript Diff Algorithm By John Resig
+ * http://ejohn.org/files/jsdiff.js (released under the MIT license).
  */
-
-Object.properties = function(obj)
-{
-    var properties = [];
-    for (var prop in obj)
-        properties.push(prop);
-    return properties;
-}
-
-Object.sortedProperties = function(obj, sortFunc)
-{
-    return Object.properties(obj).sort(sortFunc);
-}
 
 Function.prototype.bind = function(thisObject)
 {
@@ -393,6 +383,26 @@ String.prototype.hasSubstring = function(string, caseInsensitive)
     return this.match(new RegExp(string.escapeForRegExp(), "i"));
 }
 
+String.prototype.asParsedURL = function()
+{
+    // RegExp groups:
+    // 1 - scheme
+    // 2 - hostname
+    // 3 - ?port
+    // 4 - ?path
+    // 5 - ?fragment
+    var match = this.match(/^([^:]+):\/\/([^\/:]*)(?::([\d]+))?(?:(\/[^#]*)(?:#(.*))?)?$/i);
+    if (!match)
+        return null;
+    var result = {};
+    result.scheme = match[1].toLowerCase();
+    result.host = match[2];
+    result.port = match[3];
+    result.path = match[4] || "/";
+    result.fragment = match[5];
+    return result;
+}
+
 String.prototype.escapeCharacters = function(chars)
 {
     var foundChar = false;
@@ -724,6 +734,51 @@ Array.prototype.keySet = function()
     return keys;
 }
 
+Array.diff = function(left, right)
+{
+    var o = left;
+    var n = right;
+
+    var ns = {};
+    var os = {};
+
+    for (var i = 0; i < n.length; i++) {
+        if (ns[n[i]] == null)
+            ns[n[i]] = { rows: [], o: null };
+        ns[n[i]].rows.push(i);
+    }
+
+    for (var i = 0; i < o.length; i++) {
+        if (os[o[i]] == null)
+            os[o[i]] = { rows: [], n: null };
+        os[o[i]].rows.push(i);
+    }
+
+    for (var i in ns) {
+        if (ns[i].rows.length == 1 && typeof(os[i]) != "undefined" && os[i].rows.length == 1) {
+            n[ns[i].rows[0]] = { text: n[ns[i].rows[0]], row: os[i].rows[0] };
+            o[os[i].rows[0]] = { text: o[os[i].rows[0]], row: ns[i].rows[0] };
+        }
+    }
+
+    for (var i = 0; i < n.length - 1; i++) {
+        if (n[i].text != null && n[i + 1].text == null && n[i].row + 1 < o.length && o[n[i].row + 1].text == null && n[i + 1] == o[n[i].row + 1]) {
+            n[i + 1] = { text: n[i + 1], row: n[i].row + 1 };
+            o[n[i].row + 1] = { text: o[n[i].row + 1], row: i + 1 };
+        }
+    }
+
+    for (var i = n.length - 1; i > 0; i--) {
+        if (n[i].text != null && n[i - 1].text == null && n[i].row > 0 && o[n[i].row - 1].text == null && 
+            n[i - 1] == o[n[i].row - 1]) {
+            n[i - 1] = { text: n[i - 1], row: n[i].row - 1 };
+            o[n[i].row - 1] = { text: o[n[i].row - 1], row: i - 1 };
+        }
+    }
+
+    return { left: o, right: n };
+}
+
 Array.convert = function(list)
 {
     // Cast array-like object to an array.
@@ -990,6 +1045,6 @@ function offerFileForDownload(contents)
     var builder = new BlobBuilder();
     builder.append(contents);
     var blob = builder.getBlob("application/octet-stream");
-    var url = window.createBlobURL(blob);
+    var url = window.createObjectURL(blob);
     window.open(url);
 }

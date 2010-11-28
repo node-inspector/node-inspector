@@ -20,6 +20,8 @@
     <file>ConsoleView.js</file>
     <file>ContextMenu.js</file>
     <file>CookieItemsView.js</file>
+    <file>CookieParser.js</file>
+    <file>CookiesTable.js</file>
     <file>CSSCompletions.js</file>
     <file>CSSStyleModel.js</file>
     <file>Database.js</file>
@@ -40,6 +42,7 @@
     <file>ExtensionPanel.js</file>
     <file>ExtensionRegistryStub.js</file>
     <file>ExtensionServer.js</file>
+    <file>FileSystemView.js</file>
     <file>FontView.js</file>
     <file>GoToLineDialog.js</file>
     <file>HAREntry.js</file>
@@ -53,6 +56,7 @@
     <file>InspectorFrontendHostStub.js</file>
     <file>KeyboardShortcut.js</file>
     <file>MetricsSidebarPane.js</file>
+    <file>NetworkItemView.js</file>
     <file>NetworkPanel.js</file>
     <file>Object.js</file>
     <file>ObjectPropertiesSection.js</file>
@@ -68,8 +72,12 @@
     <file>RemoteObject.js</file>
     <file>Resource.js</file>
     <file>ResourceCategory.js</file>
-    <file>ResourcesPanel.js</file>
+    <file>ResourceCookiesView.js</file>
+    <file>ResourceHeadersView.js</file>
+    <file>ResourceManager.js</file>
+    <file>ResourceTimingView.js</file>
     <file>ResourceView.js</file>
+    <file>ResourcesPanel.js</file>
     <file>ScopeChainSidebarPane.js</file>
     <file>Script.js</file>
     <file>ScriptsPanel.js</file>
@@ -86,7 +94,6 @@
     <file>SourceTokenizer.js</file>
     <file>SourceView.js</file>
     <file>StatusBarButton.js</file>
-    <file>StoragePanel.js</file>
     <file>StylesSidebarPane.js</file>
     <file>SummaryBar.js</file>
     <file>TabbedPane.js</file>
@@ -156,6 +163,7 @@
     <file>Images/excludeButtonGlyph.png</file>
     <file>Images/focusButtonGlyph.png</file>
     <file>Images/forward.png</file>
+    <file>Images/frame.png</file>
     <file>Images/gearButtonGlyph.png</file>
     <file>Images/glossyHeader.png</file>
     <file>Images/glossyHeaderPressed.png</file>
@@ -164,7 +172,6 @@
     <file>Images/goArrow.png</file>
     <file>Images/graphLabelCalloutLeft.png</file>
     <file>Images/graphLabelCalloutRight.png</file>
-    <file>Images/grayConnectorPoint.png</file>
     <file>Images/largerResourcesButtonGlyph.png</file>
     <file>Images/localStorage.png</file>
     <file>Images/networkIcon.png</file>
@@ -195,7 +202,6 @@
     <file>Images/resourcePlainIcon.png</file>
     <file>Images/resourcePlainIconSmall.png</file>
     <file>Images/resourcesIcon.png</file>
-    <file>Images/resourcesSilhouette.png</file>
     <file>Images/resourcesSizeGraphIcon.png</file>
     <file>Images/resourcesTimeGraphIcon.png</file>
     <file>Images/scriptsIcon.png</file>
@@ -221,7 +227,6 @@
     <file>Images/statusbarMenuButtonSelected.png</file>
     <file>Images/statusbarResizerHorizontal.png</file>
     <file>Images/statusbarResizerVertical.png</file>
-    <file>Images/storageIcon.png</file>
     <file>Images/successGreenDot.png</file>
     <file>Images/thumbActiveHoriz.png</file>
     <file>Images/thumbActiveVert.png</file>
@@ -270,7 +275,6 @@
     <file>Images/warningMediumIcon.png</file>
     <file>Images/warningOrangeDot.png</file>
     <file>Images/warningsErrors.png</file>
-    <file>Images/whiteConnectorPoint.png</file>
     <file alias="DebuggerScript.js">../../bindings/v8/DebuggerScript.js</file>
 </qresource>
 </RCC>

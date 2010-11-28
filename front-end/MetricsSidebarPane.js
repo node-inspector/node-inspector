@@ -46,24 +46,24 @@ WebInspector.MetricsSidebarPane.prototype = {
         }
 
         var self = this;
-        var callback = function(stylePayload) {
-            if (!stylePayload)
+        var callback = function(style) {
+            if (!style)
                 return;
-            var style = WebInspector.CSSStyleDeclaration.parseStyle(stylePayload);
             self._update(style);
         };
-        InspectorBackend.getComputedStyle(node.id, callback);
+        WebInspector.cssModel.getComputedStyleAsync(node.id, callback);
 
-        var inlineStyleCallback = function(stylePayload) {
-            if (!stylePayload)
+        var inlineStyleCallback = function(style) {
+            if (!style)
                 return;
-            self._inlineStyleId = stylePayload.id;
+            self.inlineStyle = style;
         };
-        InspectorBackend.getInlineStyle(node.id, inlineStyleCallback);
+        WebInspector.cssModel.getInlineStyleAsync(node.id, inlineStyleCallback);
     },
 
     _update: function(style)
     {
+        // Updating with computed style.
         var metricsElement = document.createElement("div");
         metricsElement.className = "metrics";
 
@@ -116,23 +116,23 @@ WebInspector.MetricsSidebarPane.prototype = {
         for (var i = 0; i < boxes.length; ++i) {
             var name = boxes[i];
 
-            if (name === "margin" && noMarginDisplayType[style.display])
+            if (name === "margin" && noMarginDisplayType[style.getPropertyValue("display")])
                 continue;
-            if (name === "padding" && noPaddingDisplayType[style.display])
+            if (name === "padding" && noPaddingDisplayType[style.getPropertyValue("display")])
                 continue;
-            if (name === "position" && noPositionType[style.position])
+            if (name === "position" && noPositionType[style.getPropertyValue("position")])
                 continue;
 
             var boxElement = document.createElement("div");
             boxElement.className = name;
 
             if (name === "content") {
-                var width = style.width.replace(/px$/, "");
+                var width = style.getPropertyValue("width").replace(/px$/, "");
                 var widthElement = document.createElement("span");
                 widthElement.textContent = width;
                 widthElement.addEventListener("dblclick", this.startEditing.bind(this, widthElement, "width", "width"), false);
 
-                var height = style.height.replace(/px$/, "");
+                var height = style.getPropertyValue("height").replace(/px$/, "");
                 var heightElement = document.createElement("span");
                 heightElement.textContent = height;
                 heightElement.addEventListener("dblclick", this.startEditing.bind(this, heightElement, "height", "height"), false);
@@ -185,7 +185,7 @@ WebInspector.MetricsSidebarPane.prototype = {
 
     editingCommitted: function(element, userInput, previousContent, context)
     {
-        if (!this._inlineStyleId) {
+        if (!this.inlineStyle) {
             // Element has no renderer.
             return this.editingCancelled(element, context); // nothing changed, so cancel
         }
@@ -203,14 +203,36 @@ WebInspector.MetricsSidebarPane.prototype = {
             userInput += "px";
 
         var self = this;
-        var callback = function(success) {
-            if (!success)
+        var callback = function(style) {
+            if (!style)
                 return;
+            self.inlineStyle = style;
             self.dispatchEventToListeners("metrics edited");
             self.update();
         };
 
-        InspectorBackend.setStyleProperty(this._inlineStyleId, context.styleProperty, userInput, callback);
+        function setEnabledValueCallback(context, style)
+        {
+            var property = style.getLiveProperty(context.styleProperty);
+            if (!property)
+                style.appendProperty(context.styleProperty, userInput, callback);
+             else
+                property.setValue(userInput, callback);
+        }
+
+        var allProperties = this.inlineStyle.allProperties;
+        for (var i = 0; i < allProperties.length; ++i) {
+            var property = allProperties[i];
+            if (property.name !== context.styleProperty || property.inactive)
+                continue;
+            if (property.disabled)
+                property.setDisabled(false, setEnabledValueCallback.bind(null, context));
+            else
+                property.setValue(userInput, callback);
+            return;
+        }
+
+        this.inlineStyle.appendProperty(context.styleProperty, userInput, callback);
     }
 }
 

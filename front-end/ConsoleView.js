@@ -48,7 +48,7 @@ WebInspector.ConsoleView = function(drawer)
     this.promptElement.className = "source-code";
     this.promptElement.addEventListener("keydown", this._promptKeyDown.bind(this), true);
     this.prompt = new WebInspector.TextPrompt(this.promptElement, this.completions.bind(this), ExpressionStopCharacters + ".");
-    WebInspector.applicationSettings.addEventListener("loaded", this._settingsLoaded, this);
+    this.prompt.history = WebInspector.settings.consoleHistory;
 
     this.topGroup = new WebInspector.ConsoleGroup(null, 0);
     this.messagesElement.insertBefore(this.topGroup.element, this.promptElement);
@@ -102,11 +102,6 @@ WebInspector.ConsoleView = function(drawer)
 }
 
 WebInspector.ConsoleView.prototype = {
-    _settingsLoaded: function()
-    {
-        this.prompt.history = WebInspector.applicationSettings.consoleHistory;
-    },
-    
     _updateFilter: function(e)
     {
         var isMac = WebInspector.isMac();
@@ -223,14 +218,7 @@ WebInspector.ConsoleView.prototype = {
     {
         if (msg instanceof WebInspector.ConsoleMessage && !(msg instanceof WebInspector.ConsoleCommandResult)) {
             this._incrementErrorWarningCount(msg);
-
-            // Add message to the resource panel
-            if (msg.url in WebInspector.resourceURLMap) {
-                msg.resource = WebInspector.resourceURLMap[msg.url];
-                if (WebInspector.panels.resources)
-                    WebInspector.panels.resources.addMessageToResource(msg.resource, msg);
-            }
-
+            WebInspector.resourceManager.addConsoleMessage(msg);
             this.commandSincePreviousMessage = false;
             this.previousMessage = msg;
         } else if (msg instanceof WebInspector.ConsoleCommand) {
@@ -301,8 +289,7 @@ WebInspector.ConsoleView.prototype = {
 
     clearMessages: function()
     {
-        if (WebInspector.panels.resources)
-            WebInspector.panels.resources.clearMessages();
+        WebInspector.resourceManager.clearConsoleMessages();
 
         this.messages = [];
 
@@ -360,7 +347,7 @@ WebInspector.ConsoleView.prototype = {
         }
 
         var results = [];
-        var properties = Object.sortedProperties(result);
+        var properties = Object.keys(result).sort();
 
         for (var i = 0; i < properties.length; ++i) {
             var property = properties[i];
@@ -521,7 +508,7 @@ WebInspector.ConsoleView.prototype = {
 
     _enterKeyPressed: function(event)
     {
-        if (event.altKey || event.ctrlKey)
+        if (event.altKey || event.ctrlKey || event.shiftKey)
             return;
 
         event.preventDefault();
@@ -543,7 +530,7 @@ WebInspector.ConsoleView.prototype = {
             self.prompt.historyOffset = 0;
             self.prompt.text = "";
 
-            WebInspector.applicationSettings.consoleHistory = self.prompt.history.slice(-30);
+            WebInspector.settings.consoleHistory = self.prompt.history.slice(-30);
 
             self.addMessage(new WebInspector.ConsoleCommandResult(result, commandMessage));
         }
@@ -678,7 +665,7 @@ WebInspector.ConsoleMessage.prototype = {
             case WebInspector.ConsoleMessage.MessageType.Trace:
             case WebInspector.ConsoleMessage.MessageType.UncaughtException:
                 var ol = document.createElement("ol");
-                ol.addStyleClass("stack-trace");
+                ol.className = "outline-disclosure";
                 var treeOutline = new TreeOutline(ol);
                 var messageText;
                 if (this.type === WebInspector.ConsoleMessage.MessageType.Assert)

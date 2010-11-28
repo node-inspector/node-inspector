@@ -33,7 +33,7 @@ WebInspector.SourceView = function(resource)
     this.element.addStyleClass("source");
 
     var canEditScripts = WebInspector.panels.scripts && WebInspector.panels.scripts.canEditScripts() && resource.type === WebInspector.Resource.Type.Script;
-    this.sourceFrame = new WebInspector.SourceFrame(this.contentElement, this._addBreakpoint.bind(this), canEditScripts ? this._editLine.bind(this) : null, this._continueToLine.bind(this));
+    this.sourceFrame = new WebInspector.SourceFrame(this.element, this._addBreakpoint.bind(this), canEditScripts ? this._editLine.bind(this) : null, this._continueToLine.bind(this));
     resource.addEventListener("finished", this._resourceLoadingFinished, this);
     this._frameNeedsSetup = true;
 }
@@ -50,9 +50,8 @@ WebInspector.SourceView.prototype = {
     show: function(parentElement)
     {
         WebInspector.ResourceView.prototype.show.call(this, parentElement);
+        this.setupSourceFrameIfNeeded();
         this.sourceFrame.visible = true;
-        if (this.localSourceFrame)
-            this.localSourceFrame.visible = true;
         this.resize();
     },
 
@@ -62,8 +61,6 @@ WebInspector.SourceView.prototype = {
         if (!this._frameNeedsSetup)
             this.sourceFrame.clearLineHighlight();
         WebInspector.View.prototype.hide.call(this);
-        if (this.localSourceFrame)
-            this.localSourceFrame.visible = false;
         this._currentSearchResultIndex = -1;
     },
 
@@ -71,29 +68,31 @@ WebInspector.SourceView.prototype = {
     {
         if (this.sourceFrame)
             this.sourceFrame.resize();
-        if (this.localSourceFrame)
-            this.localSourceFrame.resize();
     },
+
+    get scrollTop()
+    {
+        return this.sourceFrame.scrollTop;
+    },
+
+    set scrollTop(scrollTop)
+    {
+        this.sourceFrame.scrollTop = scrollTop;
+    },
+
 
     setupSourceFrameIfNeeded: function()
     {
         if (!this._frameNeedsSetup)
             return;
 
-        this.attach();
-
         delete this._frameNeedsSetup;
-        WebInspector.getResourceContent(this.resource.identifier, this._contentLoaded.bind(this));
+        this.resource.requestContent(this._contentLoaded.bind(this));
     },
 
-    hasContentTab: function()
+    hasContent: function()
     {
         return true;
-    },
-
-    contentTabSelected: function()
-    {
-        this.setupSourceFrameIfNeeded();
     },
 
     _contentLoaded: function(content)
@@ -149,12 +148,13 @@ WebInspector.SourceView.prototype = {
         }
 
         var linesCountToShift = newContent.split("\n").length - 1;
-        WebInspector.panels.scripts.editScriptSource(this._sourceIDForLine(line), lines.join("\n"), line, linesCountToShift, this._editLineComplete.bind(this), cancelEditingCallback);
+        var newContent = lines.join("\n");
+        WebInspector.panels.scripts.editScriptSource(this._sourceIDForLine(line), newContent, line, linesCountToShift, this._editLineComplete.bind(this, newContent), cancelEditingCallback);
     },
 
-    _editLineComplete: function(newBody)
+    _editLineComplete: function(newContent)
     {
-        this.sourceFrame.updateContent(newBody);
+        this.resource.content = newContent;
     },
 
     _sourceIDForLine: function(line)
@@ -205,25 +205,6 @@ WebInspector.SourceView.prototype = {
         }
 
         findSearchMatches.call(this, query, finishedCallback);
-    },
-
-    updateLocalContent: function(content, mimeType)
-    {
-        if (!this.localContentElement) {
-            this.localContentElement = document.createElement("div");
-            this.localContentElement.className = "resource-view-content";
-            this.tabbedPane.appendTab("local", WebInspector.UIString("Local"), this.localContentElement, this.selectLocalContentTab.bind(this));
-            this.localSourceFrame = new WebInspector.SourceFrame(this.localContentElement, this._addBreakpoint.bind(this), null, this._continueToLine.bind(this));
-        }
-        this.localSourceFrame.setContent(mimeType, content, "");
-    },
-
-    selectLocalContentTab: function()
-    {
-        this.tabbedPane.selectTabById("local");
-        this.localSourceFrame.visible = true;
-        if ("resize" in this)
-            this.resize();
     },
 
     jumpToFirstSearchResult: function()

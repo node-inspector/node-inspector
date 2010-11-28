@@ -59,7 +59,8 @@ WebInspector.WorkersSidebarPane.prototype = {
         this._workers[id] = worker;
 
         var title = WebInspector.linkifyURL(url, WebInspector.displayNameForURL(url), "worker-item", true, url);
-        var treeElement = new TreeElement(title, worker, false);
+        var treeElement = new TreeElement(null, worker, false);
+        treeElement.titleHTML = title;
         this._treeOutline.appendChild(treeElement);
     },
 
@@ -80,7 +81,6 @@ WebInspector.WorkersSidebarPane.prototype = {
 
     reset: function()
     {
-        InspectorBackend.removeAllScriptsToEvaluateOnLoad();
         this.setInstrumentation(this._enableWorkersCheckbox.checked);
         this._treeOutline.removeChildren();
         this._workers = {};

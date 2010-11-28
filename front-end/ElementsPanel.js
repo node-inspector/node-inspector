@@ -58,7 +58,7 @@ WebInspector.ElementsPanel = function()
 
         if (this._focusedDOMNode) {
             InspectorBackend.addInspectedNode(this._focusedDOMNode.id);
-            WebInspector.extensionServer.notifyObjectSelected(this.panel.name, "DOMNode");
+            WebInspector.extensionServer.notifyObjectSelected(this.panel.name);
         }
     };
 
@@ -107,7 +107,6 @@ WebInspector.ElementsPanel = function()
     this.element.appendChild(this.sidebarResizeElement);
 
     this._registerShortcuts();
-    this._changedStyles = {};
 
     this.reset();
 }
@@ -344,115 +343,6 @@ WebInspector.ElementsPanel.prototype = {
     renameSelector: function(oldIdentifier, newIdentifier, oldSelector, newSelector)
     {
         // TODO: Implement Shifting the oldSelector, and its contents to a newSelector
-    },
-
-    addStyleChange: function(identifier, style, property)
-    {
-        if (!style.parentRule)
-            return;
-
-        var selector = style.parentRule.selectorText;
-        if (!this._changedStyles[identifier])
-            this._changedStyles[identifier] = {};
-
-        if (!this._changedStyles[identifier][selector])
-            this._changedStyles[identifier][selector] = {};
-
-        if (!this._changedStyles[identifier][selector][property])
-            WebInspector.styleChanges += 1;
-
-        this._changedStyles[identifier][selector][property] = style.getPropertyValue(property);
-    },
-
-    removeStyleChange: function(identifier, style, property)
-    {
-        if (!style.parentRule)
-            return;
-
-        var selector = style.parentRule.selectorText;
-        if (!this._changedStyles[identifier] || !this._changedStyles[identifier][selector])
-            return;
-
-        if (this._changedStyles[identifier][selector][property]) {
-            delete this._changedStyles[identifier][selector][property];
-            WebInspector.styleChanges -= 1;
-        }
-    },
-
-    generateStylesheet: function()
-    {
-        if (!WebInspector.styleChanges)
-            return;
-
-        // Merge Down to Just Selectors
-        var mergedSelectors = {};
-        for (var identifier in this._changedStyles) {
-            for (var selector in this._changedStyles[identifier]) {
-                if (!mergedSelectors[selector])
-                    mergedSelectors[selector] = this._changedStyles[identifier][selector];
-                else { // merge on selector
-                    var merge = {};
-                    for (var property in mergedSelectors[selector])
-                        merge[property] = mergedSelectors[selector][property];
-                    for (var property in this._changedStyles[identifier][selector]) {
-                        if (!merge[property])
-                            merge[property] = this._changedStyles[identifier][selector][property];
-                        else { // merge on property within a selector, include comment to notify user
-                            var value1 = merge[property];
-                            var value2 = this._changedStyles[identifier][selector][property];
-
-                            if (value1 === value2)
-                                merge[property] = [value1];
-                            else if (value1 instanceof Array)
-                                merge[property].push(value2);
-                            else
-                                merge[property] = [value1, value2];
-                        }
-                    }
-                    mergedSelectors[selector] = merge;
-                }
-            }
-        }
-
-        var builder = [];
-        builder.push("/**");
-        builder.push(" * Inspector Generated Stylesheet"); // UIString?
-        builder.push(" */\n");
-
-        var indent = "  ";
-        function displayProperty(property, value, comment) {
-            if (comment)
-                return indent + "/* " + property + ": " + value + "; */";
-            else
-                return indent + property + ": " + value + ";";
-        }
-
-        for (var selector in mergedSelectors) {
-            var psuedoStyle = mergedSelectors[selector];
-            var properties = Object.properties(psuedoStyle);
-            if (properties.length) {
-                builder.push(selector + " {");
-                for (var i = 0; i < properties.length; ++i) {
-                    var property = properties[i];
-                    var value = psuedoStyle[property];
-                    if (!(value instanceof Array))
-                        builder.push(displayProperty(property, value));
-                    else {
-                        if (value.length === 1)
-                            builder.push(displayProperty(property, value) + " /* merged from equivalent edits */"); // UIString?
-                        else {                        
-                            builder.push(indent + "/* There was a Conflict... There were Multiple Edits for '" + property + "' */"); // UIString?
-                            for (var j = 0; j < value.length; ++j)
-                                builder.push(displayProperty(property, value, true));
-                        }
-                    }
-                }
-                builder.push("}\n");
-            }
-        }
-
-        WebInspector.showConsole();
-        WebInspector.console.addMessage(WebInspector.ConsoleMessage.createTextMessage(builder.join("\n")));
     },
 
     get rootDOMNode()

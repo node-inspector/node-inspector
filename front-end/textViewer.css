@@ -25,8 +25,6 @@
     margin: 6px 25px;
     padding: 0 7px 1px;
     z-index:20;
-    max-width: 80%;
-    
 }
 
 .webkit-html-warning-message {
@@ -66,8 +64,8 @@
     vertical-align: top;
     word-break: normal;
     -webkit-user-select: none;
-	padding-right: 4px;
-	padding-left: 6px;
+    padding-right: 4px;
+    padding-left: 6px;
 }
 
 .webkit-line-number-outer {
@@ -141,6 +139,19 @@
 .webkit-execution-line .webkit-line-content {
     background-color: rgb(171, 191, 254);
     outline: 1px solid rgb(64, 115, 244);
+}
+
+.diff-container .webkit-added-line .webkit-line-content {
+    background-color: rgb(220, 255, 220);
+}
+
+.diff-container .webkit-removed-line .webkit-line-content {
+    background-color: rgb(255, 220, 220);
+    text-decoration: line-through;
+}
+
+.diff-container .webkit-changed-line .webkit-line-content {
+    background-color: rgb(220, 220, 255);
 }
 
 .webkit-search-result {

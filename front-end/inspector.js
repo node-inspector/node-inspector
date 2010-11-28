@@ -50,20 +50,8 @@
 
 var WebInspector = {
     resources: {},
-    resourceURLMap: {},
-    cookieDomains: {},
-    applicationCacheDomains: {},
     missingLocalizedStrings: {},
     pendingDispatches: 0,
-
-    // RegExp groups:
-    // 1 - scheme
-    // 2 - hostname
-    // 3 - ?port
-    // 4 - ?path
-    // 5 - ?fragment
-    URLRegExp: /^(http[s]?|file):\/\/([^\/:]*)(?::([\d]+))?(?:(\/[^#]*)(?:#(.*))?)?$/i,
-    GenericURLRegExp: /^([^:]+):\/\/([^\/:]*)(?::([\d]+))?(?:(\/[^#]*)(?:#(.*))?)?$/i,
 
     get platform()
     {
@@ -191,7 +179,7 @@ var WebInspector = {
 
         for (var panelName in WebInspector.panels) {
             if (WebInspector.panels[panelName] === x) {
-                InspectorBackend.storeLastActivePanel(panelName);
+                WebInspector.settings.lastActivePanel = panelName;
                 this._panelHistory.setPanel(panelName);
             }
         }
@@ -202,7 +190,7 @@ var WebInspector = {
         var pane = new WebInspector.BreakpointsSidebarPane(WebInspector.UIString("Breakpoints"));
         function breakpointAdded(event)
         {
-            pane.addBreakpoint(new WebInspector.JSBreakpointItem(event.data));
+            pane.addBreakpointItem(new WebInspector.BreakpointItem(event.data));
         }
         WebInspector.breakpointManager.addEventListener("breakpoint-added", breakpointAdded);
         return pane;
@@ -213,7 +201,7 @@ var WebInspector = {
         var pane = new WebInspector.BreakpointsSidebarPane(WebInspector.UIString("DOM Breakpoints"));
         function breakpointAdded(event)
         {
-            pane.addBreakpoint(new WebInspector.BreakpointItem(event.data));
+            pane.addBreakpointItem(new WebInspector.BreakpointItem(event.data));
         }
         WebInspector.breakpointManager.addEventListener("dom-breakpoint-added", breakpointAdded);
         return pane;
@@ -224,7 +212,7 @@ var WebInspector = {
         var pane = new WebInspector.XHRBreakpointsSidebarPane();
         function breakpointAdded(event)
         {
-            pane.addBreakpoint(new WebInspector.BreakpointItem(event.data));
+            pane.addBreakpointItem(new WebInspector.BreakpointItem(event.data));
         }
         WebInspector.breakpointManager.addEventListener("xhr-breakpoint-added", breakpointAdded);
         return pane;
@@ -235,10 +223,10 @@ var WebInspector = {
         var hiddenPanels = (InspectorFrontendHost.hiddenPanels() || "").split(',');
         if (hiddenPanels.indexOf("elements") === -1)
             this.panels.elements = new WebInspector.ElementsPanel();
-        if (Preferences.networkPanelEnabled && hiddenPanels.indexOf("network") === -1)
-            this.panels.network = new WebInspector.NetworkPanel();
         if (hiddenPanels.indexOf("resources") === -1)
             this.panels.resources = new WebInspector.ResourcesPanel();
+        if (hiddenPanels.indexOf("network") === -1)
+            this.panels.network = new WebInspector.NetworkPanel();
         if (hiddenPanels.indexOf("scripts") === -1)
             this.panels.scripts = new WebInspector.ScriptsPanel();
         if (hiddenPanels.indexOf("timeline") === -1)
@@ -249,8 +237,6 @@ var WebInspector = {
             if (Preferences.heapProfilerPresent)
                 this.panels.profiles.registerProfileType(new WebInspector.HeapSnapshotProfileType());
         }
-        if (hiddenPanels.indexOf("storage") === -1 && hiddenPanels.indexOf("databases") === -1)
-            this.panels.storage = new WebInspector.StoragePanel();
         if (hiddenPanels.indexOf("audits") === -1)
             this.panels.audits = new WebInspector.AuditsPanel();
         if (hiddenPanels.indexOf("console") === -1)
@@ -450,6 +436,21 @@ var WebInspector = {
     {
         this.currentPanel = this.panels.elements;
         this.panels.elements.updateFocusedNode(nodeId);
+    },
+
+    get networkResources()
+    {
+        return this.panels.network.resources;
+    },
+
+    forAllResources: function(callback)
+    {
+        WebInspector.resourceManager.forAllResources(callback);
+    },
+
+    resourceForURL: function(url)
+    {
+        return this.resourceManager.resourceForURL(url);
     }
 }
 
@@ -502,8 +503,8 @@ WebInspector.doLoadedDone = function()
     document.body.addStyleClass("port-" + port);
 
     InspectorFrontendHost.loaded();
-    WebInspector.Settings.initialize();
-    
+    WebInspector.settings = new WebInspector.Settings();
+
     this._registerShortcuts();
 
     // set order of some sections explicitly
@@ -516,6 +517,7 @@ WebInspector.doLoadedDone = function()
     // this.changes = new WebInspector.ChangesView(this.drawer);
     // TODO: Remove class="hidden" from inspector.html on button#changes-status-bar-item
     this.drawer.visibleView = this.console;
+    this.resourceManager = new WebInspector.ResourceManager();
     this.domAgent = new WebInspector.DOMAgent();
 
     this.resourceCategories = {
@@ -525,7 +527,7 @@ WebInspector.doLoadedDone = function()
         scripts: new WebInspector.ResourceCategory("scripts", WebInspector.UIString("Scripts"), "rgb(255,121,0)"),
         xhr: new WebInspector.ResourceCategory("xhr", WebInspector.UIString("XHR"), "rgb(231,231,10)"),
         fonts: new WebInspector.ResourceCategory("fonts", WebInspector.UIString("Fonts"), "rgb(255,82,62)"),
-        websocket: new WebInspector.ResourceCategory("websockets", WebInspector.UIString("WebSocket"), "rgb(186,186,186)"), // FIXME: Decide the color.
+        websockets: new WebInspector.ResourceCategory("websockets", WebInspector.UIString("WebSocket"), "rgb(186,186,186)"), // FIXME: Decide the color.
         other: new WebInspector.ResourceCategory("other", WebInspector.UIString("Other"), "rgb(186,186,186)")
     };
 
@@ -595,14 +597,17 @@ WebInspector.doLoadedDone = function()
         WebInspector.monitoringXHREnabled = inspectorState.monitoringXHREnabled;
         if ("pauseOnExceptionsState" in inspectorState)
             WebInspector.panels.scripts.updatePauseOnExceptionsState(inspectorState.pauseOnExceptionsState);
-        if (inspectorState.resourceTrackingEnabled)
-            WebInspector.panels.resources.resourceTrackingWasEnabled();
-        else
-            WebInspector.panels.resources.resourceTrackingWasDisabled();
     }
     InspectorBackend.getInspectorState(populateInspectorState);
 
-    InspectorBackend.populateScriptObjects();
+    function onPopulateScriptObjects()
+    {
+        if (!WebInspector.currentPanel)
+            WebInspector.showPanel(WebInspector.settings.lastActivePanel);
+    }
+    InspectorBackend.populateScriptObjects(onPopulateScriptObjects);
+
+    InspectorBackend.setConsoleMessagesEnabled(true);
 
     // As a DOMAgent method, this needs to happen after the frontend has loaded and the agent is available.
     InspectorBackend.getSupportedCSSProperties(WebInspector.CSSCompletions._load);
@@ -632,11 +637,11 @@ var windowLoaded = function()
     } else
         WebInspector.loaded();
 
-    window.removeEventListener("load", windowLoaded, false);
+    window.removeEventListener("DOMContentLoaded", windowLoaded, false);
     delete windowLoaded;
 };
 
-window.addEventListener("load", windowLoaded, false);
+window.addEventListener("DOMContentLoaded", windowLoaded, false);
 
 WebInspector.dispatch = function(message) {
     // We'd like to enforce asynchronous interaction between the inspector controller and the frontend.
@@ -653,6 +658,9 @@ WebInspector.dispatch = function(message) {
 // This function is purposely put into the global scope for easy access.
 WebInspector_syncDispatch = function(message)
 {
+    if (window.dumpInspectorProtocolMessages)
+        console.log("backend: " + ((typeof message === "string") ? message : JSON.stringify(message)));
+
     var messageObject = (typeof message === "string") ? JSON.parse(message) : message;
 
     var arguments = [];
@@ -769,12 +777,12 @@ WebInspector.documentClick = function(event)
             return;
         }
 
-        const urlMatch = WebInspector.GenericURLRegExp.exec(anchor.href);
-        if (urlMatch && urlMatch[1] === "webkit-link-action") {
-            if (urlMatch[2] === "show-panel") {
-                const panel = urlMatch[4].substring(1);
+        var parsedURL = anchor.href.asParsedURL();
+        if (parsedURL && parsedURL.scheme === "webkit-link-action") {
+            if (parsedURL.host === "show-panel") {
+                var panel = parsedURL.path.substring(1);
                 if (WebInspector.panels[panel])
-                    WebInspector.currentPanel = WebInspector.panels[panel];
+                    WebInspector.showPanel(panel);
             }
             return;
         }
@@ -1203,8 +1211,8 @@ WebInspector.showPanel = function(panel)
 
 WebInspector.selectDatabase = function(o)
 {
-    WebInspector.showPanel("storage");
-    WebInspector.panels.storage.selectDatabase(o);
+    WebInspector.showPanel("resources");
+    WebInspector.panels.resources.selectDatabase(o);
 }
 
 WebInspector.consoleMessagesCleared = function()
@@ -1214,181 +1222,79 @@ WebInspector.consoleMessagesCleared = function()
 
 WebInspector.selectDOMStorage = function(o)
 {
-    WebInspector.showPanel("storage");
-    WebInspector.panels.storage.selectDOMStorage(o);
+    WebInspector.showPanel("resources");
+    WebInspector.panels.resources.selectDOMStorage(o);
 }
-
-WebInspector.updateResource = function(payload)
-{
-    var identifier = payload.id;
-    var resource = this.resources[identifier];
-    if (!resource) {
-        resource = new WebInspector.Resource(identifier, payload.url);
-        this.resources[identifier] = resource;
-        this.resourceURLMap[resource.url] = resource;
-        this.panels.resources.addResource(resource);
-        this.panels.audits.resourceStarted(resource);
-        if (this.panels.network)
-            this.panels.network.addResource(resource);
-    }
-
-    if (payload.didRequestChange) {
-        resource.domain = payload.host;
-        resource.path = payload.path;
-        resource.lastPathComponent = payload.lastPathComponent;
-        resource.requestHeaders = payload.requestHeaders;
-        resource.mainResource = payload.mainResource;
-        resource.requestMethod = payload.requestMethod;
-        resource.requestFormData = payload.requestFormData;
-        resource.documentURL = payload.documentURL;
-        if (typeof payload.webSocketRequestKey3 !== "undefined")
-            resource.webSocketRequestKey3 = payload.webSocketRequestKey3;
-
-        if (resource.mainResource)
-            this.mainResource = resource;
-
-        var match = payload.documentURL.match(WebInspector.GenericURLRegExp);
-        if (match) {
-            var protocol = match[1].toLowerCase();
-            this._addCookieDomain(match[2]);
-            this._addAppCacheDomain(match[2]);
-        }
-    }
-
-    if (payload.didResponseChange) {
-        resource.mimeType = payload.mimeType;
-        resource.suggestedFilename = payload.suggestedFilename;
-        resource.expectedContentLength = payload.expectedContentLength;
-        resource.statusCode = payload.statusCode;
-        resource.statusText = payload.statusText;
-        resource.suggestedFilename = payload.suggestedFilename;
-        resource.responseHeaders = payload.responseHeaders;
-        resource.connectionID = payload.connectionID;
-        resource.connectionReused = payload.connectionReused;
-        resource.timing = payload.timing;
-        resource.cached = payload.cached;
-        if (typeof payload.webSocketChallengeResponse !== "undefined")
-            resource.webSocketChallengeResponse = payload.webSocketChallengeResponse;
-    }
-
-    if (payload.didTypeChange)
-        resource.type = payload.type;
-
-    if (payload.didLengthChange)
-        resource.resourceSize = payload.resourceSize;
-
-    if (payload.didCompletionChange) {
-        resource.failed = payload.failed;
-        resource.finished = payload.finished;
-        if (this.panels.audits)
-            this.panels.audits.resourceFinished(resource);
-        this.extensionServer.notifyResourceFinished(resource);
-    }
-
-    if (payload.didTimingChange) {
-        if (payload.startTime)
-            resource.startTime = payload.startTime;
-        if (payload.responseReceivedTime)
-            resource.responseReceivedTime = payload.responseReceivedTime;
-        if (payload.endTime)
-            resource.endTime = payload.endTime;
-    }
-
-    if (this.panels.network)
-        this.panels.network.refreshResource(resource);
-}
-
 
 WebInspector.domContentEventFired = function(time)
 {
-    this.panels.resources.mainResourceDOMContentTime = time;
     this.panels.audits.mainResourceDOMContentTime = time;
     if (this.panels.network)
         this.panels.network.mainResourceDOMContentTime = time;
+    this.extensionServer.notifyPageDOMContentLoaded((time - WebInspector.mainResource.startTime) * 1000);
+    this.mainResourceDOMContentTime = time;
 }
 
 WebInspector.loadEventFired = function(time)
 {
-    this.panels.resources.mainResourceLoadTime = time;
     this.panels.audits.mainResourceLoadTime = time;
     if (this.panels.network)
         this.panels.network.mainResourceLoadTime = time;
-}
-
-WebInspector.removeResource = function(identifier)
-{
-    var resource = this.resources[identifier];
-    if (!resource)
-        return;
-
-    resource.category.removeResource(resource);
-    delete this.resourceURLMap[resource.url];
-    delete this.resources[identifier];
-
-    if (this.panels.resources)
-        this.panels.resources.removeResource(resource);
+    this.extensionServer.notifyPageLoaded((time - WebInspector.mainResource.startTime) * 1000);
+    this.mainResourceLoadTime = time;
 }
 
 WebInspector.addDatabase = function(payload)
 {
-    if (!this.panels.storage)
+    if (!this.panels.resources)
         return;
     var database = new WebInspector.Database(
         payload.id,
         payload.domain,
         payload.name,
         payload.version);
-    this.panels.storage.addDatabase(database);
-}
-
-WebInspector._addCookieDomain = function(domain)
-{
-    // Eliminate duplicate domains from the list.
-    if (domain in this.cookieDomains)
-        return;
-    this.cookieDomains[domain] = true;
-
-    if (!this.panels.storage)
-        return;
-    this.panels.storage.addCookieDomain(domain);
-}
-
-WebInspector._addAppCacheDomain = function(domain)
-{
-    // Eliminate duplicate domains from the list.
-    if (domain in this.applicationCacheDomains)
-        return;
-    this.applicationCacheDomains[domain] = true;
-
-    if (!this.panels.storage)
-        return;
-    this.panels.storage.addApplicationCache(domain);
+    this.panels.resources.addDatabase(database);
 }
 
 WebInspector.addDOMStorage = function(payload)
 {
-    if (!this.panels.storage)
+    if (!this.panels.resources)
         return;
     var domStorage = new WebInspector.DOMStorage(
         payload.id,
         payload.host,
         payload.isLocalStorage);
-    this.panels.storage.addDOMStorage(domStorage);
+    this.panels.resources.addDOMStorage(domStorage);
 }
 
 WebInspector.updateDOMStorage = function(storageId)
 {
-    this.panels.storage.updateDOMStorage(storageId);
+    this.panels.resources.updateDOMStorage(storageId);
 }
 
 WebInspector.updateApplicationCacheStatus = function(status)
 {
-    this.panels.storage.updateApplicationCacheStatus(status);
+    this.panels.resources.updateApplicationCacheStatus(status);
+}
+
+WebInspector.didGetFileSystemPath = function(root, type, origin)
+{
+    this.panels.resources.updateFileSystemPath(root, type, origin);
+}
+
+WebInspector.didGetFileSystemError = function(type, origin)
+{
+    this.panels.resources.updateFileSystemError(type, origin);
+}
+
+WebInspector.didGetFileSystemDisabled = function()
+{
+    this.panels.resources.setFileSystemDisabled();
 }
 
 WebInspector.updateNetworkState = function(isNowOnline)
 {
-    this.panels.storage.updateNetworkState(isNowOnline);
+    this.panels.resources.updateNetworkState(isNowOnline);
 }
 
 WebInspector.searchingForNodeWasEnabled = function()
@@ -1443,7 +1349,7 @@ WebInspector.failedToParseScriptSource = function(sourceURL, source, startingLin
 
 WebInspector.pausedScript = function(details)
 {
-    this.panels.scripts.debuggerPaused(details);
+    this.panels.scripts.debuggerPaused(details.callFrames);
     this.breakpointManager.debuggerPaused(details);
     InspectorFrontendHost.bringToFront();
 }
@@ -1464,21 +1370,13 @@ WebInspector.reset = function()
             panel.reset();
     }
 
-    this.sessionSettings.reset();
-
-    for (var category in this.resourceCategories)
-        this.resourceCategories[category].removeAllResources();
-
     this.resources = {};
-    this.resourceURLMap = {};
-    this.cookieDomains = {};
-    this.applicationCacheDomains = {};
     this.highlightDOMNode(0);
-
-    delete this.mainResource;
 
     this.console.clearMessages();
     this.extensionServer.notifyInspectorReset();
+
+    this.breakpointManager.restoreBreakpoints();
 }
 
 WebInspector.resetProfilesPanel = function()
@@ -1495,20 +1393,18 @@ WebInspector.bringToFront = function()
 WebInspector.inspectedURLChanged = function(url)
 {
     InspectorFrontendHost.inspectedURLChanged(url);
+    this.settings.inspectedURLChanged(url);
     this.extensionServer.notifyInspectedURLChanged();
-}
-
-WebInspector.resourceURLChanged = function(resource, oldURL)
-{
-    delete this.resourceURLMap[oldURL];
-    this.resourceURLMap[resource.url] = resource;
+    if (!this._breakpointsRestored) {
+        this.breakpointManager.restoreBreakpoints();
+        this._breakpointsRestored = true;
+    }
 }
 
 WebInspector.didCommitLoad = function()
 {
     // Cleanup elements panel early on inspected page refresh.
     WebInspector.setDocument(null);
-    this.extensionServer.notifyInspectedPageLoaded();
 }
 
 WebInspector.updateConsoleMessageExpiredCount = function(count)
@@ -1632,7 +1528,7 @@ WebInspector.addProfileHeader = function(profile)
 WebInspector.setRecordingProfile = function(isProfiling)
 {
     this.panels.profiles.getProfileType(WebInspector.CPUProfileType.TypeId).setRecordingProfile(isProfiling);
-    if (this._previousIsProfiling !== isProfiling) {
+    if (this.panels.profiles.hasTemporaryProfile(WebInspector.CPUProfileType.TypeId) !== isProfiling) {
         if (!this._temporaryRecordingProfile) {
             this._temporaryRecordingProfile = {
                 typeId: WebInspector.CPUProfileType.TypeId,
@@ -1641,7 +1537,6 @@ WebInspector.setRecordingProfile = function(isProfiling)
                 isTemporary: true
             };
         }
-        this._previousIsProfiling = isProfiling;
         if (isProfiling)
             this.panels.profiles.addProfileHeader(this._temporaryRecordingProfile);
         else
@@ -1690,7 +1585,8 @@ WebInspector.displayNameForURL = function(url)
 {
     if (!url)
         return "";
-    var resource = this.resourceURLMap[url];
+
+    var resource = this.resourceForURL(url);
     if (resource)
         return resource.displayName;
 
@@ -1708,24 +1604,10 @@ WebInspector.displayNameForURL = function(url)
     return url.trimURL(WebInspector.mainResource.domain);
 }
 
-WebInspector.resourceForURL = function(url)
-{
-    if (url in this.resourceURLMap)
-        return this.resourceURLMap[url];
-
-    // No direct match found. Search for resources that contain
-    // a substring of the URL.
-    for (var resourceURL in this.resourceURLMap) {
-        if (resourceURL.hasSubstring(url))
-            return this.resourceURLMap[resourceURL];
-    }
-
-    return null;
-}
-
 WebInspector._choosePanelToShowSourceLine = function(url, line, preferredPanel)
 {
     preferredPanel = preferredPanel || "resources";
+
     var panel = this.panels[preferredPanel];
     if (panel && panel.canShowSourceLine(url, line))
         return panel;
@@ -1751,6 +1633,7 @@ WebInspector.linkifyStringAsFragment = function(string)
 {
     var container = document.createDocumentFragment();
     var linkStringRegEx = /(?:[a-zA-Z][a-zA-Z0-9+.-]{2,}:\/\/|www\.)[\w$\-_+*'=\|\/\\(){}[\]%@&#~,:;.!?]{2,}[\w$\-_+*=\|\/\\({%@&#~]/;
+    var lineColumnRegEx = /:(\d+)(:(\d+))?$/;
 
     while (string) {
         var linkString = linkStringRegEx.exec(string);
@@ -1768,7 +1651,17 @@ WebInspector.linkifyStringAsFragment = function(string)
             title = WebInspector.panels.profiles.displayTitleForProfileLink(profileStringMatches[2], profileStringMatches[1]);
 
         var realURL = (linkString.indexOf("www.") === 0 ? "http://" + linkString : linkString);
-        container.appendChild(WebInspector.linkifyURLAsNode(realURL, title, null, (realURL in WebInspector.resourceURLMap)));
+        var lineColumnMatch = lineColumnRegEx.exec(realURL);
+        if (lineColumnMatch)
+            realURL = realURL.substring(0, realURL.length - lineColumnMatch[0].length);
+
+        var hasResourceWithURL = !!WebInspector.resourceForURL(realURL);
+        var urlNode = WebInspector.linkifyURLAsNode(realURL, title, null, hasResourceWithURL);
+        container.appendChild(urlNode);
+        if (lineColumnMatch) {
+            urlNode.setAttribute("line_number", lineColumnMatch[1]);
+            urlNode.setAttribute("preferred_panel", "scripts");
+        }
         string = string.substring(linkIndex + linkString.length, string.length);
     }
 
@@ -1836,27 +1729,31 @@ WebInspector.resourceURLForRelatedNode = function(node, url)
     }
 
     // documentURL not found or has bad value
-    for (var resourceURL in WebInspector.resourceURLMap) {
-        var match = resourceURL.match(WebInspector.URLRegExp);
-        if (match && match[4] === url)
-            return resourceURL;
+    var resourceURL = url;
+    function callback(resource)
+    {
+        if (resource.path === url) {
+            resourceURL = resource.url;
+            return true;
+        }
     }
-    return url;
-},
+    WebInspector.forAllResources(callback);
+    return resourceURL;
+}
 
 WebInspector.completeURL = function(baseURL, href)
 {
-    var match = baseURL.match(WebInspector.URLRegExp);
-    if (match) {
+    var parsedURL = baseURL.asParsedURL();
+    if (parsedURL) {
         var path = href;
         if (path.charAt(0) !== "/") {
-            var basePath = match[4] || "/";
+            var basePath = parsedURL.path;
             path = basePath.substring(0, basePath.lastIndexOf("/")) + "/" + path;
         } else if (path.length > 1 && path.charAt(1) === "/") {
             // href starts with "//" which is a full URL with the protocol dropped (use the baseURL protocol).
-            return match[1] + ":" + path;
+            return parsedURL.scheme + ":" + path;
         }
-        return match[1] + "://" + match[2] + (match[3] ? (":" + match[3]) : "") + path;
+        return parsedURL.scheme + "://" + parsedURL.host + (parsedURL.port ? (":" + parsedURL.port) : "") + path;
     }
     return null;
 }
@@ -1939,9 +1836,10 @@ WebInspector.doPerformSearch = function(query, forceSearch, isBackwardSearch, re
 
         for (var panelName in this.panels) {
             var panel = this.panels[panelName];
-            if (panel.currentQuery && panel.searchCanceled)
-                panel.searchCanceled();
+            var hadCurrentQuery = !!panel.currentQuery;
             delete panel.currentQuery;
+            if (hadCurrentQuery && panel.searchCanceled)
+                panel.searchCanceled();
         }
 
         this.updateSearchMatchesCount();

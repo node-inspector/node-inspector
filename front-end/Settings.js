@@ -45,96 +45,84 @@ var Preferences = {
     onlineDetectionEnabled: true,
     nativeInstrumentationEnabled: false,
     resourceExportEnabled: false,
-    networkPanelEnabled: false
+    fileSystemEnabled: false,
+    useDataURLForResourceImageIcons: true,
+    showTimingTab: false,
+    debugMode: false
 }
 
-WebInspector.Settings = function(sessionScope)
+WebInspector.Settings = function()
 {
-    this._sessionScope = sessionScope;
-    this._store = {};
-}
+    this.installApplicationSetting("colorFormat", "hex");
+    this.installApplicationSetting("consoleHistory", []);
+    this.installApplicationSetting("eventListenersFilter", "all");
+    this.installApplicationSetting("lastViewedScriptFile", "application");
+    this.installApplicationSetting("resourcesLargeRows", true);
+    this.installApplicationSetting("resourcesSortOptions", {timeOption: "responseTime", sizeOption: "transferSize"});
+    this.installApplicationSetting("resourceViewTab", "content");
+    this.installApplicationSetting("showInheritedComputedStyleProperties", false);
+    this.installApplicationSetting("showUserAgentStyles", true);
+    this.installApplicationSetting("watchExpressions", []);
+    this.installApplicationSetting("lastActivePanel", "elements");
 
-WebInspector.Settings.initialize = function()
-{
-    WebInspector.applicationSettings = new WebInspector.Settings(false);
-    WebInspector.sessionSettings = new WebInspector.Settings(true);
-
-    function populateApplicationSettings(settingsString)
-    {
-        WebInspector.applicationSettings._load(settingsString);
-        WebInspector.applicationSettings.installSetting("eventListenersFilter", "event-listeners-filter", "all");
-        WebInspector.applicationSettings.installSetting("colorFormat", "color-format", "hex");
-        WebInspector.applicationSettings.installSetting("resourcesLargeRows", "resources-large-rows", true);
-        WebInspector.applicationSettings.installSetting("watchExpressions", "watch-expressions", []);
-        WebInspector.applicationSettings.installSetting("lastViewedScriptFile", "last-viewed-script-file");
-        WebInspector.applicationSettings.installSetting("showInheritedComputedStyleProperties", "show-inherited-computed-style-properties", false);
-        WebInspector.applicationSettings.installSetting("showUserAgentStyles", "show-user-agent-styles", true);
-        WebInspector.applicationSettings.installSetting("resourceViewTab", "resource-view-tab", "content");
-        WebInspector.applicationSettings.installSetting("consoleHistory", "console-history", []);
-        WebInspector.applicationSettings.installSetting("resourcesSortOptions", "resources-sort-options", {timeOption: "responseTime", sizeOption: "transferSize"});
-
-        WebInspector.applicationSettings.dispatchEventToListeners("loaded");
-    }
-
-    function populateSessionSettings(settingsString)
-    {
-        WebInspector.sessionSettings._load(settingsString);
-        WebInspector.sessionSettings.dispatchEventToListeners("loaded");
-    }
-
-    InspectorBackend.getSettings(function(settings) {
-        populateApplicationSettings(settings.application);
-        populateSessionSettings(settings.session);
-    });
+    this.installProjectSetting("breakpoints", {});
+    this.installProjectSetting("nativeBreakpoints", []);
 }
 
 WebInspector.Settings.prototype = {
-    reset: function()
+    installApplicationSetting: function(key, defaultValue)
     {
-        this._store = {};
-        // FIXME: restore default values (bug 42820)
-        this.dispatchEventToListeners("loaded");
-    },
-
-    _load: function(settingsString)
-    {
-        try {
-            var loadedStore = JSON.parse(settingsString);
-        } catch (e) {
-            // May fail;
-            loadedStore = {};
-        }
-        if (!loadedStore)
+        if (key in this)
             return;
-        for (var propertyName in loadedStore)
-            this._store[propertyName] = loadedStore[propertyName];
+
+        this.__defineGetter__(key, this._get.bind(this, key, defaultValue));
+        this.__defineSetter__(key, this._set.bind(this, key));
     },
 
-    installSetting: function(name, propertyName, defaultValue)
+    installProjectSetting: function(key, defaultValue)
     {
-        this.__defineGetter__(name, this._get.bind(this, propertyName));
-        this.__defineSetter__(name, this._set.bind(this, propertyName));
-        if (!(propertyName in this._store))
-            this._store[propertyName] = defaultValue;
+        this.__defineGetter__(key, this._getProjectSetting.bind(this, key, defaultValue));
+        this.__defineSetter__(key, this._setProjectSetting.bind(this, key));
     },
 
-    _get: function(propertyName)
+    inspectedURLChanged: function(url)
     {
-        return this._store[propertyName];
+        var fragmentIndex = url.indexOf("#");
+        if (fragmentIndex !== -1)
+            url = url.substring(0, fragmentIndex);
+        this._inspectedURL = url;
     },
 
-    _set: function(propertyName, newValue)
+    _get: function(key, defaultValue)
     {
-        this._store[propertyName] = newValue;
-        try {
-            var store = JSON.stringify(this._store);
-            if (this._sessionScope)
-                InspectorBackend.saveSessionSettings(store);
-            else
-                InspectorBackend.saveApplicationSettings(store);
-        } catch (e) {
-            // May fail;
+        if (key in window.localStorage) {
+            try {
+                return JSON.parse(window.localStorage[key]);
+            } catch(e) {
+                window.localStorage.removeItem(key);
+            }
         }
+        return defaultValue;
+    },
+
+    _set: function(key, value)
+    {
+        window.localStorage[key] = JSON.stringify(value);
+    },
+
+    _getProjectSetting: function(key, defaultValue)
+    {
+        return this._get(this._formatProjectKey(key), defaultValue);
+    },
+
+    _setProjectSetting: function(key, value)
+    {
+        return this._set(this._formatProjectKey(key), value);
+    },
+
+    _formatProjectKey: function(key)
+    {
+        return key + ":" + this._inspectedURL;
     }
 }
 

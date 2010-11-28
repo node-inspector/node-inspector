@@ -85,13 +85,6 @@ EventSinkImpl.prototype = {
     }
 }
 
-function EventSink(type, customDispatch)
-{
-    var impl = new EventSinkImpl(type, customDispatch);
-    this.addListener = bind(impl.addListener, impl);
-    this.removeListener = bind(impl.removeListener, impl);
-}
-
 function InspectorExtensionAPI()
 {
     this.audits = new Audits();
@@ -111,72 +104,73 @@ InspectorExtensionAPI.prototype = {
 
 function Resources()
 {
-    this.onFinished = new EventSink("resource-finished");
+    function resourceDispatch(request)
+    {
+        var resource = request.arguments[1];
+        resource.__proto__ = new Resource(request.arguments[0]);
+        this._fire(resource);
+    }
+    this.onFinished = new EventSink("resource-finished", resourceDispatch);
 }
 
 Resources.prototype = {
-    getAll: function(callback)
+    getHAR: function(callback)
     {
-        return extensionServer.sendRequest({ command: "getResources" }, callback);
-    },
-
-    get: function(id, callback)
-    {
-        return extensionServer.sendRequest({ command: "getResources", id: id }, callback);
-    },
-
-    getPageTimings: function(callback)
-    {
-        return extensionServer.sendRequest({ command: "getPageTimings" }, callback);
-    },
-
-    getContent: function(ids, callback)
-    {
-        return extensionServer.sendRequest({ command: "getResourceContent", ids: ids }, callback);
+        function callbackWrapper(result)
+        {
+            var entries = (result && result.entries) || [];
+            for (var i = 0; i < entries.length; ++i) {
+                entries[i].__proto__ = new Resource(entries[i]._resourceId);
+                delete entries[i]._resourceId;
+            }
+            callback(result);
+        }
+        return extensionServer.sendRequest({ command: "getHAR" }, callback && callbackWrapper);
     }
 }
 
-var wellKnownPanelNames = [
-    "elements",
-    "scripts"
-];
+function ResourceImpl(id)
+{
+    this._id = id;
+}
+
+ResourceImpl.prototype = {
+    getContent: function(callback)
+    {
+        function callbackWrapper(response)
+        {
+            callback(response.content, response.encoding);
+        }
+        extensionServer.sendRequest({ command: "getResourceContent", id: this._id }, callback && callbackWrapper);
+    }
+};
 
 function Panels()
 {
-    var panels = [];
+    var panels = {
+        elements: new ElementsPanel()
+    };
+
     function panelGetter(name)
     {
         return panels[name];
     }
-
-    for (var i = 0; i < wellKnownPanelNames.length; ++i) {
-        var name = wellKnownPanelNames[i];
-        panels[name] = new Panel(name);
-        this.__defineGetter__(name, bind(panelGetter, null, name));
-    }
+    for (var panel in panels)
+        this.__defineGetter__(panel, bind(panelGetter, null, panel));
 }
 
 Panels.prototype = {
-    create: function(label, pageURL, iconURL, callback)
+    create: function(title, iconURL, pageURL, callback)
     {
         var id = "extension-panel-" + extensionServer.nextObjectId();
-        function callbackWrapper(result)
-        {
-            if (result.isError)
-                callback(result);
-            else {
-                panel = new ExtensionPanel(id);
-                callback(panel);
-            }
-        }
         var request = {
             command: "createPanel",
             id: id,
-            label: label,
-            url: expandURL(pageURL),
-            icon: expandURL(iconURL)
+            title: title,
+            icon: expandURL(iconURL),
+            url: expandURL(pageURL)
         };
-        extensionServer.sendRequest(request, callback && bind(callbackWrapper, this));
+        extensionServer.sendRequest(request, callback && bind(callback, this, new ExtensionPanel(id)));
     }
 }
 
@@ -185,25 +179,52 @@ function PanelImpl(id)
     this._id = id;
 }
 
-PanelImpl.prototype = {
+function PanelWithSidebarImpl(id)
+{
+    PanelImpl.call(this, id);
+}
+
+PanelWithSidebarImpl.prototype = {
     createSidebarPane: function(title, url, callback)
     {
         var id = "extension-sidebar-" + extensionServer.nextObjectId();
-        function callbackWrapper(result)
+        var request = {
+            command: "createSidebarPane",
+            panel: this._id,
+            id: id,
+            title: title,
+            url: expandURL(url)
+        };
+        function callbackWrapper()
         {
-            if (result.isError)
-                callback(result);
-            else
-                callback(new ExtensionSidebarPane(id));
+            callback(new ExtensionSidebarPane(id));
         }
-        extensionServer.sendRequest({ command: "createSidebarPane", panel: this._id, id: id, title: title, url: expandURL(url) }, callback && callbackWrapper);
+        extensionServer.sendRequest(request, callback && callbackWrapper);
+    },
+
+    createWatchExpressionSidebarPane: function(title, callback)
+    {
+        var id = "watch-sidebar-" + extensionServer.nextObjectId();
+        var request = {
+            command: "createWatchExpressionSidebarPane",
+            panel: this._id,
+            id: id,
+            title: title
+        };
+        function callbackWrapper()
+        {
+            callback(new WatchExpressionSidebarPane(id));
+        }
+        extensionServer.sendRequest(request, callback && callbackWrapper);
     }
 }
 
-function Panel(id)
+PanelWithSidebarImpl.prototype.__proto__ = PanelImpl.prototype;
+
+function ElementsPanel()
 {
-    var impl = new PanelImpl(id);
-    this.createSidebarPane = bind(impl.createSidebarPane, impl);
+    var id = "elements";
+    PanelWithSidebar.call(this, id);
     this.onSelectionChanged = new EventSink("panel-objectSelected-" + id);
 }
 
@@ -212,11 +233,6 @@ function ExtensionPanel(id)
     Panel.call(this, id);
     this.onSearch = new EventSink("panel-search-" + id);
 }
-
-ExtensionPanel.prototype = {
-}
-
-ExtensionPanel.prototype.__proto__ = Panel.prototype;
 
 function ExtensionSidebarPaneImpl(id)
 {
@@ -227,19 +243,33 @@ ExtensionSidebarPaneImpl.prototype = {
     setHeight: function(height)
     {
         extensionServer.sendRequest({ command: "setSidebarHeight", id: this._id, height: height });
-    },
-
-    setExpanded: function(expanded)
-    {
-        extensionServer.sendRequest({ command: "setSidebarExpanded", id: this._id, expanded: expanded });
     }
 }
 
-function ExtensionSidebarPane(id)
+function WatchExpressionSidebarPaneImpl(id)
 {
-    var impl = new ExtensionSidebarPaneImpl(id);
-    this.setHeight = bind(impl.setHeight, impl);
-    this.setExpanded = bind(impl.setExpanded, impl);
+    ExtensionSidebarPaneImpl.call(this, id);
+    this.onUpdated = new EventSink("watch-sidebar-updated-" + id);
+}
+
+WatchExpressionSidebarPaneImpl.prototype = {
+    setExpression: function(expression, rootTitle)
+    {
+        extensionServer.sendRequest({ command: "setWatchSidebarContent", id: this._id, expression: expression, rootTitle: rootTitle, evaluateOnPage: true });
+    },
+
+    setObject: function(jsonObject, rootTitle)
+    {
+        extensionServer.sendRequest({ command: "setWatchSidebarContent", id: this._id, expression: jsonObject, rootTitle: rootTitle });
+    }
+}
+
+WatchExpressionSidebarPaneImpl.prototype.__proto__ = ExtensionSidebarPaneImpl.prototype;
+
+function WatchExpressionSidebarPane(id)
+{
+    var impl = new WatchExpressionSidebarPaneImpl(id);
+    ExtensionSidebarPane.call(this, id, impl);
 }
 
 function Audits()
@@ -247,17 +277,17 @@ function Audits()
 }
 
 Audits.prototype = {
-    addCategory: function(displayName, ruleCount)
+    addCategory: function(displayName, resultCount)
     {
         var id = "extension-audit-category-" + extensionServer.nextObjectId();
-        extensionServer.sendRequest({ command: "addAuditCategory", id: id, displayName: displayName, ruleCount: ruleCount });
+        extensionServer.sendRequest({ command: "addAuditCategory", id: id, displayName: displayName, resultCount: resultCount });
         return new AuditCategory(id);
     }
 }
 
-function AuditCategory(id)
+function AuditCategoryImpl(id)
 {
-    function customDispatch(request)
+    function auditResultDispatch(request)
     {
         var auditResult = new AuditResult(request.arguments[0]);
         try {
@@ -267,22 +297,13 @@ function AuditCategory(id)
             auditResult.done();
         }
     }
-    var impl = new AuditCategoryImpl(id);
-    this.onAuditStarted = new EventSink("audit-started-" + id, customDispatch);
+    this._id = id;
+    this.onAuditStarted = new EventSink("audit-started-" + id, auditResultDispatch);
 }
 
-function AuditCategoryImpl(id)
+function AuditResultImpl(id)
 {
     this._id = id;
-}
-
-function AuditResult(id)
-{
-    var impl = new AuditResultImpl(id);
-
-    this.addResult = bind(impl.addResult, impl);
-    this.createResult = bind(impl.createResult, impl);
-    this.done = bind(impl.done, impl);
 
     var formatterTypes = [
         "url",
@@ -290,19 +311,7 @@ function AuditResult(id)
         "text"
     ];
     for (var i = 0; i < formatterTypes.length; ++i)
-        this[formatterTypes[i]] = bind(impl._nodeFactory, null, formatterTypes[i]);
-}
-
-AuditResult.prototype = {
-    get Severity()
-    {
-        return private.audits.Severity;
-    }
-}
-
-function AuditResultImpl(id)
-{
-    this._id = id;
+        this[formatterTypes[i]] = bind(this._nodeFactory, null, formatterTypes[i]);
 }
 
 AuditResultImpl.prototype = {
@@ -335,6 +344,11 @@ AuditResultImpl.prototype = {
         extensionServer.sendRequest({ command: "stopAuditCategoryRun", resultId: this._id });
     },
 
+    get Severity()
+    {
+        return apiPrivate.audits.Severity;
+    },
+
     _nodeFactory: function(type)
     {
         return {
@@ -362,9 +376,9 @@ AuditResultNode.prototype = {
 
 function InspectedWindow()
 {
+    this.onDOMContentLoaded = new EventSink("inspectedPageDOMContentLoaded");
     this.onLoaded = new EventSink("inspectedPageLoaded");
     this.onNavigated = new EventSink("inspectedURLChanged");
-    this.onDOMContentLoaded = new EventSink("DOMContentLoaded");
 }
 
 InspectedWindow.prototype = {
@@ -373,13 +387,14 @@ InspectedWindow.prototype = {
         return extensionServer.sendRequest({ command: "reload" });
     },
 
-    evaluate: function(expression, callback)
+    eval: function(expression, callback)
     {
         function callbackWrapper(result)
         {
-            if (result && !result.isException)
-                result.value = result.value === "undefined" ? undefined : JSON.parse(result.value);
-            callback(result);
+            var value = result.value;
+            if (!result.isException)
+                value = value === "undefined" ? undefined : JSON.parse(value);
+            callback(value, result.isException);
         }
         return extensionServer.sendRequest({ command: "evaluateOnInspectedPage", expression: expression }, callback && callbackWrapper);
     }
@@ -461,6 +476,36 @@ function bind(func, thisObject)
     var args = Array.prototype.slice.call(arguments, 2);
     return function() { return func.apply(thisObject, args.concat(Array.prototype.slice.call(arguments, 0))); };
 }
+
+function populateInterfaceClass(interface, implementation)
+{
+    for (var member in implementation) {
+        if (member.charAt(0) === "_")
+            continue;
+        var value = implementation[member];
+        interface[member] = typeof value === "function" ? bind(value, implementation)
+            : interface[member] = implementation[member];
+    }
+}
+
+function declareInterfaceClass(implConstructor)
+{
+    return function()
+    {
+        var impl = { __proto__: implConstructor.prototype };
+        implConstructor.apply(impl, arguments);
+        populateInterfaceClass(this, impl);
+    }
+}
+
+var AuditCategory = declareInterfaceClass(AuditCategoryImpl);
+var AuditResult = declareInterfaceClass(AuditResultImpl);
+var EventSink = declareInterfaceClass(EventSinkImpl);
+var ExtensionSidebarPane = declareInterfaceClass(ExtensionSidebarPaneImpl);
+var Panel = declareInterfaceClass(PanelImpl);
+var PanelWithSidebar = declareInterfaceClass(PanelWithSidebarImpl);
+var Resource = declareInterfaceClass(ResourceImpl);
+var WatchExpressionSidebarPane = declareInterfaceClass(WatchExpressionSidebarPaneImpl);
 
 var extensionServer = new ExtensionServerClient();
 

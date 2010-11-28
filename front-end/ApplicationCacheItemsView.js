@@ -64,7 +64,7 @@ WebInspector.ApplicationCacheItemsView = function(treeElement, appcacheDomain)
     this._appcacheDomain = appcacheDomain;
 
     this._emptyMsgElement = document.createElement("div");
-    this._emptyMsgElement.className = "storage-table-empty";
+    this._emptyMsgElement.className = "storage-empty-view";
     this._emptyMsgElement.textContent = WebInspector.UIString("No Application Cache information available.");
     this.element.appendChild(this._emptyMsgElement);
 

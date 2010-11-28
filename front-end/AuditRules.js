@@ -42,17 +42,17 @@ WebInspector.AuditRules.CacheableResponseCodes =
     304: true // Underlying resource is cacheable
 }
 
-WebInspector.AuditRules.getDomainToResourcesMap = function(resources, types, regexp, needFullResources)
+WebInspector.AuditRules.getDomainToResourcesMap = function(resources, types, needFullResources)
 {
     var domainToResourcesMap = {};
     for (var i = 0, size = resources.length; i < size; ++i) {
         var resource = resources[i];
         if (types && types.indexOf(resource.type) === -1)
             continue;
-        var match = resource.url.match(regexp);
-        if (!match)
+        var parsedURL = resource.url.asParsedURL();
+        if (!parsedURL)
             continue;
-        var domain = match[2];
+        var domain = parsedURL.host;
         var domainResources = domainToResourcesMap[domain];
         if (domainResources === undefined) {
           domainResources = [];
@@ -128,7 +128,7 @@ WebInspector.AuditRules.CombineExternalResourcesRule = function(id, name, type, 
 WebInspector.AuditRules.CombineExternalResourcesRule.prototype = {
     doRun: function(resources, result, callback)
     {
-        var domainToResourcesMap = WebInspector.AuditRules.getDomainToResourcesMap(resources, [this._type], WebInspector.URLRegExp);
+        var domainToResourcesMap = WebInspector.AuditRules.getDomainToResourcesMap(resources, [this._type]);
         var penalizedResourceCount = 0;
         // TODO: refactor according to the chosen i18n approach
         var summary = result.addChild("", true);
@@ -175,14 +175,14 @@ WebInspector.AuditRules.MinimizeDnsLookupsRule.prototype = {
     doRun: function(resources, result, callback)
     {
         var summary = result.addChild("");
-        var domainToResourcesMap = WebInspector.AuditRules.getDomainToResourcesMap(resources, undefined, WebInspector.URLRegExp);
+        var domainToResourcesMap = WebInspector.AuditRules.getDomainToResourcesMap(resources, undefined);
         for (var domain in domainToResourcesMap) {
             if (domainToResourcesMap[domain].length > 1)
                 continue;
-            var match = domain.match(WebInspector.URLRegExp);
-            if (!match)
+            var parsedURL = domain.asParsedURL();
+            if (!parsedURL)
                 continue;
-            if (!match[2].search(WebInspector.AuditRules.IPAddressRegexp))
+            if (!parsedURL.host.search(WebInspector.AuditRules.IPAddressRegexp))
                 continue; // an IP address
             summary.addSnippet(match[2]);
             result.violationCount++;
@@ -220,7 +220,6 @@ WebInspector.AuditRules.ParallelizeDownloadRule.prototype = {
         var domainToResourcesMap = WebInspector.AuditRules.getDomainToResourcesMap(
             resources,
             [WebInspector.Resource.Type.Stylesheet, WebInspector.Resource.Type.Image],
-            WebInspector.URLRegExp,
             true);
 
         var hosts = [];
@@ -278,6 +277,7 @@ WebInspector.AuditRules.UnusedCssRule.prototype = {
     doRun: function(resources, result, callback)
     {
         var self = this;
+
         function evalCallback(styleSheets) {
             if (!styleSheets.length)
                 return callback(null);
@@ -287,12 +287,12 @@ WebInspector.AuditRules.UnusedCssRule.prototype = {
             var testedSelectors = {};
             for (var i = 0; i < styleSheets.length; ++i) {
                 var styleSheet = styleSheets[i];
-                for (var curRule = 0; curRule < styleSheet.cssRules.length; ++curRule) {
-                    var rule = styleSheet.cssRules[curRule];
-                    if (rule.selectorText.match(pseudoSelectorRegexp))
+                for (var curRule = 0; curRule < styleSheet.rules.length; ++curRule) {
+                    var selectorText = styleSheet.rules[curRule].selectorText;
+                    if (selectorText.match(pseudoSelectorRegexp) || testedSelectors[selectorText])
                         continue;
-                    selectors.push(rule.selectorText);
-                    testedSelectors[rule.selectorText] = 1;
+                    selectors.push(selectorText);
+                    testedSelectors[selectorText] = 1;
                 }
             }
 
@@ -308,9 +308,12 @@ WebInspector.AuditRules.UnusedCssRule.prototype = {
                     var stylesheetSize = 0;
                     var unusedStylesheetSize = 0;
                     var unusedRules = [];
-                    for (var curRule = 0; curRule < styleSheet.cssRules.length; ++curRule) {
-                        var rule = styleSheet.cssRules[curRule];
-                        var textLength = rule.cssText ? rule.cssText.length : 0;
+                    for (var curRule = 0; curRule < styleSheet.rules.length; ++curRule) {
+                        var rule = styleSheet.rules[curRule];
+                        // Exact computation whenever source ranges are available.
+                        var textLength = (rule.selectorRange && rule.style.properties.endOffset) ? rule.style.properties.endOffset - rule.selectorRange.start + 1 : 0;
+                        if (!textLength && rule.style.cssText)
+                            textLength = rule.style.cssText.length + rule.selectorText.length;
                         stylesheetSize += textLength;
                         if (!testedSelectors[rule.selectorText] || foundSelectors[rule.selectorText])
                             continue;
@@ -323,11 +326,13 @@ WebInspector.AuditRules.UnusedCssRule.prototype = {
                     if (!unusedRules.length)
                         continue;
 
-                    var url = styleSheet.href ? WebInspector.AuditRuleResult.linkifyDisplayName(styleSheet.href) : String.sprintf("Inline block #%d", ++inlineBlockOrdinal);
+                    var resource = WebInspector.resourceManager.resourceForURL(styleSheet.sourceURL);
+                    var isInlineBlock = resource && resource.type == WebInspector.Resource.Type.Document;
+                    var url = !isInlineBlock ? WebInspector.AuditRuleResult.linkifyDisplayName(styleSheet.sourceURL) : String.sprintf("Inline block #%d", ++inlineBlockOrdinal);
                     var pctUnused = Math.round(100 * unusedStylesheetSize / stylesheetSize);
                     if (!summary)
                         summary = result.addChild("", true);
-                    var entry = summary.addChild(String.sprintf("%s: %d%% (estimated) is not used by the current page.", url, pctUnused));
+                    var entry = summary.addChild(String.sprintf("%s: %s (%d%%) is not used by the current page.", url, Number.bytesToString(unusedStylesheetSize), pctUnused));
 
                     for (var j = 0; j < unusedRules.length; ++j)
                         entry.addSnippet(unusedRules[j]);
@@ -339,7 +344,7 @@ WebInspector.AuditRules.UnusedCssRule.prototype = {
                     return callback(null);
 
                 var totalUnusedPercent = Math.round(100 * totalUnusedStylesheetSize / totalStylesheetSize);
-                summary.value = String.sprintf("%d%% of CSS (estimated) is not used by the current page.", totalUnusedPercent);
+                summary.value = String.sprintf("%s (%d%%) of CSS is not used by the current page.", Number.bytesToString(totalUnusedStylesheetSize), totalUnusedPercent);
 
                 callback(result);
             }
@@ -349,11 +354,10 @@ WebInspector.AuditRules.UnusedCssRule.prototype = {
                 var result = {};
                 for (var i = 0; i < selectorArray.length; ++i) {
                     try {
-                        var nodes = document.querySelectorAll(selectorArray[i]);
-                        if (nodes && nodes.length)
+                        if (document.querySelector(selectorArray[i]))
                             result[selectorArray[i]] = true;
                     } catch(e) {
-                        // ignore and mark as unused
+                        // Ignore and mark as unused.
                     }
                 }
                 return result;
@@ -362,16 +366,24 @@ WebInspector.AuditRules.UnusedCssRule.prototype = {
             WebInspector.AuditRules.evaluateInTargetWindow(routine, [selectors], selectorsCallback.bind(null, callback, styleSheets, testedSelectors));
         }
 
-        function routine()
+        function styleSheetCallback(styleSheets, continuation, styleSheet)
         {
-            var styleSheets = document.styleSheets;
-            if (!styleSheets)
-                return false;
-
-            return routineResult;
+            if (styleSheet)
+                styleSheets.push(styleSheet);
+            if (continuation)
+                continuation(styleSheets);
         }
 
-        InspectorBackend.getAllStyles(evalCallback);
+        function allStylesCallback(styleSheetIds)
+        {
+            if (!styleSheetIds || !styleSheetIds.length)
+                return evalCallback([]);
+            var styleSheets = [];
+            for (var i = 0; i < styleSheetIds.length; ++i)
+                WebInspector.CSSStyleSheet.createForId(styleSheetIds[i], styleSheetCallback.bind(null, styleSheets, i == styleSheetIds.length - 1 ? evalCallback : null));
+        }
+
+        InspectorBackend.getAllStyles2(allStylesCallback);
     }
 }
 
@@ -647,7 +659,7 @@ WebInspector.AuditRules.ImageDimensionsRule.prototype = {
 
             const node = WebInspector.domAgent.nodeForId(imageId);
             var src = node.getAttribute("src");
-            if (!WebInspector.URLRegExp.test(src)) {
+            if (!src.asParsedURL()) {
                 for (var frameOwnerCandidate = node; frameOwnerCandidate; frameOwnerCandidate = frameOwnerCandidate.parentNode) {
                     if (frameOwnerCandidate.documentURL) {
                         var completeSrc = WebInspector.completeURL(frameOwnerCandidate.documentURL, src);
@@ -658,7 +670,7 @@ WebInspector.AuditRules.ImageDimensionsRule.prototype = {
             if (completeSrc)
                 src = completeSrc;
 
-            const computedStyle = new WebInspector.CSSStyleDeclaration(styles.computedStyle);
+            const computedStyle = styles.computedStyle;
             if (computedStyle.getPropertyValue("position") === "absolute") {
                 if (!context.imagesLeft)
                     doneCallback(context);
@@ -669,7 +681,7 @@ WebInspector.AuditRules.ImageDimensionsRule.prototype = {
             var heightFound = "height" in styles.styleAttributes;
 
             for (var i = styles.matchedCSSRules.length - 1; i >= 0 && !(widthFound && heightFound); --i) {
-                var style = WebInspector.CSSStyleDeclaration.parseRule(styles.matchedCSSRules[i]).style;
+                var style = styles.matchedCSSRules[i].style;
                 if (style.getPropertyValue("width") !== "")
                     widthFound = true;
                 if (style.getPropertyValue("height") !== "")
@@ -693,7 +705,7 @@ WebInspector.AuditRules.ImageDimensionsRule.prototype = {
                 return callback(null);
             var context = {imagesLeft: imageIds.length, urlToNoDimensionCount: {}};
             for (var i = imageIds.length - 1; i >= 0; --i)
-                InspectorBackend.getStyles(imageIds[i], true, imageStylesReady.bind(this, imageIds[i], context));
+                WebInspector.cssModel.getStylesAsync(imageIds[i], imageStylesReady.bind(this, imageIds[i], context));
         }
 
         function pushImageNodes()
@@ -934,7 +946,6 @@ WebInspector.AuditRules.CookieSizeRule.prototype = {
 
         var domainToResourcesMap = WebInspector.AuditRules.getDomainToResourcesMap(resources,
                 null,
-                WebInspector.URLRegExp,
                 true);
         var matchingResourceData = {};
         this.mapResourceCookies(domainToResourcesMap, allCookies, collectorCallback.bind(this));
@@ -998,7 +1009,6 @@ WebInspector.AuditRules.StaticCookielessRule.prototype = {
         var domainToResourcesMap = WebInspector.AuditRules.getDomainToResourcesMap(resources,
                 [WebInspector.Resource.Type.Stylesheet,
                  WebInspector.Resource.Type.Image],
-                WebInspector.URLRegExp,
                 true);
         var totalStaticResources = 0;
         for (var domain in domainToResourcesMap)

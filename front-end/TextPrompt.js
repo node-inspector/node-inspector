@@ -100,22 +100,6 @@ WebInspector.TextPrompt.prototype = {
                 }
                 defaultAction.call(this);
                 break;
-            case "U+0041": // Ctrl+A = Move caret to the start of prompt on non-Mac.
-                if (!WebInspector.isMac() && event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
-                    handled = true;
-                    this._moveCaretToStartOfPrompt();
-                    break;
-                }
-                defaultAction.call(this);
-                break;
-            case "U+0045": // Ctrl+E = Move caret to the end of prompt on non-Mac.
-                if (!WebInspector.isMac() && event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
-                    handled = true;
-                    this.moveCaretToEndOfPrompt();
-                    break;
-                }
-                defaultAction.call(this);
-                break;
             default:
                 defaultAction.call(this);
                 break;
@@ -377,18 +361,6 @@ WebInspector.TextPrompt.prototype = {
         }
 
         return true;
-    },
-
-    _moveCaretToStartOfPrompt: function()
-    {
-        var selection = window.getSelection();
-        var selectionRange = document.createRange();
-
-        selectionRange.setStart(this.element, 0);
-        selectionRange.setEnd(this.element, 0);
-
-        selection.removeAllRanges();
-        selection.addRange(selectionRange);
     },
 
     moveCaretToEndOfPrompt: function()

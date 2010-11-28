@@ -130,8 +130,8 @@ WebInspector.AuditsPanel.prototype = {
     _executeAudit: function(categories, resultCallback)
     {
         var resources = [];
-        for (var id in WebInspector.resources)
-            resources.push(WebInspector.resources[id]);
+        for (var id in WebInspector.networkResources)
+            resources.push(WebInspector.networkResources[id]);
 
         var rulesRemaining = 0;
         for (var i = 0; i < categories.length; ++i)
@@ -203,20 +203,15 @@ WebInspector.AuditsPanel.prototype = {
 
     _reloadResources: function(callback)
     {
-        this._resourceTrackingCallback = callback;
-
-        if (!WebInspector.panels.resources.resourceTrackingEnabled) {
-            InspectorBackend.enableResourceTracking(false);
-            this._updateLauncherViewControls(true);
-        } else
-            InspectorBackend.reloadPage();
+        this._pageReloadCallback = callback;
+        InspectorBackend.reloadPage();
     },
 
     _didMainResourceLoad: function()
     {
-        if (this._resourceTrackingCallback) {
-            var callback = this._resourceTrackingCallback;
-            delete this._resourceTrackingCallback;
+        if (this._pageReloadCallback) {
+            var callback = this._pageReloadCallback;
+            delete this._pageReloadCallback;
             callback();
         }
     },
@@ -256,7 +251,7 @@ WebInspector.AuditsPanel.prototype = {
     show: function()
     {
         WebInspector.Panel.prototype.show.call(this);
-        this._updateLauncherViewControls(WebInspector.panels.resources.resourceTrackingEnabled);
+        this._updateLauncherViewControls(!WebInspector.panels.resources || WebInspector.panels.resources.resourceTrackingEnabled);
     },
 
     reset: function()

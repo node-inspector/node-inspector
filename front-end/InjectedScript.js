@@ -52,7 +52,6 @@ InjectedScript.prototype = {
             var objectId;
             if (typeof object === "object" || typeof object === "function" || this._isHTMLAllCollection(object)) {
                 var id = this._lastBoundObjectId++;
-                objectId = id;
                 this._idToWrappedObject[id] = object;
     
                 var group = this._objectGroups[objectGroupName];
@@ -268,7 +267,7 @@ InjectedScript.prototype = {
         // We don't want local variables to be shadowed by global ones when evaluating on CallFrame.
         if (!isEvalOnCallFrame)
             expression = "with (window) {\n" + expression + "\n} ";
-        expression = "with (window.console._commandLineAPI) {\n" + expression + "\n}";
+        expression = "with (window ? window.console._commandLineAPI : {}) {\n" + expression + "\n}";
         var value = evalFunction.call(object, expression);
     
         delete inspectedWindow.console._commandLineAPI;

@@ -28,13 +28,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-WebInspector.commonExtensionSymbols = function(private)
+WebInspector.commonExtensionSymbols = function(apiPrivate)
 {
     
-    if (!private.audits)
-        private.audits = {};
+    if (!apiPrivate.audits)
+        apiPrivate.audits = {};
 
-    private.audits.Severity = {
+    apiPrivate.audits.Severity = {
         Info: "info",
         Warning: "warning",
         Severe: "severe"

@@ -76,7 +76,8 @@ WebInspector.ObjectPropertiesSection.prototype = {
 
         if (!this.propertiesTreeOutline.children.length) {
             var title = "<div class=\"info\">" + this.emptyPlaceholder + "</div>";
-            var infoElement = new TreeElement(title, null, false);
+            var infoElement = new TreeElement(null, null, false);
+            infoElement.titleHTML = title;
             this.propertiesTreeOutline.appendChild(infoElement);
         }
         this.propertiesForTest = properties;
@@ -186,6 +187,8 @@ WebInspector.ObjectPropertyTreeElement.prototype = {
             this.valueElement.addStyleClass("error");
         if (this.property.value.type)
             this.valueElement.addStyleClass("console-formatted-" + this.property.value.type);
+        if (this.property.value.type === "node")
+            this.valueElement.addEventListener("contextmenu", this._contextMenuEventFired.bind(this), true);
 
         this.listItemElement.removeChildren();
 
@@ -193,6 +196,24 @@ WebInspector.ObjectPropertyTreeElement.prototype = {
         this.listItemElement.appendChild(separatorElement);
         this.listItemElement.appendChild(this.valueElement);
         this.hasChildren = this.property.value.hasChildren;
+    },
+
+    _contextMenuEventFired: function()
+    {
+        function selectNode(nodeId)
+        {
+            if (nodeId)
+                WebInspector.panels.elements.focusedDOMNode = WebInspector.domAgent.nodeForId(nodeId);
+        }
+
+        function revealElement()
+        {
+            this.property.value.pushNodeToFrontend(selectNode);
+        }
+
+        var contextMenu = new WebInspector.ContextMenu();
+        contextMenu.appendItem(WebInspector.UIString("Reveal in Elements Panel"), revealElement.bind(this));
+        contextMenu.show(event);
     },
 
     updateSiblings: function()

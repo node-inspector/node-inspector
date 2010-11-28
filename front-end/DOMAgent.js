@@ -500,17 +500,12 @@ WebInspector.Cookies.buildCookiesFromString = function(rawCookieString)
 
 WebInspector.Cookies.cookieMatchesResourceURL = function(cookie, resourceURL)
 {
-    var match = resourceURL.match(WebInspector.GenericURLRegExp);
-    if (!match)
+    var url = resourceURL.asParsedURL();
+    if (!url || !this.cookieDomainMatchesResourceDomain(cookie.domain, url.host))
         return false;
-    // See WebInspector.URLRegExp for definitions of the group index constants.
-    if (!this.cookieDomainMatchesResourceDomain(cookie.domain, match[2]))
-        return false;
-    var resourcePort = match[3] ? match[3] : undefined;
-    var resourcePath = match[4] ? match[4] : '/';
-    return (resourcePath.indexOf(cookie.path) === 0
-        && (!cookie.port || resourcePort == cookie.port)
-        && (!cookie.secure || match[1].toLowerCase() === 'https'));
+    return (url.path.indexOf(cookie.path) === 0
+        && (!cookie.port || url.port == cookie.port)
+        && (!cookie.secure || url.scheme === "https"));
 }
 
 WebInspector.Cookies.cookieDomainMatchesResourceDomain = function(cookieDomain, resourceDomain)
@@ -527,147 +522,6 @@ WebInspector.EventListeners.getEventListenersForNodeAsync = function(node, callb
     if (!node)
         return;
     InspectorBackend.getEventListenersForNode(node.id, callback);
-}
-
-WebInspector.CSSStyleDeclaration = function(payload)
-{
-    this.id = payload.id;
-    this.parentStyleSheetId = payload.parentStyleSheetId;
-    this.width = payload.width;
-    this.height = payload.height;
-    this.__disabledProperties = {};
-    this.__disabledPropertyValues = {};
-    this.__disabledPropertyPriorities = {};
-    if (payload.disabled) {
-        for (var i = 0; i < payload.disabled.length; ++i) {
-            var property = payload.disabled[i];
-            this.__disabledProperties[property.name] = true;
-            this.__disabledPropertyValues[property.name] = property.value;
-            this.__disabledPropertyPriorities[property.name] = property.priority;
-        }
-    }
-
-    this._shorthandValues = payload.shorthandValues;
-    this._propertyMap = {};
-    this._longhandProperties = {};
-    this.length = payload.properties.length;
-
-    for (var i = 0; i < this.length; ++i) {
-        var property = payload.properties[i];
-        var name = property.name;
-        this[i] = name;
-        this._propertyMap[name] = property;
-
-        // Index longhand properties.
-        if (property.shorthand) {
-            var longhands = this._longhandProperties[property.shorthand];
-            if (!longhands) {
-                longhands = [];
-                this._longhandProperties[property.shorthand] = longhands;
-            }
-            longhands.push(name);
-        }
-    }
-}
-
-WebInspector.CSSStyleDeclaration.parseStyle = function(payload)
-{
-    return new WebInspector.CSSStyleDeclaration(payload);
-}
-
-WebInspector.CSSStyleDeclaration.parseRule = function(payload)
-{
-    var rule = {};
-    rule.id = payload.id;
-    rule.selectorText = payload.selectorText;
-    rule.style = new WebInspector.CSSStyleDeclaration(payload.style);
-    rule.style.parentRule = rule;
-    rule.isUserAgent = payload.isUserAgent;
-    rule.isUser = payload.isUser;
-    rule.isViaInspector = payload.isViaInspector;
-    rule.sourceLine = payload.sourceLine;
-    rule.documentURL = payload.documentURL;
-    if (payload.parentStyleSheet)
-        rule.parentStyleSheet = { href: payload.parentStyleSheet.href };
-
-    return rule;
-}
-
-WebInspector.CSSStyleDeclaration.prototype = {
-    getPropertyValue: function(name)
-    {
-        var property = this._propertyMap[name];
-        return property ? property.value : "";
-    },
-
-    getPropertyPriority: function(name)
-    {
-        var property = this._propertyMap[name];
-        return property ? property.priority : "";
-    },
-
-    getPropertyShorthand: function(name)
-    {
-        var property = this._propertyMap[name];
-        return property ? property.shorthand : "";
-    },
-
-    isPropertyImplicit: function(name)
-    {
-        var property = this._propertyMap[name];
-        return property ? property.implicit : "";
-    },
-
-    styleTextWithShorthands: function()
-    {
-        var cssText = "";
-        var foundProperties = {};
-        for (var i = 0; i < this.length; ++i) {
-            var individualProperty = this[i];
-            var shorthandProperty = this.getPropertyShorthand(individualProperty);
-            var propertyName = (shorthandProperty || individualProperty);
-
-            if (propertyName in foundProperties)
-                continue;
-
-            if (shorthandProperty) {
-                var value = this.getShorthandValue(shorthandProperty);
-                var priority = this.getShorthandPriority(shorthandProperty);
-            } else {
-                var value = this.getPropertyValue(individualProperty);
-                var priority = this.getPropertyPriority(individualProperty);
-            }
-
-            foundProperties[propertyName] = true;
-
-            cssText += propertyName + ": " + value;
-            if (priority)
-                cssText += " !" + priority;
-            cssText += "; ";
-        }
-
-        return cssText;
-    },
-
-    getLonghandProperties: function(name)
-    {
-        return this._longhandProperties[name] || [];
-    },
-
-    getShorthandValue: function(shorthandProperty)
-    {
-        return this._shorthandValues[shorthandProperty];
-    },
-
-    getShorthandPriority: function(shorthandProperty)
-    {
-        var priority = this.getPropertyPriority(shorthandProperty);
-        if (priority)
-            return priority;
-
-        var longhands = this._longhandProperties[shorthandProperty];
-        return longhands ? this.getPropertyPriority(longhands[0]) : null;
-    }
 }
 
 WebInspector.attributesUpdated = function()

@@ -54,7 +54,7 @@ WebInspector.PropertiesSidebarPane.prototype = {
                 var title = prototype.description;
                 if (title.match(/Prototype$/))
                     title = title.replace(/Prototype$/, "");
-                var section = new WebInspector.ObjectPropertiesSection(prototype, title, WebInspector.UIString("Prototype"));
+                var section = new WebInspector.ObjectPropertiesSection(prototype, title);
                 self.sections.push(section);
                 body.appendChild(section.element);
             }

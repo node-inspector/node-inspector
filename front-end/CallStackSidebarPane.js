@@ -173,11 +173,12 @@ WebInspector.CallStackSidebarPane.prototype = {
     _breakpointHit:  function(event)
     {
         var breakpoint = event.data.breakpoint;
-
-        var statusMessageElement = document.createElement("div");
-        statusMessageElement.className = "info";
-        breakpoint.populateStatusMessageElement(statusMessageElement, event.data.eventData);
-        this.bodyElement.appendChild(statusMessageElement);
+        if (breakpoint.populateStatusMessageElement) {
+            var statusMessageElement = document.createElement("div");
+            statusMessageElement.className = "info";
+            breakpoint.populateStatusMessageElement(statusMessageElement, event.data.eventData);
+            this.bodyElement.appendChild(statusMessageElement);
+        }
     }
 }
 

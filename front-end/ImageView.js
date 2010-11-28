@@ -34,28 +34,33 @@ WebInspector.ImageView = function(resource)
 }
 
 WebInspector.ImageView.prototype = {
-    hasContentTab: function()
+    hasContent: function()
     {
         return true;
     },
 
-    contentTabSelected: function()
+    show: function(parentElement)
+    {
+        WebInspector.ResourceView.prototype.show.call(this, parentElement);
+        this._createContentIfNeeded();
+    },
+
+    _createContentIfNeeded: function()
     {
         if (this._container)
             return;
-        this._container = document.createElement("div");
-        this._container.className = "image";
-        this.contentElement.appendChild(this._container);
 
-        this.imagePreviewElement = document.createElement("img");
-        this.imagePreviewElement.addStyleClass("resource-image-view");
-        this.imagePreviewElement.setAttribute("src", this.resource.url);
+        var imageContainer = document.createElement("div");
+        imageContainer.className = "image";
+        this.element.appendChild(imageContainer);
 
-        this._container.appendChild(this.imagePreviewElement);
+        var imagePreviewElement = document.createElement("img");
+        imagePreviewElement.addStyleClass("resource-image-view");
+        imageContainer.appendChild(imagePreviewElement);
 
         this._container = document.createElement("div");
         this._container.className = "info";
-        this.contentElement.appendChild(this._container);
+        this.element.appendChild(this._container);
 
         var imageNameElement = document.createElement("h1");
         imageNameElement.className = "title";
@@ -65,18 +70,51 @@ WebInspector.ImageView.prototype = {
         var infoListElement = document.createElement("dl");
         infoListElement.className = "infoList";
 
-        var imageProperties = [
-            { name: WebInspector.UIString("Dimensions"), value: WebInspector.UIString("%d × %d", this.imagePreviewElement.naturalWidth, this.imagePreviewElement.height) },
-            { name: WebInspector.UIString("File size"), value: Number.bytesToString(this.resource.resourceSize, WebInspector.UIString) },
-            { name: WebInspector.UIString("MIME type"), value: this.resource.mimeType }
-        ];
+        function onResourceContent(element, content)
+        {
+            imagePreviewElement.setAttribute("src", this.resource.contentURL);
+        }
+        this.resource.requestContent(onResourceContent.bind(this));
 
-        var listHTML = '';
-        for (var i = 0; i < imageProperties.length; ++i)
-            listHTML += "<dt>" + imageProperties[i].name + "</dt><dd>" + imageProperties[i].value + "</dd>";
 
-        infoListElement.innerHTML = listHTML;
-        this._container.appendChild(infoListElement);
+        function onImageLoad()
+        {
+            var content = this.resource.content;
+            if (content)
+                var resourceSize = this._base64ToSize(content);
+            else
+                var resourceSize = this.resource.resourceSize;
+
+            var imageProperties = [
+                { name: WebInspector.UIString("Dimensions"), value: WebInspector.UIString("%d × %d", imagePreviewElement.naturalWidth, imagePreviewElement.naturalHeight) },
+                { name: WebInspector.UIString("File size"), value: Number.bytesToString(resourceSize, WebInspector.UIString) },
+                { name: WebInspector.UIString("MIME type"), value: this.resource.mimeType }
+            ];
+    
+            infoListElement.removeChildren();
+            for (var i = 0; i < imageProperties.length; ++i) {
+                var dt = document.createElement("dt");
+                dt.textContent = imageProperties[i].name;
+                infoListElement.appendChild(dt);
+                var dd = document.createElement("dd");
+                dd.textContent = imageProperties[i].value;
+                infoListElement.appendChild(dd);
+            }
+            this._container.appendChild(infoListElement);
+        }
+        imagePreviewElement.addEventListener("load", onImageLoad.bind(this), false);
+    },
+
+    _base64ToSize: function(content)
+    {
+        if (!content.length)
+            return 0;
+        var size = (content.length || 0) * 3 / 4;
+        if (content.length > 0 && content[content.length - 1] === "=")
+            size--;
+        if (content.length > 1 && content[content.length - 2] === "=")
+            size--;
+        return size;
     }
 }
 
