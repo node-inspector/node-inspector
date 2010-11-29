@@ -1,17 +1,11 @@
 /*-----------------------------------------------
   Requirements:
 -----------------------------------------------*/
-var debug = function(){};
-
-var util = require("../_util")
-  , events = require("events")
+var sys = require("sys")
   , Url = require("url")
+  , Events = require("events")
   , Buffer = require("buffer").Buffer
   , Crypto = require("crypto");
-
-var _events = require("../_events")
-
-var Mixin = require("../lang/mixin");
 
 /*-----------------------------------------------
   The Connection:
@@ -19,106 +13,137 @@ var Mixin = require("../lang/mixin");
 module.exports = Connection;
 
 // Our connection instance:
-function Connection(manager, options, req, socket, upgradeHead){
-  var _firstFrame
-    , connection = this;
+function Connection(server, req, socket, data){
+  this.debug = server.debug;
 
-  _events.EventEmitter.call(this);
+  if (this.debug) {
+    debug = function (id, data) { sys.error('\033[90mWS: ' + Array.prototype.join.call(arguments, ", ") + "\033[39m"); };
+  } else {
+    debug = function (id, data) { };
+  }
+
+  Events.EventEmitter.call(this);
 
   this._req = req;
-  this._socket = socket;
-  this._manager = manager;
-  this.id = manager.createId(socket.remotePort);
+  this._server = server;
+  this.headers = this._req.headers;
+  this.id = server.manager.createId(this._req.socket.remotePort);
 
-  this._options = Mixin({
-    version: "auto",      // String:        Value must be either: draft75, draft76, auto
-    origin: "*",          // String, Array: A match for a valid connection origin
-    subprotocol: "*",     // String, Array: A match for a valid connection subprotocol.
-    debug: true
-  }, options);
-
-  if(connection._options.debug){
-    debug = function () {
-      util.error('\033[90mWS: ' + Array.prototype.join.call(arguments, ", ") + "\033[39m");
-      process.stdout.flush();
-    };
-  }
+  var _firstFrame = false;
 
   Object.defineProperties(this, {
     version: {
       get: function(){
-        return req.headers["sec-websocket-key1"] && req.headers["sec-websocket-key2"]
-          ? "draft76"
-          : "draft75";
+        if(this._req.headers["sec-websocket-key1"] && this._req.headers["sec-websocket-key2"]){
+          return "draft76";
+        } else {
+          return "draft75";
+        }
       }
     }
   });
 
-  // Set the initial connecting state.
-  connection.state(1);
-  // Setup the connection manager's state change listeners:
-  connection.on("stateChange", function(state, laststate){
-    if(state === 4) {
-      manager.attach(connection);
-      // Handle first frame breakages.
-      if(_firstFrame){
-        parser.write(_firstFrame);
-        delete _firstFrame;
-      }
-    } else if(state === 5) {
-      close(connection);
-    } else if(state === 6 && laststate === 5) {
-      manager.detach(connection);
-      connection.emit("close");
-    }
-  });
 
+  if(server.options.datastore){
+    var storage;
+
+    if(typeof server.options.datastore === "object" || typeof server.options.datastore === "function"){
+      storage = server.options.datastore;
+    } else if(server.options.datastore === true){
+      storage = require("./mem-store");
+    } else {
+      storage = false;
+    }
+  }
 
   // Start to process the connection
   if( !checkVersion(this)) {
     this.reject("Invalid version.");
   } else {
+    var connection = this
+      , parser;
+
     // Let the debug mode know that we have a connection:
-    debug(this.id, this.version+" connection");
-    
-    socket.setTimeout(0);
-    socket.setNoDelay(true);
-    socket.setKeepAlive(true, 0);
+    this.debug && debug(this.id, this.version+" connection");
+
+    // Set the initial connecting state.
+    this.state(1);
 
     // Handle incoming data:
-    var parser = new Parser(this);
+    parser = new Parser(this);
 
-    parser.on("message", function(message){
-      debug(connection.id, "recv: " + message);
-      connection.emit("message", message);
-    });
-
-    socket.on("data", function(data){
-      parser.write(data);
+    socket.addListener("data", function(data){
+      if(data.length == 2 && data[0] == 0xFF && data[1] == 0x00){
+        connection.state(5);
+      } else {
+        parser.write(data);
+      }
     });
 
     // Handle the end of the stream, and set the state
     // appropriately to notify the correct events.
-    socket.on("end", function(){
-      debug(connection.id, "end");
+    socket.addListener("end", function(){
       connection.state(5);
     });
 
-    socket.on('timeout', function () {
+    socket.addListener('timeout', function () {
       debug(connection.id, "timed out");
+      server.emit("timeout", connection);
       connection.emit("timeout");
     });
 
-    socket.on("error", function(e){
-      debug(connection.id, "error", e);
-      if(e.errno != 32){
+    socket.addListener("error", function(e){
+      if(e.errno == 32){
+        connection.state(5);
+        closeClient(connection);
+        connection.state(6);
+      } else {
+        manager.emit("error", connection, e);
         connection.emit("error", e);
+        connection.state(5);
       }
-      connection.state(5);
     });
 
-    // Bubble errors up to the manager.
-    connection.bubbleEvent("error", manager);
+
+    // Setup the connection manager's state change listeners:
+    this.addListener("stateChange", function(state, laststate){
+      //debug(connection.id, "Change state: "+laststate+" => "+state);
+      if(state === 4){
+        if(storage && storage.create){
+          connection.storage = storage.create();
+        } else if(storage){
+          connection.storage = storage;
+        }
+
+        server.manager.attach(connection.id, connection);
+        server.emit("connection", connection);
+
+        if(_firstFrame){
+          parser.write(_firstFrame);
+          delete _firstFrame;
+        }
+
+      } else if(state === 5){
+        connection.close();
+      } else if(state === 6 && laststate === 5){
+
+        if(connection.storage && connection.storage.disconnect){
+          connection.storage.disconnect(connection.id);
+        }
+
+        server.manager.detach(connection.id, function(){
+          server.emit("close", connection);
+          connection.emit("close");
+        });
+      }
+    });
+
+    // Let us see the messages when in debug mode.
+    if(this.debug){
+      this.addListener("message", function(msg){
+        debug(connection.id, "recv: " + msg);
+      });
+    }
 
     // Carry out the handshaking.
     //    - Draft75: There's no upgradeHead, goto Then.
@@ -129,60 +154,54 @@ function Connection(manager, options, req, socket, upgradeHead){
     //      but in the case it does happen, then the state is set to waiting for
     //      the upgradeHead.
     //
-    // This switch is sorted in order of probably of occurence.
-    switch(this.version) {
-      case "draft76":
-        if(upgradeHead.length >= 8) {
-          if(upgradeHead.length > 8){
-            _firstFrame = upgradeHead.slice(8, upgradeHead.length);
-          }
+    if(this.version == "draft75"){
+      this.handshake();
+    }
 
-          handshakes.draft76(connection, upgradeHead.slice(0, 8));
-        } else {
-          connection.reject("Missing key3");
-        }
-        break;
+    if(this.version == "draft76"){
+      if(data.length >= 8){
+        this._upgradeHead = data.slice(0, 8);
 
-      case "draft75":
-        handshakes.draft75(connection);
-        break;
+        _firstFrame = data.slice(8, data.length);
 
-      default:
-        connection.reject("Unknown version: "+this.version);
-        break;
+        this.handshake();
+      } else {
+        this.reject("Missing key3");
+      }
     }
   }
 };
 
-util.inherits(Connection, _events.EventEmitter);
+sys.inherits(Connection, Events.EventEmitter);
 
 /*-----------------------------------------------
   Various utility style functions:
 -----------------------------------------------*/
-var write = function(connection, data, encoding) {
-  if(connection._socket.writable){
+var writeSocket = function(socket, data, encoding) {
+  if(socket.writable){
     try {
-      connection._socket.write(data, encoding);
+      socket.write(data, encoding);
       return true;
     } catch(e){
       debug(null, "Error on write: "+e.toString());
+      return false;
     }
   }
   return false;
 };
 
-var close = function(connection) {
-  //connection._socket.flush();
-  connection._socket.end();
-  connection._socket.destroy();
-  debug(connection.id, "socket closed");
-  connection.state(6);
+var closeClient = function(client){
+  client._req.socket.flush();
+  client._req.socket.end();
+  client._req.socket.destroy();
+  debug(client.id, "socket closed");
+  client.state(6);
 };
 
-function checkVersion(connection) {
-  var server_version = connection._options.version.toLowerCase();
+function checkVersion(client){
+  var server_version = client._server.options.version.toLowerCase();
 
-  return (server_version == "auto" || server_version == connection.version);
+  return (server_version == "auto" || server_version == client.version);
 };
 
 
@@ -199,27 +218,23 @@ function pack(num) {
 /*-----------------------------------------------
   Formatters for the urls
 -----------------------------------------------*/
-
-// TODO: Properly handle origin headers.
-function websocket_origin(connection) {
-  var origin = connection._options.origin || "*";
-
+function websocket_origin(){
+  var origin = this._server.options.origin || "*";
   if(origin == "*" || Array.isArray(origin)){
-    origin = connection._req.headers.origin;
+    origin = this._req.headers.origin;
   }
-
   return origin;
 };
 
-function websocket_location(connection){
-  if(connection._req.headers["host"] === undefined){
-    connection.reject("Missing host header");
+function websocket_location(){
+  if(this._req.headers["host"] === undefined){
+    this.reject("Missing host header");
     return;
   }
 
   var location = ""
-    , secure = connection._socket.secure
-    , host = connection._req.headers.host.split(":")
+    , secure = this._req.socket.secure
+    , host = this._req.headers.host.split(":")
     , port = host[1] !== undefined ? host[1] : (secure ? 443 : 80);
 
   location += secure ? "wss://" : "ws://";
@@ -229,7 +244,7 @@ function websocket_location(connection){
     location += ":"+port;
   }
 
-  location += connection._req.url;
+  location += this._req.url;
 
   return location;
 };
@@ -258,19 +273,17 @@ Connection.prototype.state = function(state){
   }
 };
 
-Connection.prototype.inspect = function(){
-  return "<WS:Connection "+this.id+">";
-};
+Connection.prototype.write = function(data){
+  var socket = this._req.socket;
 
-Connection.prototype.write = function(data) {
-  if(this._state === 4) {
+  if(this._state == 4){
     debug(this.id, "write: "+data);
 
     if(
-      write(this, "\x00", "binary") &&
-      write(this, data, "utf8") &&
-      write(this, "\xff", "binary")
-    ) {
+      writeSocket(socket, "\x00", "binary") &&
+      writeSocket(socket, data, "utf8") &&
+      writeSocket(socket, "\xff", "binary")
+    ){
       return true;
     } else {
       debug(this.id, "\033[31mERROR: write: "+data);
@@ -284,88 +297,86 @@ Connection.prototype.write = function(data) {
 Connection.prototype.send = Connection.prototype.write;
 
 Connection.prototype.broadcast = function(data){
-  this._manager.forEach(function(client){
-    if(client && client._state === 4 && client.id != this.id){
+  var conn = this;
+
+  this._server.manager.forEach(function(client){
+    if(client && client._state === 4 && client.id != conn.id){
       client.write(data);
     }
-  }, this);
+  });
 };
 
 Connection.prototype.close = function(){
-  if(this._state == 4 && this._socket.writable){
-    write(this, "\xff", "binary");
-    write(this, "\x00", "binary");
-  }
+  var socket = this._req.socket;
 
-  this.state(5);
+  if(this._state == 4 && socket.writable){
+    writeSocket(socket, "\xff", "binary");
+    writeSocket(socket, "\x00", "binary");
+  }
+  closeClient(this);
 };
 
 
 Connection.prototype.reject = function(reason){
-  debug(this.id, "rejected. Reason: "+reason);
-  this.state(5);
+  this.debug && debug(this.id, "rejected. Reason: "+reason);
+
+  this.emit("rejected");
+  closeClient(this);
 };
 
 Connection.prototype.handshake = function(){
   if(this._state < 3){
-    debug(this.id, this.version+" handshake");
+    this.debug && debug(this.id, this.version+" handshake");
 
     this.state(3);
 
     doHandshake[this.version].call(this);
   } else {
-    debug(this.id, "Already handshaked.");
+    this.debug && debug(this.id, "Already handshaked.");
   }
 };
 
 /*-----------------------------------------------
   Do the handshake.
 -----------------------------------------------*/
-var handshakes = {
+var doHandshake = {
   // Using draft75, work out and send the handshake.
-  draft75: function(connection){
-    connection.state(3);
-
-    var location = websocket_location(connection)
-      , res;
+  draft75: function(){
+    var location = websocket_location.call(this), res;
 
     if(location){
       res = "HTTP/1.1 101 Web Socket Protocol Handshake\r\n"
           + "Upgrade: WebSocket\r\n"
           + "Connection: Upgrade\r\n"
-          + "WebSocket-Origin: "+websocket_origin(connection)+"\r\n"
+          + "WebSocket-Origin: "+websocket_origin.call(this)+"\r\n"
           + "WebSocket-Location: "+location;
 
-      if(connection._options.subprotocol && typeof connection._options.subprotocol == "string") {
-        res += "\r\nWebSocket-Protocol: "+connection._options.subprotocol;
+      if(this._server.options.subprotocol && typeof this._server.options.subprotocol == "string") {
+        res += "\r\nWebSocket-Protocol: "+this._server.options.subprotocol;
       }
 
-      write(connection, res+"\r\n\r\n", "ascii");
-
-      connection.state(4);
+      writeSocket(this._req.socket, res+"\r\n\r\n", "ascii");
+      this.state(4);
     }
   },
 
   // Using draft76 (security model), work out and send the handshake.
-  draft76: function(connection, upgradeHead){
-    connection.state(3);
-
-    var location = websocket_location(connection)
-      , res;
+  draft76: function(){
+    var location = websocket_location.call(this), res;
 
     if(location){
       res = "HTTP/1.1 101 WebSocket Protocol Handshake\r\n"
           + "Upgrade: WebSocket\r\n"
           + "Connection: Upgrade\r\n"
-          + "Sec-WebSocket-Origin: "+websocket_origin(connection)+"\r\n"
+          + "Sec-WebSocket-Origin: "+websocket_origin.call(this)+"\r\n"
           + "Sec-WebSocket-Location: "+location;
 
-      if(connection._options.subprotocol && typeof connection._options.subprotocol == "string") {
-        res += "\r\nSec-WebSocket-Protocol: "+connection._options.subprotocol;
+      if(this._server.options.subprotocol && typeof this._server.options.subprotocol == "string") {
+        res += "\r\nSec-WebSocket-Protocol: "+this._server.options.subprotocol;
       }
 
-      var strkey1 = connection._req.headers['sec-websocket-key1']
-        , strkey2 = connection._req.headers['sec-websocket-key2']
+      var strkey1 = this._req.headers['sec-websocket-key1']
+        , strkey2 = this._req.headers['sec-websocket-key2']
 
         , numkey1 = parseInt(strkey1.replace(/[^\d]/g, ""), 10)
         , numkey2 = parseInt(strkey2.replace(/[^\d]/g, ""), 10)
@@ -375,7 +386,7 @@ var handshakes = {
 
 
       if (spaces1 == 0 || spaces2 == 0 || numkey1 % spaces1 != 0 || numkey2 % spaces2 != 0) {
-        connection.reject("WebSocket contained an invalid key -- closing connection.");
+        this.reject("WebSocket contained an invalid key -- closing connection.");
       } else {
         var hash = Crypto.createHash("md5")
           , key1 = pack(parseInt(numkey1/spaces1))
@@ -383,14 +394,13 @@ var handshakes = {
 
         hash.update(key1);
         hash.update(key2);
-        hash.update(upgradeHead.toString("binary"));
+        hash.update(this._upgradeHead.toString("binary"));
 
         res += "\r\n\r\n";
         res += hash.digest("binary");
 
-        write(connection, res, "binary");
-
-        connection.state(4);
+        writeSocket(this._req.socket, res, "binary");
+        this.state(4);
       }
     }
   }
@@ -400,14 +410,11 @@ var handshakes = {
   The new onData callback for
   http.Server IncomingMessage
 -----------------------------------------------*/
-function Parser(){
-  events.EventEmitter.call(this);
-  
+var Parser = function(client){
   this.frameData = [];
   this.order = 0;
+  this.client = client;
 };
-
-util.inherits(Parser, events.EventEmitter);
 
 Parser.prototype.write = function(data){
   var pkt, msg;
@@ -424,12 +431,12 @@ Parser.prototype.write = function(data){
         this.order = 0;
         this.frameData = [];
 
-        this.emit("message", pkt.toString("utf8", 0, pkt.length));
+        this.client.emit("message", pkt.toString("utf8", 0, pkt.length));
       } else {
         this.frameData.push(data[i]);
       }
     } else if(this.order == 1){
-      debug("High Order packet handling is not yet implemented.");
+      debug(this.client.id, "High Order packet handling is not yet implemented.");
       this.order = 0;
     }
   }
