@@ -1,3 +1,7 @@
+v0.1.3
+
+* reverted websocket library to 1.3.53
+
 v0.1.2
 
 * option to save changes from liveEdit
