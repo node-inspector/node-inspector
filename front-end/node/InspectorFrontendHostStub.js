@@ -107,7 +107,7 @@ WebInspector.InspectorFrontendHostStub.prototype = {
 
     hiddenPanels: function()
     {
-        return "elements,resources,timeline,profiles,network,audits";
+        return "elements,resources,timeline,network,audits";
     },
 
     inspectedURLChanged: function(url)

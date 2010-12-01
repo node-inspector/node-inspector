@@ -3944,6 +3944,10 @@ body.inactive li.selected .bubble.search-matches {
 button.enable-toggle-status-bar-item .glyph {
 }
 
+.record-profile-status-bar-item {
+  display: none;
+}
+
 .record-profile-status-bar-item .glyph {
     -webkit-mask-image: url(Images/recordButtonGlyph.png);
 }
