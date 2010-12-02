@@ -580,7 +580,7 @@ WebInspector.CPUProfileType.TypeId = "CPU";
 WebInspector.CPUProfileType.prototype = {
     get buttonTooltip()
     {
-        return this._recording ? WebInspector.UIString("Stop profiling.") : WebInspector.UIString("Start profiling.");
+        return WebInspector.UIString("Refresh panel.");
     },
 
     get buttonStyle()
@@ -600,7 +600,7 @@ WebInspector.CPUProfileType.prototype = {
 
     get welcomeMessage()
     {
-        return WebInspector.UIString("Control CPU profiling by pressing the %s button on the status bar.");
+        return WebInspector.UIString("");
     },
 
     setRecordingProfile: function(isProfiling)

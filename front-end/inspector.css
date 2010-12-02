@@ -3943,20 +3943,20 @@ body.inactive li.selected .bubble.search-matches {
 
 button.enable-toggle-status-bar-item .glyph {
 }
-
+/*
 .record-profile-status-bar-item {
   display: none;
 }
-
+*/
 .record-profile-status-bar-item .glyph {
-    -webkit-mask-image: url(Images/recordButtonGlyph.png);
+    -webkit-mask-image: url(Images/reloadButtonGlyph.png);
 }
-
+/*
 .record-profile-status-bar-item.toggled-on .glyph {
     -webkit-mask-image: url(Images/recordToggledButtonGlyph.png);
     background-color: rgb(216, 0, 0) !important;
 }
-
+*/
 /* FIXME: should have its own glyph. */
 .heap-snapshot-status-bar-item .glyph {
     -webkit-mask-image: url(Images/focusButtonGlyph.png);
