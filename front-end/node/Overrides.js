@@ -11,6 +11,8 @@ WebInspector.loaded = function() {
   return;
 };
 
+// debugger always enabled
+Preferences.debuggerAlwaysEnabled = true;
 // enable LiveEdit
 Preferences.canEditScriptSource = true;
 // enable heap profiler

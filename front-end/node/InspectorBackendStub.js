@@ -107,28 +107,6 @@ WebInspector.InspectorBackendStub.prototype = {
         this[commandObject.command] = function() {};
     },
 
-    saveApplicationSettings: function(settings)
-    {
-      localStorage.setItem('appSettings', settings);
-    },
-
-    getSettings: function(callback)
-    {
-      var defaults = "{\"scripts-sidebar-width\":230,\"event-listeners-filter\":\"all\",\"color-format\":\"hex\",\"resources-large-rows\":true,\"watch-expressions\":[],\"last-viewed-script-file\":\"\",\"show-inherited-computed-style-properties\":false,\"show-user-agent-styles\":true,\"resource-view-tab\":\"content\",\"console-history\":[],\"resources-sort-options\":{\"timeOption\":\"responseTime\",\"sizeOption\":\"transferSize\"}}",
-          settings = {
-            application: localStorage.getItem('appSettings') || defaults,
-            session: "{}"
-          };
-      /* It looks like theres a bug in the inspector loading code.
-       * If you only run the callback directly here, panels don't
-       * get the 'loaded' event, but if you only run it in the
-       * timeout the settings don't get applied to the window.
-       * So for now doing both seems to work ok.
-       */
-      callback.apply(null, [settings]);
-      setTimeout(callback, 0, [settings]);
-    },
-
     sendMessageToBackend: function()
     {
         var args = Array.prototype.slice.call(arguments);
