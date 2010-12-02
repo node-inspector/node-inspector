@@ -7,6 +7,7 @@ Node Inspector is a debugger interface for nodeJS using the WebKit Web Inspector
 * [nodeJS](http://github.com/ry/node)
   - versions: 0.3.0 or later
 * A WebKit based browser: Chrome, Safari, etc.
+* Optional [v8-profiler](http://github.com/dannycoates/v8-profiler) to use the profiles panel
 
 ### Install
 
@@ -54,15 +55,34 @@ For more information on getting started see the [wiki](http://github.com/dannyco
 
 ## Known Issues
 
-This is alpha quality code, so use at your own risk:
+This is beta quality code, so use at your own risk:
 
 * be careful about viewing the contents of Buffer objects, each byte is displayed as an individual array element, for anything but tiny Buffers this will take too long to render
 * while not stopped at a breakpoint the console doesn't always behave as you might expect
 * closing the browser does not stop debugging, you must stop node-inspector manually
 
-## TODOS
+## Profiling
 
-* profiler panel
+To use the profiles panel, install the v8-profiler module:
+
+		npm install v8-profiler
+
+To use it do something like:
+
+		var profiler = require('v8-profiler');
+		
+		profiler.startProfiling('startup');
+		slowStartupFoo();
+		profiler.stopProfiling('startup');
+		
+		profiler.takeSnapshot('beforeLeak');
+		leakyFoo();
+		profiler.takeSnapshot('afterLeak');
+
+Then view the profiling results with the profiles panel in node-inspector. You can
+also take heap snapshots on demand from the profiles panel.
+
+
 
 ## Thanks
 
