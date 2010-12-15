@@ -1,3 +1,7 @@
+v0.1.6
+
+* fixed crash on connect when using watch expressions (Issue 25)
+
 v0.1.5
 
 * minor bug fixes
