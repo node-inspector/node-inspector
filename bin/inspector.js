@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var dserver = require('../lib/debug-server'),
+var DebugServer = require('../lib/debug-server').DebugServer,
     fs = require('fs'),
     path = require('path'),
     options = {};
@@ -12,7 +12,6 @@ process.argv.forEach(function (arg) {
     if (parts.length > 1) {
       switch (parts[0]) {
       case '--web-port':
-      case '--agent-port':
         options.webPort = parseInt(parts[1], 10);
         break;
       default:
@@ -21,7 +20,7 @@ process.argv.forEach(function (arg) {
       }
     }
     else if (parts[0] === '--help') {
-      console.log('Usage: node [node_options] debug-agent.js [options]');
+      console.log('Usage: node-inspector [options]');
       console.log('Options:');
       console.log('--web-port=[port]     port to host the inspector (default 8080)');
       process.exit();
@@ -30,7 +29,8 @@ process.argv.forEach(function (arg) {
 });
 
 fs.readFile(path.join(__dirname, '../config.json'), function(err, data) {
-  var config;
+  var config,
+      dserver;
   if (err) {
     console.warn("could not load config.json\n" + err.toString());
     config = {};
@@ -49,8 +49,11 @@ fs.readFile(path.join(__dirname, '../config.json'), function(err, data) {
   if (!config.debugPort) {
     config.debugPort = 5858;
   }
-  dserver.create(options, config).on('close', function () {
+
+  dserver = new DebugServer();
+  dserver.on('close', function () {
     console.log('session closed');
     process.exit();
   });
+  dserver.listen(options.webPort || config.webPort);
 });
