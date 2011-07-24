@@ -6,23 +6,26 @@ Node Inspector is a debugger interface for nodeJS using the WebKit Web Inspector
 
 * [nodeJS](http://github.com/ry/node)
   - versions: 0.3.0 or later
+* [npm](http://github.com/isaacs/npm)
 * A WebKit based browser: Chrome, Safari, etc.
 * Optional [v8-profiler](http://github.com/dannycoates/v8-profiler) to use the profiles panel
 
 ### Install
 
 * With [npm](http://github.com/isaacs/npm)
-		npm install node-inspector
-* Or from [source](http://github.com/dannycoates/node-inspector/wiki/Getting-Started---from-scratch)
+
+		npm install -g node-inspector
 
 ### Debugging
 
 As an example lets debug test/hello.js, from the root project directory (node-inspector)
 
 1. start the inspector in the background
+
 		node-inspector &
 
-2. start the node instance to debug
+2. start the node instance to debug. Use `--debug-brk` to pause the script on the first line
+
 		node --debug test/hello.js
 
 3. open http://127.0.0.1:8080/debug?port=5858 in your favorite WebKit based browser
@@ -37,7 +40,7 @@ As an example lets debug test/hello.js, from the root project directory (node-in
 
 7. click "Step over next function call" and observe changes in the RHS panel
 
-8. then watch the [screencast](http://www.youtube.com/watch?v=AOnK3NVnxL8)
+8. then watch the [screencasts](http://www.youtube.com/view_play_list?p=A5216AC29A41EFA8)
 
 For more information on getting started see the [wiki](http://github.com/dannycoates/node-inspector/wiki/Getting-Started---from-scratch)
 
