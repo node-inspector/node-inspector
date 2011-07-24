@@ -47,6 +47,7 @@ For more information on getting started see the [wiki](http://github.com/dannyco
 ## Options
 
 		--web-port=[port]     port to host the inspector (default 8080)
+		--debug-brk           Immediately stop script on first line
 
 ## Cool stuff
 
