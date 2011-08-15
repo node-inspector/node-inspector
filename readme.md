@@ -64,7 +64,21 @@ For more information on getting started see the [wiki](http://github.com/dannyco
 node-inspector works almost exactly like the web inspector in Safari and
 Chrome. Here's a good [overview](http://code.google.com/chrome/devtools/docs/scripts.html) of the UI
 
-## Inspecotr options
+## FAQ
+
+1. I don't see one of my script files in the file list.
+
+		> try refreshing the browser (F5 or command-r)
+
+2. My script runs too fast to attach the debugger.
+
+		> use `--debug-brk` to pause the script on the first line
+
+3. I got the ui in a weird state.
+
+		> when in doubt, refresh
+
+## Inspector options
 
 		--web-port=[port]     port to host the inspector (default 8080)
 
