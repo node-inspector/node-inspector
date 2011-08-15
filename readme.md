@@ -68,15 +68,15 @@ Chrome. Here's a good [overview](http://code.google.com/chrome/devtools/docs/scr
 
 1. I don't see one of my script files in the file list.
 
-		> try refreshing the browser (F5 or command-r)
+    > try refreshing the browser (F5 or command-r)
 
 2. My script runs too fast to attach the debugger.
 
-		> use `--debug-brk` to pause the script on the first line
+    > use `--debug-brk` to pause the script on the first line
 
 3. I got the ui in a weird state.
 
-		> when in doubt, refresh
+    > when in doubt, refresh
 
 ## Inspector options
 
