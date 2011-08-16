@@ -17,18 +17,18 @@ Node Inspector is a debugger interface for nodeJS using the WebKit Web Inspector
 
 * With [npm](http://github.com/isaacs/npm)
 
-		npm install -g node-inspector
+        $ npm install -g node-inspector
 
 ### Enable debug mode
 
 To use node-inspector, enable debugging on the node you wish to debug.
 You can either start node with a debug flag like:
 
-		node --debug your/node/program.js
+    $ node --debug your/node/program.js
 
 or, to pause your script on the first line:
 
-		node --debug-brk your/short/node/script.js
+    $ node --debug-brk your/short/node/script.js
 
 Or you can enable debugging on a node that is already running by sending
 it a signal:
@@ -48,12 +48,11 @@ Great! Now you are ready to attach node-inspector
 
 1. start the inspector. I usually put it in the background
 
-		node-inspector &
+		$ node-inspector &
 
 2. open http://127.0.0.1:8080/debug?port=5858 in your favorite WebKit based browser
 
-3. you should now see the javascript source from node. If you don't,
-	 click the scripts tab.
+3. you should now see the javascript source from node. If you don't, click the scripts tab.
 
 4. select a script and set some breakpoints (far left line numbers)
 
@@ -64,7 +63,7 @@ For more information on getting started see the [wiki](http://github.com/dannyco
 node-inspector works almost exactly like the web inspector in Safari and
 Chrome. Here's a good [overview](http://code.google.com/chrome/devtools/docs/scripts.html) of the UI
 
-## FAQ
+## FAQ / WTF
 
 1. I don't see one of my script files in the file list.
 
@@ -77,10 +76,14 @@ Chrome. Here's a good [overview](http://code.google.com/chrome/devtools/docs/scr
 3. I got the ui in a weird state.
 
     > when in doubt, refresh
+    
+4. Can I debug remotely?
+
+    > Yes. node-inspector must be running on the same machine, but your browser can be anywhere. Just make sure port 8080 is accessible
 
 ## Inspector options
 
-		--web-port=[port]     port to host the inspector (default 8080)
+    --web-port=[port]     port to host the inspector (default 8080)
 
 ## Cool stuff
 
@@ -104,19 +107,19 @@ I don't recommend using this yet
 
 To use the profiles panel, install the v8-profiler module:
 
-		npm install v8-profiler
+    npm install v8-profiler
 
 To use it do something like:
 
-		var profiler = require('v8-profiler');
+    var profiler = require('v8-profiler');
 		
-		profiler.startProfiling('startup');
-		slowStartupFoo();
-		profiler.stopProfiling('startup');
+    profiler.startProfiling('startup');
+    slowStartupFoo();
+    profiler.stopProfiling('startup');
 		
-		profiler.takeSnapshot('beforeLeak');
-		leakyFoo();
-		profiler.takeSnapshot('afterLeak');
+    profiler.takeSnapshot('beforeLeak');
+    leakyFoo();
+    profiler.takeSnapshot('afterLeak');
 
 Then view the profiling results with the profiles panel in node-inspector. You can
 also take heap snapshots on demand from the profiles panel.
