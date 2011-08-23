@@ -9,7 +9,7 @@ Node Inspector is a debugger interface for nodeJS using the WebKit Web Inspector
 * [npm](http://github.com/isaacs/npm)
 * A WebKit based browser: Chrome, Safari, etc.
 
-    > **BROKEN** on Chrome 14+
+    > [**BROKEN** on Chrome 14+](https://github.com/dannycoates/node-inspector/issues/56)
 
 * Optional [v8-profiler](http://github.com/dannycoates/v8-profiler) to use the profiles panel
 
