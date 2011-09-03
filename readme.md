@@ -109,15 +109,17 @@ To use the profiles panel, install the v8-profiler module:
 
 To use it do something like:
 
-    var profiler = require('v8-profiler');
-		
-    profiler.startProfiling('startup');
-    slowStartupFoo();
-    profiler.stopProfiling('startup');
-		
-    profiler.takeSnapshot('beforeLeak');
-    leakyFoo();
-    profiler.takeSnapshot('afterLeak');
+```javascript
+var profiler = require('v8-profiler');
+
+profiler.startProfiling('startup');
+slowStartupFoo();
+profiler.stopProfiling('startup');
+
+profiler.takeSnapshot('beforeLeak');
+leakyFoo();
+profiler.takeSnapshot('afterLeak');
+```
 
 Then view the profiling results with the profiles panel in node-inspector. You can
 also take heap snapshots on demand from the profiles panel.
