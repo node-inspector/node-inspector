@@ -12,7 +12,7 @@
     "engines" : { "node": ">=0.3.0" },
     "bin" : { "node-inspector" : "./bin/inspector.js" },
     "dependencies": {
-      "websocket-server": "~1.4",
+      "socket.io": "~0.8.2",
       "paperboy": "~0.0.2"
     }
 }

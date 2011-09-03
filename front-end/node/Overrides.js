@@ -1,17 +1,17 @@
 
 // Wire up websocket to talk to backend
 WebInspector.loaded = function() {
-  WebInspector.socket = new WebSocket("ws://" + window.location.host + '/debug?port=' + WebInspector.queryParamsObject.port);
-  WebInspector.socket.onmessage = function(message) {
-    if (message && message.data !== 'ping') {
-      WebInspector_syncDispatch(message.data);
+  WebInspector.socket = io.connect("http://" + window.location.host + '/');
+  WebInspector.socket.on('message', function(message) {
+    if (message && message !== 'ping') {
+      WebInspector_syncDispatch(message);
     }
-  }
-  WebInspector.socket.onerror = function(error) { console.error(error); }
-  WebInspector.socket.onopen = function() {
+  });
+  WebInspector.socket.on('error', function(error) { console.error(error); });
+  WebInspector.socket.on('connect', function() {
       InspectorFrontendHost.sendMessageToBackend = WebInspector.socket.send.bind(WebInspector.socket);
       WebInspector.doLoadedDone();
-  }
+  });
   return;
 };
 
