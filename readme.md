@@ -130,7 +130,7 @@ This project respectfully uses code from and thanks the authors of:
 
 * [WebKit](http://webkit.org/building/checkout.html)
 * [node](http://github.com/ry/node)
-* [node-websocket-server](http://github.com/miksago/node-websocket-server)
+* [socket.io](http://github.com/LearnBoost/socket.io)
 * [node-paperboy](http://github.com/felixge/node-paperboy)
 
 
