@@ -1,3 +1,7 @@
+v0.1.10
+
+* switched to socket.io, now works with Chrome 14+
+
 v0.1.9
 
 * fixed page refresh
