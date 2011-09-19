@@ -153,6 +153,14 @@ WebInspector.SidebarTreeElement.prototype = {
         this.bubbleElement.textContent = x;
     },
 
+    set wait(x)
+    {
+        if (x)
+            this._listItemNode.addStyleClass("wait");
+        else
+            this._listItemNode.removeStyleClass("wait");
+    },
+
     refreshTitles: function()
     {
         var mainTitle = this.mainTitle;
@@ -164,8 +172,10 @@ WebInspector.SidebarTreeElement.prototype = {
             if (this.subtitleElement.textContent !== subtitle)
                 this.subtitleElement.textContent = subtitle;
             this.titlesElement.removeStyleClass("no-subtitle");
-        } else
+        } else {
+            this.subtitleElement.textContent = "";
             this.titlesElement.addStyleClass("no-subtitle");
+        }
     },
 
     isEventWithinDisclosureTriangle: function(event)

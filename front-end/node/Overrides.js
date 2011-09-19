@@ -3,8 +3,9 @@
 WebInspector.loaded = function() {
   WebInspector.socket = io.connect("http://" + window.location.host + '/');
   WebInspector.socket.on('message', function(message) {
+		console.log(message);
     if (message && message !== 'ping') {
-      WebInspector_syncDispatch(message);
+      InspectorBackend.dispatch(message);
     }
   });
   WebInspector.socket.on('error', function(error) { console.error(error); });

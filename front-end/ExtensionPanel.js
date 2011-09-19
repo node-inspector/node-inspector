@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 Google Inc. All rights reserved.
+ * Copyright (C) 2011 Google Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -31,7 +31,8 @@
 WebInspector.ExtensionPanel = function(id, label, iconURL, options)
 {
     this.toolbarItemLabel = label;
-    this._addStyleRule(".toolbar-item." + id + " .toolbar-icon", "background-image: url(" + iconURL + ");");
+    if (iconURL)
+        this._addStyleRule(".toolbar-item." + id + " .toolbar-icon", "background-image: url(" + iconURL + ");");
     WebInspector.Panel.call(this, id);
 }
 
@@ -39,12 +40,6 @@ WebInspector.ExtensionPanel.prototype = {
     get defaultFocusedElement()
     {
         return this.sidebarTreeElement || this.element;
-    },
-
-    updateMainViewWidth: function(width)
-    {
-        this.bodyElement.style.left = width + "px";
-        this.resize();
     },
 
     searchCanceled: function(startingNewSearch)
@@ -81,13 +76,13 @@ WebInspector.ExtensionPanel.prototype = {
 
 WebInspector.ExtensionPanel.prototype.__proto__ = WebInspector.Panel.prototype;
 
-WebInspector.ExtensionWatchSidebarPane = function(title, id)
+WebInspector.ExtensionSidebarPane = function(title, id)
 {
     WebInspector.SidebarPane.call(this, title);
     this._id = id;
 }
 
-WebInspector.ExtensionWatchSidebarPane.prototype = {
+WebInspector.ExtensionSidebarPane.prototype = {
     setObject: function(object, title)
     {
         this._setObject(WebInspector.RemoteObject.fromLocalObject(object), title);
@@ -95,24 +90,34 @@ WebInspector.ExtensionWatchSidebarPane.prototype = {
 
     setExpression: function(expression, title)
     {
-        InjectedScriptAccess.getDefault().evaluate(expression, this._onEvaluate.bind(this, title));
+        RuntimeAgent.evaluate(expression, "extension-watch", true, this._onEvaluate.bind(this, title));
     },
 
-    _onEvaluate: function(title, result)
+    setPage: function(url)
     {
-        this._setObject(WebInspector.RemoteObject.fromPayload(result), title);
+        this.bodyElement.removeChildren();
+        WebInspector.extensionServer.createClientIframe(this.bodyElement, url);
+        // TODO: Consider doing this upon load event.
+        WebInspector.extensionServer.notifyExtensionSidebarUpdated(this._id);
+    },
+
+    _onEvaluate: function(title, error, result, wasThrown)
+    {
+        if (!error)
+            this._setObject(WebInspector.RemoteObject.fromPayload(result), title);
     },
 
     _setObject: function(object, title)
     {
         this.bodyElement.removeChildren();
-        var section = new WebInspector.ObjectPropertiesSection(object, title, null, true);
+        var section = new WebInspector.ObjectPropertiesSection(object, title);
         if (!title)
             section.headerElement.addStyleClass("hidden");
         section.expanded = true;
+        section.editable = false;
         this.bodyElement.appendChild(section.element);
-        WebInspector.extensionServer.notifyExtensionWatchSidebarUpdated(this._id);
+        WebInspector.extensionServer.notifyExtensionSidebarUpdated(this._id);
     }
 }
 
-WebInspector.ExtensionWatchSidebarPane.prototype.__proto__ = WebInspector.SidebarPane.prototype;
+WebInspector.ExtensionSidebarPane.prototype.__proto__ = WebInspector.SidebarPane.prototype;

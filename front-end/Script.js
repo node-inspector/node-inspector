@@ -23,53 +23,46 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-WebInspector.Script = function(sourceID, sourceURL, source, startingLine, errorLine, errorMessage, worldType)
+/**
+ * @constructor
+ */
+WebInspector.Script = function(scriptId, sourceURL, startLine, startColumn, endLine, endColumn, errorLine, errorMessage, isContentScript)
 {
-    this.sourceID = sourceID;
+    this.scriptId = scriptId;
     this.sourceURL = sourceURL;
-    this.source = source;
-    this.startingLine = startingLine;
+    this.lineOffset = startLine;
+    this.columnOffset = startColumn;
+    this.endLine = endLine;
+    this.endColumn = endColumn;
     this.errorLine = errorLine;
     this.errorMessage = errorMessage;
-    this.worldType = worldType;
-
-    // if no URL, look for "//@ sourceURL=" decorator
-    // note that this sourceURL comment decorator is behavior that FireBug added
-    // in it's 1.1 release as noted in the release notes:
-    // http://fbug.googlecode.com/svn/branches/firebug1.1/docs/ReleaseNotes_1.1.txt
-    if (!sourceURL) {
-        // use of [ \t] rather than \s is to prevent \n from matching
-        var pattern = /^\s*\/\/[ \t]*@[ \t]*sourceURL[ \t]*=[ \t]*(\S+).*$/m;
-        var match = pattern.exec(source);
-
-        if (match)
-            this.sourceURL = match[1];
-    }
-}
-
-WebInspector.Script.WorldType = {
-    MAIN_WORLD: 0,
-    EXTENSIONS_WORLD: 1
-}
-
-WebInspector.Script.WorldType = {
-    MAIN_WORLD: 0,
-    EXTENSIONS_WORLD: 1
+    this.isContentScript = isContentScript;
 }
 
 WebInspector.Script.prototype = {
-    get linesCount()
+    requestSource: function(callback)
     {
-        if (!this.source)
-            return 0;
-        if (this._linesCount)
-            return this._linesCount;
-        this._linesCount = 0;
-        var lastIndex = this.source.indexOf("\n");
-        while (lastIndex !== -1) {
-            lastIndex = this.source.indexOf("\n", lastIndex + 1)
-            this._linesCount++;
+        if (this._source) {
+            callback(this._source);
+            return;
         }
-        return this._linesCount;
+
+        function didGetScriptSource(error, source)
+        {
+            this._source = source;
+            callback(this._source);
+        }
+        DebuggerAgent.getScriptSource(this.scriptId, didGetScriptSource.bind(this));
+    },
+
+    editSource: function(newSource, callback)
+    {
+        function didEditScriptSource(error, callFrames)
+        {
+            if (!error)
+                this._source = newSource;
+            callback(error, callFrames);
+        }
+        DebuggerAgent.setScriptSource(this.scriptId, newSource, undefined, didEditScriptSource.bind(this));
     }
 }

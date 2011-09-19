@@ -26,6 +26,9 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @constructor
+ */
 WebInspector.Database = function(id, domain, name, version)
 {
     this._id = id;
@@ -33,9 +36,6 @@ WebInspector.Database = function(id, domain, name, version)
     this._name = name;
     this._version = version;
 }
-
-WebInspector.Database.successCallbacks = {};
-WebInspector.Database.errorCallbacks = {};
 
 WebInspector.Database.prototype = {
     get id()
@@ -80,42 +80,74 @@ WebInspector.Database.prototype = {
 
     getTableNames: function(callback)
     {
-        function sortingCallback(names)
+        function sortingCallback(error, names)
         {
-            callback(names.sort());
+            if (!error)
+                callback(names.sort());
         }
-        InspectorBackend.getDatabaseTableNames(this._id, sortingCallback);
+        DatabaseAgent.getDatabaseTableNames(this._id, sortingCallback);
     },
-    
+
     executeSql: function(query, onSuccess, onError)
     {
-        function callback(success, transactionId)
+        function callback(error, success, transactionId)
         {
+            if (error) {
+                onError(error);
+                return;
+            }
             if (!success) {
                 onError(WebInspector.UIString("Database not found."));
                 return;
             }
-            WebInspector.Database.successCallbacks[transactionId] = onSuccess;
-            WebInspector.Database.errorCallbacks[transactionId] = onError;
+            WebInspector.DatabaseDispatcher._callbacks[transactionId] = {"onSuccess": onSuccess, "onError": onError};
         }
-        InspectorBackend.executeSQL(this._id, query, callback);
+        DatabaseAgent.executeSQL(this._id, query, callback);
     }
 }
 
-WebInspector.sqlTransactionSucceeded = function(transactionId, columnNames, values)
+/**
+ * @constructor
+ * @implements {DatabaseAgent.Dispatcher}
+ */
+WebInspector.DatabaseDispatcher = function()
 {
-    var callback = WebInspector.Database.successCallbacks[transactionId];
-    if (!callback)
-        return;
-    delete WebInspector.Database.successCallbacks[transactionId];
-    callback(columnNames, values);
 }
 
-WebInspector.sqlTransactionFailed = function(transactionId, errorObj)
-{
-    var callback = WebInspector.Database.errorCallbacks[transactionId];
-    if (!callback)
-        return;
-    delete WebInspector.Database.errorCallbacks[transactionId];
-    callback(errorObj);
+WebInspector.DatabaseDispatcher._callbacks = {};
+
+WebInspector.DatabaseDispatcher.prototype = {
+    addDatabase: function(payload)
+    {
+        var database = new WebInspector.Database(
+            payload.id,
+            payload.domain,
+            payload.name,
+            payload.version);
+        WebInspector.panels.resources.addDatabase(database);
+    },
+
+    sqlTransactionSucceeded: function(transactionId, columnNames, values)
+    {
+        if (!WebInspector.DatabaseDispatcher._callbacks[transactionId])
+            return;
+
+        var callback = WebInspector.DatabaseDispatcher._callbacks[transactionId].onSuccess;
+        delete WebInspector.DatabaseDispatcher._callbacks[transactionId];
+        if (callback)
+            callback(columnNames, values);
+    },
+
+    sqlTransactionFailed: function(transactionId, errorObj)
+    {
+        if (!WebInspector.DatabaseDispatcher._callbacks[transactionId])
+            return;
+
+        var callback = WebInspector.DatabaseDispatcher._callbacks[transactionId].onError;
+        delete WebInspector.DatabaseDispatcher._callbacks[transactionId];
+        if (callback)
+             callback(errorObj);
+    }
 }
+
+InspectorBackend.registerDatabaseDispatcher(new WebInspector.DatabaseDispatcher());

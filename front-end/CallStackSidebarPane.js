@@ -23,19 +23,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-WebInspector.CallStackSidebarPane = function()
+WebInspector.CallStackSidebarPane = function(model)
 {
     WebInspector.SidebarPane.call(this, WebInspector.UIString("Call Stack"));
-    WebInspector.breakpointManager.addEventListener("breakpoint-hit", this._breakpointHit, this);
+    this._model = model;
+
+    this.bodyElement.addEventListener("contextmenu", this._contextMenu.bind(this), true);
 }
 
 WebInspector.CallStackSidebarPane.prototype = {
-    update: function(callFrames, sourceIDMap)
+    update: function(callFrames, details)
     {
         this.bodyElement.removeChildren();
 
         this.placards = [];
-        delete this._selectedCallFrame;
 
         if (!callFrames) {
             var infoElement = document.createElement("div");
@@ -45,71 +46,40 @@ WebInspector.CallStackSidebarPane.prototype = {
             return;
         }
 
-        var title;
-        var subtitle;
-        var scriptOrResource;
-
         for (var i = 0; i < callFrames.length; ++i) {
             var callFrame = callFrames[i];
-            switch (callFrame.type) {
-            case "function":
-                title = callFrame.functionName || WebInspector.UIString("(anonymous function)");
-                break;
-            case "program":
-                title = WebInspector.UIString("(program)");
-                break;
-            }
+            var title = callFrame.functionName || WebInspector.UIString("(anonymous function)");
 
-            scriptOrResource = sourceIDMap[callFrame.sourceID];
-            if (scriptOrResource)
-                subtitle = WebInspector.displayNameForURL(scriptOrResource.sourceURL || scriptOrResource.url);
+            var subtitle;
+            if (!callFrame.isInternalScript)
+                subtitle = WebInspector.displayNameForURL(callFrame.url);
             else
                 subtitle = WebInspector.UIString("(internal script)");
 
-            if (callFrame.line > 0) {
-                if (subtitle)
-                    subtitle += ":" + callFrame.line;
-                else
-                    subtitle = WebInspector.UIString("line %d", callFrame.line);
-            }
-
             var placard = new WebInspector.Placard(title, subtitle);
             placard.callFrame = callFrame;
+            placard.element.addEventListener("click", this._placardSelected.bind(this, placard), false);
 
-            placard.element.addEventListener("click", this._placardSelected.bind(this), false);
+            function didGetSourceLine(placard, uiSourceCode, lineNumber)
+            {
+                if (placard.subtitle)
+                    placard.subtitle += ":" + (lineNumber + 1);
+                else
+                    placard.subtitle = WebInspector.UIString("line %d", lineNumber + 1);
+                placard._text = WebInspector.UIString("%s() at %s", placard.title, placard.subtitle);
+            }
+            callFrame.sourceLine(didGetSourceLine.bind(this, placard));
 
             this.placards.push(placard);
             this.bodyElement.appendChild(placard.element);
         }
     },
 
-    get selectedCallFrame()
-    {
-        return this._selectedCallFrame;
-    },
-
     set selectedCallFrame(x)
     {
-        if (this._selectedCallFrame === x)
-            return;
-
-        this._selectedCallFrame = x;
-
         for (var i = 0; i < this.placards.length; ++i) {
             var placard = this.placards[i];
-            placard.selected = (placard.callFrame === this._selectedCallFrame);
-        }
-
-        this.dispatchEventToListeners("call frame selected");
-    },
-
-    handleShortcut: function(event)
-    {
-        var shortcut = WebInspector.KeyboardShortcut.makeKeyFromEvent(event);
-        var handler = this._shortcuts[shortcut];
-        if (handler) {
-            handler(event);
-            event.handled = true;
+            placard.selected = (placard.callFrame === x);
         }
     },
 
@@ -133,52 +103,66 @@ WebInspector.CallStackSidebarPane.prototype = {
     {
         if (index < 0 || index >= this.placards.length)
             return;
-        var placard = this.placards[index];
-        this.selectedCallFrame = placard.callFrame
+        this._placardSelected(this.placards[index])
     },
 
     _selectedCallFrameIndex: function()
     {
-        if (!this._selectedCallFrame)
+        if (!this._model.selectedCallFrame)
             return -1;
         for (var i = 0; i < this.placards.length; ++i) {
             var placard = this.placards[i];
-            if (placard.callFrame === this._selectedCallFrame)
+            if (placard.callFrame === this._model.selectedCallFrame)
                 return i;
         }
         return -1;
     },
 
-    _placardSelected: function(event)
+    _placardSelected: function(placard, event)
     {
-        var placardElement = event.target.enclosingNodeOrSelfWithClass("placard");
-        this.selectedCallFrame = placardElement.placard.callFrame;
+        this._model.selectedCallFrame = placard.callFrame;
     },
 
-    registerShortcuts: function(section)
+    _contextMenu: function(event)
     {
-        this._shortcuts = {};
+        if (!this.placards.length)
+            return;
 
+        var contextMenu = new WebInspector.ContextMenu();
+        contextMenu.appendItem(WebInspector.UIString("Copy Stack Trace"), this._copyStackTrace.bind(this));
+        contextMenu.show(event);
+    },
+
+    _copyStackTrace: function()
+    {
+        var text = "";
+        for (var i = 0; i < this.placards.length; ++i)
+            text += this.placards[i]._text;
+        InspectorFrontendHost.copyText(text);
+    },
+
+    registerShortcuts: function(section, registerShortcutDelegate)
+    {
         var nextCallFrame = WebInspector.KeyboardShortcut.makeDescriptor(WebInspector.KeyboardShortcut.Keys.Period,
             WebInspector.KeyboardShortcut.Modifiers.Ctrl);
-        this._shortcuts[nextCallFrame.key] = this._selectNextCallFrameOnStack.bind(this);
+        registerShortcutDelegate(nextCallFrame.key, this._selectNextCallFrameOnStack.bind(this));
 
         var prevCallFrame = WebInspector.KeyboardShortcut.makeDescriptor(WebInspector.KeyboardShortcut.Keys.Comma,
             WebInspector.KeyboardShortcut.Modifiers.Ctrl);
-        this._shortcuts[prevCallFrame.key] = this._selectPreviousCallFrameOnStack.bind(this);
+        registerShortcutDelegate(prevCallFrame.key, this._selectPreviousCallFrameOnStack.bind(this));
 
         section.addRelatedKeys([ nextCallFrame.name, prevCallFrame.name ], WebInspector.UIString("Next/previous call frame"));
     },
 
-    _breakpointHit:  function(event)
+    setStatus: function(status)
     {
-        var breakpoint = event.data.breakpoint;
-        if (breakpoint.populateStatusMessageElement) {
-            var statusMessageElement = document.createElement("div");
-            statusMessageElement.className = "info";
-            breakpoint.populateStatusMessageElement(statusMessageElement, event.data.eventData);
-            this.bodyElement.appendChild(statusMessageElement);
-        }
+        var statusMessageElement = document.createElement("div");
+        statusMessageElement.className = "info";
+        if (typeof status === "string")
+            statusMessageElement.textContent = status;
+        else
+            statusMessageElement.appendChild(status);
+        this.bodyElement.appendChild(statusMessageElement);
     }
 }
 

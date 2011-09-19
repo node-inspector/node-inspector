@@ -63,12 +63,6 @@ WebInspector.AuditRules.getDomainToResourcesMap = function(resources, types, nee
     return domainToResourcesMap;
 }
 
-WebInspector.AuditRules.evaluateInTargetWindow = function(func, args, callback)
-{
-    InjectedScriptAccess.getDefault().evaluateOnSelf(func.toString(), args, callback);
-}
-
-
 WebInspector.AuditRules.GzipRule = function()
 {
     WebInspector.AuditRule.call(this, "network-gzip", "Enable gzip compression");
@@ -83,6 +77,8 @@ WebInspector.AuditRules.GzipRule.prototype = {
         var summary = result.addChild("", true);
         for (var i = 0, length = resources.length; i < length; ++i) {
             var resource = resources[i];
+            if (resource.statusCode === 304)
+                continue; // Do not test 304 Not Modified resources as their contents are always empty.
             if (this._shouldCompress(resource)) {
                 var size = resource.resourceSize;
                 candidateSize += size;
@@ -92,20 +88,23 @@ WebInspector.AuditRules.GzipRule.prototype = {
                 }
                 var savings = 2 * size / 3;
                 totalSavings += savings;
-                summary.addChild(String.sprintf("%s could save ~%s", WebInspector.AuditRuleResult.linkifyDisplayName(resource.url), Number.bytesToString(savings, WebInspector.UIString)));
+                summary.addChild(String.sprintf("%s could save ~%s", WebInspector.AuditRuleResult.linkifyDisplayName(resource.url), Number.bytesToString(savings)));
                 result.violationCount++;
             }
         }
         if (!totalSavings)
             return callback(null);
-        summary.value = String.sprintf("Compressing the following resources with gzip could reduce their transfer size by about two thirds (~%s):", Number.bytesToString(totalSavings, WebInspector.UIString));
+        summary.value = String.sprintf("Compressing the following resources with gzip could reduce their transfer size by about two thirds (~%s):", Number.bytesToString(totalSavings));
         callback(result);
     },
 
     _isCompressed: function(resource)
     {
-        var encoding = resource.responseHeaders["Content-Encoding"];
-        return encoding === "gzip" || encoding === "deflate";
+        var encodingHeader = resource.responseHeaders["Content-Encoding"];
+        if (!encodingHeader)
+            return false;
+
+        return /\b(?:gzip|deflate)\b/.test(encodingHeader);
     },
 
     _shouldCompress: function(resource)
@@ -311,7 +310,7 @@ WebInspector.AuditRules.UnusedCssRule.prototype = {
                     for (var curRule = 0; curRule < styleSheet.rules.length; ++curRule) {
                         var rule = styleSheet.rules[curRule];
                         // Exact computation whenever source ranges are available.
-                        var textLength = (rule.selectorRange && rule.style.properties.endOffset) ? rule.style.properties.endOffset - rule.selectorRange.start + 1 : 0;
+                        var textLength = (rule.selectorRange && rule.style.range && rule.style.range.end) ? rule.style.range.end - rule.selectorRange.start + 1 : 0;
                         if (!textLength && rule.style.cssText)
                             textLength = rule.style.cssText.length + rule.selectorText.length;
                         stylesheetSize += textLength;
@@ -326,7 +325,7 @@ WebInspector.AuditRules.UnusedCssRule.prototype = {
                     if (!unusedRules.length)
                         continue;
 
-                    var resource = WebInspector.resourceManager.resourceForURL(styleSheet.sourceURL);
+                    var resource = WebInspector.resourceForURL(styleSheet.sourceURL);
                     var isInlineBlock = resource && resource.type == WebInspector.Resource.Type.Document;
                     var url = !isInlineBlock ? WebInspector.AuditRuleResult.linkifyDisplayName(styleSheet.sourceURL) : String.sprintf("Inline block #%d", ++inlineBlockOrdinal);
                     var pctUnused = Math.round(100 * unusedStylesheetSize / stylesheetSize);
@@ -349,41 +348,45 @@ WebInspector.AuditRules.UnusedCssRule.prototype = {
                 callback(result);
             }
 
-            function routine(selectorArray)
+            var foundSelectors = {};
+            function queryCallback(boundSelectorsCallback, selector, styleSheets, testedSelectors, nodeId)
             {
-                var result = {};
-                for (var i = 0; i < selectorArray.length; ++i) {
-                    try {
-                        if (document.querySelector(selectorArray[i]))
-                            result[selectorArray[i]] = true;
-                    } catch(e) {
-                        // Ignore and mark as unused.
-                    }
-                }
-                return result;
+                if (nodeId)
+                    foundSelectors[selector] = true;
+                if (boundSelectorsCallback)
+                    boundSelectorsCallback(foundSelectors);
             }
 
-            WebInspector.AuditRules.evaluateInTargetWindow(routine, [selectors], selectorsCallback.bind(null, callback, styleSheets, testedSelectors));
+            function documentLoaded(selectors, document) {
+                for (var i = 0; i < selectors.length; ++i)
+                    WebInspector.domAgent.querySelector(document.id, selectors[i], queryCallback.bind(null, i === selectors.length - 1 ? selectorsCallback.bind(null, callback, styleSheets, testedSelectors) : null, selectors[i], styleSheets, testedSelectors));
+            }
+
+            WebInspector.domAgent.requestDocument(documentLoaded.bind(null, selectors));
         }
 
-        function styleSheetCallback(styleSheets, continuation, styleSheet)
+        function styleSheetCallback(styleSheets, sourceURL, continuation, styleSheet)
         {
-            if (styleSheet)
+            if (styleSheet) {
+                styleSheet.sourceURL = sourceURL;
                 styleSheets.push(styleSheet);
+            }
             if (continuation)
                 continuation(styleSheets);
         }
 
-        function allStylesCallback(styleSheetIds)
+        function allStylesCallback(error, styleSheetInfos)
         {
-            if (!styleSheetIds || !styleSheetIds.length)
+            if (error || !styleSheetInfos || !styleSheetInfos.length)
                 return evalCallback([]);
             var styleSheets = [];
-            for (var i = 0; i < styleSheetIds.length; ++i)
-                WebInspector.CSSStyleSheet.createForId(styleSheetIds[i], styleSheetCallback.bind(null, styleSheets, i == styleSheetIds.length - 1 ? evalCallback : null));
+            for (var i = 0; i < styleSheetInfos.length; ++i) {
+                var info = styleSheetInfos[i];
+                WebInspector.CSSStyleSheet.createForId(info.styleSheetId, styleSheetCallback.bind(null, styleSheets, info.sourceURL, i == styleSheetInfos.length - 1 ? evalCallback : null));
+            }
         }
 
-        InspectorBackend.getAllStyles2(allStylesCallback);
+        CSSAgent.getAllStyleSheets(allStylesCallback);
     }
 }
 
@@ -639,24 +642,23 @@ WebInspector.AuditRules.ImageDimensionsRule = function()
 WebInspector.AuditRules.ImageDimensionsRule.prototype = {
     doRun: function(resources, result, callback)
     {
-        function doneCallback(context)
+        var urlToNoDimensionCount = {};
+
+        function doneCallback()
         {
-            var map = context.urlToNoDimensionCount;
-            for (var url in map) {
+            for (var url in urlToNoDimensionCount) {
                 var entry = entry || result.addChild("A width and height should be specified for all images in order to speed up page display. The following image(s) are missing a width and/or height:", true);
                 var value = WebInspector.AuditRuleResult.linkifyDisplayName(url);
-                if (map[url] > 1)
-                    value += String.sprintf(" (%d uses)", map[url]);
+                if (urlToNoDimensionCount[url] > 1)
+                    value += String.sprintf(" (%d uses)", urlToNoDimensionCount[url]);
                 entry.addChild(value);
                 result.violationCount++;
             }
             callback(entry ? result : null);
         }
 
-        function imageStylesReady(imageId, context, styles)
+        function imageStylesReady(imageId, lastCall, styles)
         {
-            --context.imagesLeft;
-
             const node = WebInspector.domAgent.nodeForId(imageId);
             var src = node.getAttribute("src");
             if (!src.asParsedURL()) {
@@ -672,13 +674,21 @@ WebInspector.AuditRules.ImageDimensionsRule.prototype = {
 
             const computedStyle = styles.computedStyle;
             if (computedStyle.getPropertyValue("position") === "absolute") {
-                if (!context.imagesLeft)
-                    doneCallback(context);
+                if (lastCall)
+                    doneCallback();
                 return;
             }
 
             var widthFound = "width" in styles.styleAttributes;
             var heightFound = "height" in styles.styleAttributes;
+
+            var inlineStyle = styles.inlineStyle;
+            if (inlineStyle) {
+                if (inlineStyle.getPropertyValue("width") !== "")
+                    widthFound = true;
+                if (inlineStyle.getPropertyValue("height") !== "")
+                    heightFound = true;
+            }
 
             for (var i = styles.matchedCSSRules.length - 1; i >= 0 && !(widthFound && heightFound); --i) {
                 var style = styles.matchedCSSRules[i].style;
@@ -687,41 +697,30 @@ WebInspector.AuditRules.ImageDimensionsRule.prototype = {
                 if (style.getPropertyValue("height") !== "")
                     heightFound = true;
             }
-            
+
             if (!widthFound || !heightFound) {
-                if (src in context.urlToNoDimensionCount)
-                    ++context.urlToNoDimensionCount[src];
+                if (src in urlToNoDimensionCount)
+                    ++urlToNoDimensionCount[src];
                 else
-                    context.urlToNoDimensionCount[src] = 1;
+                    urlToNoDimensionCount[src] = 1;
             }
 
-            if (!context.imagesLeft)
-                doneCallback(context);
+            if (lastCall)
+                doneCallback();
         }
 
-        function receivedImages(imageIds)
+        function getStyles(nodeIds)
         {
-            if (!imageIds || !imageIds.length)
-                return callback(null);
-            var context = {imagesLeft: imageIds.length, urlToNoDimensionCount: {}};
-            for (var i = imageIds.length - 1; i >= 0; --i)
-                WebInspector.cssModel.getStylesAsync(imageIds[i], imageStylesReady.bind(this, imageIds[i], context));
+            for (var i = 0; nodeIds && i < nodeIds.length; ++i)
+                WebInspector.cssModel.getStylesAsync(nodeIds[i], undefined, imageStylesReady.bind(this, nodeIds[i], i === nodeIds.length - 1));
         }
 
-        function pushImageNodes()
+        function onDocumentAvailable(root)
         {
-            const nodeIds = [];
-            var nodes = document.getElementsByTagName("img");
-            for (var i = 0; i < nodes.length; ++i) {
-                if (!nodes[i].src)
-                    continue;
-                var nodeId = this.getNodeId(nodes[i]);
-                nodeIds.push(nodeId);
-            }
-            return nodeIds;
+            WebInspector.domAgent.querySelectorAll(root.id, "img[src]", getStyles);
         }
 
-        WebInspector.AuditRules.evaluateInTargetWindow(pushImageNodes, null, receivedImages);
+        WebInspector.domAgent.requestDocument(onDocumentAvailable);
     }
 }
 
@@ -758,46 +757,39 @@ WebInspector.AuditRules.CssInHeadRule.prototype = {
             callback(result);
         }
 
-        function routine()
+        function externalStylesheetsReceived(root, inlineStyleNodeIds, nodeIds)
         {
-            function allViews() {
-                var views = [document.defaultView];
-                var curView = 0;
-                while (curView < views.length) {
-                    var view = views[curView];
-                    var frames = view.frames;
-                    for (var i = 0; i < frames.length; ++i) {
-                        if (frames[i] !== view)
-                            views.push(frames[i]);
-                    }
-                    ++curView;
+            if (!nodeIds)
+                return;
+            var externalStylesheetNodeIds = nodeIds;
+            var result = null;
+            if (inlineStyleNodeIds.length || externalStylesheetNodeIds.length) {
+                var urlToViolationsArray = {};
+                var externalStylesheetHrefs = [];
+                for (var j = 0; j < externalStylesheetNodeIds.length; ++j) {
+                    var linkNode = WebInspector.domAgent.nodeForId(externalStylesheetNodeIds[j]);
+                    var completeHref = WebInspector.completeURL(linkNode.ownerDocument.documentURL, linkNode.getAttribute("href"));
+                    externalStylesheetHrefs.push(completeHref || "<empty>");
                 }
-                return views;
+                urlToViolationsArray[root.documentURL] = [inlineStyleNodeIds.length, externalStylesheetHrefs];
+                result = urlToViolationsArray;
             }
-
-            var views = allViews();
-            var urlToViolationsArray = {};
-            var found = false;
-            for (var i = 0; i < views.length; ++i) {
-                var view = views[i];
-                if (!view.document)
-                    continue;
-
-                var inlineStyles = view.document.querySelectorAll("body style");
-                var inlineStylesheets = view.document.querySelectorAll("body link[rel~='stylesheet'][href]");
-                if (!inlineStyles.length && !inlineStylesheets.length)
-                    continue;
-
-                found = true;
-                var inlineStylesheetHrefs = [];
-                for (var j = 0; j < inlineStylesheets.length; ++j)
-                    inlineStylesheetHrefs.push(inlineStylesheets[j].href);
-                urlToViolationsArray[view.location.href] = [inlineStyles.length, inlineStylesheetHrefs];
-            }
-            return found ? urlToViolationsArray : null;
+            evalCallback(result);
         }
 
-        WebInspector.AuditRules.evaluateInTargetWindow(routine, null, evalCallback);
+        function inlineStylesReceived(root, nodeIds)
+        {
+            if (!nodeIds)
+                return;
+            WebInspector.domAgent.querySelectorAll(root.id, "body link[rel~='stylesheet'][href]", externalStylesheetsReceived.bind(null, root, nodeIds));
+        }
+
+        function onDocumentAvailable(root)
+        {
+            WebInspector.domAgent.querySelectorAll(root.id, "body style", inlineStylesReceived.bind(null, root));
+        }
+
+        WebInspector.domAgent.requestDocument(onDocumentAvailable);
     }
 }
 
@@ -831,20 +823,40 @@ WebInspector.AuditRules.StylesScriptsOrderRule.prototype = {
             callback(result);
         }
 
-        function routine()
+        function cssBeforeInlineReceived(lateStyleIds, nodeIds)
         {
-            var lateStyles = document.querySelectorAll("head script[src] ~ link[rel~='stylesheet'][href]");
-            var cssBeforeInlineCount = document.querySelectorAll("head link[rel~='stylesheet'][href] ~ script:not([src])").length;
-            if (!lateStyles.length && !cssBeforeInlineCount)
-                return null;
+            if (!nodeIds)
+                return;
 
-            var lateStyleUrls = [];
-            for (var i = 0; i < lateStyles.length; ++i)
-                lateStyleUrls.push(lateStyles[i].href);
-            return [ lateStyleUrls, cssBeforeInlineCount ];
+            var cssBeforeInlineCount = nodeIds.length;
+            var result = null;
+            if (lateStyleIds.length || cssBeforeInlineCount) {
+                var lateStyleUrls = [];
+                for (var i = 0; i < lateStyleIds.length; ++i) {
+                    var lateStyleNode = WebInspector.domAgent.nodeForId(lateStyleIds[i]);
+                    var completeHref = WebInspector.completeURL(lateStyleNode.ownerDocument.documentURL, lateStyleNode.getAttribute("href"));
+                    lateStyleUrls.push(completeHref || "<empty>");
+                }
+                result = [ lateStyleUrls, cssBeforeInlineCount ];
+            }
+
+            evalCallback(result);
         }
 
-        WebInspector.AuditRules.evaluateInTargetWindow(routine, null, evalCallback.bind(this));
+        function lateStylesReceived(root, nodeIds)
+        {
+            if (!nodeIds)
+                return;
+
+            WebInspector.domAgent.querySelectorAll(root.id, "head link[rel~='stylesheet'][href] ~ script:not([src])", cssBeforeInlineReceived.bind(null, nodeIds));
+        }
+
+        function onDocumentAvailable(root)
+        {
+            WebInspector.domAgent.querySelectorAll(root.id, "head script[src] ~ link[rel~='stylesheet'][href]", lateStylesReceived.bind(null, root));
+        }
+
+        WebInspector.domAgent.requestDocument(onDocumentAvailable);
     }
 }
 
@@ -966,7 +978,7 @@ WebInspector.AuditRules.CookieSizeRule.prototype = {
         for (var i = 0, len = sortedCookieSizes.length; i < len; ++i) {
             var maxCookieSize = sortedCookieSizes[i].maxCookieSize;
             if (maxCookieSize > this._maxBytesThreshold)
-                hugeCookieDomains.push(WebInspector.AuditRuleResult.resourceDomain(sortedCookieSizes[i].domain) + ": " + Number.bytesToString(maxCookieSize, WebInspector.UIString));
+                hugeCookieDomains.push(WebInspector.AuditRuleResult.resourceDomain(sortedCookieSizes[i].domain) + ": " + Number.bytesToString(maxCookieSize));
         }
 
         var bigAvgCookieDomains = [];
@@ -975,9 +987,9 @@ WebInspector.AuditRules.CookieSizeRule.prototype = {
             var domain = sortedCookieSizes[i].domain;
             var avgCookieSize = sortedCookieSizes[i].avgCookieSize;
             if (avgCookieSize > this._avgBytesThreshold && avgCookieSize < this._maxBytesThreshold)
-                bigAvgCookieDomains.push(WebInspector.AuditRuleResult.resourceDomain(domain) + ": " + Number.bytesToString(avgCookieSize, WebInspector.UIString));
+                bigAvgCookieDomains.push(WebInspector.AuditRuleResult.resourceDomain(domain) + ": " + Number.bytesToString(avgCookieSize));
         }
-        result.addChild(String.sprintf("The average cookie size for all requests on this page is %s", Number.bytesToString(avgAllCookiesSize, WebInspector.UIString)));
+        result.addChild(String.sprintf("The average cookie size for all requests on this page is %s", Number.bytesToString(avgAllCookiesSize)));
 
         var message;
         if (hugeCookieDomains.length) {
@@ -1027,7 +1039,7 @@ WebInspector.AuditRules.StaticCookielessRule.prototype = {
         if (badUrls.length < this._minResources)
             return;
 
-        var entry = result.addChild(String.sprintf("%s of cookies were sent with the following static resources. Serve these static resources from a domain that does not set cookies:", Number.bytesToString(cookieBytes, WebInspector.UIString)), true);
+        var entry = result.addChild(String.sprintf("%s of cookies were sent with the following static resources. Serve these static resources from a domain that does not set cookies:", Number.bytesToString(cookieBytes)), true);
         entry.addURLs(badUrls);
         result.violationCount = badUrls.length;
     },

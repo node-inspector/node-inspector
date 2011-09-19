@@ -66,7 +66,7 @@ WebInspector.AuditFormatters = {
     snippet: function(snippetText)
     {
         var div = document.createElement("div");
-        div.innerText = snippetText;
+        div.textContent = snippetText;
         div.className = "source-code";
         return div;
     },
@@ -87,6 +87,19 @@ WebInspector.AuditFormatters = {
         a.textContent = displayText || url;
         if (allowExternalNavigation)
             a.target = "_blank";
+        return a;
+    },
+
+    resourceLink: function(url, line)
+    {
+        var title = url.replace(/.*[\/\\]/, "") + ":" + line;
+        var a = document.createElement("a");
+        a.href = url;
+        a.title = url;
+        a.className = "console-message-url webkit-html-resource-link";
+        a.setAttribute("line_number", line);
+        a.setAttribute("preferred_panel", "scripts");
+        a.textContent = title;
         return a;
     }
 };

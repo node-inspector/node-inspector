@@ -81,20 +81,22 @@ WebInspector.CPUProfileView = function(profile)
     this.profile = profile;
 
     var self = this;
-    function profileCallback(profile)
+    function profileCallback(error, profile)
     {
+        if (error)
+            return;
         self.profile.head = profile.head;
         self._assignParentsInProfile();
-      
+
         self.profileDataGridTree = self.bottomUpProfileDataGridTree;
         self.profileDataGridTree.sort(WebInspector.ProfileDataGridTree.propertyComparator("selfTime", false));
-     
+
         self.refresh();
-     
+
         self._updatePercentButton();
     }
 
-    InspectorBackend.getProfile(this.profile.typeId, this.profile.uid, profileCallback);
+    ProfilerAgent.getProfile(this.profile.typeId, this.profile.uid, profileCallback);
 }
 
 WebInspector.CPUProfileView.prototype = {
@@ -115,8 +117,12 @@ WebInspector.CPUProfileView.prototype = {
 
     get bottomUpProfileDataGridTree()
     {
-        if (!this._bottomUpProfileDataGridTree)
-            this._bottomUpProfileDataGridTree = new WebInspector.BottomUpProfileDataGridTree(this, this.profile.head);
+        if (!this._bottomUpProfileDataGridTree) {
+            if (this.profile.bottomUpHead)
+                this._bottomUpProfileDataGridTree = new WebInspector.TopDownProfileDataGridTree(this, this.profile.bottomUpHead);
+            else
+                this._bottomUpProfileDataGridTree = new WebInspector.BottomUpProfileDataGridTree(this, this.profile.head);
+        }
         return this._bottomUpProfileDataGridTree;
     },
 
@@ -158,19 +164,13 @@ WebInspector.CPUProfileView.prototype = {
         return this._bottomUpTree;
     },
 
-    show: function(parentElement)
-    {
-        WebInspector.View.prototype.show.call(this, parentElement);
-        this.dataGrid.updateWidths();
-    },
-
     hide: function()
     {
         WebInspector.View.prototype.hide.call(this);
         this._currentSearchResultIndex = -1;
     },
 
-    resize: function()
+    onResize: function()
     {
         if (this.dataGrid)
             this.dataGrid.updateWidths();
@@ -407,8 +407,7 @@ WebInspector.CPUProfileView.prototype = {
             return;
 
         var profileNode = searchResult.profileNode;
-        profileNode.reveal();
-        profileNode.select();
+        profileNode.revealAndSelect();
     },
 
     _changeView: function(event)
@@ -580,7 +579,7 @@ WebInspector.CPUProfileType.TypeId = "CPU";
 WebInspector.CPUProfileType.prototype = {
     get buttonTooltip()
     {
-        return WebInspector.UIString("Refresh panel.");
+        return this._recording ? WebInspector.UIString("Stop profiling.") : WebInspector.UIString("Start profiling.");
     },
 
     get buttonStyle()
@@ -593,14 +592,14 @@ WebInspector.CPUProfileType.prototype = {
         this._recording = !this._recording;
 
         if (this._recording)
-            InspectorBackend.startProfiling();
+            ProfilerAgent.start();
         else
-            InspectorBackend.stopProfiling();
+            ProfilerAgent.stop();
     },
 
     get welcomeMessage()
     {
-        return WebInspector.UIString("");
+        return WebInspector.UIString("Control CPU profiling by pressing the %s button on the status bar.");
     },
 
     setRecordingProfile: function(isProfiling)

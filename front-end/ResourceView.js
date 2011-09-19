@@ -42,3 +42,147 @@ WebInspector.ResourceView.prototype = {
 }
 
 WebInspector.ResourceView.prototype.__proto__ = WebInspector.View.prototype;
+
+WebInspector.ResourceView.hasTextContent = function(resource)
+{
+    switch (resource.category) {
+    case WebInspector.resourceCategories.documents:
+    case WebInspector.resourceCategories.scripts:
+    case WebInspector.resourceCategories.xhr:
+    case WebInspector.resourceCategories.stylesheets:
+        return true;
+    case WebInspector.resourceCategories.other:
+        return resource.content && !resource.contentEncoded;
+    default:
+        return false;
+    }
+}
+
+WebInspector.ResourceView.nonSourceViewForResource = function(resource)
+{
+    switch (resource.category) {
+    case WebInspector.resourceCategories.images:
+        return new WebInspector.ImageView(resource);
+    case WebInspector.resourceCategories.fonts:
+        return new WebInspector.FontView(resource);
+    default:
+        return new WebInspector.ResourceView(resource);
+    }
+}
+
+WebInspector.ResourceSourceFrame = function(resource)
+{
+    WebInspector.SourceFrame.call(this, new WebInspector.SourceFrameDelegate(resource), resource.url);
+    this._resource = resource;
+}
+
+//This is a map from resource.type to mime types
+//found in WebInspector.SourceTokenizer.Registry.
+WebInspector.ResourceSourceFrame.DefaultMIMETypeForResourceType = {
+    0: "text/html",
+    1: "text/css",
+    4: "text/javascript"
+}
+
+WebInspector.ResourceSourceFrame.mimeTypeForResource = function(resource) {
+    return WebInspector.ResourceSourceFrame.DefaultMIMETypeForResourceType[resource.type] || resource.mimeType;
+}
+
+WebInspector.ResourceSourceFrame.prototype = {
+    get resource()
+    {
+        return this._resource;
+    },
+
+    requestContent: function(callback)
+    {
+        function contentLoaded(text)
+        {
+            var mimeType = WebInspector.ResourceSourceFrame.mimeTypeForResource(this.resource);
+            callback(mimeType, text);
+        }
+
+        this.resource.requestContent(contentLoaded.bind(this));
+    },
+
+    suggestedFileName: function()
+    {
+        return this.resource.displayName;
+    }
+}
+
+WebInspector.ResourceSourceFrame.prototype.__proto__ = WebInspector.SourceFrame.prototype;
+
+WebInspector.EditableResourceSourceFrame = function(resource)
+{
+    WebInspector.ResourceSourceFrame.call(this, resource);
+}
+
+WebInspector.EditableResourceSourceFrame.prototype = {
+    canEditSource: function()
+    {
+        return this.resource.isEditable() && !this._commitEditingInProgress;
+    },
+
+    editContent: function(newText, callback)
+    {
+        this._clearIncrementalUpdateTimer();
+        var majorChange = true;
+        this.resource.setContent(newText, majorChange, callback);
+    },
+
+    cancelEditing: function()
+    {
+        this._clearIncrementalUpdateTimer();
+        const majorChange = false;
+        if (this._viewerState)
+            this.resource.setContent(this._viewerState.textModelContent, majorChange);
+        WebInspector.SourceFrame.prototype.cancelEditing.call(this);
+    },
+
+    afterTextChanged: function(oldRange, newRange)
+    {
+        function commitIncrementalEdit()
+        {
+            var majorChange = false;
+            this.resource.setContent(this._textModel.text, majorChange, function() {});
+        }
+        const updateTimeout = 200;
+        this._incrementalUpdateTimer = setTimeout(commitIncrementalEdit.bind(this), updateTimeout);
+    },
+
+    _clearIncrementalUpdateTimer: function()
+    {
+        if (this._incrementalUpdateTimer)
+            clearTimeout(this._incrementalUpdateTimer);
+        delete this._incrementalUpdateTimer;
+    },
+}
+
+WebInspector.EditableResourceSourceFrame.prototype.__proto__ = WebInspector.ResourceSourceFrame.prototype;
+
+WebInspector.ResourceRevisionSourceFrame = function(revision)
+{
+    WebInspector.ResourceSourceFrame.call(this, revision.resource);
+    this._revision = revision;
+}
+
+WebInspector.ResourceRevisionSourceFrame.prototype = {
+    get resource()
+    {
+        return this._revision.resource;
+    },
+
+    requestContent: function(callback)
+    {
+        function contentLoaded(text)
+        {
+            var mimeType = WebInspector.ResourceSourceFrame.mimeTypeForResource(this.resource);
+            callback(mimeType, text);
+        }
+
+        this._revision.requestContent(contentLoaded.bind(this));
+    },
+}
+
+WebInspector.ResourceRevisionSourceFrame.prototype.__proto__ = WebInspector.ResourceSourceFrame.prototype;

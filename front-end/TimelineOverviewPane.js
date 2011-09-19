@@ -43,6 +43,8 @@ WebInspector.TimelineOverviewPane = function(categories)
     this._overviewGrid.element.id = "timeline-overview-grid";
     this._overviewGrid.itemsGraphsElement.id = "timeline-overview-timelines";
     this._overviewGrid.element.addEventListener("mousedown", this._dragWindow.bind(this), true);
+    this._overviewGrid.element.addEventListener("mousewheel", this.scrollWindow.bind(this), true);
+    this._overviewGrid.element.addEventListener("dblclick", this._resizeWindowMaximum.bind(this), true);
 
     this._heapGraph = new WebInspector.HeapGraph();
     this._heapGraph.element.id = "timeline-overview-memory";
@@ -87,7 +89,11 @@ WebInspector.TimelineOverviewPane = function(categories)
     this.windowRight = 1.0;
 }
 
-WebInspector.TimelineOverviewPane.minSelectableSize = 12;
+WebInspector.TimelineOverviewPane.MinSelectableSize = 12;
+
+WebInspector.TimelineOverviewPane.WindowScrollSpeedFactor = .3;
+
+WebInspector.TimelineOverviewPane.ResizerOffset = 3.5; // half pixel because offset values are not rounded but ceiled
 
 WebInspector.TimelineOverviewPane.prototype = {
     showTimelines: function(event) {
@@ -134,7 +140,7 @@ WebInspector.TimelineOverviewPane.prototype = {
         this._overviewCalculator.reset();
         this._forAllRecords(records, this._overviewCalculator.updateBoundaries.bind(this._overviewCalculator));
 
-        function markTimeline(record)
+        function markPercentagesForRecord(record)
         {
             if (!(this._showShortEvents || record.isLong()))
                 return;
@@ -145,7 +151,7 @@ WebInspector.TimelineOverviewPane.prototype = {
             for (var j = Math.round(percentages.start); j <= end; ++j)
                 timelines[categoryName][j] = true;
         }
-        this._forAllRecords(records, markTimeline.bind(this));
+        this._forAllRecords(records, markPercentagesForRecord.bind(this));
 
         // Convert sparse arrays to continuous segments, render graphs for each.
         for (var category in this._categories) {
@@ -196,7 +202,8 @@ WebInspector.TimelineOverviewPane.prototype = {
     updateMainViewWidth: function(width, records)
     {
         this._overviewGrid.element.style.left = width + "px";
-        this.statusBarFilters.style.left = Math.max(155, width) + "px";
+        // Min width = <number of buttons on the left> * 31
+        this.statusBarFilters.style.left = Math.max(7 * 31, width) + "px";
     },
 
     reset: function()
@@ -215,7 +222,7 @@ WebInspector.TimelineOverviewPane.prototype = {
 
     _resizeWindow: function(resizeElement, event)
     {
-        WebInspector.elementDragStart(resizeElement, this._windowResizeDragging.bind(this, resizeElement), this._endWindowDragging.bind(this), event, "col-resize");
+        WebInspector.elementDragStart(resizeElement, this._windowResizeDragging.bind(this, resizeElement), this._endWindowDragging.bind(this), event, "ew-resize");
     },
 
     _windowResizeDragging: function(resizeElement, event)
@@ -233,12 +240,12 @@ WebInspector.TimelineOverviewPane.prototype = {
         while (node) {
             if (node === this._overviewGrid._dividersLabelBarElement) {
                 WebInspector.elementDragStart(this._overviewWindowElement, this._windowDragging.bind(this, event.pageX,
-                    this._leftResizeElement.offsetLeft, this._rightResizeElement.offsetLeft), this._endWindowDragging.bind(this), event, "ew-resize");
+                    this._leftResizeElement.offsetLeft + WebInspector.TimelineOverviewPane.ResizerOffset, this._rightResizeElement.offsetLeft + WebInspector.TimelineOverviewPane.ResizerOffset), this._endWindowDragging.bind(this), event, "ew-resize");
                 break;
             } else if (node === this._overviewGrid.element) {
                 var position = event.pageX - this._overviewGrid.element.offsetLeft;
                 this._overviewWindowSelector = new WebInspector.TimelinePanel.WindowSelector(this._overviewGrid.element, position, event);
-                WebInspector.elementDragStart(null, this._windowSelectorDragging.bind(this), this._endWindowSelectorDragging.bind(this), event, "col-resize");
+                WebInspector.elementDragStart(null, this._windowSelectorDragging.bind(this), this._endWindowSelectorDragging.bind(this), event, "ew-resize");
                 break;
             } else if (node === this._leftResizeElement || node === this._rightResizeElement) {
                 this._resizeWindow(node, event);
@@ -259,11 +266,11 @@ WebInspector.TimelineOverviewPane.prototype = {
         WebInspector.elementDragEnd(event);
         var window = this._overviewWindowSelector._close(event.pageX - this._overviewGrid.element.offsetLeft);
         delete this._overviewWindowSelector;
-        if (window.end - window.start < WebInspector.TimelineOverviewPane.minSelectableSize)
-            if (this._overviewGrid.itemsGraphsElement.offsetWidth - window.end > WebInspector.TimelineOverviewPane.minSelectableSize)
-                window.end = window.start + WebInspector.TimelineOverviewPane.minSelectableSize;
+        if (window.end - window.start < WebInspector.TimelineOverviewPane.MinSelectableSize)
+            if (this._overviewGrid.itemsGraphsElement.offsetWidth - window.end > WebInspector.TimelineOverviewPane.MinSelectableSize)
+                window.end = window.start + WebInspector.TimelineOverviewPane.MinSelectableSize;
             else
-                window.start = window.end - WebInspector.TimelineOverviewPane.minSelectableSize;
+                window.start = window.end - WebInspector.TimelineOverviewPane.MinSelectableSize;
         this._setWindowPosition(window.start, window.end);
     },
 
@@ -303,9 +310,14 @@ WebInspector.TimelineOverviewPane.prototype = {
         // Glue to edge.
         if (end > this._overviewGrid.element.clientWidth - 10)
             end = this._overviewGrid.element.clientWidth;
-        else if (end < this._leftResizeElement.offsetLeft + WebInspector.TimelineOverviewPane.minSelectableSize)
-            end = this._leftResizeElement.offsetLeft + WebInspector.TimelineOverviewPane.minSelectableSize;
+        else if (end < this._leftResizeElement.offsetLeft + WebInspector.TimelineOverviewPane.MinSelectableSize)
+            end = this._leftResizeElement.offsetLeft + WebInspector.TimelineOverviewPane.MinSelectableSize;
         this._setWindowPosition(null, end);
+    },
+
+    _resizeWindowMaximum: function()
+    {
+        this._setWindowPosition(0, this._overviewGrid.element.clientWidth);
     },
 
     _setWindowPosition: function(start, end)
@@ -329,6 +341,12 @@ WebInspector.TimelineOverviewPane.prototype = {
     _endWindowDragging: function(event)
     {
         WebInspector.elementDragEnd(event);
+    },
+
+    scrollWindow: function(event)
+    {
+        if (typeof event.wheelDeltaX === "number" && event.wheelDeltaX !== 0)
+            this._windowDragging(event.pageX + Math.round(event.wheelDeltaX * WebInspector.TimelineOverviewPane.WindowScrollSpeedFactor), this._leftResizeElement.offsetLeft + WebInspector.TimelineOverviewPane.ResizerOffset, this._rightResizeElement.offsetLeft + WebInspector.TimelineOverviewPane.ResizerOffset, event);
     },
 
     _createTimelineCategoryStatusBarCheckbox: function(category, onCheckboxClicked)
@@ -398,7 +416,7 @@ WebInspector.TimelineOverviewCalculator.prototype = {
 
     formatValue: function(value)
     {
-        return Number.secondsToString(value, WebInspector.UIString);
+        return Number.secondsToString(value);
     }
 }
 

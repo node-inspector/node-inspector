@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 Google Inc. All rights reserved.
+ * Copyright (C) 2011 Google Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -50,75 +50,36 @@ WebInspector.AuditLauncherView = function(runnerCallback)
     this._headerElement.className = "no-audits";
     this._headerElement.textContent = WebInspector.UIString("No audits to run");
     this._contentElement.appendChild(this._headerElement);
+
+    WebInspector.networkManager.addEventListener(WebInspector.NetworkManager.EventTypes.ResourceStarted, this._onResourceStarted, this);
+    WebInspector.networkManager.addEventListener(WebInspector.NetworkManager.EventTypes.ResourceFinished, this._onResourceFinished, this);
 }
 
 WebInspector.AuditLauncherView.prototype = {
-    updateResourceTrackingState: function(isTracking)
-    {
-        if (!this._auditPresentStateLabelElement)
-            return;
-
-        if (isTracking) {
-            this._auditPresentStateLabelElement.nodeValue = WebInspector.UIString("Audit Present State");
-            this._auditPresentStateElement.disabled = false;
-            this._auditPresentStateElement.parentElement.removeStyleClass("disabled");
-        } else {
-            this._resetResourceCount();
-            this._auditPresentStateLabelElement.nodeValue = WebInspector.UIString("Audit Present State (Resource Tracking must be enabled)");
-            this._auditPresentStateElement.disabled = true;
-            this._auditPresentStateElement.parentElement.addStyleClass("disabled");
-            this.auditReloadedStateElement.checked = true;
-        }
-    },
-
-    get totalResources()
-    {
-        return this._totalResources;
-    },
-
-    set totalResources(x)
-    {
-        if (this._totalResources === x)
-            return;
-        this._totalResources = x;
-        this._updateResourceProgress();
-    },
-
-    get loadedResources()
-    {
-        return this._loadedResources;
-    },
-
-    set loadedResources(x)
-    {
-        if (this._loadedResources === x)
-            return;
-        this._loadedResources = x;
-        this._updateResourceProgress();
-    },
-
     _resetResourceCount: function()
     {
-        this.loadedResources = 0;
-
-        // We never receive a resourceStarted notification for the main resource
-        // (see InspectorController.willSendRequest())
-        this.totalResources = 1;
+        this._loadedResources = 0;
+        this._totalResources = 0;
     },
 
-    resourceStarted: function(resource)
+    _onResourceStarted: function(event)
     {
-        ++this.totalResources;
+        var resource = event.data;
+        // Ignore long-living WebSockets for the sake of progress indicator, as we won't be waiting them anyway.
+        if (resource.type === WebInspector.Resource.Type.WebSocket)
+            return;
+        ++this._totalResources;
+        this._updateResourceProgress();
     },
 
-    resourceFinished: function(resource)
+    _onResourceFinished: function(event)
     {
-        ++this.loadedResources;
-    },
-
-    reset: function()
-    {
-        this._resetResourceCount();
+        var resource = event.data;
+        // See resorceStarted for details.
+        if (resource.type === WebInspector.Resource.Type.WebSocket)
+            return;
+        ++this._loadedResources;
+        this._updateResourceProgress();
     },
 
     addCategory: function(category)
@@ -237,7 +198,7 @@ WebInspector.AuditLauncherView.prototype = {
         this._auditPresentStateElement.name = "audit-mode";
         this._auditPresentStateElement.type = "radio";
         this._auditPresentStateElement.checked = true;
-        this._auditPresentStateLabelElement = document.createTextNode("");
+        this._auditPresentStateLabelElement = document.createTextNode(WebInspector.UIString("Audit Present State"));
         labelElement.appendChild(this._auditPresentStateElement);
         labelElement.appendChild(this._auditPresentStateLabelElement);
         this._buttonContainerElement.appendChild(labelElement);
@@ -267,7 +228,6 @@ WebInspector.AuditLauncherView.prototype = {
         this._contentElement.appendChild(this._buttonContainerElement);
 
         this._selectAllClicked(this._selectAllCheckboxElement.checked);
-        this.updateResourceTrackingState();
         this._updateButton();
         this._updateResourceProgress();
     },
@@ -282,7 +242,7 @@ WebInspector.AuditLauncherView.prototype = {
             this._resourceProgressContainer.addStyleClass("hidden");
         } else
             this._resourceProgressContainer.removeStyleClass("hidden");
-        this._resourceProgressTextElement.textContent = WebInspector.UIString("Loading (%d of %d)", this.loadedResources, this.totalResources);
+        this._resourceProgressTextElement.textContent = WebInspector.UIString("Loading (%d of %d)", this._loadedResources, this._totalResources);
     },
 
     _updateButton: function()

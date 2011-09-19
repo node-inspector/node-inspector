@@ -175,7 +175,7 @@ FakeWorker.prototype = {
         var listeners = this._listeners;
         for (var i = 0; i < listeners.length; ++i) {
             if (listeners[i].originalCallback === callback &&
-                listeners[i].type === type && 
+                listeners[i].type === type &&
                 listeners[i].useCapture === Boolean(useCapture)) {
                 this.channel.port2.removeEventListener(type, listeners[i], useCapture);
                 listeners[i] = listeners[listeners.length - 1];

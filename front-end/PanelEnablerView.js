@@ -83,10 +83,10 @@ WebInspector.PanelEnablerView.prototype = {
     {
         WebInspector.View.prototype.show.call(this, parentElement);
 
-        setTimeout(this.resize.bind(this), 0);
+        setTimeout(this.doResize.bind(this), 0);
     },
 
-    resize: function()
+    onResize: function()
     {
         this.imageElement.removeStyleClass("hidden");
 

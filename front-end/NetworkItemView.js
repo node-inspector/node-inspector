@@ -30,61 +30,122 @@
 
 WebInspector.NetworkItemView = function(resource)
 {
-    WebInspector.View.call(this);
+    WebInspector.TabbedPane.call(this);
 
     this.element.addStyleClass("network-item-view");
 
-    this._headersView = new WebInspector.ResourceHeadersView(resource);
-    // Do not store reference to content view - it can be recreated.
-    var contentView = WebInspector.ResourceManager.resourceViewForResource(resource);
-    this._cookiesView = new WebInspector.ResourceCookiesView(resource);
+    var headersView = new WebInspector.ResourceHeadersView(resource);
+    this.appendTab("headers", WebInspector.UIString("Headers"), headersView);
 
-    this._tabbedPane = new WebInspector.TabbedPane(this.element);
-    this._tabbedPane.appendTab("headers", WebInspector.UIString("Headers"), this._headersView);
-    if (contentView.hasContent()) {
-        // Reusing this view, so hide it at first.
-        contentView.visible = false;
-        this._tabbedPane.appendTab("content", WebInspector.UIString("Content"), contentView);
+    var responseView = new WebInspector.ResourceResponseView(resource);
+    var previewView = new WebInspector.ResourcePreviewView(resource, responseView);
+
+    this.appendTab("preview", WebInspector.UIString("Preview"), previewView);
+    this.appendTab("response", WebInspector.UIString("Response"), responseView);
+
+    if (Preferences.showCookiesTab) {
+        this._cookiesView = new WebInspector.ResourceCookiesView(resource);
+        this.appendTab("cookies", WebInspector.UIString("Cookies"), this._cookiesView);
     }
-    this._tabbedPane.appendTab("cookies", WebInspector.UIString("Cookies"), this._cookiesView);
 
     if (Preferences.showTimingTab) {
         var timingView = new WebInspector.ResourceTimingView(resource);
-        this._tabbedPane.appendTab("timing", WebInspector.UIString("Timing"), timingView);
+        this.appendTab("timing", WebInspector.UIString("Timing"), timingView);
     }
 
-    this._tabbedPane.addEventListener("tab-selected", this._tabSelected, this);
+    this.addEventListener("tab-selected", this._tabSelected, this);
 }
 
 WebInspector.NetworkItemView.prototype = {
     show: function(parentElement)
     {
-        WebInspector.View.prototype.show.call(this, parentElement);
+        WebInspector.TabbedPane.prototype.show.call(this, parentElement);
         this._selectTab();
     },
 
     _selectTab: function(tabId)
     {
         if (!tabId)
-            tabId = WebInspector.settings.resourceViewTab;
+            tabId = WebInspector.settings.resourceViewTab.get();
 
-        if (!this._tabbedPane.selectTab(tabId)) {
+        if (!this.selectTab(tabId)) {
             this._isInFallbackSelection = true;
-            this._tabbedPane.selectTab("headers");
+            this.selectTab("headers");
             delete this._isInFallbackSelection;
         }
     },
 
     _tabSelected: function(event)
     {
-        WebInspector.settings.resourceViewTab = event.data.tabId;
+        if (event.data.isUserGesture)
+            WebInspector.settings.resourceViewTab.set(event.data.tabId);
+        this._installHighlightSupport(event.data.view);
     },
 
-    resize: function()
+    _installHighlightSupport: function(view)
     {
-        if (this._cookiesView.visible)
-            this._cookiesView.resize();
+        if (typeof view.highlightLine === "function")
+            this.highlightLine = view.highlightLine.bind(view);
+        else
+            delete this.highlightLine;
     }
 }
 
-WebInspector.NetworkItemView.prototype.__proto__ = WebInspector.View.prototype;
+WebInspector.NetworkItemView.prototype.__proto__ = WebInspector.TabbedPane.prototype;
+
+WebInspector.ResourceContentView = function(resource)
+{
+    WebInspector.ResourceView.call(this, resource);
+}
+
+WebInspector.ResourceContentView.prototype = {
+    hasContent: function()
+    {
+        return true;
+    },
+
+    get innerView()
+    {
+        return this._innerView;
+    },
+
+    set innerView(innerView)
+    {
+        this._innerView = innerView;
+    },
+
+    show: function(parentElement)
+    {
+        WebInspector.ResourceView.prototype.show.call(this, parentElement);
+        this._ensureInnerViewShown();
+    },
+
+    hide: function()
+    {
+        if (this._innerView)
+            this._innerView.hide();
+        WebInspector.ResourceView.prototype.hide.call(this);
+    },
+
+    _ensureInnerViewShown: function()
+    {
+        if (this._innerViewShowRequested)
+            return;
+        this._innerViewShowRequested = true;
+
+        function callback()
+        {
+            this._innerViewShowRequested = false;
+            this.contentLoaded();
+        }
+
+        this.resource.requestContent(callback.bind(this));
+    },
+
+    contentLoaded: function()
+    {
+        // Should be implemented by subclasses.
+    }
+}
+
+WebInspector.ResourceContentView.prototype.__proto__ = WebInspector.ResourceView.prototype;

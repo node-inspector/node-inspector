@@ -66,21 +66,32 @@ WebInspector.SourceHTMLTokenizer = function()
         ATTRIBUTE_VALUE: 2,
         LINKIFY: 4,
         A_NODE: 8,
-        SCRIPT: 16
+        SCRIPT: 16,
+        STYLE: 32
     };
 
-    this.initialCondition = { lexCondition: this._lexConditions.INITIAL, parseCondition: this._parseConditions.INITIAL };
-    this.condition = this.initialCondition;
+    this.condition = this.createInitialCondition();
 }
 
 WebInspector.SourceHTMLTokenizer.prototype = {
+    createInitialCondition: function()
+    {
+        return { lexCondition: this._lexConditions.INITIAL, parseCondition: this._parseConditions.INITIAL };
+    },
+
     set line(line) {
-        if (this._internalJavaScriptTokenizer) {
+        if (this._condition.internalJavaScriptTokenizerCondition) {
             var match = /<\/script/i.exec(line);
             if (match) {
                 this._internalJavaScriptTokenizer.line = line.substring(0, match.index);
             } else
                 this._internalJavaScriptTokenizer.line = line;
+        } else if (this._condition.internalCSSTokenizerCondition) {
+            var match = /<\/style/i.exec(line);
+            if (match) {
+                this._internalCSSTokenizer.line = line.substring(0, match.index);
+            } else
+                this._internalCSSTokenizer.line = line;
         }
         this._line = line;
     },
@@ -131,9 +142,37 @@ WebInspector.SourceHTMLTokenizer.prototype = {
         return "html-attribute-value";
     },
 
+    get _internalJavaScriptTokenizer()
+    {
+        return WebInspector.SourceTokenizer.Registry.getInstance().getTokenizer("text/javascript");
+    },
+
+    get _internalCSSTokenizer()
+    {
+        return WebInspector.SourceTokenizer.Registry.getInstance().getTokenizer("text/css");
+    },
+
+    scriptStarted: function(cursor)
+    {
+        this._condition.internalJavaScriptTokenizerCondition = this._internalJavaScriptTokenizer.createInitialCondition();
+    },
+
+    scriptEnded: function(cursor)
+    {
+    },
+
+    styleSheetStarted: function(cursor)
+    {
+        this._condition.internalCSSTokenizerCondition = this._internalCSSTokenizer.createInitialCondition();
+    },
+
+    styleSheetEnded: function(cursor)
+    {
+    },
+
     nextToken: function(cursor)
     {
-        if (this._internalJavaScriptTokenizer) {
+        if (this._condition.internalJavaScriptTokenizerCondition) {
             // Re-set line to force </script> detection first.
             this.line = this._line;
             if (cursor !== this._internalJavaScriptTokenizer._line.length) {
@@ -144,7 +183,19 @@ WebInspector.SourceHTMLTokenizer.prototype = {
                 this._condition.internalJavaScriptTokenizerCondition = this._internalJavaScriptTokenizer.condition;
                 return result;
             } else if (cursor !== this._line.length)
-                delete this._internalJavaScriptTokenizer;
+                delete this._condition.internalJavaScriptTokenizerCondition;
+        } else if (this._condition.internalCSSTokenizerCondition) {
+            // Re-set line to force </style> detection first.
+            this.line = this._line;
+            if (cursor !== this._internalCSSTokenizer._line.length) {
+                // Tokenizer is stateless, so restore its condition before tokenizing and save it after.
+                this._internalCSSTokenizer.condition = this._condition.internalCSSTokenizerCondition;
+                var result = this._internalCSSTokenizer.nextToken(cursor);
+                this.tokenType = this._internalCSSTokenizer.tokenType;
+                this._condition.internalCSSTokenizerCondition = this._internalCSSTokenizer.condition;
+                return result;
+            } else if (cursor !== this._line.length)
+                delete this._condition.internalCSSTokenizerCondition;
         }
 
         var cursorOnEnter = cursor;
@@ -175,6 +226,9 @@ WebInspector.SourceHTMLTokenizer.prototype = {
                 ScriptStart = "<" [Ss] [Cc] [Rr] [Ii] [Pp] [Tt];
                 ScriptEnd = "</" [Ss] [Cc] [Rr] [Ii] [Pp] [Tt];
 
+                StyleStart = "<" [Ss] [Tt] [Yy] [Ll] [Ee];
+                StyleEnd = "</" [Ss] [Tt] [Yy] [Ll] [Ee];
+
                 LT = "<" | "</";
                 GT = ">";
                 EqualSign = "=";
@@ -201,7 +255,7 @@ WebInspector.SourceHTMLTokenizer.prototype = {
                 <INITIAL> ScriptStart => TAG
                 {
                     if (this._condition.parseCondition & this._parseConditions.SCRIPT) {
-                        // Do not tokenize script tag contents, keep lexer state although processing "<".
+                        // Do not tokenize script tag contents, keep lexer state, even though processing "<".
                         this.setLexCondition(this._lexConditions.INITIAL);
                         this.tokenType = null;
                         return cursor;
@@ -216,13 +270,36 @@ WebInspector.SourceHTMLTokenizer.prototype = {
                 {
                     this.tokenType = "html-tag";
                     this._condition.parseCondition = this._parseConditions.INITIAL;
+                    this.scriptEnded(cursor - 8);
+                    return cursor;
+                }
+
+                <INITIAL> StyleStart => TAG
+                {
+                    if (this._condition.parseCondition & this._parseConditions.STYLE) {
+                        // Do not tokenize style tag contents, keep lexer state, even though processing "<".
+                        this.setLexCondition(this._lexConditions.INITIAL);
+                        this.tokenType = null;
+                        return cursor;
+                    }
+                    this.tokenType = "html-tag";
+                    this._condition.parseCondition = this._parseConditions.STYLE;
+                    this._setExpectingAttribute();
+                    return cursor;
+                }
+
+                <INITIAL> StyleEnd => TAG
+                {
+                    this.tokenType = "html-tag";
+                    this._condition.parseCondition = this._parseConditions.INITIAL;
+                    this.styleSheetEnded(cursor - 7);
                     return cursor;
                 }
 
                 <INITIAL> LT => TAG
                 {
-                    if (this._condition.parseCondition & this._parseConditions.SCRIPT) {
-                        // Do not tokenize script tag contents, keep lexer state although processing "<".
+                    if (this._condition.parseCondition & (this._parseConditions.SCRIPT | this._parseConditions.STYLE)) {
+                        // Do not tokenize script and style tag contents, keep lexer state, even though processing "<".
                         this.setLexCondition(this._lexConditions.INITIAL);
                         this.tokenType = null;
                         return cursor;
@@ -232,16 +309,19 @@ WebInspector.SourceHTMLTokenizer.prototype = {
                     this.tokenType = "html-tag";
                     return cursor;
                 }
-  
+
                 <TAG> GT => INITIAL
                 {
                     this.tokenType = "html-tag";
                     if (this._condition.parseCondition & this._parseConditions.SCRIPT) {
-                        if (!this._internalJavaScriptTokenizer) {
-                            this._internalJavaScriptTokenizer = WebInspector.SourceTokenizer.Registry.getInstance().getTokenizer("text/javascript");
-                            this._condition.internalJavaScriptTokenizerCondition = this._internalJavaScriptTokenizer.initialCondition;
-                        }
+                        this.scriptStarted(cursor);
                         // Do not tokenize script tag contents.
+                        return cursor;
+                    }
+
+                    if (this._condition.parseCondition & this._parseConditions.STYLE) {
+                        this.styleSheetStarted(cursor);
+                        // Do not tokenize style tag contents.
                         return cursor;
                     }
 
@@ -267,7 +347,7 @@ WebInspector.SourceHTMLTokenizer.prototype = {
 
                 <TAG> Identifier
                 {
-                    if (this._condition.parseCondition === this._parseConditions.SCRIPT) {
+                    if (this._condition.parseCondition === this._parseConditions.SCRIPT || this._condition.parseCondition === this._parseConditions.STYLE) {
                         // Fall through if expecting attributes.
                         this.tokenType = null;
                         return cursor;

@@ -82,7 +82,7 @@ WebInspector.AuditCategoryResultPane.prototype = {
     _appendResult: function(parentTreeElement, result)
     {
         var title = "";
-        
+
         if (typeof result.value === "string") {
             title = result.value;
             if (result.violationCount)

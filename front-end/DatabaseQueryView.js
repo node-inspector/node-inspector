@@ -82,7 +82,7 @@ WebInspector.DatabaseQueryView.prototype = {
                     return;
             }
         }
-        
+
         function tableNamesCallback(tableNames)
         {
             accumulateMatches(tableNames.map(function(name) { return name + " " }));
@@ -145,7 +145,7 @@ WebInspector.DatabaseQueryView.prototype = {
         if (dataGrid) {
             dataGrid.element.addStyleClass("inline");
             this._appendQueryResult(trimmedQuery, dataGrid.element);
-            dataGrid.autoSizeColumns(5);            
+            dataGrid.autoSizeColumns(5);
         }
 
         if (trimmedQuery.match(/^create /i) || trimmedQuery.match(/^drop table /i))

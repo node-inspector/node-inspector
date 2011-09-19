@@ -28,9 +28,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @extends {WebInspector.View}
+ * @constructor
+ */
 WebInspector.TabbedPane = function(element)
 {
-    this.element = element || document.createElement("div");
+    WebInspector.View.call(this, element);
     this.element.addStyleClass("tabbed-pane");
     this._tabsElement = this.element.createChild("div", "tabbed-pane-header");
     this._contentElement = this.element.createChild("div", "tabbed-pane-content");
@@ -46,8 +50,9 @@ WebInspector.TabbedPane.prototype = {
 
         this._tabsElement.appendChild(tabElement);
         this._contentElement.appendChild(view.element);
+        this.addChildView(view);
 
-        this._tabs[id] = { tabElement: tabElement, view: view }
+        this._tabs[id] = { tabElement: tabElement, view: view };
     },
 
     selectTab: function(id, userGesture)
@@ -63,10 +68,8 @@ WebInspector.TabbedPane.prototype = {
         var tab = this._tabs[id];
         this._showTab(tab);
         this._currentTab = tab;
-        if (userGesture) {
-            var event = {tabId: id};
-            this.dispatchEventToListeners("tab-selected", event);
-        }
+        var event = {tabId: id, view: tab.view, isUserGesture: userGesture};
+        this.dispatchEventToListeners("tab-selected", event);
         return true;
     },
 
@@ -83,4 +86,4 @@ WebInspector.TabbedPane.prototype = {
     }
 }
 
-WebInspector.TabbedPane.prototype.__proto__ = WebInspector.Object.prototype;
+WebInspector.TabbedPane.prototype.__proto__ = WebInspector.View.prototype;

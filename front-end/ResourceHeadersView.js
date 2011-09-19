@@ -8,13 +8,13 @@
  * are met:
  *
  * 1.  Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer. 
+ *     notice, this list of conditions and the following disclaimer.
  * 2.  Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution. 
+ *     documentation and/or other materials provided with the distribution.
  * 3.  Neither the name of Apple Computer, Inc. ("Apple") nor the names of
  *     its contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission. 
+ *     from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY APPLE AND ITS CONTRIBUTORS "AS IS" AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -53,20 +53,28 @@ WebInspector.ResourceHeadersView = function(resource)
     this._statusCodeTreeElement = new TreeElement("", null, false);
     this._statusCodeTreeElement.selectable = false;
     this._headersTreeOutline.appendChild(this._statusCodeTreeElement);
-     
+
     this._requestHeadersTreeElement = new TreeElement("", null, true);
     this._requestHeadersTreeElement.expanded = true;
     this._requestHeadersTreeElement.selectable = false;
     this._headersTreeOutline.appendChild(this._requestHeadersTreeElement);
 
-    this._decodeHover = WebInspector.UIString("Double-Click to toggle between URL encoded and decoded formats");
     this._decodeRequestParameters = true;
+
+    this._showRequestHeadersText = false;
+    this._showResponseHeadersText = false;
 
     this._queryStringTreeElement = new TreeElement("", null, true);
     this._queryStringTreeElement.expanded = true;
     this._queryStringTreeElement.selectable = false;
     this._queryStringTreeElement.hidden = true;
     this._headersTreeOutline.appendChild(this._queryStringTreeElement);
+
+    this._urlFragmentTreeElement = new TreeElement("", null, true);
+    this._urlFragmentTreeElement.expanded = true;
+    this._urlFragmentTreeElement.selectable = false;
+    this._urlFragmentTreeElement.hidden = true;
+    this._headersTreeOutline.appendChild(this._urlFragmentTreeElement);
 
     this._formDataTreeElement = new TreeElement("", null, true);
     this._formDataTreeElement.expanded = true;
@@ -91,6 +99,7 @@ WebInspector.ResourceHeadersView = function(resource)
 
     this._refreshURL();
     this._refreshQueryString();
+    this._refreshUrlFragment();
     this._refreshRequestHeaders();
     this._refreshResponseHeaders();
     this._refreshHTTPInformation();
@@ -110,6 +119,29 @@ WebInspector.ResourceHeadersView.prototype = {
         this._queryStringTreeElement.hidden = !queryParameters;
         if (queryParameters)
             this._refreshParms(WebInspector.UIString("Query String Parameters"), queryParameters, this._queryStringTreeElement);
+    },
+
+    _refreshUrlFragment: function()
+    {
+        var urlFragment = this._resource.urlFragment;
+        this._urlFragmentTreeElement.hidden = !urlFragment;
+
+        if (!urlFragment)
+            return;
+
+        var sectionTitle = WebInspector.UIString("URL fragment");
+
+        this._urlFragmentTreeElement.removeChildren();
+        this._urlFragmentTreeElement.listItemElement.removeChildren();
+        this._urlFragmentTreeElement.listItemElement.appendChild(document.createTextNode(sectionTitle));
+
+        var title = "<div class=\"header-name\">#:</div>";
+        title += "<div class=\"header-value source-code\">" + urlFragment.escapeHTML() + "</div>";
+
+        var fragmentTreeElement = new TreeElement(null, null, false);
+        fragmentTreeElement.titleHTML = title;
+        fragmentTreeElement.selectable = false;
+        this._urlFragmentTreeElement.appendChild(fragmentTreeElement);
     },
 
     _refreshFormData: function()
@@ -142,41 +174,57 @@ WebInspector.ResourceHeadersView.prototype = {
         this._requestPayloadTreeElement.appendChild(parmTreeElement);
     },
 
+    _decodeURIComponent: function(value)
+    {
+        var errorDecoding = false;
+
+        if (value.indexOf("%") >= 0) {
+            try {
+                value = decodeURIComponent(value);
+            } catch(e) {
+                errorDecoding = true;
+            }
+        }
+        value = value.replace(/\+/g, " ");
+
+        var valueEscaped = value.escapeHTML();
+        if (errorDecoding)
+            valueEscaped += " <span class=\"error-message\">" + WebInspector.UIString("(unable to decode value)").escapeHTML() + "</span>";
+
+        return valueEscaped;
+    },
+
     _refreshParms: function(title, parms, parmsTreeElement)
     {
         parmsTreeElement.removeChildren();
 
-        parmsTreeElement.titleHTML = title + "<span class=\"header-count\">" + WebInspector.UIString(" (%d)", parms.length) + "</span>";
+        parmsTreeElement.listItemElement.removeChildren();
+        parmsTreeElement.listItemElement.appendChild(document.createTextNode(title));
+
+        var headerCount = document.createElement("span");
+        headerCount.addStyleClass("header-count");
+        headerCount.textContent = WebInspector.UIString(" (%d)", parms.length);
+        parmsTreeElement.listItemElement.appendChild(headerCount);
+
+        var toggleTitle = this._decodeRequestParameters ? WebInspector.UIString("view URL encoded") : WebInspector.UIString("view decoded");
+        var toggleButton = this._createToggleButton(toggleTitle);
+        toggleButton.addEventListener("click", this._toggleURLdecoding.bind(this));
+        parmsTreeElement.listItemElement.appendChild(toggleButton);
+
 
         for (var i = 0; i < parms.length; ++i) {
             var name = parms[i].name;
             var value = parms[i].value;
 
-            var errorDecoding = false;
-            if (this._decodeRequestParameters) {
-                if (value.indexOf("%") >= 0) {
-                    try {
-                        value = decodeURIComponent(value);
-                    } catch(e) {
-                        errorDecoding = true;
-                    }
-                }
-                    
-                value = value.replace(/\+/g, " ");
-            }
+            var valueEscaped = this._decodeRequestParameters ? this._decodeURIComponent(value) : value.escapeHTML();
+            var nameEscaped = this._decodeRequestParameters ? this._decodeURIComponent(name) : name.escapeHTML();
 
-            valueEscaped = value.escapeHTML();
-            if (errorDecoding)
-                valueEscaped += " <span class=\"error-message\">" + WebInspector.UIString("(unable to decode value)").escapeHTML() + "</span>";
-
-            var title = "<div class=\"header-name\">" + name.escapeHTML() + ":</div>";
+            var title = "<div class=\"header-name\">" + nameEscaped + ":</div>";
             title += "<div class=\"header-value source-code\">" + valueEscaped + "</div>";
 
             var parmTreeElement = new TreeElement(null, null, false);
             parmTreeElement.titleHTML = title;
             parmTreeElement.selectable = false;
-            parmTreeElement.tooltip = this._decodeHover;
-            parmTreeElement.ondblclick = this._toggleURLdecoding.bind(this);
             parmsTreeElement.appendChild(parmTreeElement);
         }
     },
@@ -202,7 +250,17 @@ WebInspector.ResourceHeadersView.prototype = {
         var additionalRow = null;
         if (typeof this._resource.webSocketRequestKey3 !== "undefined")
             additionalRow = {header: "(Key3)", value: this._resource.webSocketRequestKey3};
-        this._refreshHeaders(WebInspector.UIString("Request Headers"), this._resource.sortedRequestHeaders, additionalRow, this._requestHeadersTreeElement);
+        if (this._showRequestHeadersText)
+            this._refreshHeadersText(WebInspector.UIString("Request Headers"), this._resource.requestHeadersText, this._requestHeadersTreeElement);
+        else
+            this._refreshHeaders(WebInspector.UIString("Request Headers"), this._resource.sortedRequestHeaders, additionalRow, this._requestHeadersTreeElement);
+
+        if (this._resource.requestHeadersText) {
+            var toggleButton = this._createHeadersToggleButton(this._showRequestHeadersText);
+            toggleButton.addEventListener("click", this._toggleRequestHeadersText.bind(this));
+            this._requestHeadersTreeElement.listItemElement.appendChild(toggleButton);
+        }
+
         this._refreshFormData();
     },
 
@@ -211,7 +269,16 @@ WebInspector.ResourceHeadersView.prototype = {
         var additionalRow = null;
         if (typeof this._resource.webSocketChallengeResponse !== "undefined")
             additionalRow = {header: "(Challenge Response)", value: this._resource.webSocketChallengeResponse};
-        this._refreshHeaders(WebInspector.UIString("Response Headers"), this._resource.sortedResponseHeaders, additionalRow, this._responseHeadersTreeElement);
+        if (this._showResponseHeadersText)
+            this._refreshHeadersText(WebInspector.UIString("Response Headers"), this._resource.responseHeadersText, this._responseHeadersTreeElement);
+        else
+            this._refreshHeaders(WebInspector.UIString("Response Headers"), this._resource.sortedResponseHeaders, additionalRow, this._responseHeadersTreeElement);
+
+        if (this._resource.responseHeadersText) {
+            var toggleButton = this._createHeadersToggleButton(this._showResponseHeadersText);
+            toggleButton.addEventListener("click", this._toggleResponseHeadersText.bind(this));
+            this._responseHeadersTreeElement.listItemElement.appendChild(toggleButton);
+        }
     },
 
     _refreshHTTPInformation: function()
@@ -224,7 +291,7 @@ WebInspector.ResourceHeadersView.prototype = {
 
         if (this._resource.statusCode) {
             var statusImageSource = "";
-            if (this._resource.statusCode < 300)
+            if (this._resource.statusCode < 300 || this._resource.statusCode === 304)
                 statusImageSource = "Images/successGreenDot.png";
             else if (this._resource.statusCode < 400)
                 statusImageSource = "Images/warningOrangeDot.png";
@@ -233,24 +300,39 @@ WebInspector.ResourceHeadersView.prototype = {
 
             var statusTextEscaped = this._resource.statusCode + " " + this._resource.statusText.escapeHTML();
             statusCodeImage = "<img class=\"resource-status-image\" src=\"" + statusImageSource + "\" title=\"" + statusTextEscaped + "\">";
-    
+
             requestMethodElement.titleHTML = "<div class=\"header-name\">" + WebInspector.UIString("Request Method") + ":</div>" +
                 "<div class=\"header-value source-code\">" + this._resource.requestMethod + "</div>";
 
+            var fromCacheSpan = "";
+            if (this._resource.cached)
+                fromCacheSpan = " " + "<span class=\"status-from-cache\">" + WebInspector.UIString("(from cache)").escapeHTML() + "</span>";
+
             statusCodeElement.titleHTML = "<div class=\"header-name\">" + WebInspector.UIString("Status Code") + ":</div>" +
-                statusCodeImage + "<div class=\"header-value source-code\">" + statusTextEscaped + "</div>";
+                statusCodeImage + "<div class=\"header-value source-code\">" + statusTextEscaped + fromCacheSpan + "</div>";
         }
     },
-    
+
+    _refreshHeadersTitle: function(title, headersTreeElement, isHeadersTextShown, headersLength)
+    {
+        headersTreeElement.listItemElement.removeChildren();
+        headersTreeElement.listItemElement.appendChild(document.createTextNode(title));
+
+        if (!isHeadersTextShown) {
+            var headerCount = document.createElement("span");
+            headerCount.addStyleClass("header-count");
+            headerCount.textContent = WebInspector.UIString(" (%d)", headersLength);
+            headersTreeElement.listItemElement.appendChild(headerCount);
+        }
+    },
+
     _refreshHeaders: function(title, headers, additionalRow, headersTreeElement)
     {
         headersTreeElement.removeChildren();
 
         var length = headers.length;
-        headersTreeElement.titleHTML = title.escapeHTML() + "<span class=\"header-count\">" + WebInspector.UIString(" (%d)", length) + "</span>";
+        this._refreshHeadersTitle(title, headersTreeElement, false, length);
         headersTreeElement.hidden = !length;
-
-        var length = headers.length;
         for (var i = 0; i < length; ++i) {
             var title = "<div class=\"header-name\">" + headers[i].header.escapeHTML() + ":</div>";
             title += "<div class=\"header-value source-code\">" + headers[i].value.escapeHTML() + "</div>"
@@ -270,6 +352,49 @@ WebInspector.ResourceHeadersView.prototype = {
             headerTreeElement.selectable = false;
             headersTreeElement.appendChild(headerTreeElement);
         }
+    },
+
+    _refreshHeadersText: function(title, headersText, headersTreeElement)
+    {
+        headersTreeElement.removeChildren();
+
+        this._refreshHeadersTitle(title, headersTreeElement, true);
+        var headerTreeElement = new TreeElement(null, null, false);
+        headerTreeElement.selectable = false;
+        headersTreeElement.appendChild(headerTreeElement);
+        headerTreeElement.listItemElement.addStyleClass("headers-text");
+
+        var headersTextElement = document.createElement("span");
+        headersTextElement.addStyleClass("header-value");
+        headersTextElement.addStyleClass("source-code");
+        headersTextElement.textContent = String(headersText).trim();
+        headerTreeElement.listItemElement.appendChild(headersTextElement);
+    },
+
+    _toggleRequestHeadersText: function(event)
+    {
+        this._showRequestHeadersText = !this._showRequestHeadersText;
+        this._refreshRequestHeaders();
+    },
+
+    _toggleResponseHeadersText: function(event)
+    {
+        this._showResponseHeadersText = !this._showResponseHeadersText;
+        this._refreshResponseHeaders();
+    },
+
+    _createToggleButton: function(title)
+    {
+        var button = document.createElement("span");
+        button.addStyleClass("header-toggle");
+        button.textContent = title;
+        return button;
+    },
+
+    _createHeadersToggleButton: function(isHeadersTextShown)
+    {
+        var toggleTitle = isHeadersTextShown ? WebInspector.UIString("view parsed") : WebInspector.UIString("view source");
+        return this._createToggleButton(toggleTitle);
     }
 }
 

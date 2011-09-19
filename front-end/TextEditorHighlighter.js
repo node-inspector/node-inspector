@@ -34,99 +34,205 @@ WebInspector.TextEditorHighlighter = function(textModel, damageCallback)
     this._textModel = textModel;
     this._tokenizer = WebInspector.SourceTokenizer.Registry.getInstance().getTokenizer("text/html");
     this._damageCallback = damageCallback;
-    this.reset();
+    this._highlightChunkLimit = 1000;
 }
 
 WebInspector.TextEditorHighlighter.prototype = {
     set mimeType(mimeType)
     {
         var tokenizer = WebInspector.SourceTokenizer.Registry.getInstance().getTokenizer(mimeType);
-        if (tokenizer) {
+        if (tokenizer)
             this._tokenizer = tokenizer;
-            this._tokenizerCondition = this._tokenizer.initialCondition;
-        }
     },
 
-    reset: function()
+    set highlightChunkLimit(highlightChunkLimit)
     {
-        this._lastHighlightedLine = 0;
-        this._lastHighlightedColumn = 0;
-        this._tokenizerCondition = this._tokenizer.initialCondition;
+        this._highlightChunkLimit = highlightChunkLimit;
     },
 
-    highlight: function(endLine)
+    highlight: function(endLine, opt_forceRun)
     {
         // First check if we have work to do.
-        if (endLine <= this._lastHighlightedLine)
+        var state = this._textModel.getAttribute(endLine - 1, "highlight");
+        if (state && state.postConditionStringified) {
+            // Last line is highlighted, just exit.
             return;
+        }
 
         this._requestedEndLine = endLine;
 
-        if (this._highlightTimer) {
+        if (this._highlightTimer && !opt_forceRun) {
             // There is a timer scheduled, it will catch the new job based on the new endLine set.
             return;
         }
 
-        // Do small highlight synchronously. This will provide instant highlight on PageUp / PageDown, gentle scrolling.
-        this._highlightInChunks(endLine);
+        // We will be highlighting. First rewind to the last highlighted line to gain proper highlighter context.
+        var startLine = endLine;
+        while (startLine > 0) {
+            var state = this._textModel.getAttribute(startLine - 1, "highlight");
+            if (state && state.postConditionStringified)
+                break;
+            startLine--;
+        }
 
-        // Schedule tail highlight if necessary.
-        if (this._lastHighlightedLine < endLine)
-            this._highlightTimer = setTimeout(this._highlightInChunks.bind(this, endLine), 100);
+        // Do small highlight synchronously. This will provide instant highlight on PageUp / PageDown, gentle scrolling.
+        this._highlightInChunks(startLine, endLine);
     },
 
-    _highlightInChunks: function(endLine)
+    updateHighlight: function(startLine, endLine)
+    {
+        // Start line was edited, we should highlight everything until endLine.
+        this._clearHighlightState(startLine);
+
+        if (startLine) {
+            var state = this._textModel.getAttribute(startLine - 1, "highlight");
+            if (!state || !state.postConditionStringified) {
+                // Highlighter did not reach this point yet, nothing to update. It will reach it on subsequent timer tick and do the job.
+                return false;
+            }
+        }
+
+        var restored = this._highlightLines(startLine, endLine);
+        if (!restored) {
+            for (var i = this._lastHighlightedLine; i < this._textModel.linesCount; ++i) {
+                var state = this._textModel.getAttribute(i, "highlight");
+                if (!state && i > endLine)
+                    break;
+                this._textModel.setAttribute(i, "highlight-outdated", state);
+                this._textModel.removeAttribute(i, "highlight");
+            }
+
+            if (this._highlightTimer) {
+                clearTimeout(this._highlightTimer);
+                this._requestedEndLine = endLine;
+                this._highlightTimer = setTimeout(this._highlightInChunks.bind(this, this._lastHighlightedLine, this._requestedEndLine), 10);
+            }
+        }
+        return restored;
+    },
+
+    _highlightInChunks: function(startLine, endLine)
     {
         delete this._highlightTimer;
 
         // First we always check if we have work to do. Could be that user scrolled back and we can quit.
-        if (this._requestedEndLine <= this._lastHighlightedLine)
+        var state = this._textModel.getAttribute(this._requestedEndLine - 1, "highlight");
+        if (state && state.postConditionStringified)
             return;
 
         if (this._requestedEndLine !== endLine) {
             // User keeps updating the job in between of our timer ticks. Just reschedule self, don't eat CPU (they must be scrolling).
-            this._highlightTimer = setTimeout(this._highlightInChunks.bind(this, this._requestedEndLine), 100);
+            this._highlightTimer = setTimeout(this._highlightInChunks.bind(this, startLine, this._requestedEndLine), 100);
             return;
         }
 
-        this._highlightLines(this._requestedEndLine);
+        // The textModel may have been already updated.
+        if (this._requestedEndLine > this._textModel.linesCount)
+            this._requestedEndLine = this._textModel.linesCount;
+
+        this._highlightLines(startLine, this._requestedEndLine);
 
         // Schedule tail highlight if necessary.
         if (this._lastHighlightedLine < this._requestedEndLine)
-            this._highlightTimer = setTimeout(this._highlightInChunks.bind(this, this._requestedEndLine), 10);
+            this._highlightTimer = setTimeout(this._highlightInChunks.bind(this, this._lastHighlightedLine, this._requestedEndLine), 10);
     },
 
-    _highlightLines: function(endLine)
+    _highlightLines: function(startLine, endLine)
     {
-        // Tokenizer is stateless and reused accross viewers, restore its condition before highlight and save it after.
-        this._tokenizer.condition = this._tokenizerCondition;
+        // Restore highlighter context taken from previous line.
+        var state = this._textModel.getAttribute(startLine - 1, "highlight");
+        var postConditionStringified = state ? state.postConditionStringified : JSON.stringify(this._tokenizer.createInitialCondition());
+
         var tokensCount = 0;
-        for (var lineNumber = this._lastHighlightedLine; lineNumber < endLine; ++lineNumber) {
-            var line = this._textModel.line(lineNumber);
-            this._tokenizer.line = line;
-            var attributes = this._textModel.getAttribute(lineNumber, "highlight") || {};
+        for (var lineNumber = startLine; lineNumber < endLine; ++lineNumber) {
+            var state = this._selectHighlightState(lineNumber, postConditionStringified);
+            if (state.postConditionStringified) {
+                // This line is already highlighted.
+                postConditionStringified = state.postConditionStringified;
+            } else {
+                var lastHighlightedColumn = 0;
+                if (state.midConditionStringified) {
+                    lastHighlightedColumn = state.lastHighlightedColumn;
+                    postConditionStringified = state.midConditionStringified;
+                }
 
-            // Highlight line.
-            do {
-                var newColumn = this._tokenizer.nextToken(this._lastHighlightedColumn);
-                var tokenType = this._tokenizer.tokenType;
-                if (tokenType)
-                    attributes[this._lastHighlightedColumn] = { length: newColumn - this._lastHighlightedColumn, tokenType: tokenType, subTokenizer: this._tokenizer.subTokenizer };
-                this._lastHighlightedColumn = newColumn;
-                if (++tokensCount > 1000)
+                var line = this._textModel.line(lineNumber);
+                this._tokenizer.line = line;
+                this._tokenizer.condition = JSON.parse(postConditionStringified);
+
+                // Highlight line.
+                do {
+                    var newColumn = this._tokenizer.nextToken(lastHighlightedColumn);
+                    var tokenType = this._tokenizer.tokenType;
+                    if (tokenType)
+                        state[lastHighlightedColumn] = { length: newColumn - lastHighlightedColumn, tokenType: tokenType };
+                    lastHighlightedColumn = newColumn;
+                    if (++tokensCount > this._highlightChunkLimit)
+                        break;
+                } while (lastHighlightedColumn < line.length);
+
+                postConditionStringified = JSON.stringify(this._tokenizer.condition);
+
+                if (lastHighlightedColumn < line.length) {
+                    // Too much work for single chunk - exit.
+                    state.lastHighlightedColumn = lastHighlightedColumn;
+                    state.midConditionStringified = postConditionStringified;
                     break;
-            } while (this._lastHighlightedColumn < line.length)
+                } else {
+                    delete state.lastHighlightedColumn;
+                    delete state.midConditionStringified;
+                    state.postConditionStringified = postConditionStringified;
+                }
+            }
 
-            this._textModel.setAttribute(lineNumber, "highlight", attributes);
-            if (this._lastHighlightedColumn < line.length) {
-                // Too much work for single chunk - exit.
-                break;
-            } else
-                this._lastHighlightedColumn = 0;
+            var nextLineState = this._textModel.getAttribute(lineNumber + 1, "highlight");
+            if (nextLineState && nextLineState.preConditionStringified === state.postConditionStringified) {
+                // Following lines are up to date, no need re-highlight.
+                ++lineNumber;
+                this._damageCallback(startLine, lineNumber);
+
+                // Advance the "pointer" to the last highlighted line within the given chunk.
+                for (; lineNumber < endLine; ++lineNumber) {
+                    var state = this._textModel.getAttribute(lineNumber, "highlight");
+                    if (!state || !state.postConditionStringified)
+                        break;
+                }
+                this._lastHighlightedLine = lineNumber;
+                return true;
+            }
         }
 
-        this._damageCallback(this._lastHighlightedLine, lineNumber);
-        this._tokenizerCondition = this._tokenizer.condition;
+        this._damageCallback(startLine, lineNumber);
         this._lastHighlightedLine = lineNumber;
+        return false;
+    },
+
+    _selectHighlightState: function(lineNumber, preConditionStringified)
+    {
+        var state = this._textModel.getAttribute(lineNumber, "highlight");
+        if (state && state.preConditionStringified === preConditionStringified)
+            return state;
+
+        var outdatedState = this._textModel.getAttribute(lineNumber, "highlight-outdated");
+        if (outdatedState && outdatedState.preConditionStringified === preConditionStringified) {
+            // Swap states.
+            this._textModel.setAttribute(lineNumber, "highlight", outdatedState);
+            this._textModel.setAttribute(lineNumber, "highlight-outdated", state);
+            return outdatedState;
+        }
+
+        if (state)
+            this._textModel.setAttribute(lineNumber, "highlight-outdated", state);
+
+        state = {};
+        state.preConditionStringified = preConditionStringified;
+        this._textModel.setAttribute(lineNumber, "highlight", state);
+        return state;
+    },
+
+    _clearHighlightState: function(lineNumber)
+    {
+        this._textModel.removeAttribute(lineNumber, "highlight");
+        this._textModel.removeAttribute(lineNumber, "highlight-outdated");
     }
 }

@@ -26,6 +26,9 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @constructor
+ */
 WebInspector.DOMStorage = function(id, domain, isLocalStorage)
 {
     this._id = id;
@@ -37,11 +40,6 @@ WebInspector.DOMStorage.prototype = {
     get id()
     {
         return this._id;
-    },
-
-    get domStorage()
-    {
-        return this._domStorage;
     },
 
     get domain()
@@ -56,17 +54,42 @@ WebInspector.DOMStorage.prototype = {
 
     getEntries: function(callback)
     {
-        InspectorBackend.getDOMStorageEntries(this._id, callback);
+        DOMStorageAgent.getDOMStorageEntries(this._id, callback);
     },
-    
+
     setItem: function(key, value, callback)
     {
-        InspectorBackend.setDOMStorageItem(this._id, key, value, callback);
+        DOMStorageAgent.setDOMStorageItem(this._id, key, value, callback);
     },
-    
+
     removeItem: function(key, callback)
     {
-        InspectorBackend.removeDOMStorageItem(this._id, key, callback);
+        DOMStorageAgent.removeDOMStorageItem(this._id, key, callback);
     }
 }
 
+/**
+ * @constructor
+ * @implements {DOMStorageAgent.Dispatcher}
+ */
+WebInspector.DOMStorageDispatcher = function()
+{
+}
+
+WebInspector.DOMStorageDispatcher.prototype = {
+    addDOMStorage: function(payload)
+    {
+        var domStorage = new WebInspector.DOMStorage(
+            payload.id,
+            payload.host,
+            payload.isLocalStorage);
+        WebInspector.panels.resources.addDOMStorage(domStorage);
+    },
+
+    updateDOMStorage: function(storageId)
+    {
+        WebInspector.panels.resources.updateDOMStorage(storageId);
+    }
+}
+
+InspectorBackend.registerDOMStorageDispatcher(new WebInspector.DOMStorageDispatcher());

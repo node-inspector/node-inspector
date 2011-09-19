@@ -33,6 +33,11 @@ WebInspector.Color = function(str)
     this._parse();
 }
 
+WebInspector.Color.fromRGBA = function(r, g, b, a)
+{
+    return new WebInspector.Color("rgba(" + r + "," + g + "," + b + "," + (typeof a === "undefined" ? 1 : a) + ")");
+}
+
 WebInspector.Color.prototype = {
     get shorthex()
     {
@@ -143,6 +148,8 @@ WebInspector.Color.prototype = {
             format = this.format;
 
         switch (format) {
+            case "original":
+                return this.value;
             case "rgb":
                 return "rgb(" + this.rgb.join(", ") + ")";
             case "rgba":
@@ -162,6 +169,21 @@ WebInspector.Color.prototype = {
         }
 
         throw "invalid color format";
+    },
+
+    toProtocolRGBA: function()
+    {
+        if (this._protocolRGBA)
+            return this._protocolRGBA;
+
+        var components = this.rgba;
+        if (components)
+            this._protocolRGBA = { r: Number(components[0]), g: Number(components[1]), b: Number(components[2]), a: Number(components[3]) };
+        else {
+            components = this.rgb;
+            this._protocolRGBA = { r: Number(components[0]), g: Number(components[1]), b: Number(components[2]) };
+        }
+        return this._protocolRGBA;
     },
 
     _rgbToHex: function(rgb)
@@ -324,7 +346,7 @@ WebInspector.Color.prototype = {
                     throw "unknown color name";
             } else if (match[4]) { // hsl
                 this.format = "hsl";
-                var hsl = match[4].replace(/%g/, "").split(/\s*,\s*/);
+                var hsl = match[4].replace(/%/g, "").split(/\s*,\s*/);
                 this.hsl = hsl;
                 this.rgb = this._hslToRGB(hsl);
                 this.hex = this._rgbToHex(this.rgb);
@@ -595,7 +617,7 @@ WebInspector.Color.Nicknames = {
     "mediumaquamarine": "66CDAA",
     "mediumblue": "0000CD",
     "mediumorchid": "BA55D3",
-    "mediumpurple": "9370D8",
+    "mediumpurple": "9370DB",
     "mediumseagreen": "3CB371",
     "mediumslateblue": "7B68EE",
     "mediumspringgreen": "00FA9A",
@@ -616,7 +638,7 @@ WebInspector.Color.Nicknames = {
     "palegoldenrod": "EEE8AA",
     "palegreen": "98FB98",
     "paleturquoise": "AFEEEE",
-    "palevioletred": "D87093",
+    "palevioletred": "DB7093",
     "papayawhip": "FFEFD5",
     "peachpuff": "FFDAB9",
     "peru": "CD853F",
@@ -659,3 +681,14 @@ WebInspector.Color.AdvancedNickNames = {
     "rgba(0,0,0,0)": [[0, 0, 0, 0], [0, 0, 0, 0], "transparent"],
     "hsla(0,0,0,0)": [[0, 0, 0, 0], [0, 0, 0, 0], "transparent"],
 };
+
+WebInspector.Color.PageHighlight = {
+    Content: WebInspector.Color.fromRGBA(111, 168, 220, .66),
+    ContentOutline: WebInspector.Color.fromRGBA(9, 83, 148),
+    Padding: WebInspector.Color.fromRGBA(147, 196, 125, .55),
+    PaddingOutline: WebInspector.Color.fromRGBA(55, 118, 28),
+    Border: WebInspector.Color.fromRGBA(255, 229, 153, .66),
+    BorderOutline: WebInspector.Color.fromRGBA(127, 96, 0),
+    Margin: WebInspector.Color.fromRGBA(246, 178, 107, .66),
+    MarginOutline: WebInspector.Color.fromRGBA(180, 95, 4)
+}

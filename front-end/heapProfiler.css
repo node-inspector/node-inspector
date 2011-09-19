@@ -33,11 +33,27 @@
     content: url(Images/profileIcon.png);
 }
 
+.heap-snapshot-sidebar-tree-item.wait .icon {
+    content: url(Images/spinnerActive.gif);
+}
+
+.heap-snapshot-sidebar-tree-item.wait.selected .icon {
+    content: url(Images/spinnerActiveSelected.gif);
+}
+
+body.inactive .heap-snapshot-sidebar-tree-item.wait .icon {
+    content: url(Images/spinnerInactive.gif);
+}
+
+body.inactive .heap-snapshot-sidebar-tree-item.wait.selected .icon {
+    content: url(Images/spinnerInactiveSelected.gif);
+}
+
 .heap-snapshot-sidebar-tree-item.small .icon {
     content: url(Images/profileSmallIcon.png);
 }
 
-.heap-snapshot-view {
+.detailed-heapshot-view {
     display: none;
     overflow: hidden;
     position: absolute;
@@ -47,90 +63,146 @@
     bottom: 0;
 }
 
-.heap-snapshot-view.visible {
+.detailed-heapshot-view.visible {
     display: block;
 }
 
-.heap-snapshot-view .data-grid {
+.detailed-heapshot-view .view {
+    display: none;
+}
+
+.detailed-heapshot-view .view.visible {
+    display: block;
+}
+
+.detailed-heapshot-view .data-grid {
     border: none;
-    max-height: 100%;
+}
+
+.detailed-heapshot-view .data-grid td.count-column {
+    text-align: right;
+}
+
+.detailed-heapshot-view .data-grid td.addedCount-column {
+    text-align: right;
+}
+
+.detailed-heapshot-view .data-grid td.removedCount-column {
+    text-align: right;
+}
+
+.detailed-heapshot-view .data-grid td.countDelta-column {
+    text-align: right;
+}
+
+.detailed-heapshot-view .data-grid td.addedSize-column {
+    text-align: right;
+}
+
+.detailed-heapshot-view .data-grid td.removedSize-column {
+    text-align: right;
+}
+
+.detailed-heapshot-view .data-grid td.sizeDelta-column {
+    text-align: right;
+}
+
+.detailed-heapshot-view .data-grid td.shallowSize-column {
+    text-align: right;
+}
+
+.detailed-heapshot-view .data-grid td.retainedSize-column {
+    text-align: right;
+}
+
+.detailed-heapshot-view .console-formatted-object, .console-formatted-node {
+    display: inline;
+    position: static;
+}
+
+.detailed-heapshot-view .console-formatted-string {
+    white-space: nowrap;
+}
+
+.detailed-heapshot-view .data-grid tr.selected * {
+    color: inherit;
+}
+
+.detailed-heapshot-view .data-grid:focus tr.selected * {
+    color: white;
+}
+
+.detailed-heapshot-view .delimiter {
+    height: 24px;
+    background-color: #d6dde5;
+}
+
+.detailed-heapshot-view .data-grid {
     position: absolute;
+    top: 0;
     left: 0;
     right: 0;
-    top: 0;
-    bottom: 93px;
+    bottom: 0;
 }
 
-.heap-snapshot-view .data-grid th.count-column {
-    text-align: center;
-}
-
-.heap-snapshot-view .data-grid td.count-column {
-    text-align: right;
-}
-
-.heap-snapshot-view .data-grid th.size-column {
-    text-align: center;
-}
-
-.heap-snapshot-view .data-grid td.size-column {
-    text-align: right;
-}
-
-.heap-snapshot-view .data-grid th.countDelta-column {
-    text-align: center;
-}
-
-.heap-snapshot-view .data-grid td.countDelta-column {
-    text-align: right;
-}
-
-.heap-snapshot-view .data-grid th.sizeDelta-column {
-    text-align: center;
-}
-
-.heap-snapshot-view .data-grid td.sizeDelta-column {
-    text-align: right;
-}
-
-#heap-snapshot-summary-container {
+.detailed-heapshot-view .views-container {
     position: absolute;
-    padding-top: 20px;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 173px;
+}
+
+.detailed-heapshot-view .views-container .view {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.detailed-heapshot-view .retaining-paths-view {
+    height: 150px;
+    position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 93px;
-    margin-left: -1px;
-    border-left: 1px solid rgb(102, 102, 102);
-    background-color: rgb(101, 111, 130);
-    background-image: -webkit-gradient(linear, left top, left bottom, from(rgba(0, 0, 0, 0.5)), to(rgba(0, 0, 0, 0)));
-    background-repeat: repeat-x;
-    background-position: top;
-    text-align: center;
-    text-shadow: black 0 1px 1px;
-    white-space: nowrap;
-    color: white;
-    -webkit-background-size: 1px 6px;
-    -webkit-background-origin: padding;
-    -webkit-background-clip: padding;
 }
 
-.heap-snapshot-summary {
-    display: inline-block;
-    width: 50%;
-    min-width: 300px;
-    position: relative;
-}
-
-.heap-snapshot-summary canvas.summary-graph {
-    width: 225px;
-}
-
-.heap-snapshot-summary-label {
-    font-size: 12px;
+.detailed-heapshot-view .retainers-view-header {
+    background-image: url(Images/statusbarResizerVertical.png), url(Images/statusbarBackground.png);
+    background-repeat: no-repeat, repeat-x;
+    background-position: right center, center;
+    cursor: row-resize;
+    height: 23px;
+    font: -webkit-small-control;
     font-weight: bold;
+    color: rgb(48, 48, 48);
+    text-shadow: rgba(255, 255, 255, 0.75) 0 1px 0;
+    display: block;
     position: absolute;
-    top: 1px;
-    width: 50%;
-    left: 25%;
+    left: 0;
+    right: 0;
+    bottom: 150px;
+}
+
+.detailed-heapshot-view .retainers-view-header .title > span {
+    display: inline-block;
+    padding-top: 3px;
+    vertical-align: middle;
+    margin-left: 4px;
+    margin-right: 8px;
+}
+
+.heapshot-help-status-bar-item .glyph {
+    -webkit-mask-position: -160px 0;
+}
+
+table.heapshot-help {
+    border-spacing: 12px 2px;
+}
+
+div.retaining-paths-view td.path-column div:hover {
+    text-decoration: underline;
+    color: blue;
 }

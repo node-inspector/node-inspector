@@ -11,34 +11,36 @@ body.attached .help-window-outer {
     top: 32px;
     left: 0;
     width: 100%;
-    bottom: 24px;
+    bottom: 23px;
 }
 
 .help-window-main {
     max-height: 100%;
-    opacity: 0.85;
     color: white;
-    background-color: black;
+    background-color: rgba(0, 0, 0, 0.85);
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    border: 20px black solid;
     border-top-width: 0;
-    border-radius: 8px;
+    border-radius: 15px;
     -webkit-box-shadow: 10px 10px 8px rgba(40, 40, 40, 0.40);
 }
 
 body.attached .help-window-main {
-    border-width: 10px;
+    height: 100%;
+    padding: 10px;
+}
+
+body.attached .help-window-main {
     border-radius: 0;
     -webkit-box-shadow: 0 0 0;
 }
 
 .help-window-caption {
-    margin: 8px;
+    margin: 8px 8px 0 8px;
 }
 
 body.attached .help-window-caption {
-    display: none;
+    margin: 0;
 }
 
 .help-window-title {
@@ -52,6 +54,8 @@ body.attached .help-window-caption {
     overflow-x: hidden;
     scrollbar-width: 11px;
     -webkit-box-flex: 1;
+    margin: 10px;
+    font-size: 13px;
 }
 
 .help-content::-webkit-scrollbar {
@@ -82,13 +86,20 @@ body.attached .help-window-caption {
 .help-close-button {
     border: 0;
     padding: 0;
-    margin: 0px -20px 15px -20px;
     font-size: 14px;
     color: rgb(222, 222, 222);
     background: -webkit-gradient(radial, 30% 30%, 1, 50% 50%, 8, from(rgb(128, 128, 128)), to(rgb(80, 80, 80)));
     border-radius: 8px;
     height: 16px;
     width: 16px;
+}
+
+body.attached .help-close-button {
+    margin: 0;
+}
+
+body.attached .help-content {
+    margin: 8px 0 0 8px;
 }
 
 .help-close-button:hover {
@@ -107,7 +118,6 @@ body:not(.platform-mac) .help-close-button {
 
 .help-table {
     width: 100%;
-    font-size: 13px;
     -webkit-user-select: auto;
 }
 
@@ -131,18 +141,15 @@ body:not(.platform-mac) .help-close-button {
 }
 
 body:not(.platform-mac) .help-key {
-    font-weight: bold;
     text-shadow: black 1px 1px 7px;
 }
 
 body.platform-mac .help-key {
     font-family: Lucida Grande, sans-serif;
-    font-size: 13px;
 }
 
 .help-combine-keys {
     color: white;
-    font-weight: bold;
     margin: 0 0.3em;
     font-size: 12px;
 }
@@ -150,4 +157,34 @@ body.platform-mac .help-key {
 .help-key-delimiter {
     color: white;
     margin: 0 0.5em;
+}
+
+.help-content p {
+    margin: 5px 0 5px 0;
+}
+
+.help-content fieldset {
+    border: none;
+    margin-left: 9px;
+}
+
+.help-content fieldset p {
+    border-left: 1px solid rgb(128,128,128);
+    margin: 0 0 0 6px;
+    padding-left: 3px;
+}
+
+.help-content p.help-section {
+    margin-bottom: 15px;
+}
+
+.help-section-title {
+    color: yellow;
+}
+
+.help-content input[type=checkbox] {
+    height: 13px;
+    width: 13px;
+    margin-right: 0;
+    margin-right: 4px;
 }

@@ -28,8 +28,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @constructor
+ * @extends {WebInspector.Object}
+ */
 WebInspector.CSSStyleModel = function()
 {
+    new WebInspector.CSSStyleModelResourceBinding(this);
 }
 
 WebInspector.CSSStyleModel.parseRuleArrayPayload = function(ruleArray)
@@ -40,12 +45,16 @@ WebInspector.CSSStyleModel.parseRuleArrayPayload = function(ruleArray)
     return result;
 }
 
+WebInspector.CSSStyleModel.Events = {
+    StyleSheetChanged: 0
+}
+
 WebInspector.CSSStyleModel.prototype = {
-    getStylesAsync: function(nodeId, userCallback)
+    getStylesAsync: function(nodeId, forcedPseudoClasses, userCallback)
     {
-        function callback(userCallback, payload)
+        function callback(userCallback, error, payload)
         {
-            if (!payload) {
+            if (error) {
                 if (userCallback)
                     userCallback(null);
                 return;
@@ -59,8 +68,11 @@ WebInspector.CSSStyleModel.prototype = {
             result.matchedCSSRules = WebInspector.CSSStyleModel.parseRuleArrayPayload(payload.matchedCSSRules);
 
             result.styleAttributes = {};
-            for (var name in payload.styleAttributes)
-                result.styleAttributes[name] = WebInspector.CSSStyleDeclaration.parsePayload(payload.styleAttributes[name]);
+            var payloadStyleAttributes = payload.styleAttributes;
+            for (var i = 0; i < payloadStyleAttributes.length; ++i) {
+                var name = payloadStyleAttributes[i].name;
+                result.styleAttributes[name] = WebInspector.CSSStyleDeclaration.parsePayload(payloadStyleAttributes[i].style);
+            }
 
             result.pseudoElements = [];
             for (var i = 0; i < payload.pseudoElements.length; ++i) {
@@ -83,98 +95,145 @@ WebInspector.CSSStyleModel.prototype = {
                 userCallback(result);
         }
 
-        InspectorBackend.getStylesForNode2(nodeId, callback.bind(null, userCallback));
+        CSSAgent.getStylesForNode(nodeId, forcedPseudoClasses || [], callback.bind(null, userCallback));
     },
 
     getComputedStyleAsync: function(nodeId, userCallback)
     {
-        function callback(userCallback, stylePayload)
+        function callback(userCallback, error, stylePayload)
         {
-            if (!stylePayload)
+            if (error)
                 userCallback(null);
             else
                 userCallback(WebInspector.CSSStyleDeclaration.parsePayload(stylePayload));
         }
 
-        InspectorBackend.getComputedStyleForNode2(nodeId, callback.bind(null, userCallback));
+        CSSAgent.getComputedStyleForNode(nodeId, callback.bind(null, userCallback));
     },
 
     getInlineStyleAsync: function(nodeId, userCallback)
     {
-        function callback(userCallback, stylePayload)
+        function callback(userCallback, error, stylePayload)
         {
-            if (!stylePayload)
+            if (error)
                 userCallback(null);
             else
                 userCallback(WebInspector.CSSStyleDeclaration.parsePayload(stylePayload));
         }
 
-        InspectorBackend.getInlineStyleForNode2(nodeId, callback.bind(null, userCallback));
+        CSSAgent.getInlineStyleForNode(nodeId, callback.bind(null, userCallback));
     },
 
     setRuleSelector: function(ruleId, nodeId, newSelector, successCallback, failureCallback)
     {
         function checkAffectsCallback(nodeId, successCallback, rulePayload, selectedNodeIds)
         {
+            if (!selectedNodeIds)
+                return;
             var doesAffectSelectedNode = (selectedNodeIds.indexOf(nodeId) >= 0);
             var rule = WebInspector.CSSRule.parsePayload(rulePayload);
             successCallback(rule, doesAffectSelectedNode);
-            this._styleSheetChanged(rule.id.styleSheetId, true);
+            this._fireStyleSheetChanged(rule.id.styleSheetId, true);
         }
 
-        function callback(nodeId, successCallback, failureCallback, newSelector, rulePayload)
+        function callback(nodeId, successCallback, failureCallback, error, newSelector, rulePayload)
         {
-            if (!rulePayload)
+            // FIXME: looks like rulePayload is always null.
+            if (error)
                 failureCallback();
-            else
-                InspectorBackend.querySelectorAll(nodeId, newSelector, checkAffectsCallback.bind(this, nodeId, successCallback, rulePayload));
+            else {
+                var documentElementId = this._documentElementId(nodeId);
+                if (documentElementId)
+                    WebInspector.domAgent.querySelectorAll(documentElementId, newSelector, checkAffectsCallback.bind(this, nodeId, successCallback, rulePayload));
+                else
+                    failureCallback();
+            }
         }
 
-        InspectorBackend.setRuleSelector2(ruleId, newSelector, callback.bind(this, nodeId, successCallback, failureCallback));
+        CSSAgent.setRuleSelector(ruleId, newSelector, callback.bind(this, nodeId, successCallback, failureCallback, newSelector));
     },
 
     addRule: function(nodeId, selector, successCallback, failureCallback)
     {
         function checkAffectsCallback(nodeId, successCallback, rulePayload, selectedNodeIds)
         {
+            if (!selectedNodeIds)
+                return;
+
             var doesAffectSelectedNode = (selectedNodeIds.indexOf(nodeId) >= 0);
             var rule = WebInspector.CSSRule.parsePayload(rulePayload);
             successCallback(rule, doesAffectSelectedNode);
-            this._styleSheetChanged(rule.id.styleSheetId, true);
+            this._fireStyleSheetChanged(rule.id.styleSheetId, true);
         }
 
-        function callback(successCallback, failureCallback, selector, rulePayload)
+        function callback(successCallback, failureCallback, selector, error, rulePayload)
         {
-            if (!rulePayload) {
+            if (error) {
                 // Invalid syntax for a selector
                 failureCallback();
-            } else
-                InspectorBackend.querySelectorAll(nodeId, selector, checkAffectsCallback.bind(this, nodeId, successCallback, rulePayload));
+            } else {
+                var documentElementId = this._documentElementId(nodeId);
+                if (documentElementId)
+                    WebInspector.domAgent.querySelectorAll(documentElementId, selector, checkAffectsCallback.bind(this, nodeId, successCallback, rulePayload));
+                else
+                    failureCallback();
+            }
         }
 
-        InspectorBackend.addRule2(nodeId, selector, callback.bind(this, successCallback, failureCallback, selector));
+        CSSAgent.addRule(nodeId, selector, callback.bind(this, successCallback, failureCallback, selector));
     },
 
-    _styleSheetChanged: function(styleSheetId, majorChange)
+    _documentElementId: function(nodeId)
     {
-        if (!majorChange || !styleSheetId)
-            return;
+        var node = WebInspector.domAgent.nodeForId(nodeId);
+        if (!node)
+            return null;
+        return node.ownerDocumentElement().id;
+    },
 
-        function callback(href, content)
-        {
-            var resource = WebInspector.resourceManager.resourceForURL(href);
-            if (resource && resource.type === WebInspector.Resource.Type.Stylesheet)
-                resource.content = content;
+    _fireStyleSheetChanged: function(styleSheetId, majorChange, callback)
+    {
+        callback = callback || function() {};
+
+        if (!majorChange || !styleSheetId || !this.hasEventListeners(WebInspector.CSSStyleModel.Events.StyleSheetChanged)) {
+            callback();
+            return;
         }
-        InspectorBackend.getStyleSheetText2(styleSheetId, callback);
+
+        function mycallback(error, content)
+        {
+            if (!error)
+                this.dispatchEventToListeners(WebInspector.CSSStyleModel.Events.StyleSheetChanged, { styleSheetId: styleSheetId, content: content, majorChange: majorChange });
+            callback();
+        }
+
+        CSSAgent.getStyleSheetText(styleSheetId, mycallback.bind(this));
+    },
+
+    setStyleSheetText: function(styleSheetId, newText, majorChange, userCallback)
+    {
+        function callback(error)
+        {
+             if (!error)
+                 this._fireStyleSheetChanged(styleSheetId, majorChange, userCallback ? userCallback.bind(this, error) : null);
+        }
+        CSSAgent.setStyleSheetText(styleSheetId, newText, callback.bind(this));
     }
 }
 
+WebInspector.CSSStyleModel.prototype.__proto__ = WebInspector.Object.prototype;
+
+/**
+ * @constructor
+ * @param {*} payload
+ */
 WebInspector.CSSStyleDeclaration = function(payload)
 {
     this.id = payload.styleId;
-    this.properties = payload.properties;
-    this._shorthandValues = payload.shorthandValues;
+    this.width = payload.width;
+    this.height = payload.height;
+    this.range = payload.range;
+    this._shorthandValues = WebInspector.CSSStyleDeclaration.buildShorthandValueMap(payload.shorthandEntries);
     this._livePropertyMap = {}; // LIVE properties (source-based or style-based) : { name -> CSSProperty }
     this._allProperties = []; // ALL properties: [ CSSProperty ]
     this._longhandProperties = {}; // shorthandName -> [ CSSProperty ]
@@ -207,6 +266,14 @@ WebInspector.CSSStyleDeclaration = function(payload)
     this.length = propertyIndex;
     if ("cssText" in payload)
         this.cssText = payload.cssText;
+}
+
+WebInspector.CSSStyleDeclaration.buildShorthandValueMap = function(shorthandEntries)
+{
+    var result = {};
+    for (var i = 0; i < shorthandEntries.length; ++i)
+        result[shorthandEntries[i].name] = shorthandEntries[i].value;
+    return result;
 }
 
 WebInspector.CSSStyleDeclaration.parsePayload = function(payload)
@@ -323,20 +390,21 @@ WebInspector.CSSStyleDeclaration.prototype = {
 
     insertPropertyAt: function(index, name, value, userCallback)
     {
-        function callback(userCallback, payload)
+        function callback(userCallback, error, payload)
         {
             if (!userCallback)
                 return;
 
-            if (!payload)
+            if (error) {
+                console.error(JSON.stringify(error));
                 userCallback(null);
-            else {
+            } else {
                 userCallback(WebInspector.CSSStyleDeclaration.parsePayload(payload));
-                WebInspector.cssModel._styleSheetChanged(this.id.styleSheetId, true);
+                WebInspector.cssModel._fireStyleSheetChanged(this.id.styleSheetId, true);
             }
         }
 
-        InspectorBackend.setPropertyText2(this.id, index, name + ": " + value + ";", false, callback.bind(null, userCallback));
+        CSSAgent.setPropertyText(this.id, index, name + ": " + value + ";", false, callback.bind(null, userCallback));
     },
 
     appendProperty: function(name, value, userCallback)
@@ -345,6 +413,9 @@ WebInspector.CSSStyleDeclaration.prototype = {
     }
 }
 
+/**
+ * @constructor
+ */
 WebInspector.CSSRule = function(payload)
 {
     this.id = payload.ruleId;
@@ -384,6 +455,9 @@ WebInspector.CSSRule.prototype = {
     }
 }
 
+/**
+ * @constructor
+ */
 WebInspector.CSSProperty = function(ownerStyle, index, name, value, priority, status, parsedOk, implicit, shorthand, text)
 {
     this.ownerStyle = ownerStyle;
@@ -400,8 +474,14 @@ WebInspector.CSSProperty = function(ownerStyle, index, name, value, priority, st
 
 WebInspector.CSSProperty.parsePayload = function(ownerStyle, index, payload)
 {
+    // The following default field values are used in the payload:
+    // priority: ""
+    // parsedOk: true
+    // implicit: false
+    // status: "style"
+    // shorthandName: ""
     var result = new WebInspector.CSSProperty(
-        ownerStyle, index, payload.name, payload.value, payload.priority, payload.status, payload.parsedOk, payload.implicit, payload.shorthandName, payload.text);
+        ownerStyle, index, payload.name, payload.value, payload.priority || "", payload.status || "style", ("parsedOk" in payload) ? payload.parsedOk : true, !!payload.implicit, payload.shorthandName || "", payload.text);
     return result;
 }
 
@@ -444,19 +524,30 @@ WebInspector.CSSProperty.prototype = {
     // Replaces "propertyName: propertyValue [!important];" in the stylesheet by an arbitrary propertyText.
     setText: function(propertyText, majorChange, userCallback)
     {
-        function callback(stylePayload)
+        function enabledCallback(style)
         {
-            if (stylePayload)
-                this.text = propertyText;
-
-            if (!userCallback)
-                return;
-            if (!stylePayload)
-                userCallback(null);
-            else {
-                var style = WebInspector.CSSStyleDeclaration.parsePayload(stylePayload);
+            if (style)
+                WebInspector.cssModel._fireStyleSheetChanged(style.id.styleSheetId, majorChange, userCallback ? userCallback.bind(null, style) : null);
+            else if (userCallback)
                 userCallback(style);
-                WebInspector.cssModel._styleSheetChanged(style.id.styleSheetId, majorChange);
+        }
+
+        function callback(error, stylePayload)
+        {
+            if (!error) {
+                this.text = propertyText;
+                var style = WebInspector.CSSStyleDeclaration.parsePayload(stylePayload);
+                var newProperty = style.allProperties[this.index];
+
+                if (newProperty && this.disabled && !propertyText.match(/^\s*$/)) {
+                    newProperty.setDisabled(false, enabledCallback);
+                    return;
+                }
+
+                WebInspector.cssModel._fireStyleSheetChanged(style.id.styleSheetId, majorChange, userCallback ? userCallback.bind(null, style) : null);
+            } else {
+                if (userCallback)
+                    userCallback(null);
             }
         }
 
@@ -464,13 +555,13 @@ WebInspector.CSSProperty.prototype = {
             throw "No ownerStyle for property";
 
         // An index past all the properties adds a new property to the style.
-        InspectorBackend.setPropertyText2(this.ownerStyle.id, this.index, propertyText, this.index < this.ownerStyle.pastLastSourcePropertyIndex(), callback.bind(this));
+        CSSAgent.setPropertyText(this.ownerStyle.id, this.index, propertyText, this.index < this.ownerStyle.pastLastSourcePropertyIndex(), callback.bind(this));
     },
 
-    setValue: function(newValue, userCallback)
+    setValue: function(newValue, majorChange, userCallback)
     {
         var text = this.name + ": " + newValue + (this.priority ? " !" + this.priority : "") + ";"
-        this.setText(text, userCallback);
+        this.setText(text, majorChange, userCallback);
     },
 
     setDisabled: function(disabled, userCallback)
@@ -480,29 +571,30 @@ WebInspector.CSSProperty.prototype = {
         if (disabled === this.disabled && userCallback)
             userCallback(this.ownerStyle);
 
-        function callback(stylePayload)
+        function callback(error, stylePayload)
         {
-            if (!userCallback)
+            if (error) {
+                if (userCallback)
+                    userCallback(null);
                 return;
-            if (!stylePayload)
-                userCallback(null);
-            else {
+            }
+            if (userCallback) {
                 var style = WebInspector.CSSStyleDeclaration.parsePayload(stylePayload);
                 userCallback(style);
-                WebInspector.cssModel._styleSheetChanged(this.ownerStyle.id.styleSheetId, false);
             }
+            WebInspector.cssModel._fireStyleSheetChanged(this.ownerStyle.id.styleSheetId, false);
         }
 
-        InspectorBackend.toggleProperty2(this.ownerStyle.id, this.index, disabled, callback.bind(this));
+        CSSAgent.toggleProperty(this.ownerStyle.id, this.index, disabled, callback.bind(this));
     }
 }
 
+/**
+ * @constructor
+ */
 WebInspector.CSSStyleSheet = function(payload)
 {
     this.id = payload.styleSheetId;
-    this.sourceURL = payload.sourceURL;
-    this.title = payload.title;
-    this.disabled = payload.disabled;
     this.rules = [];
     this.styles = {};
     for (var i = 0; i < payload.rules.length; ++i) {
@@ -517,14 +609,14 @@ WebInspector.CSSStyleSheet = function(payload)
 
 WebInspector.CSSStyleSheet.createForId = function(styleSheetId, userCallback)
 {
-    function callback(styleSheetPayload)
+    function callback(error, styleSheetPayload)
     {
-        if (!styleSheetPayload)
+        if (error)
             userCallback(null);
         else
             userCallback(new WebInspector.CSSStyleSheet(styleSheetPayload));
     }
-    InspectorBackend.getStyleSheet2(styleSheetId, callback.bind(this));
+    CSSAgent.getStyleSheet(styleSheetId, callback.bind(this));
 }
 
 WebInspector.CSSStyleSheet.prototype = {
@@ -533,18 +625,110 @@ WebInspector.CSSStyleSheet.prototype = {
         return this._text;
     },
 
-    setText: function(newText, userCallback)
+    setText: function(newText, majorChange, userCallback)
     {
-        function callback(styleSheetPayload)
+        function callback(error)
         {
-            if (!styleSheetPayload)
-                userCallback(null);
-            else {
-                userCallback(new WebInspector.CSSStyleSheet(styleSheetPayload));
-                WebInspector.cssModel._styleSheetChanged(this.id, true);
-            }
+             if (userCallback)
+                 userCallback(error);
+             if (!error)
+                 WebInspector.cssModel._fireStyleSheetChanged(this.id, majorChange);
         }
 
-        InspectorBackend.setStyleSheetText2(this.id, newText, callback.bind(this));
+        CSSAgent.setStyleSheetText(this.id, newText, callback.bind(this));
     }
 }
+
+/**
+ * @constructor
+ * @implements {WebInspector.ResourceDomainModelBinding}
+ */
+WebInspector.CSSStyleModelResourceBinding = function(cssModel)
+{
+    this._cssModel = cssModel;
+    this._urlToStyleSheetId = {};
+    this._styleSheetIdToURL = {};
+    this._cssModel.addEventListener(WebInspector.CSSStyleModel.Events.StyleSheetChanged, this._styleSheetChanged, this);
+    WebInspector.resourceTreeModel.addEventListener(WebInspector.ResourceTreeModel.EventTypes.InspectedURLChanged, this._inspectedURLChanged, this);
+    WebInspector.Resource.registerDomainModelBinding(WebInspector.Resource.Type.Stylesheet, this);
+}
+
+WebInspector.CSSStyleModelResourceBinding.prototype = {
+    setContent: function(resource, content, majorChange, userCallback)
+    {
+        if (this._urlToStyleSheetId[resource.url]) {
+            this._innerSetContent(resource.url, content, majorChange, userCallback);
+            return;
+        }
+        this._loadStyleSheetHeaders(this._innerSetContent.bind(this, resource.url, content, majorChange, userCallback));
+    },
+
+    _inspectedURLChanged: function(event)
+    {
+        // Main frame navigation - clear history.
+        this._urlToStyleSheetId = {};
+        this._styleSheetIdToURL = {};
+    },
+
+    _innerSetContent: function(url, content, majorChange, userCallback, error)
+    {
+        if (error) {
+            userCallback(error);
+            return;
+        }
+
+        var styleSheetId = this._urlToStyleSheetId[url];
+        if (!styleSheetId) {
+            if (userCallback)
+                userCallback("No stylesheet found: " + url);
+            return;
+        }
+        this._cssModel.setStyleSheetText(styleSheetId, content, majorChange, userCallback);
+    },
+
+    _loadStyleSheetHeaders: function(callback)
+    {
+        function didGetAllStyleSheets(error, infos)
+        {
+            if (error) {
+                callback(error);
+                return;
+            }
+
+            for (var i = 0; i < infos.length; ++i) {
+                var info = infos[i];
+                this._urlToStyleSheetId[info.sourceURL] = info.styleSheetId;
+                this._styleSheetIdToURL[info.styleSheetId] = info.sourceURL;
+            }
+            callback();
+        }
+        CSSAgent.getAllStyleSheets(didGetAllStyleSheets.bind(this));
+    },
+
+    _styleSheetChanged: function(event)
+    {
+        var styleSheetId = event.data.styleSheetId;
+        function setContent()
+        {
+            var url = this._styleSheetIdToURL[styleSheetId];
+            if (!url)
+                return;
+
+            var resource = WebInspector.resourceForURL(url);
+            if (!resource)
+                return;
+
+            var majorChange = event.data.majorChange;
+            if (majorChange)
+                resource.addRevision(event.data.content);
+        }
+
+        if (!this._styleSheetIdToURL[styleSheetId]) {
+            this._loadStyleSheetHeaders(setContent.bind(this));
+            return;
+        }
+        setContent.call(this);
+    }
+}
+
+WebInspector.CSSStyleModelResourceBinding.prototype.__proto__ = WebInspector.ResourceDomainModelBinding.prototype;

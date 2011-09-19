@@ -60,10 +60,8 @@ WebInspector.DatabaseTableView.prototype = {
 
         var dataGrid = WebInspector.panels.resources.dataGridForResult(columnNames, values);
         if (!dataGrid) {
-            var emptyMsgElement = document.createElement("div");
-            emptyMsgElement.className = "storage-empty-view";
-            emptyMsgElement.textContent = WebInspector.UIString("The “%s”\ntable is empty.", this.tableName);
-            this.element.appendChild(emptyMsgElement);
+            this._emptyView = new WebInspector.EmptyView(WebInspector.UIString("The “%s”\ntable is empty.", this.tableName));
+            this._emptyView.show(this.element);
             return;
         }
 

@@ -29,17 +29,19 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @constructor
+ */
 WebInspector.DOMNode = function(doc, payload) {
     this.ownerDocument = doc;
 
-    this.id = payload.id;
-    this.nodeType = payload.nodeType;
-    this.nodeName = payload.nodeName;
-    this.localName = payload.localName;
+    this.id = payload.nodeId;
+    this._nodeType = payload.nodeType;
+    this._nodeName = payload.nodeName;
+    this._localName = payload.localName;
     this._nodeValue = payload.nodeValue;
-    this.textContent = this.nodeValue;
 
-    this.attributes = [];
+    this._attributes = [];
     this._attributesMap = {};
     if (payload.attributes)
         this._setAttributesPayload(payload.attributes);
@@ -60,23 +62,22 @@ WebInspector.DOMNode = function(doc, payload) {
     this.style = null;
     this._matchedCSSRules = [];
 
-    this.breakpoints = {};
-
-    if (this.nodeType === Node.ELEMENT_NODE) {
+    if (this._nodeType === Node.ELEMENT_NODE) {
         // HTML and BODY from internal iframes should not overwrite top-level ones.
-        if (!this.ownerDocument.documentElement && this.nodeName === "HTML")
+        if (!this.ownerDocument.documentElement && this._nodeName === "HTML")
             this.ownerDocument.documentElement = this;
-        if (!this.ownerDocument.body && this.nodeName === "BODY")
+        if (!this.ownerDocument.body && this._nodeName === "BODY")
             this.ownerDocument.body = this;
         if (payload.documentURL)
             this.documentURL = payload.documentURL;
-    } else if (this.nodeType === Node.DOCUMENT_TYPE_NODE) {
+    } else if (this._nodeType === Node.DOCUMENT_TYPE_NODE) {
         this.publicId = payload.publicId;
         this.systemId = payload.systemId;
         this.internalSubset = payload.internalSubset;
-    } else if (this.nodeType === Node.DOCUMENT_NODE) {
+    } else if (this._nodeType === Node.DOCUMENT_NODE) {
         this.documentURL = payload.documentURL;
-    } else if (this.nodeType === Node.ATTRIBUTE_NODE) {
+        this.xmlVersion = payload.xmlVersion;
+    } else if (this._nodeType === Node.ATTRIBUTE_NODE) {
         this.name = payload.name;
         this.value = payload.value;
     }
@@ -85,7 +86,7 @@ WebInspector.DOMNode = function(doc, payload) {
 WebInspector.DOMNode.prototype = {
     hasAttributes: function()
     {
-        return this.attributes.length > 0;
+        return this._attributes.length > 0;
     },
 
     hasChildNodes: function()
@@ -93,14 +94,34 @@ WebInspector.DOMNode.prototype = {
         return this._childNodeCount > 0;
     },
 
-    get nodeValue() {
+    nodeType: function()
+    {
+        return this._nodeType;
+    },
+
+    nodeName: function()
+    {
+        return this._nodeName;
+    },
+
+    setNodeName: function(name, callback)
+    {
+        DOMAgent.setNodeName(this.id, name, callback);
+    },
+
+    localName: function()
+    {
+        return this._localName;
+    },
+
+    nodeValue: function()
+    {
         return this._nodeValue;
     },
 
-    set nodeValue(value) {
-        if (this.nodeType != Node.TEXT_NODE)
-            return;
-        this.ownerDocument._domAgent.setTextNodeValueAsync(this, value, function() {});
+    setNodeValue: function(value, callback)
+    {
+        DOMAgent.setNodeValue(this.id, value, callback);
     },
 
     getAttribute: function(name)
@@ -109,51 +130,146 @@ WebInspector.DOMNode.prototype = {
         return attr ? attr.value : undefined;
     },
 
-    setAttribute: function(name, value)
+    setAttribute: function(name, text, callback)
     {
-        var self = this;
-        var callback = function()
-        {
-            var attr = self._attributesMap[name];
-            if (attr)
-                attr.value = value;
-            else
-                attr = self._addAttribute(name, value);
-        };
-        this.ownerDocument._domAgent.setAttributeAsync(this, name, value, callback);
+        DOMAgent.setAttributesText(this.id, text, name, callback);
     },
 
-    removeAttribute: function(name)
+    setAttributeValue: function(name, value, callback)
     {
-        var self = this;
-        var callback = function()
+        DOMAgent.setAttributeValue(this.id, name, value, callback);
+    },
+
+    attributes: function()
+    {
+        return this._attributes;
+    },
+
+    removeAttribute: function(name, callback)
+    {
+        function mycallback(error, success)
         {
-            delete self._attributesMap[name];
-            for (var i = 0;  i < self.attributes.length; ++i) {
-                if (self.attributes[i].name == name) {
-                    self.attributes.splice(i, 1);
-                    break;
+            if (!error) {
+                delete this._attributesMap[name];
+                for (var i = 0;  i < this._attributes.length; ++i) {
+                    if (this._attributes[i].name === name) {
+                        this._attributes.splice(i, 1);
+                        break;
+                    }
                 }
             }
-        };
-        this.ownerDocument._domAgent.removeAttributeAsync(this, name, callback);
+
+            if (callback)
+                callback();
+        }
+        DOMAgent.removeAttribute(this.id, name, mycallback.bind(this));
+    },
+
+    getChildNodes: function(callback)
+    {
+        if (this.children) {
+            if (callback)
+                callback(this.children);
+            return;
+        }
+
+        function mycallback(error) {
+            if (!error && callback)
+                callback(this.children);
+        }
+        DOMAgent.requestChildNodes(this.id, mycallback.bind(this));
+    },
+
+    getOuterHTML: function(callback)
+    {
+        DOMAgent.getOuterHTML(this.id, callback);
+    },
+
+    setOuterHTML: function(html, callback)
+    {
+        DOMAgent.setOuterHTML(this.id, html, callback);
+    },
+
+    removeNode: function(callback)
+    {
+        DOMAgent.removeNode(this.id, callback);
+    },
+
+    copyNode: function(callback)
+    {
+        DOMAgent.copyNode(this.id, callback);
+    },
+
+    eventListeners: function(callback)
+    {
+        DOMAgent.getEventListenersForNode(this.id, callback);
     },
 
     path: function()
     {
         var path = [];
         var node = this;
-        while (node && "index" in node && node.nodeName.length) {
-            path.push([node.index, node.nodeName]);
+        while (node && "index" in node && node._nodeName.length) {
+            path.push([node.index, node._nodeName]);
             node = node.parentNode;
         }
         path.reverse();
         return path.join(",");
     },
 
+    appropriateSelectorFor: function(justSelector)
+    {
+        var lowerCaseName = this.localName() || this.nodeName().toLowerCase();
+
+        var id = this.getAttribute("id");
+        if (id) {
+            var selector = "#" + id;
+            return (justSelector ? selector : lowerCaseName + selector);
+        }
+
+        var className = this.getAttribute("class");
+        if (className) {
+            var selector = "." + className.replace(/\s+/, ".");
+            return (justSelector ? selector : lowerCaseName + selector);
+        }
+
+        if (lowerCaseName === "input" && this.getAttribute("type"))
+            return lowerCaseName + "[type=\"" + this.getAttribute("type") + "\"]";
+
+        return lowerCaseName;
+    },
+
+    isAncestor: function(node)
+    {
+        if (!node)
+            return false;
+
+        var currentNode = node.parentNode;
+        while (currentNode) {
+            if (this === currentNode)
+                return true;
+            currentNode = currentNode.parentNode;
+        }
+        return false;
+    },
+
+    isDescendant: function(descendant)
+    {
+        return descendant !== null && descendant.isAncestor(this);
+    },
+
+    isWhitespace: function()
+    {
+        if (this.nodeType !== Node.TEXT_NODE)
+            return false;
+        if (!this.nodeValue.length)
+            return true;
+        return this.nodeValue.match(/^[\s\xA0]+$/);
+    },
+
     _setAttributesPayload: function(attrs)
     {
-        this.attributes = [];
+        this._attributes = [];
         this._attributesMap = {};
         for (var i = 0; i < attrs.length; i += 2)
             this._addAttribute(attrs[i], attrs[i + 1]);
@@ -174,7 +290,7 @@ WebInspector.DOMNode.prototype = {
         return node;
     },
 
-    removeChild_: function(node)
+    _removeChild: function(node)
     {
         this.children.splice(this.children.indexOf(node), 1);
         node.parentNode = null;
@@ -219,152 +335,180 @@ WebInspector.DOMNode.prototype = {
             "_node": this
         };
         this._attributesMap[name] = attr;
-        this.attributes.push(attr);
+        this._attributes.push(attr);
+    },
+
+    ownerDocumentElement: function()
+    {
+        // document element is the child of the document / frame owner node that has documentURL property.
+        // FIXME: return document nodes as a part of the DOM tree structure.
+        var node = this;
+        while (node.parentNode && !node.parentNode.documentURL)
+            node = node.parentNode;
+        return node;
+    },
+
+    moveTo: function(targetNode, anchorNode, callback)
+    {
+        DOMAgent.moveTo(this.id, targetNode.id, anchorNode ? anchorNode.id : undefined, callback);
     }
 }
 
-WebInspector.DOMDocument = function(domAgent, defaultView, payload)
+/**
+ * @extends {WebInspector.DOMNode}
+ * @constructor
+ */
+WebInspector.DOMDocument = function(domAgent, payload)
 {
     WebInspector.DOMNode.call(this, this, payload);
     this._listeners = {};
     this._domAgent = domAgent;
-    this.defaultView = defaultView;
-}
-
-WebInspector.DOMDocument.prototype = {
-
-    addEventListener: function(name, callback)
-    {
-        var listeners = this._listeners[name];
-        if (!listeners) {
-            listeners = [];
-            this._listeners[name] = listeners;
-        }
-        listeners.push(callback);
-    },
-
-    removeEventListener: function(name, callback)
-    {
-        var listeners = this._listeners[name];
-        if (!listeners)
-            return;
-
-        var index = listeners.indexOf(callback);
-        if (index != -1)
-            listeners.splice(index, 1);
-    },
-
-    _fireDomEvent: function(name, event)
-    {
-        var listeners = this._listeners[name];
-        if (!listeners)
-            return;
-
-        for (var i = 0; i < listeners.length; ++i) {
-            var listener = listeners[i];
-            listener.call(this, event);
-        }
-    }
 }
 
 WebInspector.DOMDocument.prototype.__proto__ = WebInspector.DOMNode.prototype;
 
-
-WebInspector.DOMWindow = function(domAgent)
-{
-    this._domAgent = domAgent;
-}
-
-WebInspector.DOMWindow.prototype = {
-    get document()
-    {
-        return this._domAgent.document;
-    },
-
-    get Node()
-    {
-        return WebInspector.DOMNode;
-    },
-
-    get Element()
-    {
-        return WebInspector.DOMNode;
-    },
-
-    Object: function()
-    {
-    }
-}
-
+/**
+ * @extends {WebInspector.Object}
+ * @constructor
+ */
 WebInspector.DOMAgent = function() {
-    this._window = new WebInspector.DOMWindow(this);
     this._idToDOMNode = null;
-    this.document = null;
+    this._document = null;
+    this._attributeLoadNodeIds = {};
+    InspectorBackend.registerDOMDispatcher(new WebInspector.DOMDispatcher(this));
+}
+
+WebInspector.DOMAgent.Events = {
+    AttrModified: "AttrModified",
+    CharacterDataModified: "CharacterDataModified",
+    NodeInserted: "NodeInserted",
+    NodeRemoved: "NodeRemoved",
+    DocumentUpdated: "DocumentUpdated",
+    ChildNodeCountUpdated: "ChildNodeCountUpdated",
+    InspectElementRequested: "InspectElementRequested"
 }
 
 WebInspector.DOMAgent.prototype = {
-    get domWindow()
+    requestDocument: function(callback)
     {
-        return this._window;
-    },
-
-    getChildNodesAsync: function(parent, callback)
-    {
-        var children = parent.children;
-        if (children) {
-            callback(children);
+        if (this._document) {
+            if (callback)
+                callback(this._document);
             return;
         }
-        function mycallback() {
-            callback(parent.children);
-        }
-        InspectorBackend.getChildNodes(parent.id, mycallback);
-    },
 
-    setAttributeAsync: function(node, name, value, callback)
-    {
-        var mycallback = this._didApplyDomChange.bind(this, node, callback);
-        InspectorBackend.setAttribute(node.id, name, value, mycallback);
-    },
-
-    removeAttributeAsync: function(node, name, callback)
-    {
-        var mycallback = this._didApplyDomChange.bind(this, node, callback);
-        InspectorBackend.removeAttribute(node.id, name, mycallback);
-    },
-
-    setTextNodeValueAsync: function(node, text, callback)
-    {
-        var mycallback = this._didApplyDomChange.bind(this, node, callback);
-        InspectorBackend.setTextNodeValue(node.id, text, mycallback);
-    },
-
-    _didApplyDomChange: function(node, callback, success)
-    {
-        if (!success)
+        if (this._pendingDocumentRequestCallbacks) {
+            this._pendingDocumentRequestCallbacks.push(callback);
             return;
-        callback();
-        // TODO(pfeldman): Fix this hack.
-        var elem = WebInspector.panels.elements.treeOutline.findTreeElement(node);
-        if (elem)
-            elem.updateTitle();
+        }
+
+        this._pendingDocumentRequestCallbacks = [callback];
+
+        function onDocumentAvailable(error, root)
+        {
+            if (!error)
+                this._setDocument(root);
+
+            for (var i = 0; i < this._pendingDocumentRequestCallbacks.length; ++i) {
+                var callback = this._pendingDocumentRequestCallbacks[i];
+                if (callback)
+                    callback(this._document);
+            }
+            delete this._pendingDocumentRequestCallbacks;
+        }
+
+        DOMAgent.getDocument(onDocumentAvailable.bind(this));
     },
 
-    _attributesUpdated: function(nodeId, attrsArray)
+    pushNodeToFrontend: function(objectId, callback)
     {
-        var node = this._idToDOMNode[nodeId];
-        node._setAttributesPayload(attrsArray);
-        var event = {target: node};
-        this.document._fireDomEvent("DOMAttrModified", event);
+        this._dispatchWhenDocumentAvailable(DOMAgent.requestNode.bind(DOMAgent), objectId, callback);
+    },
+
+    pushNodeByPathToFrontend: function(path, callback)
+    {
+        this._dispatchWhenDocumentAvailable(DOMAgent.pushNodeByPathToFrontend.bind(DOMAgent), path, callback);
+    },
+
+    _wrapClientCallback: function(callback)
+    {
+        if (!callback)
+            return;
+        return function(error, result)
+        {
+            if (error)
+                console.error("Error during DOMAgent operation: " + error);
+            callback(error ? null : result);
+        }
+    },
+
+    _dispatchWhenDocumentAvailable: function(action)
+    {
+        var requestArguments = Array.prototype.slice.call(arguments, 1);
+        var callbackWrapper;
+
+        if (typeof requestArguments[requestArguments.length - 1] === "function") {
+            var callback = requestArguments.pop();
+            callbackWrapper = this._wrapClientCallback(callback);
+            requestArguments.push(callbackWrapper);
+        }
+        function onDocumentAvailable()
+        {
+            if (this._document)
+                action.apply(null, requestArguments);
+            else {
+                if (callbackWrapper)
+                    callbackWrapper("No document");
+            }
+        }
+        this.requestDocument(onDocumentAvailable.bind(this));
+    },
+
+    _attributesUpdated: function(nodeIds)
+    {
+        this._loadNodeAttributesSoon(nodeIds);
+    },
+
+    _inlineStyleInvalidated: function(nodeIds)
+    {
+        // FIXME: handle differently (we don't necessarily need to update attributes upon this message).
+        this._loadNodeAttributesSoon(nodeIds);
+    },
+
+    _loadNodeAttributesSoon: function(nodeIds)
+    {
+        for (var i = 0; i < nodeIds.length; ++i)
+            this._attributeLoadNodeIds[nodeIds[i]] = true;
+        if ("_loadNodeAttributesTimeout" in this)
+            return;
+        this._loadNodeAttributesTimeout = setTimeout(this._loadNodeAttributes.bind(this), 0);
+    },
+
+    _loadNodeAttributes: function()
+    {
+        function callback(nodeId, attributes)
+        {
+            if (!attributes)
+                return;
+            var node = this._idToDOMNode[nodeId];
+            if (node) {
+                node._setAttributesPayload(attributes);
+                this.dispatchEventToListeners(WebInspector.DOMAgent.Events.AttrModified, node);
+            }
+        }
+
+        delete this._loadNodeAttributesTimeout;
+
+        for (var nodeId in this._attributeLoadNodeIds)
+            DOMAgent.getAttributes(parseInt(nodeId, 10), this._wrapClientCallback(callback.bind(this, nodeId)));
+        this._attributeLoadNodeIds = {};
     },
 
     _characterDataModified: function(nodeId, newValue)
     {
         var node = this._idToDOMNode[nodeId];
         node._nodeValue = newValue;
-        node.textContent = newValue;
-        var event = { target : node };
-        this.document._fireDomEvent("DOMCharacterDataModified", event);
+        this.dispatchEventToListeners(WebInspector.DOMAgent.Events.CharacterDataModified, node);
     },
 
     nodeForId: function(nodeId)
@@ -372,27 +516,44 @@ WebInspector.DOMAgent.prototype = {
         return this._idToDOMNode[nodeId];
     },
 
+    _documentUpdated: function()
+    {
+        this._setDocument(null);
+        this.requestDocument();
+    },
+
+    /**
+     * @param {*} payload
+     */
     _setDocument: function(payload)
     {
         this._idToDOMNode = {};
-        if (payload && "id" in payload) {
-            this.document = new WebInspector.DOMDocument(this, this._window, payload);
-            this._idToDOMNode[payload.id] = this.document;
-            this._bindNodes(this.document.children);
-            WebInspector.breakpointManager.restoreDOMBreakpoints();
+        if (payload && "nodeId" in payload) {
+            this._document = new WebInspector.DOMDocument(this, payload);
+            this._idToDOMNode[payload.nodeId] = this._document;
+            if (this._document.children)
+                this._bindNodes(this._document.children);
         } else
-            this.document = null;
-        WebInspector.panels.elements.setDocument(this.document);
+            this._document = null;
+        this.dispatchEventToListeners(WebInspector.DOMAgent.Events.DocumentUpdated, this._document);
     },
 
+    /**
+     * @param {*} payload
+     */
     _setDetachedRoot: function(payload)
     {
-        var root = new WebInspector.DOMNode(this.document, payload);
-        this._idToDOMNode[payload.id] = root;
+        var root = new WebInspector.DOMNode(this._document, payload);
+        this._idToDOMNode[payload.nodeId] = root;
     },
 
     _setChildNodes: function(parentId, payloads)
     {
+        if (!parentId && payloads.length) {
+            this._setDetachedRoot(payloads[0]);
+            return;
+        }
+
         var parent = this._idToDOMNode[parentId];
         parent._setChildrenPayload(payloads);
         this._bindNodes(parent.children);
@@ -412,10 +573,7 @@ WebInspector.DOMAgent.prototype = {
     {
         var node = this._idToDOMNode[nodeId];
         node._childNodeCount = newValue;
-        var outline = WebInspector.panels.elements.treeOutline;
-        var treeElement = outline.findTreeElement(node);
-        if (treeElement)
-            treeElement.hasChildren = newValue;
+        this.dispatchEventToListeners(WebInspector.DOMAgent.Events.ChildNodeCountUpdated, node);
     },
 
     _childNodeInserted: function(parentId, prevId, payload)
@@ -424,142 +582,113 @@ WebInspector.DOMAgent.prototype = {
         var prev = this._idToDOMNode[prevId];
         var node = parent._insertChild(prev, payload);
         this._idToDOMNode[node.id] = node;
-        var event = { target : node, relatedNode : parent };
-        this.document._fireDomEvent("DOMNodeInserted", event);
+        this.dispatchEventToListeners(WebInspector.DOMAgent.Events.NodeInserted, node);
     },
 
     _childNodeRemoved: function(parentId, nodeId)
     {
         var parent = this._idToDOMNode[parentId];
         var node = this._idToDOMNode[nodeId];
-        parent.removeChild_(node);
-        var event = { target : node, relatedNode : parent };
-        this.document._fireDomEvent("DOMNodeRemoved", event);
+        parent._removeChild(node);
+        this.dispatchEventToListeners(WebInspector.DOMAgent.Events.NodeRemoved, {node:node, parent:parent});
         delete this._idToDOMNode[nodeId];
-        this._removeBreakpoints(node);
     },
 
-    _removeBreakpoints: function(node)
+    _inspectElementRequested: function(nodeId)
     {
-        for (var type in node.breakpoints)
-            node.breakpoints[type].remove();
-        if (!node.children)
-            return;
-        for (var i = 0; i < node.children.length; ++i)
-            this._removeBreakpoints(node.children[i]);
-    }
-}
+        var node = this._idToDOMNode[nodeId];
+        if (node)
+            this.dispatchEventToListeners(WebInspector.DOMAgent.Events.InspectElementRequested, node);
+    },
 
-WebInspector.ApplicationCache = {}
-
-WebInspector.ApplicationCache.getApplicationCachesAsync = function(callback)
-{
-    function mycallback(applicationCaches)
+    performSearch: function(query, searchResultCollector, searchSynchronously)
     {
-        // FIXME: Currently, this list only returns a single application cache.
-        if (applicationCaches)
-            callback(applicationCaches);
-    }
+        this._searchResultCollector = searchResultCollector;
+        DOMAgent.performSearch(query, !!searchSynchronously);
+    },
 
-    InspectorBackend.getApplicationCaches(mycallback);
-}
-
-WebInspector.Cookies = {}
-
-WebInspector.Cookies.getCookiesAsync = function(callback)
-{
-    function mycallback(cookies, cookiesString)
+    cancelSearch: function()
     {
-        if (cookiesString)
-            callback(WebInspector.Cookies.buildCookiesFromString(cookiesString), false);
-        else
-            callback(cookies, true);
+        delete this._searchResultCollector;
+        DOMAgent.cancelSearch();
+    },
+
+    querySelector: function(nodeId, selectors, callback)
+    {
+        DOMAgent.querySelector(nodeId, selectors, this._wrapClientCallback(callback));
+    },
+
+    querySelectorAll: function(nodeId, selectors, callback)
+    {
+        DOMAgent.querySelectorAll(nodeId, selectors, this._wrapClientCallback(callback));
     }
-
-    InspectorBackend.getCookies(mycallback);
 }
 
-WebInspector.Cookies.buildCookiesFromString = function(rawCookieString)
-{
-    var rawCookies = rawCookieString.split(/;\s*/);
-    var cookies = [];
+WebInspector.DOMAgent.prototype.__proto__ = WebInspector.Object.prototype;
 
-    if (!(/^\s*$/.test(rawCookieString))) {
-        for (var i = 0; i < rawCookies.length; ++i) {
-            var cookie = rawCookies[i];
-            var delimIndex = cookie.indexOf("=");
-            var name = cookie.substring(0, delimIndex);
-            var value = cookie.substring(delimIndex + 1);
-            var size = name.length + value.length;
-            cookies.push({ name: name, value: value, size: size });
-        }
+/**
+ * @constructor
+ * @implements {DOMAgent.Dispatcher}
+ */
+WebInspector.DOMDispatcher = function(domAgent)
+{
+    this._domAgent = domAgent;
+}
+
+WebInspector.DOMDispatcher.prototype = {
+    documentUpdated: function()
+    {
+        this._domAgent._documentUpdated();
+    },
+
+    attributesUpdated: function(nodeId)
+    {
+        this._domAgent._attributesUpdated([nodeId]);
+    },
+
+    inlineStyleInvalidated: function(nodeIds)
+    {
+        this._domAgent._inlineStyleInvalidated(nodeIds);
+    },
+
+    characterDataModified: function(nodeId, newValue)
+    {
+        this._domAgent._characterDataModified(nodeId, newValue);
+    },
+
+    setChildNodes: function(parentId, payloads)
+    {
+        this._domAgent._setChildNodes(parentId, payloads);
+    },
+
+    childNodeCountUpdated: function(nodeId, newValue)
+    {
+        this._domAgent._childNodeCountUpdated(nodeId, newValue);
+    },
+
+    childNodeInserted: function(parentId, prevId, payload)
+    {
+        this._domAgent._childNodeInserted(parentId, prevId, payload);
+    },
+
+    childNodeRemoved: function(parentId, nodeId)
+    {
+        this._domAgent._childNodeRemoved(parentId, nodeId);
+    },
+
+    inspectElementRequested: function(nodeId)
+    {
+        this._domAgent._inspectElementRequested(nodeId);
+    },
+
+    searchResults: function(nodeIds)
+    {
+        if (this._domAgent._searchResultCollector)
+            this._domAgent._searchResultCollector(nodeIds);
     }
-
-    return cookies;
 }
 
-WebInspector.Cookies.cookieMatchesResourceURL = function(cookie, resourceURL)
-{
-    var url = resourceURL.asParsedURL();
-    if (!url || !this.cookieDomainMatchesResourceDomain(cookie.domain, url.host))
-        return false;
-    return (url.path.indexOf(cookie.path) === 0
-        && (!cookie.port || url.port == cookie.port)
-        && (!cookie.secure || url.scheme === "https"));
-}
-
-WebInspector.Cookies.cookieDomainMatchesResourceDomain = function(cookieDomain, resourceDomain)
-{
-    if (cookieDomain.charAt(0) !== '.')
-        return resourceDomain === cookieDomain;
-    return !!resourceDomain.match(new RegExp("^([^\\.]+\\.)?" + cookieDomain.substring(1).escapeForRegExp() + "$"), "i");
-}
-
-WebInspector.EventListeners = {}
-
-WebInspector.EventListeners.getEventListenersForNodeAsync = function(node, callback)
-{
-    if (!node)
-        return;
-    InspectorBackend.getEventListenersForNode(node.id, callback);
-}
-
-WebInspector.attributesUpdated = function()
-{
-    this.domAgent._attributesUpdated.apply(this.domAgent, arguments);
-}
-
-WebInspector.characterDataModified = function()
-{
-    this.domAgent._characterDataModified.apply(this.domAgent, arguments);
-}
-
-WebInspector.setDocument = function()
-{
-    this.domAgent._setDocument.apply(this.domAgent, arguments);
-}
-
-WebInspector.setDetachedRoot = function()
-{
-    this.domAgent._setDetachedRoot.apply(this.domAgent, arguments);
-}
-
-WebInspector.setChildNodes = function()
-{
-    this.domAgent._setChildNodes.apply(this.domAgent, arguments);
-}
-
-WebInspector.childNodeCountUpdated = function()
-{
-    this.domAgent._childNodeCountUpdated.apply(this.domAgent, arguments);
-}
-
-WebInspector.childNodeInserted = function()
-{
-    this.domAgent._childNodeInserted.apply(this.domAgent, arguments);
-}
-
-WebInspector.childNodeRemoved = function()
-{
-    this.domAgent._childNodeRemoved.apply(this.domAgent, arguments);
-}
+/**
+ * @type {?WebInspector.DOMAgent}
+ */
+WebInspector.domAgent = null;

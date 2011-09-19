@@ -35,17 +35,19 @@ WebInspector.ElementsPanel = function()
     this.contentElement = document.createElement("div");
     this.contentElement.id = "elements-content";
     this.contentElement.className = "outline-disclosure source-code";
+    if (!WebInspector.settings.domWordWrap.get())
+        this.contentElement.classList.add("nowrap");
+    WebInspector.settings.domWordWrap.addChangeListener(this._domWordWrapSettingChanged.bind(this));
+
+    this.contentElement.addEventListener("contextmenu", this._contextMenuEventFired.bind(this), true);
 
     this.treeOutline = new WebInspector.ElementsTreeOutline();
     this.treeOutline.panel = this;
     this.treeOutline.includeRootDOMNode = false;
     this.treeOutline.selectEnabled = true;
 
-    this.treeOutline.focusedNodeChanged = function(forceUpdate)
+    this.treeOutline.selectedNodeChanged = function(forceUpdate)
     {
-        if (this.panel.visible && WebInspector.currentFocusElement !== document.getElementById("search"))
-            WebInspector.currentFocusElement = this.element;
-
         this.panel.updateBreadcrumb(forceUpdate);
 
         for (var pane in this.panel.sidebarPanes)
@@ -56,8 +58,8 @@ WebInspector.ElementsPanel = function()
         this.panel.updateProperties();
         this.panel.updateEventListeners();
 
-        if (this._focusedDOMNode) {
-            InspectorBackend.addInspectedNode(this._focusedDOMNode.id);
+        if (this._selectedDOMNode) {
+            ConsoleAgent.addInspectedNode(this._selectedDOMNode.id);
             WebInspector.extensionServer.notifyObjectSelected(this.panel.name);
         }
     };
@@ -75,7 +77,7 @@ WebInspector.ElementsPanel = function()
     this.sidebarPanes.metrics = new WebInspector.MetricsSidebarPane();
     this.sidebarPanes.properties = new WebInspector.PropertiesSidebarPane();
     if (Preferences.nativeInstrumentationEnabled)
-        this.sidebarPanes.domBreakpoints = WebInspector.createDOMBreakpointsSidebarPane();
+        this.sidebarPanes.domBreakpoints = WebInspector.domBreakpointsSidebarPane;
     this.sidebarPanes.eventListeners = new WebInspector.EventListenersSidebarPane();
 
     this.sidebarPanes.styles.onexpand = this.updateStyles.bind(this);
@@ -92,15 +94,18 @@ WebInspector.ElementsPanel = function()
     this.sidebarElement = document.createElement("div");
     this.sidebarElement.id = "elements-sidebar";
 
-    for (var pane in this.sidebarPanes)
+    for (var pane in this.sidebarPanes) {
         this.sidebarElement.appendChild(this.sidebarPanes[pane].element);
+        if (this.sidebarPanes[pane].onattach)
+            this.sidebarPanes[pane].onattach();
+    }
 
     this.sidebarResizeElement = document.createElement("div");
     this.sidebarResizeElement.className = "sidebar-resizer-vertical";
     this.sidebarResizeElement.addEventListener("mousedown", this.rightSidebarResizerDragStart.bind(this), false);
 
-    this._nodeSearchButton = new WebInspector.StatusBarButton(WebInspector.UIString("Select an element in the page to inspect it."), "node-search-status-bar-item");
-    this._nodeSearchButton.addEventListener("click", this.toggleSearchingForNode.bind(this), false);
+    this.nodeSearchButton = new WebInspector.StatusBarButton(WebInspector.UIString("Select an element in the page to inspect it."), "node-search-status-bar-item");
+    this.nodeSearchButton.addEventListener("click", this.toggleSearchingForNode.bind(this), false);
 
     this.element.appendChild(this.contentElement);
     this.element.appendChild(this.sidebarElement);
@@ -108,7 +113,14 @@ WebInspector.ElementsPanel = function()
 
     this._registerShortcuts();
 
-    this.reset();
+    WebInspector.domAgent.addEventListener(WebInspector.DOMAgent.Events.NodeInserted, this._nodeInserted, this);
+    WebInspector.domAgent.addEventListener(WebInspector.DOMAgent.Events.NodeRemoved, this._nodeRemoved, this);
+    WebInspector.domAgent.addEventListener(WebInspector.DOMAgent.Events.AttrModified, this._attributesUpdated, this);
+    WebInspector.domAgent.addEventListener(WebInspector.DOMAgent.Events.CharacterDataModified, this._characterDataModified, this);
+    WebInspector.domAgent.addEventListener(WebInspector.DOMAgent.Events.DocumentUpdated, this._documentUpdated, this);
+    WebInspector.domAgent.addEventListener(WebInspector.DOMAgent.Events.ChildNodeCountUpdated, this._childNodeCountUpdated, this);
+    WebInspector.domAgent.addEventListener(WebInspector.DOMAgent.Events.InspectElementRequested, this._inspectElementRequested, this);
+    this.recentlyModifiedNodes = [];
 }
 
 WebInspector.ElementsPanel.prototype = {
@@ -119,7 +131,7 @@ WebInspector.ElementsPanel.prototype = {
 
     get statusBarItems()
     {
-        return [this._nodeSearchButton.element, this.crumbsElement];
+        return [this.crumbsElement];
     },
 
     get defaultFocusedElement()
@@ -140,6 +152,12 @@ WebInspector.ElementsPanel.prototype = {
         this.treeOutline.updateSelection();
         if (this.recentlyModifiedNodes.length)
             this.updateModifiedNodes();
+
+        if (Preferences.nativeInstrumentationEnabled)
+            this.sidebarElement.insertBefore(this.sidebarPanes.domBreakpoints.element, this.sidebarPanes.eventListeners.element);
+
+        if (!this.rootDOMNode)
+            WebInspector.domAgent.requestDocument();
     },
 
     hide: function()
@@ -150,42 +168,42 @@ WebInspector.ElementsPanel.prototype = {
         this.setSearchingForNode(false);
     },
 
-    resize: function()
+    onResize: function()
     {
         this.treeOutline.updateSelection();
         this.updateBreadcrumbSizes();
     },
 
-    reset: function()
+    _reset: function()
     {
-        if (this.focusedDOMNode)
-            this._selectedPathOnReset = this.focusedDOMNode.path();
+        if (this.selectedDOMNode())
+            this._selectedPathOnReset = this.selectedDOMNode().path();
 
         this.rootDOMNode = null;
-        this.focusedDOMNode = null;
+        this.selectDOMNode(null);
 
         WebInspector.highlightDOMNode(0);
 
         this.recentlyModifiedNodes = [];
 
         delete this.currentQuery;
-
-        if (Preferences.nativeInstrumentationEnabled)
-            this.sidebarPanes.domBreakpoints.reset();
     },
 
-    setDocument: function(inspectedRootDocument)
+    _documentUpdated: function(event)
     {
-        this.reset();
+        this._setDocument(event.data);
+    },
+
+    _setDocument: function(inspectedRootDocument)
+    {
+        this._reset();
         this.searchCanceled();
 
         if (!inspectedRootDocument)
             return;
 
-        inspectedRootDocument.addEventListener("DOMNodeInserted", this._nodeInserted.bind(this));
-        inspectedRootDocument.addEventListener("DOMNodeRemoved", this._nodeRemoved.bind(this));
-        inspectedRootDocument.addEventListener("DOMAttrModified", this._attributesUpdated.bind(this));
-        inspectedRootDocument.addEventListener("DOMCharacterDataModified", this._characterDataModified.bind(this));
+        if (Preferences.nativeInstrumentationEnabled)
+            this.sidebarPanes.domBreakpoints.restoreBreakpoints();
 
         this.rootDOMNode = inspectedRootDocument;
 
@@ -197,14 +215,14 @@ WebInspector.ElementsPanel.prototype = {
             if (!candidateFocusNode)
                 return;
 
-            this.focusedDOMNode = candidateFocusNode;
+            this.selectDOMNode(candidateFocusNode);
             if (this.treeOutline.selectedTreeElement)
                 this.treeOutline.selectedTreeElement.expand();
         }
 
         function selectLastSelectedNode(nodeId)
         {
-            if (this.focusedDOMNode) {
+            if (this.selectedDOMNode()) {
                 // Focused node has been explicitly set while reaching out for the last selected node.
                 return;
             }
@@ -213,7 +231,7 @@ WebInspector.ElementsPanel.prototype = {
         }
 
         if (this._selectedPathOnReset)
-            InspectorBackend.pushNodeByPathToFrontend(this._selectedPathOnReset, selectLastSelectedNode.bind(this));
+            WebInspector.domAgent.pushNodeByPathToFrontend(this._selectedPathOnReset, selectLastSelectedNode.bind(this));
         else
             selectNode.call(this);
         delete this._selectedPathOnReset;
@@ -224,11 +242,11 @@ WebInspector.ElementsPanel.prototype = {
         delete this._searchQuery;
         this._hideSearchHighlights();
 
-        WebInspector.updateSearchMatchesCount(0, this);
+        WebInspector.searchController.updateSearchMatchesCount(0, this);
 
-        this._currentSearchResultIndex = 0;
+        delete this._currentSearchResultIndex;
         this._searchResults = [];
-        InspectorBackend.searchCanceled();
+        WebInspector.domAgent.cancelSearch();
     },
 
     performSearch: function(query)
@@ -244,29 +262,48 @@ WebInspector.ElementsPanel.prototype = {
         this._matchesCountUpdateTimeout = null;
         this._searchQuery = query;
 
-        InspectorBackend.performSearch(whitespaceTrimmedQuery, false);
+        WebInspector.domAgent.performSearch(whitespaceTrimmedQuery, this._addNodesToSearchResult.bind(this));
     },
 
-    populateHrefContextMenu: function(contextMenu, event, anchorElement)
+    _contextMenuEventFired: function(event)
     {
-        if (!anchorElement.href)
-            return false;
+        function toggleWordWrap()
+        {
+            WebInspector.settings.domWordWrap.set(!WebInspector.settings.domWordWrap.get());
+        }
 
-        var resourceURL = WebInspector.resourceURLForRelatedNode(this.focusedDOMNode, anchorElement.href);
-        if (!resourceURL)
-            return false;
+        var contextMenu = new WebInspector.ContextMenu();
+        var populated = this.treeOutline.populateContextMenu(contextMenu, event);
+        if (populated)
+            contextMenu.appendSeparator();
+        contextMenu.appendCheckboxItem(WebInspector.UIString(WebInspector.useLowerCaseMenuTitles() ? "Word wrap" : "Word Wrap"), toggleWordWrap.bind(this), WebInspector.settings.domWordWrap.get());
 
-        // Add resource-related actions.
-        // Keep these consistent with those added in WebInspector.StylesSidebarPane.prototype._populateHrefContextMenu().
-        contextMenu.appendItem(WebInspector.UIString("Open Link in New Window"), WebInspector.openResource.bind(null, resourceURL, false));
-        if (WebInspector.resourceForURL(resourceURL))
-            contextMenu.appendItem(WebInspector.UIString("Open Link in Resources Panel"), WebInspector.openResource.bind(null, resourceURL, true));
-        return true;
+        contextMenu.show(event);
+    },
+
+    _domWordWrapSettingChanged: function(event)
+    {
+        if (event.data)
+            this.contentElement.removeStyleClass("nowrap");
+        else
+            this.contentElement.addStyleClass("nowrap");
+
+        var treeElement = this.treeOutline.findTreeElement(this.selectedDOMNode());
+        if (treeElement)
+            treeElement.updateSelection(); // Recalculate selection highlight dimensions.
+    },
+
+    switchToAndFocus: function(node)
+    {
+        // Reset search restore.
+        WebInspector.searchController.cancelSearch();
+        WebInspector.setCurrentPanel(this);
+        this.selectDOMNode(node, true);
     },
 
     _updateMatchesCount: function()
     {
-        WebInspector.updateSearchMatchesCount(this._searchResults.length, this);
+        WebInspector.searchController.updateSearchMatchesCount(this._searchResults.length, this);
         this._matchesCountUpdateTimeout = null;
         this._updatedMatchCountOnce = true;
     },
@@ -281,11 +318,12 @@ WebInspector.ElementsPanel.prototype = {
         this._matchesCountUpdateTimeout = setTimeout(this._updateMatchesCount.bind(this), 500);
     },
 
-    addNodesToSearchResult: function(nodeIds)
+    _addNodesToSearchResult: function(nodeIds)
     {
         if (!nodeIds.length)
             return;
 
+        var oldSearchResultIndex = this._currentSearchResultIndex;
         for (var i = 0; i < nodeIds.length; ++i) {
             var nodeId = nodeIds[i];
             var node = WebInspector.domAgent.nodeForId(nodeId);
@@ -295,7 +333,10 @@ WebInspector.ElementsPanel.prototype = {
             this._currentSearchResultIndex = 0;
             this._searchResults.push(node);
         }
-        this._highlightCurrentSearchResult();
+
+        // Avoid invocations of highlighting for every chunk of nodeIds.
+        if (oldSearchResultIndex !== this._currentSearchResultIndex)
+            this._highlightCurrentSearchResult();
         this._updateMatchesCountSoon();
     },
 
@@ -336,7 +377,7 @@ WebInspector.ElementsPanel.prototype = {
             var node = this._searchResults[i];
             var treeElement = this.treeOutline.findTreeElement(node);
             if (treeElement)
-                treeElement.highlightSearchResults(null);
+                treeElement.hideSearchHighlights();
         }
     },
 
@@ -355,42 +396,54 @@ WebInspector.ElementsPanel.prototype = {
         this.treeOutline.rootDOMNode = x;
     },
 
-    get focusedDOMNode()
+    selectedDOMNode: function()
     {
-        return this.treeOutline.focusedDOMNode;
+        return this.treeOutline.selectedDOMNode();
     },
 
-    set focusedDOMNode(x)
+    selectDOMNode: function(node, focus)
     {
-        this.treeOutline.focusedDOMNode = x;
+        this.treeOutline.selectDOMNode(node, focus);
     },
 
     _attributesUpdated: function(event)
     {
-        this.recentlyModifiedNodes.push({node: event.target, updated: true});
+        this.recentlyModifiedNodes.push({node: event.data, updated: true});
         if (this.visible)
             this._updateModifiedNodesSoon();
     },
 
     _characterDataModified: function(event)
     {
-        this.recentlyModifiedNodes.push({node: event.target, updated: true});
+        this.recentlyModifiedNodes.push({node: event.data, updated: true});
         if (this.visible)
             this._updateModifiedNodesSoon();
     },
 
     _nodeInserted: function(event)
     {
-        this.recentlyModifiedNodes.push({node: event.target, parent: event.relatedNode, inserted: true});
+        this.recentlyModifiedNodes.push({node: event.data, parent: event.data.parentNode, inserted: true});
         if (this.visible)
             this._updateModifiedNodesSoon();
     },
 
     _nodeRemoved: function(event)
     {
-        this.recentlyModifiedNodes.push({node: event.target, parent: event.relatedNode, removed: true});
+        this.recentlyModifiedNodes.push({node: event.data.node, parent: event.data.parent, removed: true});
         if (this.visible)
             this._updateModifiedNodesSoon();
+    },
+
+    _childNodeCountUpdated: function(event)
+    {
+        var treeElement = this.treeOutline.findTreeElement(event.data);
+        if (treeElement)
+            treeElement.hasChildren = event.data.hasChildNodes();
+    },
+
+    _inspectElementRequested: function(node)
+    {
+        WebInspector.updateFocusedNode(node.id);
     },
 
     _updateModifiedNodesSoon: function()
@@ -411,7 +464,6 @@ WebInspector.ElementsPanel.prototype = {
         var updateBreadcrumbs = false;
 
         for (var i = 0; i < this.recentlyModifiedNodes.length; ++i) {
-            var replaced = this.recentlyModifiedNodes[i].replaced;
             var parent = this.recentlyModifiedNodes[i].parent;
             var node = this.recentlyModifiedNodes[i].node;
 
@@ -421,18 +473,18 @@ WebInspector.ElementsPanel.prototype = {
                     nodeItem.updateTitle();
                 continue;
             }
-            
+
             if (!parent)
                 continue;
 
             var parentNodeItem = this.treeOutline.findTreeElement(parent);
             if (parentNodeItem && !parentNodeItem.alreadyUpdatedChildren) {
-                parentNodeItem.updateChildren(replaced);
+                parentNodeItem.updateChildren();
                 parentNodeItem.alreadyUpdatedChildren = true;
                 updatedParentTreeElements.push(parentNodeItem);
             }
 
-            if (!updateBreadcrumbs && (this.focusedDOMNode === parent || isAncestorNode(this.focusedDOMNode, parent)))
+            if (!updateBreadcrumbs && (this.selectedDOMNode() === parent || (this.selectedDOMNode() && this.selectedDOMNode().isAncestor(parent))))
                 updateBreadcrumbs = true;
         }
 
@@ -447,12 +499,14 @@ WebInspector.ElementsPanel.prototype = {
 
     _stylesPaneEdited: function()
     {
+        // Once styles are edited, the Metrics pane should be updated.
         this.sidebarPanes.metrics.needsUpdate = true;
         this.updateMetrics();
     },
 
     _metricsPaneEdited: function()
     {
+        // Once metrics are edited, the Styles pane should be updated.
         this.sidebarPanes.styles.needsUpdate = true;
         this.updateStyles(true);
     },
@@ -500,7 +554,7 @@ WebInspector.ElementsPanel.prototype = {
             else
                 crumb.removeStyleClass("dimmed");
 
-            if (crumb.representedObject === this.focusedDOMNode) {
+            if (crumb.representedObject === this.selectedDOMNode()) {
                 crumb.addStyleClass("selected");
                 handled = true;
             } else {
@@ -546,15 +600,15 @@ WebInspector.ElementsPanel.prototype = {
                 // will change the root node in addition to the focused node.
                 if (event.detail >= 2 || crumb.hasStyleClass("dimmed"))
                     panel.rootDOMNode = crumb.representedObject.parentNode;
-                panel.focusedDOMNode = crumb.representedObject;
+                panel.selectDOMNode(crumb.representedObject, true);
             }
 
             event.preventDefault();
         }
 
         foundRoot = false;
-        for (var current = this.focusedDOMNode; current; current = current.parentNode) {
-            if (current.nodeType === Node.DOCUMENT_NODE)
+        for (var current = this.selectedDOMNode(); current; current = current.parentNode) {
+            if (current.nodeType() === Node.DOCUMENT_NODE)
                 continue;
 
             if (current === this.rootDOMNode)
@@ -566,13 +620,13 @@ WebInspector.ElementsPanel.prototype = {
             crumb.addEventListener("mousedown", selectCrumbFunction, false);
 
             var crumbTitle;
-            switch (current.nodeType) {
+            switch (current.nodeType()) {
                 case Node.ELEMENT_NODE:
                     this.decorateNodeLabel(current, crumb);
                     break;
 
                 case Node.TEXT_NODE:
-                    if (isNodeWhitespace.call(current))
+                    if (current.isWhitespace())
                         crumbTitle = WebInspector.UIString("(whitespace)");
                     else
                         crumbTitle = WebInspector.UIString("(text)");
@@ -587,7 +641,7 @@ WebInspector.ElementsPanel.prototype = {
                     break;
 
                 default:
-                    crumbTitle = this.treeOutline.nodeNameToCorrectCase(current.nodeName);
+                    crumbTitle = this.treeOutline.nodeNameToCorrectCase(current.nodeName());
             }
 
             if (!crumb.childNodes.length) {
@@ -599,7 +653,7 @@ WebInspector.ElementsPanel.prototype = {
 
             if (foundRoot)
                 crumb.addStyleClass("dimmed");
-            if (current === this.focusedDOMNode)
+            if (current === this.selectedDOMNode())
                 crumb.addStyleClass("selected");
             if (!crumbs.childNodes.length)
                 crumb.addStyleClass("end");
@@ -615,7 +669,7 @@ WebInspector.ElementsPanel.prototype = {
 
     decorateNodeLabel: function(node, parentElement)
     {
-        var title = this.treeOutline.nodeNameToCorrectCase(node.nodeName);
+        var title = this.treeOutline.nodeNameToCorrectCase(node.nodeName());
 
         var nameElement = document.createElement("span");
         nameElement.textContent = title;
@@ -698,13 +752,13 @@ WebInspector.ElementsPanel.prototype = {
         var i = 0;
         var crumb = crumbs.firstChild;
         while (crumb) {
-            // Find the selected crumb and index. 
+            // Find the selected crumb and index.
             if (!selectedCrumb && crumb.hasStyleClass("selected")) {
                 selectedCrumb = crumb;
                 selectedIndex = i;
             }
 
-            // Find the focused crumb index. 
+            // Find the focused crumb index.
             if (crumb === focusedCrumb)
                 focusedIndex = i;
 
@@ -734,7 +788,7 @@ WebInspector.ElementsPanel.prototype = {
             var errorWarningElement = document.getElementById("error-warning-count");
             if (!WebInspector.drawer.visible && errorWarningElement)
                 rightPadding += errorWarningElement.offsetWidth;
-            return ((crumbs.totalOffsetLeft + crumbs.offsetWidth + rightPadding) < window.innerWidth);
+            return ((crumbs.totalOffsetLeft() + crumbs.offsetWidth + rightPadding) < window.innerWidth);
         }
 
         if (crumbsAreSmallerThanContainer())
@@ -813,7 +867,7 @@ WebInspector.ElementsPanel.prototype = {
             while (crumb) {
                 var hidden = crumb.hasStyleClass("hidden");
                 if (!hidden) {
-                    var collapsed = crumb.hasStyleClass("collapsed"); 
+                    var collapsed = crumb.hasStyleClass("collapsed");
                     if (collapsedRun && collapsed) {
                         crumb.addStyleClass("hidden");
                         crumb.removeStyleClass("compact");
@@ -932,7 +986,7 @@ WebInspector.ElementsPanel.prototype = {
         if ((!stylesSidebarPane.expanded && !computedStylePane.expanded) || !stylesSidebarPane.needsUpdate)
             return;
 
-        stylesSidebarPane.update(this.focusedDOMNode, null, forceUpdate);
+        stylesSidebarPane.update(this.selectedDOMNode(), forceUpdate);
         stylesSidebarPane.needsUpdate = false;
     },
 
@@ -942,7 +996,7 @@ WebInspector.ElementsPanel.prototype = {
         if (!metricsSidebarPane.expanded || !metricsSidebarPane.needsUpdate)
             return;
 
-        metricsSidebarPane.update(this.focusedDOMNode);
+        metricsSidebarPane.update(this.selectedDOMNode());
         metricsSidebarPane.needsUpdate = false;
     },
 
@@ -952,7 +1006,7 @@ WebInspector.ElementsPanel.prototype = {
         if (!propertiesSidebarPane.expanded || !propertiesSidebarPane.needsUpdate)
             return;
 
-        propertiesSidebarPane.update(this.focusedDOMNode);
+        propertiesSidebarPane.update(this.selectedDOMNode());
         propertiesSidebarPane.needsUpdate = false;
     },
 
@@ -962,14 +1016,14 @@ WebInspector.ElementsPanel.prototype = {
         if (!eventListenersSidebarPane.expanded || !eventListenersSidebarPane.needsUpdate)
             return;
 
-        eventListenersSidebarPane.update(this.focusedDOMNode);
+        eventListenersSidebarPane.update(this.selectedDOMNode());
         eventListenersSidebarPane.needsUpdate = false;
     },
 
     _registerShortcuts: function()
     {
         var shortcut = WebInspector.KeyboardShortcut;
-        var section = WebInspector.shortcutsHelp.section(WebInspector.UIString("Elements Panel"));
+        var section = WebInspector.shortcutsScreen.section(WebInspector.UIString("Elements Panel"));
         var keys = [
             shortcut.shortcutToString(shortcut.Keys.Up),
             shortcut.shortcutToString(shortcut.Keys.Down)
@@ -1010,12 +1064,12 @@ WebInspector.ElementsPanel.prototype = {
             return;
         event.clipboardData.clearData();
         event.preventDefault();
-        InspectorBackend.copyNode(this.focusedDOMNode.id);
+        this.selectedDOMNode().copyNode();
     },
 
     rightSidebarResizerDragStart: function(event)
     {
-        WebInspector.elementDragStart(this.sidebarElement, this.rightSidebarResizerDrag.bind(this), this.rightSidebarResizerDragEnd.bind(this), event, "col-resize");
+        WebInspector.elementDragStart(this.sidebarElement, this.rightSidebarResizerDrag.bind(this), this.rightSidebarResizerDragEnd.bind(this), event, "ew-resize");
     },
 
     rightSidebarResizerDragEnd: function(event)
@@ -1046,23 +1100,26 @@ WebInspector.ElementsPanel.prototype = {
         if (!node)
             return;
 
-        this.focusedDOMNode = node;
-        this._nodeSearchButton.toggled = false;
+        this.selectDOMNode(node, true);
+        if (this.nodeSearchButton.toggled) {
+            InspectorFrontendHost.bringToFront();
+            this.nodeSearchButton.toggled = false;
+        }
     },
 
     _setSearchingForNode: function(enabled)
     {
-        this._nodeSearchButton.toggled = enabled;
+        this.nodeSearchButton.toggled = enabled;
     },
 
     setSearchingForNode: function(enabled)
     {
-        InspectorBackend.setSearchingForNode(enabled, this._setSearchingForNode.bind(this));
+        DOMAgent.setInspectModeEnabled(enabled, WebInspector.buildHighlightConfig(), this._setSearchingForNode.bind(this, enabled));
     },
 
     toggleSearchingForNode: function()
     {
-        this.setSearchingForNode(!this._nodeSearchButton.toggled);
+        this.setSearchingForNode(!this.nodeSearchButton.toggled);
     },
 
     elementsToRestoreScrollPositionsFor: function()

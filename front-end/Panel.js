@@ -34,7 +34,9 @@ WebInspector.Panel = function(name)
     this.element.addStyleClass(name);
     this._panelName = name;
 
-    WebInspector.settings.installApplicationSetting(this._sidebarWidthSettingName(), undefined);
+    this._shortcuts = {};
+
+    WebInspector.settings[this._sidebarWidthSettingName()] = WebInspector.settings.createSetting(this._sidebarWidthSettingName(), undefined);
 }
 
 // Should by in sync with style declarations.
@@ -46,29 +48,7 @@ WebInspector.Panel.prototype = {
         if (this._toolbarItem)
             return this._toolbarItem;
 
-        // Sample toolbar item as markup:
-        // <button class="toolbar-item resources toggleable">
-        // <div class="toolbar-icon"></div>
-        // <div class="toolbar-label">Resources</div>
-        // </button>
-
-        this._toolbarItem = document.createElement("button");
-        this._toolbarItem.className = "toolbar-item toggleable";
-        this._toolbarItem.panel = this;
-
-        this._toolbarItem.addStyleClass(this._panelName);
-
-        var iconElement = document.createElement("div");
-        iconElement.className = "toolbar-icon";
-        this._toolbarItem.appendChild(iconElement);
-
-        if ("toolbarItemLabel" in this) {
-            var labelElement = document.createElement("div");
-            labelElement.className = "toolbar-label";
-            labelElement.textContent = this.toolbarItemLabel;
-            this._toolbarItem.appendChild(labelElement);
-        }
-
+        this._toolbarItem = WebInspector.Toolbar.createPanelToolbarItem(this);
         return this._toolbarItem;
     },
 
@@ -95,12 +75,11 @@ WebInspector.Panel.prototype = {
         WebInspector.currentFocusElement = this.defaultFocusedElement;
 
         this.restoreSidebarWidth();
-        this._restoreScrollPositions();
+        WebInspector.extensionServer.notifyPanelShown(this.name);
     },
 
     hide: function()
     {
-        this._storeScrollPositions();
         WebInspector.View.prototype.hide.call(this);
 
         if (this._statusBarItemContainer && this._statusBarItemContainer.parentNode)
@@ -108,6 +87,12 @@ WebInspector.Panel.prototype = {
         delete this._statusBarItemContainer;
         if ("_toolbarItem" in this)
             this._toolbarItem.removeStyleClass("toggled-on");
+        WebInspector.extensionServer.notifyPanelHidden(this.name);
+    },
+
+    reset: function()
+    {
+        this.searchCanceled();
     },
 
     get defaultFocusedElement()
@@ -132,7 +117,7 @@ WebInspector.Panel.prototype = {
             }
         }
 
-        WebInspector.updateSearchMatchesCount(0, this);
+        WebInspector.searchController.updateSearchMatchesCount(0, this);
 
         if (this._currentSearchChunkIntervalIdentifier) {
             clearInterval(this._currentSearchChunkIntervalIdentifier);
@@ -161,7 +146,7 @@ WebInspector.Panel.prototype = {
 
         function updateMatchesCount()
         {
-            WebInspector.updateSearchMatchesCount(this._totalSearchMatches, this);
+            WebInspector.searchController.updateSearchMatchesCount(this._totalSearchMatches, this);
             matchesCountUpdateTimeout = null;
         }
 
@@ -214,9 +199,6 @@ WebInspector.Panel.prototype = {
             if (!view)
                 return;
 
-            if (view.element.parentNode !== parentElement && view.element.parentNode && parentElement)
-                view.detach();
-
             view.currentQuery = query;
             view.performSearch(query, boundFinishedCallback);
         }
@@ -251,7 +233,7 @@ WebInspector.Panel.prototype = {
 
         if (currentView !== this.visibleView) {
             this.showView(currentView);
-            WebInspector.focusSearchField();
+            WebInspector.searchController.focusSearchField();
         }
 
         if (showFirstResult)
@@ -284,7 +266,7 @@ WebInspector.Panel.prototype = {
 
         if (currentView !== this.visibleView) {
             this.showView(currentView);
-            WebInspector.focusSearchField();
+            WebInspector.searchController.focusSearchField();
         }
 
         if (showLastResult)
@@ -328,7 +310,7 @@ WebInspector.Panel.prototype = {
 
     _startSidebarDragging: function(event)
     {
-        WebInspector.elementDragStart(this.sidebarResizeElement, this._sidebarDragging.bind(this), this._endSidebarDragging.bind(this), event, "col-resize");
+        WebInspector.elementDragStart(this.sidebarResizeElement, this._sidebarDragging.bind(this), this._endSidebarDragging.bind(this), event, "ew-resize");
     },
 
     _sidebarDragging: function(event)
@@ -361,12 +343,15 @@ WebInspector.Panel.prototype = {
         if (typeof width === "undefined")
             width = this._currentSidebarWidth;
 
-        width = Number.constrain(width, Preferences.minSidebarWidth, window.innerWidth / 2);
+        var maxWidth = window.innerWidth / 2;
+        if (!maxWidth)
+            maxWidth = width;
+        width = Number.constrain(width, Preferences.minSidebarWidth, maxWidth);
 
         this._currentSidebarWidth = width;
         this.setSidebarWidth(width);
-
         this.updateMainViewWidth(width);
+        this.doResize();
     },
 
     setSidebarWidth: function(width)
@@ -375,17 +360,21 @@ WebInspector.Panel.prototype = {
         this.sidebarResizeElement.style.left = (width - 3) + "px";
     },
 
+    preferredSidebarWidth: function()
+    {
+        return WebInspector.settings[this._sidebarWidthSettingName()].get();
+    },
+
     restoreSidebarWidth: function()
     {
-        var sidebarWidth = WebInspector.settings[this._sidebarWidthSettingName()];
-        this.updateSidebarWidth(sidebarWidth);
+        this.updateSidebarWidth(this.preferredSidebarWidth());
     },
 
     saveSidebarWidth: function()
     {
         if (!this.sidebarElement)
             return;
-        WebInspector.settings[this._sidebarWidthSettingName()] = this.sidebarElement.offsetWidth;
+        WebInspector.settings[this._sidebarWidthSettingName()].set(this.sidebarElement.offsetWidth);
     },
 
     updateMainViewWidth: function(width)
@@ -393,19 +382,12 @@ WebInspector.Panel.prototype = {
         // Should be implemented by ancestors.
     },
 
-    resize: function()
-    {
-        var visibleView = this.visibleView;
-        if (visibleView && "resize" in visibleView)
-            visibleView.resize();
-    },
-
-    canShowSourceLine: function(url, line)
+    canShowAnchorLocation: function(anchor)
     {
         return false;
     },
 
-    showSourceLine: function(url, line)
+    showAnchorLocation: function(anchor)
     {
         return false;
     },
@@ -415,23 +397,34 @@ WebInspector.Panel.prototype = {
         return [];
     },
 
-    _storeScrollPositions: function()
+    handleShortcut: function(event)
     {
-        var elements = this.elementsToRestoreScrollPositionsFor();
-        for (var i = 0; i < elements.length; ++i) {
-            var container = elements[i];
-            container._scrollTop = container.scrollTop;
+        var shortcutKey = WebInspector.KeyboardShortcut.makeKeyFromEvent(event);
+        var handler = this._shortcuts[shortcutKey];
+        if (handler) {
+            handler(event);
+            event.handled = true;
         }
     },
 
-    _restoreScrollPositions: function()
+    registerShortcuts: function(shortcuts)
     {
-        var elements = this.elementsToRestoreScrollPositionsFor();
-        for (var i = 0; i < elements.length; ++i) {
-            var container = elements[i];
-            if (container._scrollTop)
-                container.scrollTop = container._scrollTop;
-        }
+        this._shortcuts = shortcuts || {};
+        var goToLineShortcut = WebInspector.GoToLineDialog.createShortcut();
+        this._shortcuts[goToLineShortcut.key] = this._showGoToLineDialog.bind(this);
+    },
+
+    registerShortcut: function(key, handler)
+    {
+        this._shortcuts[key] = handler;
+    },
+
+    _showGoToLineDialog: function(e)
+    {
+         var view = this.visibleView;
+         WebInspector.GoToLineDialog.show(view);
+         if (view)
+             WebInspector.GoToLineDialog.show(view);
     }
 }
 

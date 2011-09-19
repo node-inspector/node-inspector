@@ -31,7 +31,7 @@ WebInspector.Section = function(title, subtitle)
 {
     this.element = document.createElement("div");
     this.element.className = "section";
-    this.element.sectionForTest = this;
+    this.element._section = this;
 
     this.headerElement = document.createElement("div");
     this.headerElement.className = "header";
@@ -45,7 +45,7 @@ WebInspector.Section = function(title, subtitle)
     this.headerElement.appendChild(this.subtitleElement);
     this.headerElement.appendChild(this.titleElement);
 
-    this.headerElement.addEventListener("click", this.toggleExpanded.bind(this), false);
+    this.headerElement.addEventListener("click", this.handleClick.bind(this), false);
     this.element.appendChild(this.headerElement);
 
     this.title = title;
@@ -124,6 +124,58 @@ WebInspector.Section.prototype = {
         }
     },
 
+    get firstSibling()
+    {
+        var parent = this.element.parentElement;
+        if (!parent)
+            return null;
+
+        var childElement = parent.firstChild;
+        while (childElement) {
+            if (childElement._section)
+                return childElement._section;
+            childElement = childElement.nextSibling;
+        }
+
+        return null;
+    },
+
+    get lastSibling()
+    {
+        var parent = this.element.parentElement;
+        if (!parent)
+            return null;
+
+        var childElement = parent.lastChild;
+        while (childElement) {
+            if (childElement._section)
+                return childElement._section;
+            childElement = childElement.previousSibling;
+        }
+
+        return null;
+    },
+
+    get nextSibling()
+    {
+        var curElement = this.element;
+        do {
+            curElement = curElement.nextSibling;
+        } while (curElement && !curElement._section);
+
+        return curElement ? curElement._section : null;
+    },
+
+    get previousSibling()
+    {
+        var curElement = this.element;
+        do {
+            curElement = curElement.previousSibling;
+        } while (curElement && !curElement._section);
+
+        return curElement ? curElement._section : null;
+    },
+
     expand: function()
     {
         if (this._expanded)
@@ -148,5 +200,11 @@ WebInspector.Section.prototype = {
     toggleExpanded: function()
     {
         this.expanded = !this.expanded;
+    },
+
+    handleClick: function(e)
+    {
+        this.toggleExpanded();
+        e.stopPropagation();
     }
 }

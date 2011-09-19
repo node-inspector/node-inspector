@@ -28,17 +28,35 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-WebInspector.RemoteObject = function(objectId, type, description, hasChildren)
+/**
+ * @constructor
+ * @param {?string} objectId
+ * @param {string} type
+ * @param {?string} subtype
+ * @param {*} value
+ * @param {string=} description
+ */
+WebInspector.RemoteObject = function(objectId, type, subtype, value, description)
 {
-    this._objectId = objectId;
     this._type = type;
-    this._description = description;
-    this._hasChildren = hasChildren;
+    this._subtype = subtype;
+    if (objectId) {
+        // handle
+        this._objectId = objectId;
+        this._description = description;
+        this._hasChildren = true;
+    } else {
+        // Primitive or null object.
+        console.assert(type !== "object" || value === null);
+        this._description = description || (value + "");
+        this._hasChildren = false;
+        this.value = value;
+    }
 }
 
 WebInspector.RemoteObject.fromPrimitiveValue = function(value)
 {
-    return new WebInspector.RemoteObject(null, typeof value, value);
+    return new WebInspector.RemoteObject(null, typeof value, null, value);
 }
 
 WebInspector.RemoteObject.fromLocalObject = function(value)
@@ -46,21 +64,26 @@ WebInspector.RemoteObject.fromLocalObject = function(value)
     return new WebInspector.LocalJSONObject(value);
 }
 
-WebInspector.RemoteObject.resolveNode = function(node, callback)
+WebInspector.RemoteObject.resolveNode = function(node, objectGroup, callback)
 {
-    function mycallback(object)
+    function mycallback(error, object)
     {
-        callback(object ? WebInspector.RemoteObject.fromPayload(object) : null);
+        if (!callback)
+            return;
+
+        if (error || !object)
+            callback(null);
+        else
+            callback(WebInspector.RemoteObject.fromPayload(object));
     }
-    InjectedScriptAccess.getForNode(node).resolveNode(node.id, mycallback);
+    DOMAgent.resolveNode(node.id, objectGroup, mycallback);
 }
 
 WebInspector.RemoteObject.fromPayload = function(payload)
 {
-    if (typeof payload === "object")
-        return new WebInspector.RemoteObject(payload.objectId, payload.type, payload.description, payload.hasChildren);
-    // FIXME: make sure we only get here with real payloads in the new DebuggerAgent.js.
-    return payload;
+    console.assert(typeof payload === "object", "Remote object payload should only be an object");
+
+    return new WebInspector.RemoteObject(payload.objectId, payload.type, payload.subtype, payload.value, payload.description);
 }
 
 WebInspector.RemoteObject.type = function(remoteObject)
@@ -86,6 +109,11 @@ WebInspector.RemoteObject.prototype = {
         return this._type;
     },
 
+    get subtype()
+    {
+        return this._subtype;
+    },
+
     get description()
     {
         return this._description;
@@ -96,50 +124,131 @@ WebInspector.RemoteObject.prototype = {
         return this._hasChildren;
     },
 
-    isError: function()
+    getOwnProperties: function(callback)
     {
-        return this._type === "error";
+        this._getProperties(true, callback);
     },
 
-    getOwnProperties: function(abbreviate, callback)
+    getAllProperties: function(callback)
     {
-        this.getProperties(false, abbreviate, callback);
+        this._getProperties(false, callback);
     },
 
-    getProperties: function(ignoreHasOwnProperty, abbreviate, callback)
+    _getProperties: function(ownProperties, callback)
     {
         if (!this._objectId) {
             callback([]);
             return;
         }
-        function remoteObjectBinder(properties)
+        function remoteObjectBinder(error, properties)
         {
-            for (var i = 0; properties && i < properties.length; ++i)
-                properties[i].value = WebInspector.RemoteObject.fromPayload(properties[i].value);
-            callback(properties);
+            if (error) {
+                callback(null);
+                return;
+            }
+            var result = [];
+            for (var i = 0; properties && i < properties.length; ++i) {
+                var property = properties[i];
+                if (property.get || property.set) {
+                    if (property.get)
+                        result.push(new WebInspector.RemoteObjectProperty("get " + property.name, WebInspector.RemoteObject.fromPayload(property.get), property));
+                    if (property.set)
+                        result.push(new WebInspector.RemoteObjectProperty("set " + property.name, WebInspector.RemoteObject.fromPayload(property.set), property));
+                } else
+                    result.push(new WebInspector.RemoteObjectProperty(property.name, WebInspector.RemoteObject.fromPayload(property.value), property));
+            }
+            callback(result);
         }
-        InjectedScriptAccess.getForObjectId(this._objectId).getProperties(this._objectId, ignoreHasOwnProperty, abbreviate, remoteObjectBinder);
+        RuntimeAgent.getProperties(this._objectId, ownProperties, remoteObjectBinder);
     },
 
     setPropertyValue: function(name, value, callback)
     {
         if (!this._objectId) {
-            callback(false);
+            callback("Can't set a property of non-object.");
             return;
         }
-        InjectedScriptAccess.getForObjectId(this._objectId).setPropertyValue(this._objectId, name, value, callback);
+
+        RuntimeAgent.evaluate.invoke({expression:value, doNotPauseOnExceptions:true}, evaluatedCallback.bind(this));
+
+        function evaluatedCallback(error, result, wasThrown)
+        {
+            if (error || wasThrown) {
+                callback(error || result);
+                return;
+            }
+
+            function setPropertyValue(propertyName, propertyValue)
+            {
+                this[propertyName] = propertyValue;
+            }
+
+            delete result.description; // Optimize on traffic.
+            RuntimeAgent.callFunctionOn(this._objectId, setPropertyValue.toString(), [{ value:name }, result], undefined, propertySetCallback.bind(this));
+            if (result._objectId)
+                RuntimeAgent.releaseObject(result._objectId);
+        }
+
+        function propertySetCallback(error, result, wasThrown) {
+            if (error || wasThrown) {
+                callback(error || result);
+                return;
+            }
+            callback();
+        }
     },
 
     pushNodeToFrontend: function(callback)
     {
-        InjectedScriptAccess.getForObjectId(this._objectId).pushNodeToFrontend(this._objectId, callback);
+        if (this._objectId)
+            WebInspector.domAgent.pushNodeToFrontend(this._objectId, callback);
+        else
+            callback(0);
+    },
+
+    callFunction: function(functionDeclaration, callback)
+    {
+        function mycallback(error, result, wasThrown)
+        {
+            callback((error || wasThrown) ? null : WebInspector.RemoteObject.fromPayload(result));
+        }
+
+        RuntimeAgent.callFunctionOn(this._objectId, functionDeclaration.toString(), undefined, undefined, mycallback);
+    },
+
+    callFunctionJSON: function(functionDeclaration, callback)
+    {
+        function mycallback(error, result, wasThrown)
+        {
+            callback((error || wasThrown) ? null : result.value);
+        }
+
+        RuntimeAgent.callFunctionOn(this._objectId, functionDeclaration.toString(), undefined, true, mycallback);
+    },
+
+    release: function()
+    {
+        RuntimeAgent.releaseObject(this._objectId);
     }
 }
 
-WebInspector.RemoteObjectProperty = function(name, value)
+/**
+ * @constructor
+ * @param {Object=} descriptor
+ */
+WebInspector.RemoteObjectProperty = function(name, value, descriptor)
 {
     this.name = name;
     this.value = value;
+    this.enumerable = descriptor ? !!descriptor.enumerable : true;
+    this.writable = descriptor ? !!descriptor.writable : true;
+    if (descriptor && descriptor.wasThrown)
+        this.wasThrown = true;
+}
+
+WebInspector.RemoteObjectProperty.fromPrimitiveValue = function(name, value)
+{
+    return new WebInspector.RemoteObjectProperty(name, WebInspector.RemoteObject.fromPrimitiveValue(value));
 }
 
 // The below is a wrapper around a local object that provides an interface comaptible
@@ -148,6 +257,9 @@ WebInspector.RemoteObjectProperty = function(name, value)
 // for traversing prototypes, extracting class names via constuctor, handling properties
 // or functions.
 
+/**
+ * @constructor
+ */
 WebInspector.LocalJSONObject = function(value)
 {
     this._value = value;
@@ -156,24 +268,68 @@ WebInspector.LocalJSONObject = function(value)
 WebInspector.LocalJSONObject.prototype = {
     get description()
     {
-        var type = this.type;
-        switch (type) {
+        if (this._cachedDescription)
+            return this._cachedDescription;
+
+        if (this.type === "object") {
+            switch (this.subtype) {
             case "array":
-                return "[" + this._value.length + "]";
-            case "object":
-                return this.hasChildren ? "{...}" : "{ }";
+                function formatArrayItem(property)
+                {
+                    return property.value.description;
+                }
+                this._cachedDescription = this._concatenate("[", "]", formatArrayItem);
+                break;
+            case "null":
+                this._cachedDescription = "null";
+                break;
             default:
-                return JSON.stringify(this._value);
+                function formatObjectItem(property)
+                {
+                    return property.name + ":" + property.value.description;
+                }
+                this._cachedDescription = this._concatenate("{", "}", formatObjectItem);
+            }
+        } else
+            this._cachedDescription = String(this._value);
+
+        return this._cachedDescription;
+    },
+
+    _concatenate: function(prefix, suffix, formatProperty)
+    {
+        const previewChars = 100;
+
+        var buffer = prefix;
+        var children = this._children();
+        for (var i = 0; i < children.length; ++i) {
+            var itemDescription = formatProperty(children[i]);
+            if (buffer.length + itemDescription.length > previewChars) {
+                buffer += ",\u2026";
+                break;
+            }
+            if (i)
+                buffer += ", ";
+            buffer += itemDescription;
         }
+        buffer += suffix;
+        return buffer;
     },
 
     get type()
     {
+        return typeof this._value;
+    },
+
+    get subtype()
+    {
         if (this._value === null)
             return "null";
+
         if (this._value instanceof Array)
             return "array";
-        return typeof this._value;
+
+        return undefined;
     },
 
     get hasChildren()
@@ -181,18 +337,28 @@ WebInspector.LocalJSONObject.prototype = {
         return typeof this._value === "object" && this._value !== null && Object.keys(this._value).length;
     },
 
-    getOwnProperties: function(abbreviate, callback)
+    getOwnProperties: function(callback)
     {
-        return this.getProperties(false, abbreviate, callback);
+        callback(this._children());
     },
 
-    getProperties: function(ignoreHasOwnProperty, abbreviate, callback)
+    getAllProperties: function(callback)
     {
+        callback(this._children());
+    },
+
+    _children: function()
+    {
+        if (!this.hasChildren)
+            return [];
+
         function buildProperty(propName)
         {
             return new WebInspector.RemoteObjectProperty(propName, new WebInspector.LocalJSONObject(this._value[propName]));
         }
-        callback(Object.keys(this._value).map(buildProperty.bind(this)));
+        if (!this._cachedChildren)
+            this._cachedChildren = Object.keys(this._value).map(buildProperty.bind(this));
+        return this._cachedChildren;
     },
 
     isError: function()

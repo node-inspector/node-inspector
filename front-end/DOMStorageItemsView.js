@@ -61,19 +61,21 @@ WebInspector.DOMStorageItemsView.prototype = {
     update: function()
     {
         this.element.removeChildren();
-        var callback = this._showDOMStorageEntries.bind(this);
-        this.domStorage.getEntries(callback);
+        this.domStorage.getEntries(this._showDOMStorageEntries.bind(this));
     },
 
-    _showDOMStorageEntries: function(entries)
+    _showDOMStorageEntries: function(error, entries)
     {
+        if (error)
+            return;
+
         this._dataGrid = this._dataGridForDOMStorageEntries(entries);
         this.element.appendChild(this._dataGrid.element);
         this._dataGrid.autoSizeColumns(10);
         this.deleteButton.visible = true;
     },
 
-    resize: function()
+    onResize: function()
     {
         if (this._dataGrid)
             this._dataGrid.updateWidths();
@@ -126,7 +128,7 @@ WebInspector.DOMStorageItemsView.prototype = {
     {
         this.update();
     },
-    
+
     _editingCallback: function(editingNode, columnIdentifier, oldText, newText)
     {
         var domStorage = this.domStorage;
@@ -138,10 +140,10 @@ WebInspector.DOMStorageItemsView.prototype = {
         } else {
             domStorage.setItem(editingNode.data[0], newText);
         }
-        
+
         this.update();
     },
-    
+
     _deleteCallback: function(node)
     {
         if (!node || node.isCreationNode)
@@ -149,7 +151,7 @@ WebInspector.DOMStorageItemsView.prototype = {
 
         if (this.domStorage)
             this.domStorage.removeItem(node.data[0]);
-            
+
         this.update();
     }
 }

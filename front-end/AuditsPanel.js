@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 Google Inc. All rights reserved.
+ * Copyright (C) 2011 Google Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -57,6 +57,9 @@ WebInspector.AuditsPanel = function()
     this._launcherView = new WebInspector.AuditLauncherView(this.initiateAudit.bind(this));
     for (id in this.categoriesById)
         this._launcherView.addCategory(this.categoriesById[id]);
+
+    WebInspector.resourceTreeModel.addEventListener(WebInspector.ResourceTreeModel.EventTypes.OnLoad, this._onLoadEventFired, this);
+    WebInspector.resourceTreeModel.addEventListener(WebInspector.ResourceTreeModel.EventTypes.DOMContentLoaded, this._domContentLoadedEventFired, this);
 }
 
 WebInspector.AuditsPanel.prototype = {
@@ -75,9 +78,9 @@ WebInspector.AuditsPanel.prototype = {
         return this._mainResourceLoadTime;
     },
 
-    set mainResourceLoadTime(x)
+    _onLoadEventFired: function(event)
     {
-        this._mainResourceLoadTime = x;
+        this._mainResourceLoadTime = event.data;
         this._didMainResourceLoad();
     },
 
@@ -86,24 +89,14 @@ WebInspector.AuditsPanel.prototype = {
         return this._mainResourceDOMContentTime;
     },
 
-    set mainResourceDOMContentTime(x)
+    _domContentLoadedEventFired: function(event)
     {
-        this._mainResourceDOMContentTime = x;
+        this._mainResourceDOMContentTime = event.data;
     },
 
     get categoriesById()
     {
         return this._auditCategoriesById;
-    },
-
-    resourceStarted: function(resource)
-    {
-        this._launcherView.resourceStarted(resource);
-    },
-
-    resourceFinished: function(resource)
-    {
-        this._launcherView.resourceFinished(resource);
     },
 
     addCategory: function(category)
@@ -129,9 +122,7 @@ WebInspector.AuditsPanel.prototype = {
 
     _executeAudit: function(categories, resultCallback)
     {
-        var resources = [];
-        for (var id in WebInspector.networkResources)
-            resources.push(WebInspector.networkResources[id]);
+        var resources = WebInspector.networkLog.resources;
 
         var rulesRemaining = 0;
         for (var i = 0; i < categories.length; ++i)
@@ -175,8 +166,7 @@ WebInspector.AuditsPanel.prototype = {
 
         var resultTreeElement = new WebInspector.AuditResultSidebarTreeElement(results, mainResourceURL, ordinal);
         this.auditResultsTreeElement.appendChild(resultTreeElement);
-        resultTreeElement.reveal();
-        resultTreeElement.select();
+        resultTreeElement.revealAndSelect();
         if (launcherCallback)
             launcherCallback();
     },
@@ -199,12 +189,14 @@ WebInspector.AuditsPanel.prototype = {
             initiateAuditCallback.call(this, categories, launcherCallback);
         else
             this._reloadResources(initiateAuditCallback.bind(this, categories, launcherCallback));
+
+        WebInspector.userMetrics.AuditsStarted.record();
     },
 
     _reloadResources: function(callback)
     {
         this._pageReloadCallback = callback;
-        InspectorBackend.reloadPage();
+        PageAgent.reload(false);
     },
 
     _didMainResourceLoad: function()
@@ -248,17 +240,6 @@ WebInspector.AuditsPanel.prototype = {
             x.show(this.viewsContainerElement);
     },
 
-    show: function()
-    {
-        WebInspector.Panel.prototype.show.call(this);
-        this._updateLauncherViewControls(!WebInspector.panels.resources || WebInspector.panels.resources.resourceTrackingEnabled);
-    },
-
-    reset: function()
-    {
-        this._launcherView.reset();
-    },
-
     attach: function()
     {
         WebInspector.Panel.prototype.attach.call(this);
@@ -271,16 +252,9 @@ WebInspector.AuditsPanel.prototype = {
         this.viewsContainerElement.style.left = width + "px";
     },
 
-    _updateLauncherViewControls: function(isTracking)
-    {
-        if (this._launcherView)
-            this._launcherView.updateResourceTrackingState(isTracking);
-    },
-
     _clearButtonClicked: function()
     {
-        this.auditsItemTreeElement.reveal();
-        this.auditsItemTreeElement.select();
+        this.auditsItemTreeElement.revealAndSelect();
         this.auditResultsTreeElement.removeChildren();
     }
 }

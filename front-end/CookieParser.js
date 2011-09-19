@@ -30,11 +30,14 @@
 
 // Ideally, we would rely on platform support for parsing a cookie, since
 // this would save us from any potential inconsistency. However, exposing
-// platform cookie parsing logic would require quite a bit of additional 
+// platform cookie parsing logic would require quite a bit of additional
 // plumbing, and at least some platforms lack support for parsing Cookie,
-// which is in a format slightly different from Set-Cookie and is normally 
+// which is in a format slightly different from Set-Cookie and is normally
 // only required on the server side.
 
+/**
+ * @constructor
+ */
 WebInspector.CookieParser = function()
 {
 }
@@ -68,7 +71,7 @@ WebInspector.CookieParser.prototype = {
         for (var kv = this._extractKeyValue(); kv; kv = this._extractKeyValue()) {
             if (this._lastCookie)
                 this._lastCookie.addAttribute(kv.key, kv.value);
-            else 
+            else
                 this._addCookie(kv, WebInspector.Cookie.Type.Response);
             if (this._advanceAndCheckCookieDelimiter())
                 this._flushCookie();
@@ -103,7 +106,7 @@ WebInspector.CookieParser.prototype = {
         // Many browsers/platforms do not support this, however (see http://webkit.org/b/16699
         // and http://crbug.com/12361). The logic below matches latest versions of IE, Firefox,
         // Chrome and Safari on some old platforms. The latest version of Safari supports quoted
-        // cookie values, though. 
+        // cookie values, though.
         var keyValueMatch = /^[ \t]*([^\s=;]+)[ \t]*(?:=[ \t]*([^;\n]*))?/.exec(this._input);
         if (!keyValueMatch) {
             console.log("Failed parsing cookie header before: " + this._input);
@@ -151,6 +154,9 @@ WebInspector.CookieParser.parseSetCookie = function(header)
     return (new WebInspector.CookieParser()).parseSetCookie(header);
 }
 
+/**
+ * @constructor
+ */
 WebInspector.Cookie = function(name, value, type)
 {
     this.name = name;

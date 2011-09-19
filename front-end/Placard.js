@@ -23,6 +23,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @constructor
+ */
 WebInspector.Placard = function(title, subtitle)
 {
     this.element = document.createElement("div");
@@ -67,7 +70,7 @@ WebInspector.Placard.prototype = {
         if (this._subtitle === x)
             return;
         this._subtitle = x;
-        this.subtitleElement.innerHTML = x;
+        this.subtitleElement.textContent = x;
     },
 
     get selected()

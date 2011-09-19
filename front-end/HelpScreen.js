@@ -30,8 +30,6 @@
 
 WebInspector.HelpScreen = function(title)
 {
-    this._addStyleSheetIfNeeded("helpScreen.css");
-
     this._element = document.createElement("div");
     this._element.className = "help-window-outer";
     this._element.addEventListener("keydown", this._onKeyDown.bind(this), false);
@@ -42,41 +40,48 @@ WebInspector.HelpScreen = function(title)
     this.contentElement = mainWindow.createChild("div", "help-content");
     this.contentElement.tabIndex = 0;
     this.contentElement.addEventListener("blur", this._onBlur.bind(this), false);
-    captionWindow.createChild("h1", "help-window-title").innerText = title;
+    captionWindow.createChild("h1", "help-window-title").textContent = title;
 
-    closeButton.innerText = "\u2716"; // Code stands for HEAVY MULTIPLICATION X.
-    closeButton.addEventListener("click", this._hide.bind(this), false);
+    closeButton.textContent = "\u2716"; // Code stands for HEAVY MULTIPLICATION X.
+    closeButton.addEventListener("click", this.hide.bind(this), false);
     this._closeKeys = [
         WebInspector.KeyboardShortcut.Keys.Enter.code,
         WebInspector.KeyboardShortcut.Keys.Esc.code,
         WebInspector.KeyboardShortcut.Keys.Space.code,
     ];
-    document.body.appendChild(this._element);
 }
 
 WebInspector.HelpScreen.prototype = {
-    show: function()
+    show: function(onHide)
     {
         if (this._isShown)
             return;
 
-        this._element.style.visibility = "visible";
+        document.body.appendChild(this._element);
         this._isShown = true;
+        this._onHide = onHide;
         this._previousFocusElement = WebInspector.currentFocusElement;
         WebInspector.currentFocusElement = this.contentElement;
     },
 
-    _hide: function()
+    hide: function()
     {
+        if (!this._isShown)
+            return;
+
         this._isShown = false;
-        this._element.style.visibility = "hidden";
+        document.body.removeChild(this._element);
         WebInspector.currentFocusElement = this._previousFocusElement;
+        if (this._onHide) {
+            this._onHide();
+            delete this._onHide;
+        }
     },
 
     _onKeyDown: function(event)
     {
         if (this._isShown && this._closeKeys.indexOf(event.keyCode) >= 0) {
-            this._hide();
+            this.hide();
             event.stopPropagation();
         }
     },
@@ -86,17 +91,5 @@ WebInspector.HelpScreen.prototype = {
          // Pretend we're modal, grab focus back if we're still shown.
         if (this._isShown)
             WebInspector.currentFocusElement = this.contentElement;
-    },
-
-    _addStyleSheetIfNeeded: function(href)
-    {
-        if (WebInspector.HelpScreen._styleSheetAdded)
-            return;
-       
-        WebInspector.HelpScreen._styleSheetAdded = true;
-        var link = document.head.createChild("link");
-        link.type = "text/css";
-        link.rel = "stylesheet";
-        link.href = href;
     }
-};
+}

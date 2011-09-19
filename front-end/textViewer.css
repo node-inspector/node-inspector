@@ -9,10 +9,49 @@
 }
 
 .text-editor-lines {
-    border: 0;
-    -webkit-border-horizontal-spacing: 0;
-    -webkit-border-vertical-spacing: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    overflow: hidden;
+    -webkit-user-select: none;
+    background-color: rgb(240, 240, 240);
+    border-right: 1px solid rgb(187, 187, 187);
+    min-width: 19px;
+}
+
+.text-editor-contents {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: auto;
     -webkit-user-select: text;
+}
+
+.text-editor-contents .inner-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: auto;
+    bottom: auto;
+    min-width: 100%;
+}
+
+.text-editor-editable {
+    -webkit-user-modify: read-write-plaintext-only;
+}
+
+.text-editor-read-only {
+    -webkit-user-modify: read-only;
+    background-color: rgb(240, 240, 240);
+}
+
+.webkit-line-decorations {
+    pointer-events: none;
+    -webkit-user-select: none;
+    -webkit-user-modify: read-only;
 }
 
 .webkit-html-message-bubble {
@@ -58,12 +97,9 @@
 
 .webkit-line-number {
     color: rgb(128, 128, 128);
-    background-color: rgb(240, 240, 240);
-    border-right: 1px solid rgb(187, 187, 187);
     text-align: right;
     vertical-align: top;
     word-break: normal;
-    -webkit-user-select: none;
     padding-right: 4px;
     padding-left: 6px;
 }
@@ -86,9 +122,7 @@
 }
 
 .webkit-line-content {
-    width: 100%;
     padding-left: 2px;
-    vertical-align: top;
 }
 
 .webkit-breakpoint .webkit-line-number-outer {
@@ -136,35 +170,25 @@
     opacity: 0.3;
 }
 
-.webkit-execution-line .webkit-line-content {
+.webkit-execution-line.webkit-line-content {
     background-color: rgb(171, 191, 254);
     outline: 1px solid rgb(64, 115, 244);
 }
 
-.diff-container .webkit-added-line .webkit-line-content {
+.diff-container .webkit-added-line.webkit-line-content {
     background-color: rgb(220, 255, 220);
 }
 
-.diff-container .webkit-removed-line .webkit-line-content {
+.diff-container .webkit-removed-line.webkit-line-content {
     background-color: rgb(255, 220, 220);
     text-decoration: line-through;
 }
 
-.diff-container .webkit-changed-line .webkit-line-content {
+.diff-container .webkit-changed-line.webkit-line-content {
     background-color: rgb(220, 220, 255);
 }
 
-.webkit-search-result {
-    -webkit-border-radius: 4px;
-    padding: 2px 2px 2px 3px;
-    margin: -2px -2px -2px -3px;
-    opacity: 0.8;
-    -webkit-box-shadow: rgba(0, 0, 0, .5) 3px 3px 4px;
-    background-color: rgb(241, 234, 0);
-    color: black;
-}
-
-.webkit-highlighted-line .webkit-line-content {
+.webkit-highlighted-line.webkit-line-content {
     -webkit-animation: "fadeout" 2s 0s;
 }
 

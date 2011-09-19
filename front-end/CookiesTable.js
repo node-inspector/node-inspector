@@ -28,7 +28,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-WebInspector.CookiesTable = function(cookieDomain, expandable, deleteCallback)
+WebInspector.CookiesTable = function(cookieDomain, expandable, deleteCallback, refreshCallback)
 {
     this._cookieDomain = cookieDomain;
 
@@ -64,6 +64,7 @@ WebInspector.CookiesTable = function(cookieDomain, expandable, deleteCallback)
 
     this._dataGrid = new WebInspector.DataGrid(columns, null, deleteCallback ? this._onDeleteFromGrid.bind(this) : null);
     this._dataGrid.addEventListener("sorting changed", this._rebuildTable, this);
+    this._dataGrid.refreshCallback = refreshCallback;
 
     this.element = this._dataGrid.element;
     this._data = [];

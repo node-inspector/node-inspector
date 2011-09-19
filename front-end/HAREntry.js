@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 Google Inc. All rights reserved.
+ * Copyright (C) 2011 Google Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -31,6 +31,9 @@
 // See http://groups.google.com/group/http-archive-specification/web/har-1-2-spec
 // for HAR specification.
 
+// FIXME: Some fields are not yet supported due to back-end limitations.
+// See https://bugs.webkit.org/show_bug.cgi?id=58127 for details.
+
 WebInspector.HAREntry = function(resource)
 {
     this._resource = resource;
@@ -45,7 +48,7 @@ WebInspector.HAREntry.prototype = {
             time: WebInspector.HAREntry._toMilliseconds(this._resource.duration),
             request: this._buildRequest(),
             response: this._buildResponse(),
-            // cache: {...}, -- Not supproted yet.
+            cache: { }, // Not supported yet.
             timings: this._buildTimings()
         };
     },
@@ -54,45 +57,42 @@ WebInspector.HAREntry.prototype = {
     {
         var res = {
             method: this._resource.requestMethod,
-            url: this._resource.url,
-            // httpVersion: "HTTP/1.1" -- Not available.
+            url: this._buildRequestURL(this._resource.url),
+            httpVersion: this._resource.requestHttpVersion,
             headers: this._buildHeaders(this._resource.requestHeaders),
-            headersSize: -1, // Not available.
-            bodySize: -1 // Not available.
+            queryString: this._buildParameters(this._resource.queryParameters || []),
+            cookies: this._buildCookies(this._resource.requestCookies || []),
+            headersSize: this._resource.requestHeadersSize,
+            bodySize: this.requestBodySize
         };
-        if (this._resource.queryParameters)
-            res.queryString = this._buildParameters(this._resource.queryParameters);
         if (this._resource.requestFormData)
             res.postData = this._buildPostData();
-        if (this._resource.requestCookies)
-            res.cookies = this._buildCookies(this._resource.requestCookies);
+
         return res;
     },
 
     _buildResponse: function()
     {
-        var res = {
+        return {
             status: this._resource.statusCode,
             statusText: this._resource.statusText,
-            // "httpVersion": "HTTP/1.1" -- Not available.
+            httpVersion: this._resource.responseHttpVersion,
             headers: this._buildHeaders(this._resource.responseHeaders),
+            cookies: this._buildCookies(this._resource.responseCookies || []),
             content: this._buildContent(),
             redirectURL: this._resource.responseHeaderValue("Location") || "",
-            headersSize: -1, // Not available.
-            bodySize: this._resource.resourceSize
+            headersSize: this._resource.responseHeadersSize,
+            bodySize: this.responseBodySize
         };
-        if (this._resource.responseCookies)
-            res.cookies = this._buildCookies(this._resource.responseCookies);
-        return res;
     },
 
     _buildContent: function()
     {
         return {
             size: this._resource.resourceSize,
-            // compression: 0, -- Not available.
+            compression: this.responseCompression,
             mimeType: this._resource.mimeType,
-            // text: -- Not available.
+            // text: this._resource.content // TODO: pull out into a boolean flag, as content can be huge (and needs to be requested with an async call)
         };
     },
 
@@ -153,6 +153,11 @@ WebInspector.HAREntry.prototype = {
         return parameters.slice();
     },
 
+    _buildRequestURL: function(url)
+    {
+        return url.split("#", 2)[0];
+    },
+
     _buildCookies: function(cookies)
     {
         return cookies.map(this._buildCookie.bind(this));
@@ -160,7 +165,6 @@ WebInspector.HAREntry.prototype = {
 
     _buildCookie: function(cookie)
     {
-        
         return {
             name: cookie.name,
             value: cookie.value,
@@ -179,6 +183,21 @@ WebInspector.HAREntry.prototype = {
             return -1;
         var startTime = timing[start];
         return typeof startTime !== "number" || startTime === -1 ? -1 : Math.round(timing[end] - startTime);
+    },
+
+    get requestBodySize()
+    {
+        return !this._resource.requestFormData ? 0 : this._resource.requestFormData.length;
+    },
+
+    get responseBodySize()
+    {
+        return this._resource.transferSize - this._resource.responseHeadersSize
+    },
+
+    get responseCompression()
+    {
+        return this._resource.resourceSize - (this._resource.transferSize - this._resource.responseHeadersSize);
     }
 }
 
@@ -187,16 +206,16 @@ WebInspector.HAREntry._toMilliseconds = function(time)
     return time === -1 ? -1 : Math.round(time * 1000);
 }
 
-WebInspector.HARLog = function()
+WebInspector.HARLog = function(resources)
 {
-    this.includeResourceIds = false;
+    this._resources = resources;
 }
 
 WebInspector.HARLog.prototype = {
     build: function()
     {
         var webKitVersion = /AppleWebKit\/([^ ]+)/.exec(window.navigator.userAgent);
-        
+
         return {
             version: "1.2",
             creator: {
@@ -204,7 +223,7 @@ WebInspector.HARLog.prototype = {
                 version: webKitVersion ? webKitVersion[1] : "n/a"
             },
             pages: this._buildPages(),
-            entries: Object.keys(WebInspector.networkResources).map(this._convertResource.bind(this))
+            entries: this._resources.map(this._convertResource.bind(this))
         }
     },
 
@@ -228,12 +247,9 @@ WebInspector.HARLog.prototype = {
         }
     },
 
-    _convertResource: function(id)
+    _convertResource: function(resource)
     {
-        var entry = (new WebInspector.HAREntry(WebInspector.networkResources[id])).build();
-        if (this.includeResourceIds)
-            entry._resourceId = id;
-        return entry;
+        return (new WebInspector.HAREntry(resource)).build();
     },
 
     _pageEventTime: function(time)

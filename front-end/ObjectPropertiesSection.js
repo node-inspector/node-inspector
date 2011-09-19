@@ -45,26 +45,30 @@ WebInspector.ObjectPropertiesSection.prototype = {
     update: function()
     {
         var self = this;
-        var callback = function(properties) {
+        function callback(properties)
+        {
             if (!properties)
                 return;
             self.updateProperties(properties);
-        };
-        this.object.getProperties(this.ignoreHasOwnProperty, true, callback);
+        }
+        if (this.ignoreHasOwnProperty)
+            this.object.getAllProperties(callback);
+        else
+            this.object.getOwnProperties(callback);
     },
 
     updateProperties: function(properties, rootTreeElementConstructor, rootPropertyComparer)
     {
         if (!rootTreeElementConstructor)
             rootTreeElementConstructor = this.treeElementConstructor;
-            
+
         if (!rootPropertyComparer)
             rootPropertyComparer = WebInspector.ObjectPropertiesSection.CompareProperties;
-            
+
         if (this.extraProperties)
             for (var i = 0; i < this.extraProperties.length; ++i)
                 properties.push(this.extraProperties[i]);
-                
+
         properties.sort(rootPropertyComparer);
 
         this.propertiesTreeOutline.removeChildren();
@@ -86,7 +90,7 @@ WebInspector.ObjectPropertiesSection.prototype = {
 
 WebInspector.ObjectPropertiesSection.prototype.__proto__ = WebInspector.PropertiesSection.prototype;
 
-WebInspector.ObjectPropertiesSection.CompareProperties = function(propertyA, propertyB) 
+WebInspector.ObjectPropertiesSection.CompareProperties = function(propertyA, propertyB)
 {
     var a = propertyA.name;
     var b = propertyB.name;
@@ -137,6 +141,8 @@ WebInspector.ObjectPropertyTreeElement = function(property)
 
     // Pass an empty title, the title gets made later in onattach.
     TreeElement.call(this, "", null, false);
+    this.toggleOnClick = true;
+    this.selectable = false;
 }
 
 WebInspector.ObjectPropertyTreeElement.prototype = {
@@ -155,12 +161,13 @@ WebInspector.ObjectPropertyTreeElement.prototype = {
                 this.appendChild(new this.treeOutline.section.treeElementConstructor(properties[i]));
             }
         };
-        this.property.value.getOwnProperties(true, callback.bind(this));
+        this.property.value.getOwnProperties(callback.bind(this));
     },
 
     ondblclick: function(event)
     {
-        this.startEditing();
+        if (this.property.writable)
+            this.startEditing();
     },
 
     onattach: function()
@@ -173,37 +180,53 @@ WebInspector.ObjectPropertyTreeElement.prototype = {
         this.nameElement = document.createElement("span");
         this.nameElement.className = "name";
         this.nameElement.textContent = this.property.name;
+        if (!this.property.enumerable)
+            this.nameElement.addStyleClass("dimmed");
 
         var separatorElement = document.createElement("span");
         separatorElement.className = "separator";
         separatorElement.textContent = ": ";
-        
+
         this.valueElement = document.createElement("span");
         this.valueElement.className = "value";
-        this.valueElement.textContent = this.property.value.description;
-        if (this.property.isGetter)
-            this.valueElement.addStyleClass("dimmed");
-        if (this.property.value.isError())
+
+        var description = this.property.value.description;
+        // Render \n as a nice unicode cr symbol.
+        if (this.property.wasThrown)
+            this.valueElement.textContent = "[Exception: " + description + "]";
+        else if (this.property.value.type === "string" && typeof description === "string") {
+            this.valueElement.textContent = "\"" + description.replace(/\n/g, "\u21B5") + "\"";
+            this.valueElement._originalTextContent = "\"" + description + "\"";
+        } else if (this.property.value.type === "function" && typeof description === "string") {
+            this.valueElement.textContent = /.*/.exec(description)[0].replace(/ +$/g, "");
+            this.valueElement._originalTextContent = description;
+        } else
+            this.valueElement.textContent = description;
+
+        if (this.property.wasThrown)
             this.valueElement.addStyleClass("error");
-        if (this.property.value.type)
+        if (this.property.value.subtype)
+            this.valueElement.addStyleClass("console-formatted-" + this.property.value.subtype);
+        else if (this.property.value.type)
             this.valueElement.addStyleClass("console-formatted-" + this.property.value.type);
-        if (this.property.value.type === "node")
-            this.valueElement.addEventListener("contextmenu", this._contextMenuEventFired.bind(this), true);
+        if (this.property.value.subtype === "node")
+            this.valueElement.addEventListener("contextmenu", this._contextMenuEventFired.bind(this), false);
 
         this.listItemElement.removeChildren();
 
         this.listItemElement.appendChild(this.nameElement);
         this.listItemElement.appendChild(separatorElement);
         this.listItemElement.appendChild(this.valueElement);
-        this.hasChildren = this.property.value.hasChildren;
+        this.hasChildren = this.property.value.hasChildren && !this.property.wasThrown;
     },
 
     _contextMenuEventFired: function()
     {
         function selectNode(nodeId)
         {
-            if (nodeId)
-                WebInspector.panels.elements.focusedDOMNode = WebInspector.domAgent.nodeForId(nodeId);
+            if (nodeId) {
+                WebInspector.panels.elements.switchToAndFocus(WebInspector.domAgent.nodeForId(nodeId));
+            }
         }
 
         function revealElement()
@@ -236,7 +259,15 @@ WebInspector.ObjectPropertyTreeElement.prototype = {
 
         this.listItemElement.addStyleClass("editing-sub-part");
 
-        WebInspector.startEditing(this.valueElement, this.editingCommitted.bind(this), this.editingCancelled.bind(this), context);
+        // Edit original source.
+        if (typeof this.valueElement._originalTextContent === "string")
+            this.valueElement.textContent = this.valueElement._originalTextContent;
+
+        WebInspector.startEditing(this.valueElement, {
+            context: context,
+            commitHandler: this.editingCommitted.bind(this),
+            cancelHandler: this.editingCancelled.bind(this)
+        });
     },
 
     editingEnded: function(context)
@@ -267,23 +298,23 @@ WebInspector.ObjectPropertyTreeElement.prototype = {
     {
         expression = expression.trim();
         var expressionLength = expression.length;
-        var self = this;
-        var callback = function(success) {
+        function callback(error)
+        {
             if (!updateInterface)
                 return;
 
-            if (!success)
-                self.update();
+            if (error)
+                this.update();
 
             if (!expressionLength) {
                 // The property was deleted, so remove this tree element.
-                self.parent.removeChild(this);
+                this.parent.removeChild(this);
             } else {
                 // Call updateSiblings since their value might be based on the value that just changed.
-                self.updateSiblings();
+                this.updateSiblings();
             }
         };
-        this.property.parentObject.setPropertyValue(this.property.name, expression.trim(), callback);
+        this.property.parentObject.setPropertyValue(this.property.name, expression.trim(), callback.bind(this));
     }
 }
 

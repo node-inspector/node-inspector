@@ -6,13 +6,13 @@
  * are met:
  *
  * 1.  Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer. 
+ *     notice, this list of conditions and the following disclaimer.
  * 2.  Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution. 
+ *     documentation and/or other materials provided with the distribution.
  * 3.  Neither the name of Apple Computer, Inc. ("Apple") nor the names of
  *     its contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission. 
+ *     from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY APPLE AND ITS CONTRIBUTORS "AS IS" AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -28,6 +28,8 @@
  * Contains diff method based on Javascript Diff Algorithm By John Resig
  * http://ejohn.org/files/jsdiff.js (released under the MIT license).
  */
+
+function setupPrototypeUtilities() {
 
 Function.prototype.bind = function(thisObject)
 {
@@ -154,21 +156,9 @@ Node.prototype.rangeBoundaryForOffset = function(offset)
     return { container: node, offset: offset };
 }
 
-Element.prototype.removeStyleClass = function(className) 
+Element.prototype.removeStyleClass = function(className)
 {
-    // Test for the simple case first.
-    if (this.className === className) {
-        this.className = "";
-        return;
-    }
-
-    var index = this.className.indexOf(className);
-    if (index === -1)
-        return;
-
-    this.className = this.className.split(" ").filter(function(s) {
-        return s && s !== className;
-    }).join(" ");
+    this.classList.remove(className);
 }
 
 Element.prototype.removeMatchingStyleClasses = function(classNameRegex)
@@ -178,25 +168,14 @@ Element.prototype.removeMatchingStyleClasses = function(classNameRegex)
         this.className = this.className.replace(regex, " ");
 }
 
-Element.prototype.addStyleClass = function(className) 
+Element.prototype.addStyleClass = function(className)
 {
-    if (className && !this.hasStyleClass(className))
-        this.className += (this.className.length ? " " + className : className);
+    this.classList.add(className);
 }
 
-Element.prototype.hasStyleClass = function(className) 
+Element.prototype.hasStyleClass = function(className)
 {
-    if (!className)
-        return false;
-    // Test for the simple case
-    if (this.className === className)
-        return true;
-
-    var index = this.className.indexOf(className);
-    if (index === -1)
-        return false;
-    var toTest = " " + this.className + " ";
-    return toTest.indexOf(" " + className + " ", index) !== -1;
+    return this.classList.contains(className);
 }
 
 Element.prototype.positionAt = function(x, y)
@@ -214,6 +193,12 @@ Element.prototype.pruneEmptyTextNodes = function()
             this.removeChild(sibling);
         sibling = nextSibling;
     }
+}
+
+Element.prototype.isScrolledToBottom = function()
+{
+    // This code works only for 0-width border
+    return this.scrollTop + this.clientHeight === this.scrollHeight;
 }
 
 Node.prototype.enclosingNodeOrSelfWithNodeNameInArray = function(nameArray)
@@ -245,7 +230,7 @@ Node.prototype.enclosingNodeWithClass = function(className)
     return this.parentNode.enclosingNodeOrSelfWithClass(className);
 }
 
-Element.prototype.query = function(query) 
+Element.prototype.query = function(query)
 {
     return this.ownerDocument.evaluate(query, this, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
 }
@@ -267,28 +252,30 @@ Element.prototype.isInsertionCaretInside = function()
 
 Element.prototype.createChild = function(elementName, className)
 {
-    var element = document.createElement(elementName);
+    var element = this.ownerDocument.createElement(elementName);
     if (className)
         element.className = className;
     this.appendChild(element);
     return element;
 }
 
-Element.prototype.__defineGetter__("totalOffsetLeft", function()
+DocumentFragment.prototype.createChild = Element.prototype.createChild;
+
+Element.prototype.totalOffsetLeft = function()
 {
     var total = 0;
     for (var element = this; element; element = element.offsetParent)
         total += element.offsetLeft + (this !== element ? element.clientLeft : 0);
     return total;
-});
+}
 
-Element.prototype.__defineGetter__("totalOffsetTop", function()
+Element.prototype.totalOffsetTop = function()
 {
     var total = 0;
     for (var element = this; element; element = element.offsetParent)
         total += element.offsetTop + (this !== element ? element.clientTop : 0);
     return total;
-});
+}
 
 Element.prototype.offsetRelativeToWindow = function(targetWindow)
 {
@@ -296,8 +283,8 @@ Element.prototype.offsetRelativeToWindow = function(targetWindow)
     var curElement = this;
     var curWindow = this.ownerDocument.defaultView;
     while (curWindow && curElement) {
-        elementOffset.x += curElement.totalOffsetLeft;
-        elementOffset.y += curElement.totalOffsetTop;
+        elementOffset.x += curElement.totalOffsetLeft();
+        elementOffset.y += curElement.totalOffsetTop();
         if (curWindow === targetWindow)
             break;
 
@@ -306,6 +293,12 @@ Element.prototype.offsetRelativeToWindow = function(targetWindow)
     }
 
     return elementOffset;
+}
+
+Element.prototype.setTextAndTitle = function(text)
+{
+    this.textContent = text;
+    this.title = text;
 }
 
 KeyboardEvent.prototype.__defineGetter__("data", function()
@@ -335,9 +328,9 @@ Text.prototype.select = function(start, end)
     if (start < 0)
         start = end + start;
 
-    var selection = window.getSelection();
+    var selection = this.ownerDocument.defaultView.getSelection();
     selection.removeAllRanges();
-    var range = document.createRange();
+    var range = this.ownerDocument.createRange();
     range.setStart(this, start);
     range.setEnd(this, end);
     selection.addRange(range);
@@ -365,22 +358,31 @@ Element.prototype.__defineGetter__("selectionLeftOffset", function() {
     return leftOffset;
 });
 
-Node.prototype.isWhitespace = isNodeWhitespace;
-Node.prototype.displayName = nodeDisplayName;
-Node.prototype.isAncestor = function(node)
-{
-    return isAncestorNode(this, node);
-};
-Node.prototype.isDescendant = isDescendantNode;
-Node.prototype.traverseNextNode = traverseNextNode;
-Node.prototype.traversePreviousNode = traversePreviousNode;
-Node.prototype.onlyTextChild = onlyTextChild;
-
 String.prototype.hasSubstring = function(string, caseInsensitive)
 {
     if (!caseInsensitive)
         return this.indexOf(string) !== -1;
     return this.match(new RegExp(string.escapeForRegExp(), "i"));
+}
+
+String.prototype.findAll = function(string)
+{
+    var matches = [];
+    var i = this.indexOf(string);
+    while (i !== -1) {
+        matches.push(i);
+        i = this.indexOf(string, i + string.length);
+    }
+    return matches;
+}
+
+String.prototype.lineEndings = function()
+{
+    if (!this._lineEndings) {
+        this._lineEndings = this.findAll("\n");
+        this._lineEndings.push(this.length);
+    }
+    return this._lineEndings;
 }
 
 String.prototype.asParsedURL = function()
@@ -433,12 +435,21 @@ String.prototype.escapeForRegExp = function()
 
 String.prototype.escapeHTML = function()
 {
-    return this.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    return this.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); //" doublequotes just for editor
 }
 
 String.prototype.collapseWhitespace = function()
 {
     return this.replace(/[\s\xA0]+/g, " ");
+}
+
+String.prototype.trimMiddle = function(maxLength)
+{
+    if (this.length <= maxLength)
+        return this;
+    var leftHalf = maxLength >> 1;
+    var rightHalf = maxLength - leftHalf - 1;
+    return this.substr(0, leftHalf) + "\u2026" + this.substr(this.length - rightHalf, rightHalf);
 }
 
 String.prototype.trimURL = function(baseURLDomain)
@@ -449,113 +460,35 @@ String.prototype.trimURL = function(baseURLDomain)
     return result;
 }
 
-function isNodeWhitespace()
+String.prototype.removeURLFragment = function()
 {
-    if (!this || this.nodeType !== Node.TEXT_NODE)
-        return false;
-    if (!this.nodeValue.length)
-        return true;
-    return this.nodeValue.match(/^[\s\xA0]+$/);
+    var fragmentIndex = this.indexOf("#");
+    if (fragmentIndex == -1)
+        fragmentIndex = this.length;
+    return this.substring(0, fragmentIndex);
 }
 
-function nodeDisplayName()
+Node.prototype.isAncestor = function(node)
 {
-    if (!this)
-        return "";
-
-    switch (this.nodeType) {
-        case Node.DOCUMENT_NODE:
-            return "Document";
-
-        case Node.ELEMENT_NODE:
-            var name = "<" + this.nodeName.toLowerCase();
-
-            if (this.hasAttributes()) {
-                var value = this.getAttribute("id");
-                if (value)
-                    name += " id=\"" + value + "\"";
-                value = this.getAttribute("class");
-                if (value)
-                    name += " class=\"" + value + "\"";
-                if (this.nodeName.toLowerCase() === "a") {
-                    value = this.getAttribute("name");
-                    if (value)
-                        name += " name=\"" + value + "\"";
-                    value = this.getAttribute("href");
-                    if (value)
-                        name += " href=\"" + value + "\"";
-                } else if (this.nodeName.toLowerCase() === "img") {
-                    value = this.getAttribute("src");
-                    if (value)
-                        name += " src=\"" + value + "\"";
-                } else if (this.nodeName.toLowerCase() === "iframe") {
-                    value = this.getAttribute("src");
-                    if (value)
-                        name += " src=\"" + value + "\"";
-                } else if (this.nodeName.toLowerCase() === "input") {
-                    value = this.getAttribute("name");
-                    if (value)
-                        name += " name=\"" + value + "\"";
-                    value = this.getAttribute("type");
-                    if (value)
-                        name += " type=\"" + value + "\"";
-                } else if (this.nodeName.toLowerCase() === "form") {
-                    value = this.getAttribute("action");
-                    if (value)
-                        name += " action=\"" + value + "\"";
-                }
-            }
-
-            return name + ">";
-
-        case Node.TEXT_NODE:
-            if (isNodeWhitespace.call(this))
-                return "(whitespace)";
-            return "\"" + this.nodeValue + "\"";
-
-        case Node.COMMENT_NODE:
-            return "<!--" + this.nodeValue + "-->";
-            
-        case Node.DOCUMENT_TYPE_NODE:
-            var docType = "<!DOCTYPE " + this.nodeName;
-            if (this.publicId) {
-                docType += " PUBLIC \"" + this.publicId + "\"";
-                if (this.systemId)
-                    docType += " \"" + this.systemId + "\"";
-            } else if (this.systemId)
-                docType += " SYSTEM \"" + this.systemId + "\"";
-            if (this.internalSubset)
-                docType += " [" + this.internalSubset + "]";
-            return docType + ">";
-    }
-
-    return this.nodeName.toLowerCase().collapseWhitespace();
-}
-
-function isAncestorNode(ancestor, node)
-{
-    if (!node || !ancestor)
+    if (!node)
         return false;
 
     var currentNode = node.parentNode;
     while (currentNode) {
-        if (ancestor === currentNode)
+        if (this === currentNode)
             return true;
         currentNode = currentNode.parentNode;
     }
     return false;
 }
 
-function isDescendantNode(descendant)
+Node.prototype.isDescendant = function(descendant)
 {
-    return isAncestorNode(descendant, this);
+    return !!descendant && descendant.isAncestor(this);
 }
 
-function traverseNextNode(stayWithin)
+Node.prototype.traverseNextNode = function(stayWithin)
 {
-    if (!this)
-        return;
-
     var node = this.firstChild;
     if (node)
         return node;
@@ -576,10 +509,8 @@ function traverseNextNode(stayWithin)
     return node.nextSibling;
 }
 
-function traversePreviousNode(stayWithin)
+Node.prototype.traversePreviousNode = function(stayWithin)
 {
-    if (!this)
-        return;
     if (stayWithin && this === stayWithin)
         return null;
     var node = this.previousSibling;
@@ -590,109 +521,9 @@ function traversePreviousNode(stayWithin)
     return this.parentNode;
 }
 
-function onlyTextChild()
-{
-    if (!this)
-        return null;
-
-    var firstChild = this.firstChild;
-    if (!firstChild || firstChild.nodeType !== Node.TEXT_NODE)
-        return null;
-
-    var sibling = firstChild.nextSibling;
-    return sibling ? null : firstChild;
-}
-
-function appropriateSelectorForNode(node, justSelector)
-{
-    if (!node)
-        return "";
-
-    var lowerCaseName = node.localName || node.nodeName.toLowerCase();
-
-    var id = node.getAttribute("id");
-    if (id) {
-        var selector = "#" + id;
-        return (justSelector ? selector : lowerCaseName + selector);
-    }
-
-    var className = node.getAttribute("class");
-    if (className) {
-        var selector = "." + className.replace(/\s+/, ".");
-        return (justSelector ? selector : lowerCaseName + selector);
-    }
-
-    if (lowerCaseName === "input" && node.getAttribute("type"))
-        return lowerCaseName + "[type=\"" + node.getAttribute("type") + "\"]";
-
-    return lowerCaseName;
-}
-
-function getDocumentForNode(node)
-{
-    return node.nodeType == Node.DOCUMENT_NODE ? node : node.ownerDocument;
-}
-
-function parentNode(node)
+window.parentNode = function(node)
 {
     return node.parentNode;
-}
-
-Number.millisToString = function(ms, formatterFunction, higherResolution)
-{
-    return Number.secondsToString(ms / 1000, formatterFunction, higherResolution);
-}
-
-Number.secondsToString = function(seconds, formatterFunction, higherResolution)
-{
-    if (!formatterFunction)
-        formatterFunction = String.sprintf;
-
-    if (seconds === 0)
-        return "0";
-
-    var ms = seconds * 1000;
-    if (higherResolution && ms < 1000)
-        return formatterFunction("%.3fms", ms);
-    else if (ms < 1000)
-        return formatterFunction("%.0fms", ms);
-
-    if (seconds < 60)
-        return formatterFunction("%.2fs", seconds);
-
-    var minutes = seconds / 60;
-    if (minutes < 60)
-        return formatterFunction("%.1fmin", minutes);
-
-    var hours = minutes / 60;
-    if (hours < 24)
-        return formatterFunction("%.1fhrs", hours);
-
-    var days = hours / 24;
-    return formatterFunction("%.1f days", days);
-}
-
-Number.bytesToString = function(bytes, formatterFunction, higherResolution)
-{
-    if (!formatterFunction)
-        formatterFunction = String.sprintf;
-    if (typeof higherResolution === "undefined")
-        higherResolution = true;
-
-    if (bytes < 1024)
-        return formatterFunction("%.0fB", bytes);
-
-    var kilobytes = bytes / 1024;
-    if (higherResolution && kilobytes < 1024)
-        return formatterFunction("%.2fKB", kilobytes);
-    else if (kilobytes < 1024)
-        return formatterFunction("%.0fKB", kilobytes);
-
-    var megabytes = kilobytes / 1024;
-    if (higherResolution)
-        return formatterFunction("%.2fMB", megabytes);
-    else
-        return formatterFunction("%.0fMB", megabytes);
 }
 
 Number.constrain = function(num, min, max)
@@ -704,35 +535,86 @@ Number.constrain = function(num, min, max)
     return num;
 }
 
+Date.prototype.toRFC3339 = function()
+{
+    function leadZero(x)
+    {
+        return x > 9 ? x : '0' + x
+    }
+    var offset = Math.abs(this.getTimezoneOffset());
+    var offsetString = Math.floor(offset / 60) + ':' + leadZero(offset % 60);
+    return this.getFullYear() + '-' +
+           leadZero(this.getMonth() + 1) + '-' +
+           leadZero(this.getDate()) + 'T' +
+           leadZero(this.getHours()) + ':' +
+           leadZero(this.getMinutes()) + ':' +
+           leadZero(this.getSeconds()) +
+           (!offset ? "Z" : (this.getTimezoneOffset() > 0 ? '-' : '+') + offsetString);
+}
+
 HTMLTextAreaElement.prototype.moveCursorToEnd = function()
 {
     var length = this.value.length;
     this.setSelectionRange(length, length);
 }
 
-Array.prototype.remove = function(value, onlyFirst)
+Object.defineProperty(Array.prototype, "remove",
 {
-    if (onlyFirst) {
-        var index = this.indexOf(value);
-        if (index !== -1)
-            this.splice(index, 1);
-        return;
-    }
+    /**
+     * @this {Array.<*>}
+     */
+    value: function(value, onlyFirst)
+    {
+        if (onlyFirst) {
+            var index = this.indexOf(value);
+            if (index !== -1)
+                this.splice(index, 1);
+            return;
+        }
 
-    var length = this.length;
-    for (var i = 0; i < length; ++i) {
-        if (this[i] === value)
-            this.splice(i, 1);
+        var length = this.length;
+        for (var i = 0; i < length; ++i) {
+            if (this[i] === value)
+                this.splice(i, 1);
+        }
     }
-}
+});
 
-Array.prototype.keySet = function()
+Object.defineProperty(Array.prototype, "keySet",
 {
-    var keys = {};
-    for (var i = 0; i < this.length; ++i)
-        keys[this[i]] = true;
-    return keys;
-}
+    /**
+     * @this {Array.<*>}
+     */
+    value: function()
+    {
+        var keys = {};
+        for (var i = 0; i < this.length; ++i)
+            keys[this[i]] = true;
+        return keys;
+    }
+});
+
+Object.defineProperty(Array.prototype, "upperBound",
+{
+    /**
+     * @this {Array.<number>}
+     */
+    value: function(value)
+    {
+        var first = 0;
+        var count = this.length;
+        while (count > 0) {
+          var step = count >> 1;
+          var middle = first + step;
+          if (value >= this[middle]) {
+              first = middle + 1;
+              count -= step + 1;
+          } else
+              count = step;
+        }
+        return first;
+    }
+});
 
 Array.diff = function(left, right)
 {
@@ -769,7 +651,7 @@ Array.diff = function(left, right)
     }
 
     for (var i = n.length - 1; i > 0; i--) {
-        if (n[i].text != null && n[i - 1].text == null && n[i].row > 0 && o[n[i].row - 1].text == null && 
+        if (n[i].text != null && n[i - 1].text == null && n[i].row > 0 && o[n[i].row - 1].text == null &&
             n[i - 1] == o[n[i].row - 1]) {
             n[i - 1] = { text: n[i - 1], row: n[i].row - 1 };
             o[n[i].row - 1] = { text: o[n[i].row - 1], row: i - 1 };
@@ -783,33 +665,6 @@ Array.convert = function(list)
 {
     // Cast array-like object to an array.
     return Array.prototype.slice.call(list);
-}
-
-function insertionIndexForObjectInListSortedByFunction(anObject, aList, aFunction)
-{
-    var first = 0;
-    var last = aList.length - 1;
-    var floor = Math.floor;
-    var mid, c;
-
-    while (first <= last) {
-        mid = floor((first + last) / 2);
-        c = aFunction(anObject, aList[mid]);
-
-        if (c > 0)
-            first = mid + 1;
-        else if (c < 0)
-            last = mid - 1;
-        else {
-            // Return the first occurance of an item in the list.
-            while (mid > 0 && aFunction(anObject, aList[mid - 1]) === 0)
-                mid--;
-            first = mid;
-            break;
-        }
-    }
-
-    return first;
 }
 
 String.sprintf = function(format)
@@ -845,7 +700,7 @@ String.tokenizeFormatString = function(format)
 
         if (!isNaN(format[index])) {
             // The first character is a number, it might be a substitution index.
-            var number = parseInt(format.substring(index));
+            var number = parseInt(format.substring(index), 10);
             while (!isNaN(format[index]))
                 ++index;
             // If the number is greater than zero and ends with a "$",
@@ -861,7 +716,7 @@ String.tokenizeFormatString = function(format)
             // This is a precision specifier. If no digit follows the ".",
             // then the precision should be zero.
             ++index;
-            precision = parseInt(format.substring(index));
+            precision = parseInt(format.substring(index), 10);
             if (isNaN(precision))
                 precision = 0;
             while (!isNaN(format[index]))
@@ -882,17 +737,11 @@ String.tokenizeFormatString = function(format)
 String.standardFormatters = {
     d: function(substitution)
     {
-        if (typeof substitution == "object" && WebInspector.RemoteObject.type(substitution) === "number")
-            substitution = substitution.description;
-        substitution = parseInt(substitution);
         return !isNaN(substitution) ? substitution : 0;
     },
 
     f: function(substitution, token)
     {
-        if (typeof substitution == "object" && WebInspector.RemoteObject.type(substitution) === "number")
-            substitution = substitution.description;
-        substitution = parseFloat(substitution);
         if (substitution && token.precision > -1)
             substitution = substitution.toFixed(token.precision);
         return !isNaN(substitution) ? substitution : (token.precision > -1 ? Number(0).toFixed(token.precision) : 0);
@@ -900,11 +749,9 @@ String.standardFormatters = {
 
     s: function(substitution)
     {
-        if (typeof substitution == "object" && WebInspector.RemoteObject.type(substitution) !== "null")
-            substitution = substitution.description;
         return substitution;
-    },
-};
+    }
+}
 
 String.vsprintf = function(format, substitutions)
 {
@@ -978,73 +825,166 @@ String.format = function(format, substitutions, formatters, initialValue, append
     return { formattedResult: result, unusedSubstitutions: unusedSubstitutions };
 }
 
+} // setupPrototypeUtilities()
+
+setupPrototypeUtilities();
+
 function isEnterKey(event) {
     // Check if in IME.
     return event.keyCode !== 229 && event.keyIdentifier === "Enter";
 }
 
-
-function highlightSearchResult(element, offset, length)
+function highlightSearchResult(element, offset, length, domChanges)
 {
+    var result = highlightSearchResults(element, [{offset: offset, length: length }], domChanges);
+    return result.length ? result[0] : null;
+}
+
+/**
+ * @param {Array.<Object>=} changes
+ */
+function highlightSearchResults(element, resultRanges, changes)
+{
+    changes = changes || [];
+    var highlightNodes = [];
     var lineText = element.textContent;
-    var endOffset = offset + length;
-    var highlightNode = document.createElement("span");
-    highlightNode.className = "webkit-search-result";
-    highlightNode.textContent = lineText.substring(offset, endOffset);
+    var ownerDocument = element.ownerDocument;
+    var textNodeSnapshot = ownerDocument.evaluate(".//text()", element, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 
-    var boundary = element.rangeBoundaryForOffset(offset);
-    var textNode = boundary.container;
-    var text = textNode.textContent;
+    var snapshotLength = textNodeSnapshot.snapshotLength;
+    var snapshotNodeOffset = 0;
+    var currentSnapshotItem = 0;
 
-    if (boundary.offset + length < text.length) {
-        // Selection belong to a single split mode.
-        textNode.textContent = text.substring(boundary.offset + length);
-        textNode.parentElement.insertBefore(highlightNode, textNode);
-        var prefixNode = document.createTextNode(text.substring(0, boundary.offset));
-        textNode.parentElement.insertBefore(prefixNode, highlightNode);
-        return highlightNode;
-    }
+    for (var i = 0; i < resultRanges.length; ++i) {
+        var resultLength = resultRanges[i].length;
+        var startOffset = resultRanges[i].offset;
+        var endOffset = startOffset + resultLength;
+        var length = resultLength;
+        var textNode;
+        var textNodeOffset;
+        var found;
 
-    var parentElement = textNode.parentElement;
-    var anchorElement = textNode.nextSibling;
-
-    length -= text.length - boundary.offset;
-    textNode.textContent = text.substring(0, boundary.offset);
-    textNode = textNode.traverseNextTextNode(element);
-
-    while (textNode) {
-        var text = textNode.textContent;
-        if (length < text.length) {
-            textNode.textContent = text.substring(length);
-            break;
+        while (currentSnapshotItem < snapshotLength) {
+            textNode = textNodeSnapshot.snapshotItem(currentSnapshotItem++);
+            var textNodeLength = textNode.nodeValue.length;
+            if (snapshotNodeOffset + textNodeLength > startOffset) {
+                textNodeOffset = startOffset - snapshotNodeOffset;
+                snapshotNodeOffset += textNodeLength;
+                found = true;
+                break;
+            }
+            snapshotNodeOffset += textNodeLength;
         }
 
-        length -= text.length;
-        textNode.textContent = "";
-        textNode = textNode.traverseNextTextNode(element);
+        if (!found) {
+            textNode = element;
+            textNodeOffset = 0;
+        }
+
+        var highlightNode = ownerDocument.createElement("span");
+        highlightNode.className = "webkit-search-result";
+        highlightNode.textContent = lineText.substring(startOffset, endOffset);
+
+        var text = textNode.textContent;
+        if (textNodeOffset + resultLength < text.length) {
+            // Selection belongs to a single split mode.
+            textNode.textContent = text.substring(textNodeOffset + resultLength);
+            changes.push({ node: textNode, type: "changed", oldText: text, newText: textNode.textContent });
+
+            textNode.parentElement.insertBefore(highlightNode, textNode);
+            changes.push({ node: highlightNode, type: "added", nextSibling: textNode, parent: textNode.parentElement });
+
+            var prefixNode = ownerDocument.createTextNode(text.substring(0, textNodeOffset));
+            textNode.parentElement.insertBefore(prefixNode, highlightNode);
+            changes.push({ node: prefixNode, type: "added", nextSibling: highlightNode, parent: textNode.parentElement });
+            highlightNodes.push(highlightNode);
+            continue;
+        }
+
+        var parentElement = textNode.parentElement;
+        var anchorElement = textNode.nextSibling;
+
+        length -= text.length - textNodeOffset;
+        textNode.textContent = text.substring(0, textNodeOffset);
+        changes.push({ node: textNode, type: "changed", oldText: text, newText: textNode.textContent });
+
+        while (currentSnapshotItem < snapshotLength) {
+            textNode = textNodeSnapshot.snapshotItem(currentSnapshotItem++);
+            snapshotNodeOffset += textNode.nodeValue.length;
+            text = textNode.textContent;
+            if (length < text.length) {
+                textNode.textContent = text.substring(length);
+                changes.push({ node: textNode, type: "changed", oldText: text, newText: textNode.textContent });
+                break;
+            }
+
+            length -= text.length;
+            textNode.textContent = "";
+            changes.push({ node: textNode, type: "changed", oldText: text, newText: textNode.textContent });
+        }
+
+        parentElement.insertBefore(highlightNode, anchorElement);
+        changes.push({ node: highlightNode, type: "added", nextSibling: anchorElement, parent: parentElement });
+        highlightNodes.push(highlightNode);
     }
 
-    parentElement.insertBefore(highlightNode, anchorElement);
-    return highlightNode;
+    return highlightNodes;
 }
 
-function createSearchRegex(query)
+function applyDomChanges(domChanges)
 {
+    for (var i = 0, size = domChanges.length; i < size; ++i) {
+        var entry = domChanges[i];
+        switch (entry.type) {
+        case "added":
+            entry.parent.insertBefore(entry.node, entry.nextSibling);
+            break;
+        case "changed":
+            entry.node.textContent = entry.newText;
+            break;
+        }
+    }
+}
+
+function revertDomChanges(domChanges)
+{
+    for (var i = 0, size = domChanges.length; i < size; ++i) {
+        var entry = domChanges[i];
+        switch (entry.type) {
+        case "added":
+            if (entry.node.parentElement)
+                entry.node.parentElement.removeChild(entry.node);
+            break;
+        case "changed":
+            entry.node.textContent = entry.oldText;
+            break;
+        }
+    }
+}
+
+function createSearchRegex(query, extraFlags)
+{
+    // This should be kept the same as the one in InspectorPageAgent.cpp.
+    var regexSpecialCharacters = "[](){}+-*.,?\\^$|";
     var regex = "";
     for (var i = 0; i < query.length; ++i) {
-        var char = query.charAt(i);
-        if (char === "]")
-            char = "\\]";
-        regex += "[" + char + "]";
+        var c = query.charAt(i);
+        if (regexSpecialCharacters.indexOf(c) != -1)
+            regex += "\\";
+        regex += c;
     }
-    return new RegExp(regex, "i");
+    return new RegExp(regex, "i" + (extraFlags || ""));
 }
 
-function offerFileForDownload(contents)
+function countRegexMatches(regex, content)
 {
-    var builder = new BlobBuilder();
-    builder.append(contents);
-    var blob = builder.getBlob("application/octet-stream");
-    var url = window.createObjectURL(blob);
-    window.open(url);
+    var text = content;
+    var result = 0;
+    var match;
+    while (text && (match = regex.exec(text))) {
+        if (match[0].length > 0)
+            ++result;
+        text = text.substring(match.index + 1);
+    }
+    return result;
 }

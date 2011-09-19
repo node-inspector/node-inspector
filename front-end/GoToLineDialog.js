@@ -40,20 +40,17 @@ WebInspector.GoToLineDialog = function(view)
 
     var dialogWindow = this._element;
 
-    dialogWindow.createChild("label").innerText = WebInspector.UIString("Go to line: ");
+    dialogWindow.createChild("label").textContent = WebInspector.UIString("Go to line: ");
 
     this._input = dialogWindow.createChild("input");
     this._input.setAttribute("type", "text");
     this._input.setAttribute("size", 6);
-    var linesCount = view.sourceFrame.textModel.linesCount;
-    if (linesCount)
-        this._input.setAttribute("title", WebInspector.UIString("1 - %d", linesCount));
     var blurHandler = this._onBlur.bind(this);
     this._input.addEventListener("blur", blurHandler, false);
-    
+
 
     var go = dialogWindow.createChild("button");
-    go.innerText = WebInspector.UIString("Go");
+    go.textContent = WebInspector.UIString("Go");
     go.addEventListener("click", this._onClick.bind(this), false);
     go.addEventListener("mousedown", function(e) {
         // Ok button click will close the dialog, removing onBlur listener
@@ -71,9 +68,20 @@ WebInspector.GoToLineDialog = function(view)
 
 WebInspector.GoToLineDialog.show = function(sourceView)
 {
+    if (!sourceView || typeof sourceView.highlightLine !== "function")
+        return;
     if (this._instance)
         return;
     this._instance = new WebInspector.GoToLineDialog(sourceView);
+}
+
+WebInspector.GoToLineDialog.createShortcut = function()
+{
+    var isMac = WebInspector.isMac();
+    var shortcut;
+    if (isMac)
+        return WebInspector.KeyboardShortcut.makeDescriptor("l", WebInspector.KeyboardShortcut.Modifiers.Meta);
+    return WebInspector.KeyboardShortcut.makeDescriptor("g", WebInspector.KeyboardShortcut.Modifiers.Ctrl);
 }
 
 WebInspector.GoToLineDialog.prototype = {
@@ -105,6 +113,7 @@ WebInspector.GoToLineDialog.prototype = {
 
         if (this._closeKeys.indexOf(event.keyCode) >= 0) {
             this._hide();
+            event.preventDefault();
             event.stopPropagation();
         }
     },
@@ -118,10 +127,8 @@ WebInspector.GoToLineDialog.prototype = {
     _highlightSelectedLine: function()
     {
         var value = this._input.value;
-        var lineNumber = parseInt(value, 10);
-        if (!isNaN(lineNumber) && lineNumber > 0) {
-            lineNumber = Math.min(lineNumber, this._view.sourceFrame.textModel.linesCount);
+        var lineNumber = parseInt(value, 10) - 1;
+        if (!isNaN(lineNumber) && lineNumber >= 0)
             this._view.highlightLine(lineNumber);
-        }
     }
 };

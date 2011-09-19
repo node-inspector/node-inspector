@@ -29,7 +29,9 @@
 WebInspector.MetricsSidebarPane = function()
 {
     WebInspector.SidebarPane.call(this, WebInspector.UIString("Metrics"));
-    this._inlineStyleId = null;
+
+    WebInspector.cssModel.addEventListener(WebInspector.CSSStyleModel.Events.StyleSheetChanged, this._styleSheetChanged, this);
+    WebInspector.domAgent.addEventListener(WebInspector.DOMAgent.Events.AttrModified, this._attributesUpdated, this);
 }
 
 WebInspector.MetricsSidebarPane.prototype = {
@@ -37,35 +39,144 @@ WebInspector.MetricsSidebarPane.prototype = {
     {
         if (node)
             this.node = node;
-        else
-            node = this.node;
+        this._innerUpdate();
+    },
 
-        if (!node || !node.ownerDocument.defaultView || node.nodeType !== Node.ELEMENT_NODE) {
+    _innerUpdate: function()
+    {
+        // FIXME: avoid updates of a collapsed pane.
+        var node = this.node;
+
+        if (!node || node.nodeType() !== Node.ELEMENT_NODE) {
             this.bodyElement.removeChildren();
             return;
         }
 
-        var self = this;
-        var callback = function(style) {
-            if (!style)
+        function callback(style)
+        {
+            if (!style || this.node !== node)
                 return;
-            self._update(style);
-        };
-        WebInspector.cssModel.getComputedStyleAsync(node.id, callback);
+            this._updateMetrics(style);
+        }
+        WebInspector.cssModel.getComputedStyleAsync(node.id, callback.bind(this));
 
-        var inlineStyleCallback = function(style) {
-            if (!style)
+        function inlineStyleCallback(style)
+        {
+            if (!style || this.node !== node)
                 return;
-            self.inlineStyle = style;
-        };
-        WebInspector.cssModel.getInlineStyleAsync(node.id, inlineStyleCallback);
+            this.inlineStyle = style;
+        }
+        WebInspector.cssModel.getInlineStyleAsync(node.id, inlineStyleCallback.bind(this));
     },
 
-    _update: function(style)
+    _styleSheetChanged: function()
+    {
+        this._innerUpdate();
+    },
+
+    _attributesUpdated: function(event)
+    {
+        if (this.node !== event.data)
+            return;
+
+        // "style" attribute might have changed. Update metrics unless they are being edited.
+        if (!this._isEditingMetrics)
+            this._innerUpdate();
+    },
+
+    _getPropertyValueAsPx: function(style, propertyName)
+    {
+        return Number(style.getPropertyValue(propertyName).replace(/px$/, "") || 0);
+    },
+
+    _getBox: function(computedStyle, componentName)
+    {
+        var suffix = componentName === "border" ? "-width" : "";
+        var left = this._getPropertyValueAsPx(computedStyle, componentName + "-left" + suffix);
+        var top = this._getPropertyValueAsPx(computedStyle, componentName + "-top" + suffix);
+        var right = this._getPropertyValueAsPx(computedStyle, componentName + "-right" + suffix);
+        var bottom = this._getPropertyValueAsPx(computedStyle, componentName + "-bottom" + suffix);
+        return { left: left, top: top, right: right, bottom: bottom };
+    },
+
+    _highlightDOMNode: function(showHighlight, mode, event)
+    {
+        function enclosingOrSelfWithClassInArray(element, classNames)
+        {
+            for (var node = element; node && node !== element.ownerDocument; node = node.parentNode) {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    for (var i = 0; i < classNames.length; ++i) {
+                        if (node.hasStyleClass(classNames[i]))
+                            return node;
+                    }
+                }
+            }
+            return null;
+        }
+
+        function getBoxRectangleElement(element)
+        {
+            if (!element)
+                return null;
+            return enclosingOrSelfWithClassInArray(element, ["metrics", "margin", "border", "padding", "content"]);
+        }
+
+        event.stopPropagation();
+        var fromElement = getBoxRectangleElement(event.fromElement);
+        var toElement = getBoxRectangleElement(event.toElement);
+
+        if (fromElement === toElement)
+            return;
+
+        function handleMouseOver(element)
+        {
+            element.addStyleClass("hovered");
+
+            var bgColor;
+            if (element.hasStyleClass("margin"))
+                bgColor = WebInspector.Color.PageHighlight.Margin.toString("original");
+            else if (element.hasStyleClass("border"))
+                bgColor = WebInspector.Color.PageHighlight.Border.toString("original");
+            else if (element.hasStyleClass("padding"))
+                bgColor = WebInspector.Color.PageHighlight.Padding.toString("original");
+            else if (element.hasStyleClass("content"))
+                bgColor = WebInspector.Color.PageHighlight.Content.toString("original");
+            if (bgColor)
+                element.style.backgroundColor = bgColor;
+        }
+
+        function handleMouseOut(element)
+        {
+            element.style.backgroundColor = "";
+            element.removeStyleClass("hovered");
+        }
+
+        if (showHighlight) {
+            // Into element.
+            if (this.node && toElement)
+                handleMouseOver(toElement);
+            var nodeId = this.node ? this.node.id : 0;
+        } else {
+            // Out of element.
+            if (fromElement)
+                handleMouseOut(fromElement);
+            var nodeId = 0;
+        }
+        if (nodeId) {
+            if (this._highlightMode === mode)
+                return;
+            this._highlightMode = mode;
+        } else
+            delete this._highlightMode;
+        WebInspector.highlightDOMNode(nodeId, mode);
+    },
+
+    _updateMetrics: function(style)
     {
         // Updating with computed style.
         var metricsElement = document.createElement("div");
         metricsElement.className = "metrics";
+        var self = this;
 
         function createBoxPartElement(style, name, side, suffix)
         {
@@ -80,8 +191,34 @@ WebInspector.MetricsSidebarPane.prototype = {
             var element = document.createElement("div");
             element.className = side;
             element.textContent = value;
-            element.addEventListener("dblclick", this.startEditing.bind(this, element, name, propertyName), false);
+            element.addEventListener("dblclick", this.startEditing.bind(this, element, name, propertyName, style), false);
             return element;
+        }
+
+        function getContentAreaWidthPx(style)
+        {
+            var width = style.getPropertyValue("width").replace(/px$/, "");
+            if (style.getPropertyValue("box-sizing") === "border-box") {
+                var borderBox = self._getBox(style, "border");
+                var paddingBox = self._getBox(style, "padding");
+
+                width = width - borderBox.left - borderBox.right - paddingBox.left - paddingBox.right;
+            }
+
+            return width;
+        }
+
+        function getContentAreaHeightPx(style)
+        {
+            var height = style.getPropertyValue("height").replace(/px$/, "");
+            if (style.getPropertyValue("box-sizing") === "border-box") {
+                var borderBox = self._getBox(style, "border");
+                var paddingBox = self._getBox(style, "padding");
+
+                height = height - borderBox.top - borderBox.bottom - paddingBox.top - paddingBox.bottom;
+            }
+
+            return height;
         }
 
         // Display types for which margin is ignored.
@@ -125,17 +262,17 @@ WebInspector.MetricsSidebarPane.prototype = {
 
             var boxElement = document.createElement("div");
             boxElement.className = name;
+            boxElement.addEventListener("mouseover", this._highlightDOMNode.bind(this, true, name === "position" ? "all" : name), false);
+            boxElement.addEventListener("mouseout", this._highlightDOMNode.bind(this, false, ""), false);
 
             if (name === "content") {
-                var width = style.getPropertyValue("width").replace(/px$/, "");
                 var widthElement = document.createElement("span");
-                widthElement.textContent = width;
-                widthElement.addEventListener("dblclick", this.startEditing.bind(this, widthElement, "width", "width"), false);
+                widthElement.textContent = getContentAreaWidthPx(style);
+                widthElement.addEventListener("dblclick", this.startEditing.bind(this, widthElement, "width", "width", style), false);
 
-                var height = style.getPropertyValue("height").replace(/px$/, "");
                 var heightElement = document.createElement("span");
-                heightElement.textContent = height;
-                heightElement.addEventListener("dblclick", this.startEditing.bind(this, heightElement, "height", "height"), false);
+                heightElement.textContent = getContentAreaHeightPx(style);
+                heightElement.addEventListener("dblclick", this.startEditing.bind(this, heightElement, "height", "height", style), false);
 
                 boxElement.appendChild(widthElement);
                 boxElement.appendChild(document.createTextNode(" \u00D7 "));
@@ -164,33 +301,117 @@ WebInspector.MetricsSidebarPane.prototype = {
         }
 
         metricsElement.appendChild(previousBox);
+        metricsElement.addEventListener("mouseover", this._highlightDOMNode.bind(this, true, ""), false);
+        metricsElement.addEventListener("mouseout", this._highlightDOMNode.bind(this, false, ""), false);
         this.bodyElement.removeChildren();
         this.bodyElement.appendChild(metricsElement);
     },
 
-    startEditing: function(targetElement, box, styleProperty)
+    startEditing: function(targetElement, box, styleProperty, computedStyle)
     {
         if (WebInspector.isBeingEdited(targetElement))
             return;
 
-        var context = { box: box, styleProperty: styleProperty };
+        var context = { box: box, styleProperty: styleProperty, computedStyle: computedStyle };
+        var boundKeyDown = this._handleKeyDown.bind(this, context, styleProperty);
+        context.keyDownHandler = boundKeyDown;
+        targetElement.addEventListener("keydown", boundKeyDown, false);
 
-        WebInspector.startEditing(targetElement, this.editingCommitted.bind(this), this.editingCancelled.bind(this), context);
+        this._isEditingMetrics = true;
+        WebInspector.startEditing(targetElement, {
+            context: context,
+            commitHandler: this.editingCommitted.bind(this),
+            cancelHandler: this.editingCancelled.bind(this)
+        });
+        window.getSelection().setBaseAndExtent(targetElement, 0, targetElement, 1);
+    },
+
+    _handleKeyDown: function(context, styleProperty, event)
+    {
+        if (!/^(?:Page)?(?:Up|Down)$/.test(event.keyIdentifier))
+            return;
+        var element = event.currentTarget;
+
+        var selection = window.getSelection();
+        if (!selection.rangeCount)
+            return;
+
+        var selectionRange = selection.getRangeAt(0);
+        if (selectionRange.commonAncestorContainer !== element && !selectionRange.commonAncestorContainer.isDescendant(element))
+            return;
+
+        var originalValue = element.textContent;
+        var wordRange = selectionRange.startContainer.rangeOfWord(selectionRange.startOffset, WebInspector.StylesSidebarPane.StyleValueDelimiters, element);
+        var wordString = wordRange.toString();
+
+        var matches = /(.*?)(-?(?:\d+(?:\.\d+)?|\.\d+))(.*)/.exec(wordString);
+        var replacementString;
+        if (matches && matches.length) {
+            prefix = matches[1];
+            suffix = matches[3];
+            number = WebInspector.StylesSidebarPane.alteredFloatNumber(parseFloat(matches[2]), event);
+            if (number === null) {
+                // Need to check for null explicitly.
+                return;
+            }
+
+            if (styleProperty !== "margin" && number < 0)
+                number = 0;
+
+            replacementString = prefix + number + suffix;
+        }
+        if (!replacementString)
+            return;
+
+        var replacementTextNode = document.createTextNode(replacementString);
+
+        wordRange.deleteContents();
+        wordRange.insertNode(replacementTextNode);
+
+        var finalSelectionRange = document.createRange();
+        finalSelectionRange.setStart(replacementTextNode, 0);
+        finalSelectionRange.setEnd(replacementTextNode, replacementString.length);
+
+        selection.removeAllRanges();
+        selection.addRange(finalSelectionRange);
+
+        event.handled = true;
+        event.preventDefault();
+        this._applyUserInput(element, replacementString, originalValue, context, false);
+    },
+
+    editingEnded: function(element, context)
+    {
+        delete this.originalPropertyData;
+        delete this.previousPropertyDataCandidate;
+        element.removeEventListener("keydown", context.keyDownHandler, false);
+        delete this._isEditingMetrics;
     },
 
     editingCancelled: function(element, context)
     {
+        if ("originalPropertyData" in this && this.inlineStyle) {
+            if (!this.originalPropertyData) {
+                // An added property, remove the last property in the style.
+                var pastLastSourcePropertyIndex = this.inlineStyle.pastLastSourcePropertyIndex();
+                if (pastLastSourcePropertyIndex)
+                    this.inlineStyle.allProperties[pastLastSourcePropertyIndex - 1].setText("", false);
+            } else
+                this.inlineStyle.allProperties[this.originalPropertyData.index].setText(this.originalPropertyData.propertyText, false);
+        }
+        this.editingEnded(element, context);
         this.update();
     },
 
-    editingCommitted: function(element, userInput, previousContent, context)
+    _applyUserInput: function(element, userInput, previousContent, context, commitEditor)
     {
         if (!this.inlineStyle) {
             // Element has no renderer.
+            delete this.originalPropertyValue;
             return this.editingCancelled(element, context); // nothing changed, so cancel
         }
 
-        if (userInput === previousContent)
+        if (commitEditor && userInput === previousContent)
             return this.editingCancelled(element, context); // nothing changed, so cancel
 
         if (context.box !== "position" && (!userInput || userInput === "\u2012"))
@@ -198,41 +419,70 @@ WebInspector.MetricsSidebarPane.prototype = {
         else if (context.box === "position" && (!userInput || userInput === "\u2012"))
             userInput = "auto";
 
+        userInput = userInput.toLowerCase();
         // Append a "px" unit if the user input was just a number.
         if (/^\d+$/.test(userInput))
             userInput += "px";
 
+        var styleProperty = context.styleProperty;
+        var computedStyle = context.computedStyle;
+
+        if (computedStyle.getPropertyValue("box-sizing") === "border-box" && (styleProperty === "width" || styleProperty === "height")) {
+            if (!userInput.match(/px$/)) {
+                WebInspector.log("For elements with box-sizing: border-box, only absolute content area dimensions can be applied", WebInspector.ConsoleMessage.MessageLevel.Error);
+                WebInspector.showConsole();
+                return;
+            }
+
+            var borderBox = this._getBox(computedStyle, "border");
+            var paddingBox = this._getBox(computedStyle, "padding");
+            var userValuePx = Number(userInput.replace(/px$/, ""));
+            if (isNaN(userValuePx))
+                return;
+            if (styleProperty === "width")
+                userValuePx += borderBox.left + borderBox.right + paddingBox.left + paddingBox.right;
+            else
+                userValuePx += borderBox.top + borderBox.bottom + paddingBox.top + paddingBox.bottom;
+
+            userInput = userValuePx + "px";
+        }
+
+        this.previousPropertyDataCandidate = null;
         var self = this;
         var callback = function(style) {
             if (!style)
                 return;
             self.inlineStyle = style;
-            self.dispatchEventToListeners("metrics edited");
-            self.update();
+            if (!("originalPropertyData" in self))
+                self.originalPropertyData = self.previousPropertyDataCandidate;
+            if ("_highlightMode" in self) {
+                WebInspector.highlightDOMNode(0, "");
+                WebInspector.highlightDOMNode(self.node.id, self._highlightMode);
+            }
+            if (commitEditor) {
+                self.dispatchEventToListeners("metrics edited");
+                self.update();
+            }
         };
-
-        function setEnabledValueCallback(context, style)
-        {
-            var property = style.getLiveProperty(context.styleProperty);
-            if (!property)
-                style.appendProperty(context.styleProperty, userInput, callback);
-             else
-                property.setValue(userInput, callback);
-        }
 
         var allProperties = this.inlineStyle.allProperties;
         for (var i = 0; i < allProperties.length; ++i) {
             var property = allProperties[i];
             if (property.name !== context.styleProperty || property.inactive)
                 continue;
-            if (property.disabled)
-                property.setDisabled(false, setEnabledValueCallback.bind(null, context));
-            else
-                property.setValue(userInput, callback);
+
+            this.previousPropertyDataCandidate = property;
+            property.setValue(userInput, commitEditor, callback);
             return;
         }
 
         this.inlineStyle.appendProperty(context.styleProperty, userInput, callback);
+    },
+
+    editingCommitted: function(element, userInput, previousContent, context)
+    {
+        this.editingEnded(element, context);
+        this._applyUserInput(element, userInput, previousContent, context, true);
     }
 }
 

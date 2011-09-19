@@ -30,13 +30,14 @@
 
 // Generate js file as follows:
 //
-// re2c -isc WebCore/inspector/front-end/SourceJavaScriptTokenizer.re2js \
+// re2c -isc Source/WebCore/inspector/front-end/SourceJavaScriptTokenizer.re2js \
 // | sed 's|^yy\([^:]*\)*\:|case \1:|' \
 // | sed 's|[*]cursor[+][+]|this._charAt(cursor++)|' \
 // | sed 's|[[*][+][+]cursor|this._charAt(++cursor)|' \
 // | sed 's|[*]cursor|this._charAt(cursor)|' \
 // | sed 's|yych = \*\([^;]*\)|yych = this._charAt\1|' \
 // | sed 's|goto case \([^;]*\)|{ gotoCase = \1; continue; }|' \
+// | sed 's|yych <= \(0x[0-9a-fA-f]*\)|yych <= String.fromCharCode(\1)|' \
 // | sed 's|unsigned\ int|var|' \
 // | sed 's|var\ yych|case 1: var yych|'
 
@@ -67,11 +68,15 @@ WebInspector.SourceJavaScriptTokenizer = function()
     this.case_SSTRING = 1004;
     this.case_REGEX = 1005;
 
-    this.initialCondition = { lexCondition: this._lexConditions.NODIV }
-    this.condition = this.initialCondition;
+    this.condition = this.createInitialCondition();
 }
 
 WebInspector.SourceJavaScriptTokenizer.prototype = {
+    createInitialCondition: function()
+    {
+        return { lexCondition: this._lexConditions.NODIV };
+    },
+
     nextToken: function(cursor)
     {
         var cursorOnEnter = cursor;
@@ -160,7 +165,7 @@ WebInspector.SourceJavaScriptTokenizer.prototype = {
                 <DIV,NODIV> Identifier => DIV
                 {
                     var token = this._line.substring(cursorOnEnter, cursor);
-                    if (token in this._keywords)
+                    if (this._keywords[token] === true && token !== "__proto__")
                         this.tokenType = "javascript-keyword";
                     else
                         this.tokenType = "javascript-ident";

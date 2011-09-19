@@ -55,7 +55,7 @@ WebInspector.TimelineGrid.prototype = {
         return this._itemsGraphsElement;
     },
 
-    
+
     updateDividers: function(force, calculator, paddingLeft)
     {
         var dividerCount = Math.round(this._dividersElement.offsetWidth / 64);
