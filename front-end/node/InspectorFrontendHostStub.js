@@ -40,7 +40,7 @@ WebInspector.InspectorFrontendHostStub.prototype = {
 
     port: function()
     {
-        return "unknown";
+        return "qt";
     },
 
     bringToFront: function()
