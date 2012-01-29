@@ -1,6 +1,6 @@
 {
     "name": "node-inspector",
-    "version": "0.1.10",
+    "version": "0.1.11",
     "description": "Web Inspector based nodeJS debugger",
     "homepage": "http://github.com/dannycoates/node-inspector",
     "author": "Danny Coates <dannycoates@gmail.com>",
@@ -12,8 +12,9 @@
     "engines" : { "node": ">=0.3.0" },
     "bin" : { "node-inspector" : "./bin/inspector.js" },
     "dependencies": {
-      "socket.io": "~0.8.4",
-      "paperboy": "~0.0.2"
+      "socket.io": "~0.8.7",
+      "connect": "~1.8.5",
+      "async": "~0.1"
     },
     "preferGlobal" : true
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var DebugServer = require('../lib/debug-server').DebugServer,
+var DebugServer = require('../lib/debug-server'),
     fs = require('fs'),
     path = require('path'),
     options = {};
