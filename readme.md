@@ -82,7 +82,7 @@ Chrome. Here's a good [overview](http://code.google.com/chrome/devtools/docs/scr
 ## Inspector options
 
     --web-port=[port]     port to host the inspector (default 8080)
-    --address=[address]   interface addres for the inspector to bind to (default 0.0.0.0)
+    --address=[address]   interface address for the inspector to bind to (default 0.0.0.0)
 
 ## Cool stuff
 
