@@ -1,6 +1,6 @@
 {
   "webPort": 8080,
-  "webHost": "127.0.0.1",
+  "webHost": null,
   "debugPort": 5858,
   "saveLiveEdit": false,
   "hidden": []
