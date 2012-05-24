@@ -22,9 +22,9 @@ WebInspector.loaded = function() {
 // debugger always enabled
 Preferences.debuggerAlwaysEnabled = true;
 // enable LiveEdit
-Preferences.canEditScriptSource = true;
-// enable heap profiler
-Preferences.heapProfilerPresent = true;
+// Preferences.canEditScriptSource = true;
+// // enable heap profiler
+// Preferences.heapProfilerPresent = true;
 
 // patch new watch expression (default crashes node)
 WebInspector.WatchExpressionsSection.NewWatchExpression = "''";
