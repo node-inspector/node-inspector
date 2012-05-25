@@ -10,7 +10,7 @@ WebInspector.loaded = function() {
   WebInspector.socket.on('message'
     ,
     function(message) {
-      if (message && message !== 'ping') {
+      if (message) {
         InspectorBackend.dispatch(message)
       }
     }
