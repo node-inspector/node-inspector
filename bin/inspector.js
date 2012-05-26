@@ -13,7 +13,10 @@ process.argv.forEach(function (arg) {
       switch (parts[0]) {
       case '--web-port':
         options.webPort = parseInt(parts[1], 10);
-        break;
+        break; 
+      case '--address':
+        options.address = parts[1];
+      break;
       default:
         console.log('unknown option: ' + parts[0]);
         break;
@@ -49,10 +52,15 @@ fs.readFile(path.join(__dirname, '../config.json'), function(err, data) {
   if (!config.debugPort) {
     config.debugPort = 5858;
   }
+  if (!config.address) {
+    config.address = '0.0.0.0';
+  }
   if (options.webPort) {
     config.webPort = options.webPort;
   }
-
+  if (options.address) {
+    config.address = options.address;
+  }
   debugServer = new DebugServer();
   debugServer.on('close', function () {
     console.log('session closed');
