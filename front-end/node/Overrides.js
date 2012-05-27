@@ -25,5 +25,9 @@ WebInspector.loaded = function() {
   )
 }
 
+InspectorFrontendHost.hiddenPanels = function () {
+  return "elements,resources,timeline,network,audits,profiles"
+}
+
 // debugger always enabled
 Preferences.debuggerAlwaysEnabled = true;
