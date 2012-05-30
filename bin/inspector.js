@@ -14,6 +14,9 @@ process.argv.forEach(function (arg) {
       case '--web-port':
         options.webPort = parseInt(parts[1], 10);
         break;
+      case '--web-host':
+        options.webHost = (parts[1] && parts[1] !== 'null') ? parts[1] : null;
+	break;
       default:
         console.log('unknown option: ' + parts[0]);
         break;
@@ -46,11 +49,17 @@ fs.readFile(path.join(__dirname, '../config.json'), function(err, data) {
   if (!config.webPort) {
     config.webPort = 8080;
   }
+  if (!config.webHost) {
+    config.webHost = null;    // null implies listen on all interfaces
+  }
   if (!config.debugPort) {
     config.debugPort = 5858;
   }
   if (options.webPort) {
     config.webPort = options.webPort;
+  }
+  if (options.webHost) {
+    config.webHost = options.webHost;
   }
 
   debugServer = new DebugServer();
