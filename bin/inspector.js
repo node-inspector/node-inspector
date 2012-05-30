@@ -9,11 +9,16 @@ process.argv.forEach(function (arg) {
 	if (arg.indexOf('--') > -1) {
 		var parts = arg.split('=')
 		if (parts.length > 1) {
-			if (parts[0] === '--web-port') {
+			switch (parts[0]) {
+			case '--web-port':
 				options.webPort = parseInt(parts[1], 10)
-			}
-			else {
+				break;
+			case '--web-host':
+				options.webHost = (parts[1] && parts[1] !== 'null') ? parts[1] : null
+				break;
+			default:
 				console.log('unknown option: ' + parts[0])
+				break;
 			}
 		}
 		else if (parts[0] === '--help') {
@@ -25,8 +30,9 @@ process.argv.forEach(function (arg) {
 	}
 })
 
-fs.readFile(path.join(__dirname, '../config.json'), function (err, data) {
-	var config
+fs.readFile(path.join(__dirname, '../config.json'), function(err, data) {
+	var config,
+			debugServer
 	if (err) {
 		console.warn("could not load config.json\n" + err.toString())
 		config = {}
@@ -34,7 +40,7 @@ fs.readFile(path.join(__dirname, '../config.json'), function (err, data) {
 	else {
 		config = JSON.parse(data)
 		if (config.hidden) {
-			config.hidden = config.hidden.map(function (s) {
+			config.hidden = config.hidden.map(function(s) {
 				return new RegExp(s, 'i')
 			})
 		}
@@ -42,11 +48,17 @@ fs.readFile(path.join(__dirname, '../config.json'), function (err, data) {
 	if (!config.webPort) {
 		config.webPort = 8080
 	}
+	if (!config.webHost) {
+		config.webHost = null    // null implies listen on all interfaces
+	}
 	if (!config.debugPort) {
 		config.debugPort = 5858
 	}
 	if (options.webPort) {
 		config.webPort = options.webPort
+	}
+	if (options.webHost) {
+		config.webHost = options.webHost
 	}
 
 	var debugServer = new DebugServer()
