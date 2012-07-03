@@ -79,6 +79,10 @@ Chrome. Here's a good [overview](http://code.google.com/chrome/devtools/docs/scr
 
     > Yes. node-inspector must be running on the same machine, but your browser can be anywhere. Just make sure port 8080 is accessible
 
+5. Can I save breakpoints?
+
+    > Yes. See http://nodejs.org/api/debugger.html. Put one or more debugger; statements in your source, start your ap with node --debug-brk to break on the first line, then hit play.
+
 ## Inspector options
 
     --web-port=[port]     port to host the inspector (default 8080)
