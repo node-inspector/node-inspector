@@ -16,7 +16,10 @@ process.argv.forEach(function (arg) {
         break;
       case '--web-host':
         options.webHost = (parts[1] && parts[1] !== 'null') ? parts[1] : null;
-	break;
+        break;
+      case '--debug-port':
+        options.debugPort = parseInt(parts[1], 10)
+        break;
       default:
         console.log('unknown option: ' + parts[0]);
         break;
@@ -26,6 +29,7 @@ process.argv.forEach(function (arg) {
       console.log('Usage: node-inspector [options]');
       console.log('Options:');
       console.log('--web-port=[port]     port to host the inspector (default 8080)');
+      console.log('--debug-port=[port]   port to node debugger (default 5858)');
       process.exit();
     }
   }
@@ -60,6 +64,9 @@ fs.readFile(path.join(__dirname, '../config.json'), function(err, data) {
   }
   if (options.webHost) {
     config.webHost = options.webHost;
+  }
+  if (options.debugPort) {
+    config.debugPort = options.debugPort;
   }
 
   debugServer = new DebugServer();
