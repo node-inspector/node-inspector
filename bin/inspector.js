@@ -26,6 +26,8 @@ process.argv.forEach(function (arg) {
       console.log('Usage: node-inspector [options]');
       console.log('Options:');
       console.log('--web-port=[port]     port to host the inspector (default 8080)');
+      console.log('--web-host=[host]     ip address to listen on (default 0.0.0.0)');
+
       process.exit();
     }
   }
