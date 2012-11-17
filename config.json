@@ -3,5 +3,5 @@
   "webHost": null,
   "debugPort": 5858,
   "saveLiveEdit": false,
-  "hidden": []
+  "hidden": ["node_modules"]
 }
