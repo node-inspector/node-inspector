@@ -1,0 +1,13 @@
+---
+applications:
+  .:
+    name: node-inspector
+    framework:
+      name: node
+      info:
+        mem: 64M
+        description: Node.js Application
+        exec: !!null 
+    url: ${name}.${target-base}
+    mem: 64M
+    instances: 1

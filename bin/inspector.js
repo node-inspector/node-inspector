@@ -3,7 +3,8 @@
 var DebugServer = require('../lib/debug-server').DebugServer,
     fs = require('fs'),
     path = require('path'),
-    options = {};
+    options = {},
+    isCloud = typeof process.env.VCAP_APPLICATION != 'undefined';
 
 process.argv.forEach(function (arg) {
   var parts;
@@ -45,6 +46,9 @@ fs.readFile(path.join(__dirname, '../config.json'), function(err, data) {
         return new RegExp(s, 'i');
       });
     }
+  }
+  if (isCloud) {
+    config.webPort = process.env.VCAP_APP_PORT;
   }
   if (!config.webPort) {
     config.webPort = 8080;
