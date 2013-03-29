@@ -13,6 +13,7 @@
     "bin" : { "node-inspector" : "./bin/inspector.js" },
     "dependencies": {
       "socket.io": "~0.9.13",
-      "paperboy": "~0.0.5"
+      "paperboy": "~0.0.5",
+      "send": "0.1.x"
     }
 }
