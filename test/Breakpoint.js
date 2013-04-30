@@ -12,21 +12,21 @@ describe('Breakpoint', function() {
   describe('createRequest()', function() {
     it('should create "script" type request', function() {
       var bp = aBreakpoint({
-        url: '/script/url',
+        url: 'short-name.js',
+        sourceName: '/long/script/name.js',
         line: 1,
         enabled: true,
         condition: 'a-condition'
       });
 
       var request = bp.createRequest();
+      var args = request.arguments;
 
-      expect(request.arguments).to.deep.equal({
-        type: 'script',
-        target: '/script/url',
-        line: 0,  // V8 use zero-based line numbers
-        enabled: true,
-        condition: 'a-condition'
-      });
+      expect(args.type).to.equal('script');
+      expect(args.target).to.equal('/long/script/name.js');
+      expect(args.line).to.equal(0); // V8 use zero-based line numbers
+      expect(args.enabled).to.equal(true);
+      expect(args.condition).to.equal('a-condition');
     });
   });
 
