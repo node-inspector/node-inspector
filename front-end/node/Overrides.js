@@ -57,3 +57,29 @@ WebInspector.SourceFrame.prototype._mouseDown = function(event)
   event.preventDefault();
 };
 
+// patch _addScriptToFilesMenu to enable breakpoint marks in scripts
+// loaded after the breakpoints were restored
+WebInspector.ScriptsPanel.prototype._orig_addScriptToFilesMenu =
+    WebInspector.ScriptsPanel.prototype._addScriptToFilesMenu;
+
+WebInspector.ScriptsPanel.prototype._addScriptToFilesMenu =
+    function(script, force) {
+      this._orig_addScriptToFilesMenu(script, force);
+
+      if (!script.sourceURL && !force)
+        return;
+
+      if (script.resource &&
+          this._resourceForURLInFilesSelect[script.resource.url])
+          return;
+
+      // enable breakpoint marks in scripts loaded later after start
+      var self = this;
+      WebInspector.breakpointManager
+          .breakpointsForURL(script.sourceURL)
+          .forEach(function fnAddBreakpoint(breakpoint) {
+            self._breakpointAdded({ data: breakpoint });
+          });
+
+    }
+
