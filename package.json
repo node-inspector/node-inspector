@@ -1,25 +1,35 @@
 {
-    "name": "node-inspector",
-    "version": "0.1.10",
-    "description": "Web Inspector based nodeJS debugger",
-    "homepage": "http://github.com/dannycoates/node-inspector",
-    "author": "Danny Coates <dannycoates@gmail.com>",
-    "keywords": ["debug", "debugger", "inspector", "profiler"],
-    "repository": {
-      "type": "git",
-      "url": "http://github.com/dannycoates/node-inspector.git"
-    },
-    "engines" : { "node": ">=0.3.0" },
-    "bin" : { "node-inspector" : "./bin/inspector.js" },
-    "dependencies": {
-      "socket.io": "~0.8.2",
-      "paperboy": "~0.0.2"
-    },
-    "devDependencies": {
-      "mocha": "latest",
-      "chai": "latest"
-    },
-    "scripts": {
-      "test": "mocha"
-    }
+  "name": "node-inspector",
+  "version": "0.1.10",
+  "description": "Web Inspector based nodeJS debugger",
+  "homepage": "http://github.com/dannycoates/node-inspector",
+  "author": "Danny Coates <dannycoates@gmail.com>",
+  "keywords": [
+    "debug",
+    "debugger",
+    "inspector",
+    "profiler"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/dannycoates/node-inspector.git"
+  },
+  "engines": {
+    "node": ">=0.3.0"
+  },
+  "bin": {
+    "node-inspector": "./bin/inspector.js"
+  },
+  "dependencies": {
+    "socket.io": "~0.8.2",
+    "paperboy": "~0.0.2",
+    "async": "~0.2.8"
+  },
+  "devDependencies": {
+    "mocha": "latest",
+    "chai": "latest"
+  },
+  "scripts": {
+    "test": "mocha"
+  }
 }
