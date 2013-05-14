@@ -128,9 +128,8 @@ also take heap snapshots on demand from the profiles panel.
 
 This project respectfully uses code from and thanks the authors of:
 
-* [WebKit](http://webkit.org/building/checkout.html)
+* [Blink](http://www.chromium.org/blink)
 * [node](http://github.com/ry/node)
 * [socket.io](http://github.com/LearnBoost/socket.io)
 * [node-paperboy](http://github.com/felixge/node-paperboy)
-
 
