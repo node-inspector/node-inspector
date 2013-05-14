@@ -28,22 +28,33 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @constructor
+ * @extends {WebInspector.SidebarPaneStack}
+ * @param {!Array.<!WebInspector.AuditCategoryResult>} categoryResults
+ */
 WebInspector.AuditResultView = function(categoryResults)
 {
-    WebInspector.View.call(this);
-    this.element.className = "audit-result-view";
+    WebInspector.SidebarPaneStack.call(this);
+    this.element.addStyleClass("audit-result-view");
 
     function categorySorter(a, b) {
         return (a.title || "").localeCompare(b.title || "");
     }
     categoryResults.sort(categorySorter);
     for (var i = 0; i < categoryResults.length; ++i)
-        this.element.appendChild(new WebInspector.AuditCategoryResultPane(categoryResults[i]).element);
+        this.addPane(new WebInspector.AuditCategoryResultPane(categoryResults[i]));
 }
 
-WebInspector.AuditResultView.prototype.__proto__ = WebInspector.View.prototype;
+WebInspector.AuditResultView.prototype = {
+    __proto__: WebInspector.SidebarPaneStack.prototype
+}
 
-
+/**
+ * @constructor
+ * @extends {WebInspector.SidebarPane}
+ * @param {!WebInspector.AuditCategoryResult} categoryResult
+ */
 WebInspector.AuditCategoryResultPane = function(categoryResult)
 {
     WebInspector.SidebarPane.call(this, categoryResult.title);
@@ -70,7 +81,7 @@ WebInspector.AuditCategoryResultPane = function(categoryResult)
         treeElement.listItemElement.addStyleClass("audit-result");
 
         if (ruleResult.severity) {
-            var severityElement = document.createElement("img");
+            var severityElement = document.createElement("div");
             severityElement.className = "severity-" + ruleResult.severity;
             treeElement.listItemElement.appendChild(severityElement);
         }
@@ -79,10 +90,14 @@ WebInspector.AuditCategoryResultPane = function(categoryResult)
 }
 
 WebInspector.AuditCategoryResultPane.prototype = {
+    /**
+     * @param {(TreeOutline|TreeElement)} parentTreeElement
+     * @param {!WebInspector.AuditRuleResult} result
+     */
     _appendResult: function(parentTreeElement, result)
     {
         var title = "";
-        
+
         if (typeof result.value === "string") {
             title = result.value;
             if (result.violationCount)
@@ -90,13 +105,13 @@ WebInspector.AuditCategoryResultPane.prototype = {
         }
 
         var treeElement = new TreeElement(null, null, !!result.children);
-        treeElement.titleHTML = title;
+        treeElement.title = title;
         parentTreeElement.appendChild(treeElement);
 
         if (result.className)
             treeElement.listItemElement.addStyleClass(result.className);
         if (typeof result.value !== "string")
-            treeElement.listItemElement.appendChild(WebInspector.applyFormatters(result.value));
+            treeElement.listItemElement.appendChild(WebInspector.auditFormatters.apply(result.value));
 
         if (result.children) {
             for (var i = 0; i < result.children.length; ++i)
@@ -108,7 +123,7 @@ WebInspector.AuditCategoryResultPane.prototype = {
             treeElement.expand();
         }
         return treeElement;
-    }
-}
+    },
 
-WebInspector.AuditCategoryResultPane.prototype.__proto__ = WebInspector.SidebarPane.prototype;
+    __proto__: WebInspector.SidebarPane.prototype
+}

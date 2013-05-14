@@ -29,8 +29,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @constructor
+ */
 WebInspector.SourceTokenizer = function()
 {
+    /** @type {?string} */
+    this.tokenType = null;
 }
 
 WebInspector.SourceTokenizer.prototype = {
@@ -48,11 +53,6 @@ WebInspector.SourceTokenizer.prototype = {
         return this._condition;
     },
 
-    get subTokenizer()
-    {
-        return this._condition.subTokenizer;
-    },
-
     getLexCondition: function()
     {
         return this.condition.lexCondition;
@@ -63,22 +63,44 @@ WebInspector.SourceTokenizer.prototype = {
         this.condition.lexCondition = lexCondition;
     },
 
+    /**
+     * @param {number} cursor
+     * @return {string}
+     */
     _charAt: function(cursor)
     {
         return cursor < this._line.length ? this._line.charAt(cursor) : "\n";
+    },
+
+    createInitialCondition: function()
+    {
+    },
+
+    /**
+     * @param {number} cursor
+     * @return {number}
+     */
+    nextToken: function(cursor)
+    {
     }
 }
 
-
+/**
+ * @constructor
+ */
 WebInspector.SourceTokenizer.Registry = function() {
     this._tokenizers = {};
     this._tokenizerConstructors = {
         "text/css": "SourceCSSTokenizer",
         "text/html": "SourceHTMLTokenizer",
-        "text/javascript": "SourceJavaScriptTokenizer"
+        "text/javascript": "SourceJavaScriptTokenizer",
+        "text/x-scss": "SourceCSSTokenizer"
     };
 }
 
+/**
+ * @return {WebInspector.SourceTokenizer.Registry}
+ */
 WebInspector.SourceTokenizer.Registry.getInstance = function()
 {
     if (!WebInspector.SourceTokenizer.Registry._instance)
@@ -87,6 +109,10 @@ WebInspector.SourceTokenizer.Registry.getInstance = function()
 }
 
 WebInspector.SourceTokenizer.Registry.prototype = {
+    /**
+     * @param {string} mimeType
+     * @return {WebInspector.SourceTokenizer}
+     */
     getTokenizer: function(mimeType)
     {
         if (!this._tokenizerConstructors[mimeType])
@@ -95,7 +121,7 @@ WebInspector.SourceTokenizer.Registry.prototype = {
         var tokenizer = this._tokenizers[tokenizerClass];
         if (!tokenizer) {
             tokenizer = new WebInspector[tokenizerClass]();
-            this._tokenizers[mimeType] = tokenizer;
+            this._tokenizers[tokenizerClass] = tokenizer;
         }
         return tokenizer;
     }

@@ -26,61 +26,130 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @constructor
+ * @extends {WebInspector.Panel}
+ */
 WebInspector.ConsolePanel = function()
 {
     WebInspector.Panel.call(this, "console");
+
+    WebInspector.consoleView.addEventListener(WebInspector.ConsoleView.Events.EntryAdded, this._consoleMessageAdded, this);
+    WebInspector.consoleView.addEventListener(WebInspector.ConsoleView.Events.ConsoleCleared, this._consoleCleared, this);
+    this._view = WebInspector.consoleView;
 }
 
 WebInspector.ConsolePanel.prototype = {
-    get toolbarItemLabel()
+    get statusBarItems()
     {
-        return WebInspector.UIString("Console");
+        return this._view.statusBarItems;
     },
 
-    show: function()
+    wasShown: function()
     {
-        WebInspector.Panel.prototype.show.call(this);
-
-        this._previousConsoleState = WebInspector.drawer.state;
-        WebInspector.drawer.enterPanelMode();
-        WebInspector.showConsole();
-        
-        // Move the scope bar to the top of the messages, like the resources filter.
-        var scopeBar = document.getElementById("console-filter");
-        var consoleMessages = document.getElementById("console-messages");
-
-        scopeBar.parentNode.removeChild(scopeBar);
-        document.getElementById("console-view").insertBefore(scopeBar, consoleMessages);
-        
-        // Update styles, and give console-messages a top margin so it doesn't overwrite the scope bar.
-        scopeBar.addStyleClass("console-filter-top");
-        scopeBar.removeStyleClass("status-bar-item");
-
-        consoleMessages.addStyleClass("console-filter-top");
+        WebInspector.Panel.prototype.wasShown.call(this);
+        if (WebInspector.drawer.visible) {
+            WebInspector.drawer.hide(WebInspector.Drawer.AnimationType.Immediately);
+            this._drawerWasVisible = true;
+        }
+        this._view.show(this.element);
     },
 
-    hide: function()
+    willHide: function()
     {
-        WebInspector.Panel.prototype.hide.call(this);
+        if (this._drawerWasVisible) {
+            WebInspector.drawer.show(this._view, WebInspector.Drawer.AnimationType.Immediately);
+            delete this._drawerWasVisible;
+        }
+        WebInspector.Panel.prototype.willHide.call(this);
+    },
 
-        if (this._previousConsoleState === WebInspector.Drawer.State.Hidden)
-            WebInspector.drawer.immediatelyExitPanelMode();
-        else
-            WebInspector.drawer.exitPanelMode();
-        delete this._previousConsoleState;
-        
-        // Move the scope bar back to the bottom bar, next to Clear Console.
-        var scopeBar = document.getElementById("console-filter");
+    searchCanceled: function()
+    {
+        this._clearCurrentSearchResultHighlight();
+        delete this._searchResults;
+        delete this._searchRegex;
+    },
 
-        scopeBar.parentNode.removeChild(scopeBar);
-        document.getElementById("other-drawer-status-bar-items").appendChild(scopeBar);
-        
-        // Update styles, and remove the top margin on console-messages.
-        scopeBar.removeStyleClass("console-filter-top");
-        scopeBar.addStyleClass("status-bar-item");
+    /**
+     * @param {string} query
+     */
+    performSearch: function(query)
+    {
+        WebInspector.searchController.updateSearchMatchesCount(0, this);
+        this.searchCanceled();
+        this._searchRegex = createPlainTextSearchRegex(query, "gi");
 
-        document.getElementById("console-messages").removeStyleClass("console-filter-top");
-    }
+        this._searchResults = [];
+        var messages = WebInspector.console.messages;
+        for (var i = 0; i < messages.length; i++) {
+            if (messages[i].matchesRegex(this._searchRegex)) {
+                this._searchResults.push(messages[i]);
+                this._searchRegex.lastIndex = 0;
+            }
+        }
+        WebInspector.searchController.updateSearchMatchesCount(this._searchResults.length, this);
+        this._currentSearchResultIndex = -1;
+        if (this._searchResults.length)
+            this._jumpToSearchResult(0);
+    },
+
+    jumpToNextSearchResult: function()
+    {
+        if (!this._searchResults || !this._searchResults.length)
+            return;
+        this._jumpToSearchResult((this._currentSearchResultIndex + 1) % this._searchResults.length);
+    },
+
+    jumpToPreviousSearchResult: function()
+    {
+        if (!this._searchResults || !this._searchResults.length)
+            return;
+        var index = this._currentSearchResultIndex - 1;
+        if (index === -1)
+            index = this._searchResults.length - 1;
+        this._jumpToSearchResult(index);
+    },
+
+    _clearCurrentSearchResultHighlight: function()
+    {
+        if (!this._searchResults)
+            return;
+        var highlightedMessage = this._searchResults[this._currentSearchResultIndex];
+        if (highlightedMessage)
+            highlightedMessage.clearHighlight();
+        this._currentSearchResultIndex = -1;
+    },
+
+    _jumpToSearchResult: function(index)
+    {
+        this._clearCurrentSearchResultHighlight();
+        this._currentSearchResultIndex = index;
+        WebInspector.searchController.updateCurrentMatchIndex(this._currentSearchResultIndex, this);
+        this._searchResults[index].highlightSearchResults(this._searchRegex);
+    },
+
+    _consoleMessageAdded: function(event)
+    {
+        if (!this._searchRegex || !this.isShowing())
+            return;
+        var message = event.data;
+        this._searchRegex.lastIndex = 0;
+        if (message.matchesRegex(this._searchRegex)) {
+            this._searchResults.push(message);
+            WebInspector.searchController.updateSearchMatchesCount(this._searchResults.length, this);
+        }
+    },
+
+    _consoleCleared: function()
+    {
+        if (!this._searchResults)
+            return;
+        this._clearCurrentSearchResultHighlight();
+        this._searchResults.length = 0;
+        if (this.isShowing())
+            WebInspector.searchController.updateSearchMatchesCount(0, this);
+    },
+
+    __proto__: WebInspector.Panel.prototype
 }
-
-WebInspector.ConsolePanel.prototype.__proto__ = WebInspector.Panel.prototype;

@@ -1,0 +1,105 @@
+/*
+ * Copyright (C) 2012 Google Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *     * Neither the name of Google Inc. nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+.memory-pie-chart-container {
+    display: -webkit-flex;
+    -webkit-flex-direction: column;
+}
+
+.memory-pie-chart {
+    -webkit-flex: 1;
+}
+
+.memory-blocks-list .swatch {
+    background-image: none;
+}
+
+.memory-blocks-list {
+    padding: 1px;
+    font-size: 11px;
+}
+
+.memory-blocks-list .item {
+    margin: 10px;
+}
+
+.native-snapshot-view {
+    display: none;
+    overflow: hidden;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.native-snapshot-view.visible {
+    display: block;
+}
+
+.native-snapshot-view .data-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: none;
+}
+
+.native-snapshot-view .data-grid td {
+    height: 14px;
+    padding: 1px 4px;
+}
+
+.native-snapshot-view .data-grid div.size-text {
+    float: left;
+    text-align: right;
+    width: 70px;
+    padding-right: 5px;
+}
+
+.native-snapshot-view .data-grid .dimmed div.size-bar {
+    background-image: -webkit-gradient(linear, left top, left bottom, from(hsla(0, 100%, 100%, 0.7)), to(hsla(0, 100%, 100%, 0.5)));
+    color: hsla(0, 0%, 0%, 0.5);
+}
+
+.native-snapshot-view .data-grid div.size-bar {
+    text-align: center;
+    background-image: -webkit-gradient(linear, left top, left bottom, from(rgba(255, 255, 255, 0.5)), to(rgba(192, 192, 192, 0)));
+    height: 14px;
+    border-radius: 2px;
+    color: #222;
+    white-space: normal;
+    min-width: 1px;
+}
+
+.native-snapshot-view .data-grid div.percent-text {
+    display: inline-block;
+}

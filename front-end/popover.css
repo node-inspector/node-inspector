@@ -14,7 +14,13 @@
     right: 0;
     pointer-events: auto;
     overflow: auto;
+    -webkit-user-select: text;
+    line-height: 11px;
 }
+
+.popover .content.fixed-height {
+    overflow: hidden;
+} 
 
 .popover .arrow {
     position: absolute;
@@ -88,113 +94,33 @@
     background-position: 0 -57px;
 }
 
-.popover ::-webkit-scrollbar {
-    width: 11px;
-    height: 11px;
+.popover-details {
+    -webkit-user-select: text;
+    vertical-align: top;
 }
 
-.popover ::-webkit-scrollbar-corner {
-    display: none;
+.popover-function-name {
+    text-align: right;
 }
 
-.popover ::-webkit-resizer {
-    display: none;
+.popover-stacktrace-title {
+    padding-top: 4px;
 }
 
-/* Horizontal Scrollbar Styles */
-
-.popover ::-webkit-scrollbar:horizontal:corner-present {
-    border-right-width: 0;
+.popover-details-row-title {
+    font-weight: bold;
+    text-align: right;
+    white-space: nowrap;
 }
 
-.popover ::-webkit-scrollbar-thumb:horizontal {
-    -webkit-border-image: url(Images/thumbHoriz.png) 0 11 0 11;
-    border-color: transparent;
-    border-width: 0 11px;
-    min-width: 20px;
+.popover-details-row-data {
+    white-space: nowrap;
 }
 
-.popover ::-webkit-scrollbar-thumb:horizontal:hover {
-    -webkit-border-image: url(Images/thumbHoverHoriz.png) 0 11 0 11;
-}
-
-.popover ::-webkit-scrollbar-thumb:horizontal:active {
-    -webkit-border-image: url(Images/thumbActiveHoriz.png) 0 11 0 11;
-}
-
-.popover ::-webkit-scrollbar-track-piece:horizontal:start {
-    margin-left: 5px;
-}
-
-.popover ::-webkit-scrollbar-track-piece:horizontal:end {
-    margin-right: 5px;
-}
-
-.popover ::-webkit-scrollbar-track-piece:horizontal:end:corner-present {
-    margin-right: 4px;
-}
-
-.popover ::-webkit-scrollbar-track-piece:horizontal:decrement {
-    -webkit-border-image: url(Images/trackHoriz.png) 0 11 0 11;
-    border-color: transparent;
-    border-width: 0 0 0 11px;
-}
-
-.popover ::-webkit-scrollbar-track-piece:horizontal:increment {
-    -webkit-border-image: url(Images/trackHoriz.png) 0 11 0 11;
-    border-color: transparent;
-    border-width: 0 11px 0 0;
-}
-
-/* Vertical Scrollbar Styles */
-
-
-.popover ::-webkit-scrollbar:vertical:corner-present {
-    border-bottom-width: 0;
-}
-
-.popover ::-webkit-scrollbar-thumb:vertical {
-    -webkit-border-image: url(Images/thumbVert.png) 11 0 11 0;
-    border-color: transparent;
-    border-width: 11px 0;
-    min-height: 20px;
-}
-
-.popover ::-webkit-scrollbar-thumb:vertical:hover {
-    -webkit-border-image: url(Images/thumbHoverVert.png) 11 0 11 0;
-}
-
-.popover ::-webkit-scrollbar-thumb:vertical:active {
-    -webkit-border-image: url(Images/thumbActiveVert.png) 11 0 11 0;
-}
-
-
-.popover ::-webkit-scrollbar-track-piece:vertical:start {
-    margin-top: 5px;
-}
-
-.popover ::-webkit-scrollbar-track-piece:vertical:end {
-    margin-bottom: 5px;
-}
-
-.popover ::-webkit-scrollbar-track-piece:vertical:end:corner-present {
-    margin-bottom: 4px;
-}
-
-.popover ::-webkit-scrollbar-track-piece:vertical:decrement {
-    -webkit-border-image: url(Images/trackVert.png) 11 0 11 0;
-    border-color: transparent;
-    border-width: 11px 0 0 0;
-}
-
-.popover ::-webkit-scrollbar-track-piece:vertical:increment {
-    -webkit-border-image: url(Images/trackVert.png) 11 0 11 0;
-    border-color: transparent;
-    border-width: 0 0 11px 0;
-}
-
-/* Forced Scrollbar Mode Styles */
-
-.popover ::-webkit-scrollbar-button {
-    display: none;
+.popover-details-title {
+    border-bottom: 1px solid #B8B8B8;
+    font-weight: bold;
+    padding-bottom: 5px;
+    padding-top: 0px;
+    white-space: nowrap;
 }

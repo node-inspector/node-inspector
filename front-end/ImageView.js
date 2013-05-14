@@ -26,6 +26,10 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @extends {WebInspector.ResourceView}
+ * @constructor
+ */
 WebInspector.ImageView = function(resource)
 {
     WebInspector.ResourceView.call(this, resource);
@@ -39,9 +43,8 @@ WebInspector.ImageView.prototype = {
         return true;
     },
 
-    show: function(parentElement)
+    wasShown: function()
     {
-        WebInspector.ResourceView.prototype.show.call(this, parentElement);
         this._createContentIfNeeded();
     },
 
@@ -57,6 +60,7 @@ WebInspector.ImageView.prototype = {
         var imagePreviewElement = document.createElement("img");
         imagePreviewElement.addStyleClass("resource-image-view");
         imageContainer.appendChild(imagePreviewElement);
+        imagePreviewElement.addEventListener("contextmenu", this._contextMenu.bind(this), true);
 
         this._container = document.createElement("div");
         this._container.className = "info";
@@ -70,12 +74,7 @@ WebInspector.ImageView.prototype = {
         var infoListElement = document.createElement("dl");
         infoListElement.className = "infoList";
 
-        function onResourceContent(element, content)
-        {
-            imagePreviewElement.setAttribute("src", this.resource.contentURL);
-        }
-        this.resource.requestContent(onResourceContent.bind(this));
-
+        this.resource.populateImageSource(imagePreviewElement);
 
         function onImageLoad()
         {
@@ -87,10 +86,10 @@ WebInspector.ImageView.prototype = {
 
             var imageProperties = [
                 { name: WebInspector.UIString("Dimensions"), value: WebInspector.UIString("%d × %d", imagePreviewElement.naturalWidth, imagePreviewElement.naturalHeight) },
-                { name: WebInspector.UIString("File size"), value: Number.bytesToString(resourceSize, WebInspector.UIString) },
+                { name: WebInspector.UIString("File size"), value: Number.bytesToString(resourceSize) },
                 { name: WebInspector.UIString("MIME type"), value: this.resource.mimeType }
             ];
-    
+
             infoListElement.removeChildren();
             for (var i = 0; i < imageProperties.length; ++i) {
                 var dt = document.createElement("dt");
@@ -100,6 +99,14 @@ WebInspector.ImageView.prototype = {
                 dd.textContent = imageProperties[i].value;
                 infoListElement.appendChild(dd);
             }
+            var dt = document.createElement("dt");
+            dt.textContent = WebInspector.UIString("URL");
+            infoListElement.appendChild(dt);
+            var dd = document.createElement("dd");
+            var externalResource = true;
+            dd.appendChild(WebInspector.linkifyURLAsNode(this.resource.url, undefined, undefined, externalResource));
+            infoListElement.appendChild(dd);
+
             this._container.appendChild(infoListElement);
         }
         imagePreviewElement.addEventListener("load", onImageLoad.bind(this), false);
@@ -115,7 +122,25 @@ WebInspector.ImageView.prototype = {
         if (content.length > 1 && content[content.length - 2] === "=")
             size--;
         return size;
-    }
-}
+    },
 
-WebInspector.ImageView.prototype.__proto__ = WebInspector.ResourceView.prototype;
+    _contextMenu: function(event)
+    {
+        var contextMenu = new WebInspector.ContextMenu(event);
+        contextMenu.appendItem(WebInspector.UIString(WebInspector.useLowerCaseMenuTitles() ? "Copy image URL" : "Copy Image URL"), this._copyImageURL.bind(this));
+        contextMenu.appendItem(WebInspector.UIString(WebInspector.useLowerCaseMenuTitles() ? "Open image in new tab" : "Open Image in New Tab"), this._openInNewTab.bind(this));
+        contextMenu.show();
+    },
+
+    _copyImageURL: function()
+    {
+        InspectorFrontendHost.copyText(this.resource.url);
+    },
+
+    _openInNewTab: function()
+    {
+        InspectorFrontendHost.openInNewTab(this.resource.url);
+    },
+
+    __proto__: WebInspector.ResourceView.prototype
+}

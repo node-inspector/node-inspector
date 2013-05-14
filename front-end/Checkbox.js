@@ -23,6 +23,10 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @constructor
+ * @param {string=} tooltip
+ */
 WebInspector.Checkbox = function(label, className, tooltip)
 {
     this.element = document.createElement('label');
@@ -53,7 +57,7 @@ WebInspector.Checkbox.prototype = {
         {
             if (listener)
                 listener(event);
-            event.stopPropagation();
+            event.consume();
             return true;
         }
 

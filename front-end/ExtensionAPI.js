@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 Google Inc. All rights reserved.
+ * Copyright (C) 2012 Google Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -28,8 +28,90 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-WebInspector.injectedExtensionAPI = function(InjectedScriptHost, inspectedWindow, injectedScriptId)
+function defineCommonExtensionSymbols(apiPrivate)
 {
+    if (!apiPrivate.audits)
+        apiPrivate.audits = {};
+    apiPrivate.audits.Severity = {
+        Info: "info",
+        Warning: "warning",
+        Severe: "severe"
+    };
+
+    if (!apiPrivate.console)
+        apiPrivate.console = {};
+    apiPrivate.console.Severity = {
+        Debug: "debug",
+        Log: "log",
+        Warning: "warning",
+        Error: "error"
+    };
+
+    if (!apiPrivate.panels)
+        apiPrivate.panels = {};
+    apiPrivate.panels.SearchAction = {
+        CancelSearch: "cancelSearch",
+        PerformSearch: "performSearch",
+        NextSearchResult: "nextSearchResult",
+        PreviousSearchResult: "previousSearchResult"
+    };
+
+    apiPrivate.Events = {
+        AuditStarted: "audit-started-",
+        ButtonClicked: "button-clicked-",
+        ConsoleMessageAdded: "console-message-added",
+        ElementsPanelObjectSelected: "panel-objectSelected-elements",
+        NetworkRequestFinished: "network-request-finished",
+        OpenResource: "open-resource",
+        PanelSearch: "panel-search-",
+        ResourceAdded: "resource-added",
+        ResourceContentCommitted: "resource-content-committed",
+        TimelineEventRecorded: "timeline-event-recorded",
+        ViewShown: "view-shown-",
+        ViewHidden: "view-hidden-"
+    };
+
+    apiPrivate.Commands = {
+        AddAuditCategory: "addAuditCategory",
+        AddAuditResult: "addAuditResult",
+        AddConsoleMessage: "addConsoleMessage",
+        AddRequestHeaders: "addRequestHeaders",
+        CreatePanel: "createPanel",
+        CreateSidebarPane: "createSidebarPane",
+        CreateStatusBarButton: "createStatusBarButton",
+        EvaluateOnInspectedPage: "evaluateOnInspectedPage",
+        GetConsoleMessages: "getConsoleMessages",
+        GetHAR: "getHAR",
+        GetPageResources: "getPageResources",
+        GetRequestContent: "getRequestContent",
+        GetResourceContent: "getResourceContent",
+        Reload: "Reload",
+        Subscribe: "subscribe",
+        SetOpenResourceHandler: "setOpenResourceHandler",
+        SetResourceContent: "setResourceContent",
+        SetSidebarContent: "setSidebarContent",
+        SetSidebarHeight: "setSidebarHeight",
+        SetSidebarPage: "setSidebarPage",
+        ShowPanel: "showPanel",
+        StopAuditCategoryRun: "stopAuditCategoryRun",
+        Reload: "Reload",
+        Unsubscribe: "unsubscribe",
+        UpdateAuditProgress: "updateAuditProgress",
+        UpdateButton: "updateButton",
+        InspectedURLChanged: "inspectedURLChanged"
+    };
+}
+
+function injectedExtensionAPI(injectedScriptId)
+{
+
+var apiPrivate = {};
+
+defineCommonExtensionSymbols(apiPrivate);
+
+var commands = apiPrivate.Commands;
+var events = apiPrivate.Events;
+var userAction = false;
 
 // Here and below, all constructors are private to API implementation.
 // For a public type Foo, if internal fields are present, these are on
@@ -37,6 +119,9 @@ WebInspector.injectedExtensionAPI = function(InjectedScriptHost, inspectedWindow
 // by Foo consutrctor to re-bind publicly exported members to an instance
 // of Foo.
 
+/**
+ * @constructor
+ */
 function EventSinkImpl(type, customDispatch)
 {
     this._type = type;
@@ -47,12 +132,12 @@ function EventSinkImpl(type, customDispatch)
 EventSinkImpl.prototype = {
     addListener: function(callback)
     {
-        if (typeof callback != "function")
-            throw new "addListener: callback is not a function";
+        if (typeof callback !== "function")
+            throw "addListener: callback is not a function";
         if (this._listeners.length === 0)
-            extensionServer.sendRequest({ command: "subscribe", type: this._type });
+            extensionServer.sendRequest({ command: commands.Subscribe, type: this._type });
         this._listeners.push(callback);
-        extensionServer.registerHandler("notify-" + this._type, bind(this._dispatch, this));
+        extensionServer.registerHandler("notify-" + this._type, this._dispatch.bind(this));
     },
 
     removeListener: function(callback)
@@ -66,7 +151,7 @@ EventSinkImpl.prototype = {
             }
         }
         if (this._listeners.length === 0)
-            extensionServer.sendRequest({ command: "unsubscribe", type: this._type });
+            extensionServer.sendRequest({ command: commands.Unsubscribe, type: this._type });
     },
 
     _fire: function()
@@ -85,66 +170,104 @@ EventSinkImpl.prototype = {
     }
 }
 
+/**
+ * @constructor
+ */
 function InspectorExtensionAPI()
 {
     this.audits = new Audits();
     this.inspectedWindow = new InspectedWindow();
     this.panels = new Panels();
-    this.resources = new Resources();
-
-    this.onReset = new EventSink("reset");
+    this.network = new Network();
+    defineDeprecatedProperty(this, "webInspector", "resources", "network");
+    this.timeline = new Timeline();
+    this.console = new ConsoleAPI();
 }
 
-InspectorExtensionAPI.prototype = {
-    log: function(message)
-    {
-        extensionServer.sendRequest({ command: "log", message: message });
-    }
-}
-
-function Resources()
+/**
+ * @constructor
+ */
+function ConsoleAPI()
 {
-    function resourceDispatch(request)
-    {
-        var resource = request.arguments[1];
-        resource.__proto__ = new Resource(request.arguments[0]);
-        this._fire(resource);
-    }
-    this.onFinished = new EventSink("resource-finished", resourceDispatch);
+    this.onMessageAdded = new EventSink(events.ConsoleMessageAdded);
 }
 
-Resources.prototype = {
+ConsoleAPI.prototype = {
+    getMessages: function(callback)
+    {
+        extensionServer.sendRequest({ command: commands.GetConsoleMessages }, callback);
+    },
+
+    addMessage: function(severity, text, url, line)
+    {
+        extensionServer.sendRequest({ command: commands.AddConsoleMessage, severity: severity, text: text, url: url, line: line });
+    },
+
+    get Severity()
+    {
+        return apiPrivate.console.Severity;
+    }
+}
+
+/**
+ * @constructor
+ */
+function Network()
+{
+    function dispatchRequestEvent(message)
+    {
+        var request = message.arguments[1];
+        request.__proto__ = new Request(message.arguments[0]);
+        this._fire(request);
+    }
+    this.onRequestFinished = new EventSink(events.NetworkRequestFinished, dispatchRequestEvent);
+    defineDeprecatedProperty(this, "network", "onFinished", "onRequestFinished");
+    this.onNavigated = new EventSink(events.InspectedURLChanged);
+}
+
+Network.prototype = {
     getHAR: function(callback)
     {
         function callbackWrapper(result)
         {
             var entries = (result && result.entries) || [];
             for (var i = 0; i < entries.length; ++i) {
-                entries[i].__proto__ = new Resource(entries[i]._resourceId);
-                delete entries[i]._resourceId;
+                entries[i].__proto__ = new Request(entries[i]._requestId);
+                delete entries[i]._requestId;
             }
             callback(result);
         }
-        return extensionServer.sendRequest({ command: "getHAR" }, callback && callbackWrapper);
+        return extensionServer.sendRequest({ command: commands.GetHAR }, callback && callbackWrapper);
+    },
+
+    addRequestHeaders: function(headers)
+    {
+        return extensionServer.sendRequest({ command: commands.AddRequestHeaders, headers: headers, extensionId: window.location.hostname });
     }
 }
 
-function ResourceImpl(id)
+/**
+ * @constructor
+ */
+function RequestImpl(id)
 {
     this._id = id;
 }
 
-ResourceImpl.prototype = {
+RequestImpl.prototype = {
     getContent: function(callback)
     {
         function callbackWrapper(response)
         {
             callback(response.content, response.encoding);
         }
-        extensionServer.sendRequest({ command: "getResourceContent", id: this._id }, callback && callbackWrapper);
+        extensionServer.sendRequest({ command: commands.GetRequestContent, id: this._id }, callback && callbackWrapper);
     }
-};
+}
 
+/**
+ * @constructor
+ */
 function Panels()
 {
     var panels = {
@@ -156,44 +279,86 @@ function Panels()
         return panels[name];
     }
     for (var panel in panels)
-        this.__defineGetter__(panel, bind(panelGetter, null, panel));
+        this.__defineGetter__(panel, panelGetter.bind(null, panel));
 }
 
 Panels.prototype = {
-    create: function(title, iconURL, pageURL, callback)
+    create: function(title, icon, page, callback)
     {
         var id = "extension-panel-" + extensionServer.nextObjectId();
         var request = {
-            command: "createPanel",
+            command: commands.CreatePanel,
             id: id,
             title: title,
-            icon: expandURL(iconURL),
-            url: expandURL(pageURL)
+            icon: icon,
+            page: page
         };
-        extensionServer.sendRequest(request, callback && bind(callback, this, new ExtensionPanel(id)));
+        extensionServer.sendRequest(request, callback && callback.bind(this, new ExtensionPanel(id)));
+    },
+
+    setOpenResourceHandler: function(callback)
+    {
+        var hadHandler = extensionServer.hasHandler(events.OpenResource);
+
+        if (!callback)
+            extensionServer.unregisterHandler(events.OpenResource);
+        else {
+            function callbackWrapper(message)
+            {
+                // Allow the panel to show itself when handling the event.
+                userAction = true;
+                try {
+                    callback.call(null, new Resource(message.resource), message.lineNumber);
+                } finally {
+                    userAction = false;
+                }
+            }
+            extensionServer.registerHandler(events.OpenResource, callbackWrapper);
+        }
+        // Only send command if we either removed an existing handler or added handler and had none before.
+        if (hadHandler === !callback)
+            extensionServer.sendRequest({ command: commands.SetOpenResourceHandler, "handlerPresent": !!callback });
+    },
+
+    get SearchAction()
+    {
+        return apiPrivate.panels.SearchAction;
     }
 }
 
-function PanelImpl(id)
+/**
+ * @constructor
+ */
+function ExtensionViewImpl(id)
+{
+    this._id = id;
+
+    function dispatchShowEvent(message)
+    {
+        var frameIndex = message.arguments[0];
+        this._fire(window.parent.frames[frameIndex]);
+    }
+    this.onShown = new EventSink(events.ViewShown + id, dispatchShowEvent);
+    this.onHidden = new EventSink(events.ViewHidden + id);
+}
+
+/**
+ * @constructor
+ */
+function PanelWithSidebarImpl(id)
 {
     this._id = id;
 }
 
-function PanelWithSidebarImpl(id)
-{
-    PanelImpl.call(this, id);
-}
-
 PanelWithSidebarImpl.prototype = {
-    createSidebarPane: function(title, url, callback)
+    createSidebarPane: function(title, callback)
     {
         var id = "extension-sidebar-" + extensionServer.nextObjectId();
         var request = {
-            command: "createSidebarPane",
+            command: commands.CreateSidebarPane,
             panel: this._id,
             id: id,
-            title: title,
-            url: expandURL(url)
+            title: title
         };
         function callbackWrapper()
         {
@@ -202,76 +367,127 @@ PanelWithSidebarImpl.prototype = {
         extensionServer.sendRequest(request, callback && callbackWrapper);
     },
 
-    createWatchExpressionSidebarPane: function(title, callback)
-    {
-        var id = "watch-sidebar-" + extensionServer.nextObjectId();
-        var request = {
-            command: "createWatchExpressionSidebarPane",
-            panel: this._id,
-            id: id,
-            title: title
-        };
-        function callbackWrapper()
-        {
-            callback(new WatchExpressionSidebarPane(id));
-        }
-        extensionServer.sendRequest(request, callback && callbackWrapper);
-    }
+    __proto__: ExtensionViewImpl.prototype
 }
 
-PanelWithSidebarImpl.prototype.__proto__ = PanelImpl.prototype;
-
+/**
+ * @constructor
+ * @extends {PanelWithSidebar}
+ */
 function ElementsPanel()
 {
     var id = "elements";
     PanelWithSidebar.call(this, id);
-    this.onSelectionChanged = new EventSink("panel-objectSelected-" + id);
+    this.onSelectionChanged = new EventSink(events.ElementsPanelObjectSelected);
 }
 
-function ExtensionPanel(id)
+/**
+ * @constructor
+ * @extends {ExtensionViewImpl}
+ */
+function ExtensionPanelImpl(id)
 {
-    Panel.call(this, id);
-    this.onSearch = new EventSink("panel-search-" + id);
+    ExtensionViewImpl.call(this, id);
+    this.onSearch = new EventSink(events.PanelSearch + id);
 }
 
+ExtensionPanelImpl.prototype = {
+    createStatusBarButton: function(iconPath, tooltipText, disabled)
+    {
+        var id = "button-" + extensionServer.nextObjectId();
+        var request = {
+            command: commands.CreateStatusBarButton,
+            panel: this._id,
+            id: id,
+            icon: iconPath,
+            tooltip: tooltipText,
+            disabled: !!disabled
+        };
+        extensionServer.sendRequest(request);
+        return new Button(id);
+    },
+
+    show: function()
+    {
+        if (!userAction)
+            return;
+
+        var request = {
+            command: commands.ShowPanel,
+            id: this._id
+        };
+        extensionServer.sendRequest(request);
+    },
+
+    __proto__: ExtensionViewImpl.prototype
+}
+
+/**
+ * @constructor
+ * @extends {ExtensionViewImpl}
+ */
 function ExtensionSidebarPaneImpl(id)
 {
-    this._id = id;
+    ExtensionViewImpl.call(this, id);
 }
 
 ExtensionSidebarPaneImpl.prototype = {
     setHeight: function(height)
     {
-        extensionServer.sendRequest({ command: "setSidebarHeight", id: this._id, height: height });
-    }
-}
-
-function WatchExpressionSidebarPaneImpl(id)
-{
-    ExtensionSidebarPaneImpl.call(this, id);
-    this.onUpdated = new EventSink("watch-sidebar-updated-" + id);
-}
-
-WatchExpressionSidebarPaneImpl.prototype = {
-    setExpression: function(expression, rootTitle)
-    {
-        extensionServer.sendRequest({ command: "setWatchSidebarContent", id: this._id, expression: expression, rootTitle: rootTitle, evaluateOnPage: true });
+        extensionServer.sendRequest({ command: commands.SetSidebarHeight, id: this._id, height: height });
     },
 
-    setObject: function(jsonObject, rootTitle)
+    setExpression: function(expression, rootTitle, evaluateOptions)
     {
-        extensionServer.sendRequest({ command: "setWatchSidebarContent", id: this._id, expression: jsonObject, rootTitle: rootTitle });
+        var request = {
+            command: commands.SetSidebarContent,
+            id: this._id,
+            expression: expression,
+            rootTitle: rootTitle,
+            evaluateOnPage: true,
+        };
+        if (typeof evaluateOptions === "object")
+            request.evaluateOptions = evaluateOptions;
+        extensionServer.sendRequest(request, extractCallbackArgument(arguments));
+    },
+
+    setObject: function(jsonObject, rootTitle, callback)
+    {
+        extensionServer.sendRequest({ command: commands.SetSidebarContent, id: this._id, expression: jsonObject, rootTitle: rootTitle }, callback);
+    },
+
+    setPage: function(page)
+    {
+        extensionServer.sendRequest({ command: commands.SetSidebarPage, id: this._id, page: page });
     }
 }
 
-WatchExpressionSidebarPaneImpl.prototype.__proto__ = ExtensionSidebarPaneImpl.prototype;
-
-function WatchExpressionSidebarPane(id)
+/**
+ * @constructor
+ */
+function ButtonImpl(id)
 {
-    var impl = new WatchExpressionSidebarPaneImpl(id);
-    ExtensionSidebarPane.call(this, id, impl);
+    this._id = id;
+    this.onClicked = new EventSink(events.ButtonClicked + id);
 }
 
+ButtonImpl.prototype = {
+    update: function(iconPath, tooltipText, disabled)
+    {
+        var request = {
+            command: commands.UpdateButton,
+            id: this._id,
+            icon: iconPath,
+            tooltip: tooltipText,
+            disabled: !!disabled
+        };
+        extensionServer.sendRequest(request);
+    }
+};
+
+/**
+ * @constructor
+ */
 function Audits()
 {
 }
@@ -280,14 +496,19 @@ Audits.prototype = {
     addCategory: function(displayName, resultCount)
     {
         var id = "extension-audit-category-" + extensionServer.nextObjectId();
-        extensionServer.sendRequest({ command: "addAuditCategory", id: id, displayName: displayName, resultCount: resultCount });
+        if (typeof resultCount !== "undefined")
+            console.warn("Passing resultCount to audits.addCategory() is deprecated. Use AuditResult.updateProgress() instead.");
+        extensionServer.sendRequest({ command: commands.AddAuditCategory, id: id, displayName: displayName, resultCount: resultCount });
         return new AuditCategory(id);
     }
 }
 
+/**
+ * @constructor
+ */
 function AuditCategoryImpl(id)
 {
-    function auditResultDispatch(request)
+    function dispatchAuditEvent(request)
     {
         var auditResult = new AuditResult(request.arguments[0]);
         try {
@@ -298,20 +519,21 @@ function AuditCategoryImpl(id)
         }
     }
     this._id = id;
-    this.onAuditStarted = new EventSink("audit-started-" + id, auditResultDispatch);
+    this.onAuditStarted = new EventSink(events.AuditStarted + id, dispatchAuditEvent);
 }
 
+/**
+ * @constructor
+ */
 function AuditResultImpl(id)
 {
     this._id = id;
 
-    var formatterTypes = [
-        "url",
-        "snippet",
-        "text"
-    ];
-    for (var i = 0; i < formatterTypes.length; ++i)
-        this[formatterTypes[i]] = bind(this._nodeFactory, null, formatterTypes[i]);
+    this.createURL = this._nodeFactory.bind(null, "url");
+    this.createSnippet = this._nodeFactory.bind(null, "snippet");
+    this.createText = this._nodeFactory.bind(null, "text");
+    this.createObject = this._nodeFactory.bind(null, "object");
+    this.createNode = this._nodeFactory.bind(null, "node");
 }
 
 AuditResultImpl.prototype = {
@@ -319,10 +541,10 @@ AuditResultImpl.prototype = {
     {
         // shorthand for specifying details directly in addResult().
         if (details && !(details instanceof AuditResultNode))
-            details = details instanceof Array ? this.createNode.apply(this, details) : this.createNode(details);
+            details = new AuditResultNode(details instanceof Array ? details : [details]);
 
         var request = {
-            command: "addAuditResult",
+            command: commands.AddAuditResult,
             resultId: this._id,
             displayName: displayName,
             description: description,
@@ -334,19 +556,30 @@ AuditResultImpl.prototype = {
 
     createResult: function()
     {
-        var node = new AuditResultNode();
-        node.contents = Array.prototype.slice.call(arguments);
-        return node;
+        return new AuditResultNode(Array.prototype.slice.call(arguments));
+    },
+
+    updateProgress: function(worked, totalWork)
+    {
+        extensionServer.sendRequest({ command: commands.UpdateAuditProgress, resultId: this._id, progress: worked / totalWork });
     },
 
     done: function()
     {
-        extensionServer.sendRequest({ command: "stopAuditCategoryRun", resultId: this._id });
+        extensionServer.sendRequest({ command: commands.StopAuditCategoryRun, resultId: this._id });
     },
 
     get Severity()
     {
         return apiPrivate.audits.Severity;
+    },
+
+    createResourceLink: function(url, lineNumber)
+    {
+        return {
+            type: "resourceLink",
+            arguments: [url, lineNumber && lineNumber - 1]
+        };
     },
 
     _nodeFactory: function(type)
@@ -358,6 +591,9 @@ AuditResultImpl.prototype = {
     }
 }
 
+/**
+ * @constructor
+ */
 function AuditResultNode(contents)
 {
     this.contents = contents;
@@ -368,38 +604,123 @@ function AuditResultNode(contents)
 AuditResultNode.prototype = {
     addChild: function()
     {
-        var node = AuditResultImpl.prototype.createResult.apply(null, arguments);
+        var node = new AuditResultNode(Array.prototype.slice.call(arguments));
         this.children.push(node);
         return node;
     }
 };
 
+/**
+ * @constructor
+ */
 function InspectedWindow()
 {
-    this.onDOMContentLoaded = new EventSink("inspectedPageDOMContentLoaded");
-    this.onLoaded = new EventSink("inspectedPageLoaded");
-    this.onNavigated = new EventSink("inspectedURLChanged");
+    function dispatchResourceEvent(message)
+    {
+        this._fire(new Resource(message.arguments[0]));
+    }
+    function dispatchResourceContentEvent(message)
+    {
+        this._fire(new Resource(message.arguments[0]), message.arguments[1]);
+    }
+    this.onResourceAdded = new EventSink(events.ResourceAdded, dispatchResourceEvent);
+    this.onResourceContentCommitted = new EventSink(events.ResourceContentCommitted, dispatchResourceContentEvent);
 }
 
 InspectedWindow.prototype = {
-    reload: function()
+    reload: function(optionsOrUserAgent)
     {
-        return extensionServer.sendRequest({ command: "reload" });
+        var options = null;
+        if (typeof optionsOrUserAgent === "object")
+            options = optionsOrUserAgent;
+        else if (typeof optionsOrUserAgent === "string") {
+            options = { userAgent: optionsOrUserAgent };
+            console.warn("Passing userAgent as string parameter to inspectedWindow.reload() is deprecated. " +
+                         "Use inspectedWindow.reload({ userAgent: value}) instead.");
+        }
+        return extensionServer.sendRequest({ command: commands.Reload, options: options });
     },
 
-    eval: function(expression, callback)
+    eval: function(expression, evaluateOptions)
     {
+        var callback = extractCallbackArgument(arguments);
         function callbackWrapper(result)
         {
-            var value = result.value;
-            if (!result.isException)
-                value = value === "undefined" ? undefined : JSON.parse(value);
-            callback(value, result.isException);
+            if (result.isError || result.isException)
+                callback(undefined, result);
+            else
+                callback(result.value);
         }
-        return extensionServer.sendRequest({ command: "evaluateOnInspectedPage", expression: expression }, callback && callbackWrapper);
+        var request = {
+            command: commands.EvaluateOnInspectedPage,
+            expression: expression
+        };
+        if (typeof evaluateOptions === "object")
+            request.evaluateOptions = evaluateOptions;
+        return extensionServer.sendRequest(request, callback && callbackWrapper);
+    },
+
+    getResources: function(callback)
+    {
+        function wrapResource(resourceData)
+        {
+            return new Resource(resourceData);
+        }
+        function callbackWrapper(resources)
+        {
+            callback(resources.map(wrapResource));
+        }
+        return extensionServer.sendRequest({ command: commands.GetPageResources }, callback && callbackWrapper);
     }
 }
 
+/**
+ * @constructor
+ */
+function ResourceImpl(resourceData)
+{
+    this._url = resourceData.url
+    this._type = resourceData.type;
+}
+
+ResourceImpl.prototype = {
+    get url()
+    {
+        return this._url;
+    },
+
+    get type()
+    {
+        return this._type;
+    },
+
+    getContent: function(callback)
+    {
+        function callbackWrapper(response)
+        {
+            callback(response.content, response.encoding);
+        }
+
+        return extensionServer.sendRequest({ command: commands.GetResourceContent, url: this._url }, callback && callbackWrapper);
+    },
+
+    setContent: function(content, commit, callback)
+    {
+        return extensionServer.sendRequest({ command: commands.SetResourceContent, url: this._url, content: content, commit: commit }, callback);
+    }
+}
+
+/**
+ * @constructor
+ */
+function TimelineImpl()
+{
+    this.onEventRecorded = new EventSink(events.TimelineEventRecorded);
+}
+
+/**
+ * @constructor
+ */
 function ExtensionServerClient()
 {
     this._callbacks = {};
@@ -407,17 +728,20 @@ function ExtensionServerClient()
     this._lastRequestId = 0;
     this._lastObjectId = 0;
 
-    this.registerHandler("callback", bind(this._onCallback, this));
+    this.registerHandler("callback", this._onCallback.bind(this));
 
     var channel = new MessageChannel();
     this._port = channel.port1;
-    this._port.addEventListener("message", bind(this._onMessage, this), false);
+    this._port.addEventListener("message", this._onMessage.bind(this), false);
     this._port.start();
 
-    top.postMessage("registerExtension", [ channel.port2 ], "*");
+    window.parent.postMessage("registerExtension", [ channel.port2 ], "*");
 }
 
 ExtensionServerClient.prototype = {
+    /**
+     * @param {function()=} callback
+     */
     sendRequest: function(message, callback)
     {
         if (typeof callback === "function")
@@ -425,9 +749,19 @@ ExtensionServerClient.prototype = {
         return this._port.postMessage(message);
     },
 
+    hasHandler: function(command)
+    {
+        return !!this._handlers[command];
+    },
+
     registerHandler: function(command, handler)
     {
         this._handlers[command] = handler;
+    },
+
+    unregisterHandler: function(command)
+    {
+        delete this._handlers[command];
     },
 
     nextObjectId: function()
@@ -445,8 +779,9 @@ ExtensionServerClient.prototype = {
     _onCallback: function(request)
     {
         if (request.requestId in this._callbacks) {
-            this._callbacks[request.requestId](request.result);
+            var callback = this._callbacks[request.requestId];
             delete this._callbacks[request.requestId];
+            callback(request.result);
         }
     },
 
@@ -459,32 +794,23 @@ ExtensionServerClient.prototype = {
     }
 }
 
-function expandURL(url)
-{
-    if (!url)
-        return url;
-    if (/^[^/]+:/.exec(url)) // See if url has schema.
-        return url;
-    var baseURL = location.protocol + "//" + location.hostname + location.port;
-    if (/^\//.exec(url))
-        return baseURL + url;
-    return baseURL + location.pathname.replace(/\/[^/]*$/,"/") + url;
-}
-
-function bind(func, thisObject)
-{
-    var args = Array.prototype.slice.call(arguments, 2);
-    return function() { return func.apply(thisObject, args.concat(Array.prototype.slice.call(arguments, 0))); };
-}
-
 function populateInterfaceClass(interface, implementation)
 {
     for (var member in implementation) {
         if (member.charAt(0) === "_")
             continue;
-        var value = implementation[member];
-        interface[member] = typeof value === "function" ? bind(value, implementation)
-            : interface[member] = implementation[member];
+        var descriptor = null;
+        // Traverse prototype chain until we find the owner.
+        for (var owner = implementation; owner && !descriptor; owner = owner.__proto__)
+            descriptor = Object.getOwnPropertyDescriptor(owner, member);
+        if (!descriptor)
+            continue;
+        if (typeof descriptor.value === "function")
+            interface[member] = descriptor.value.bind(implementation);
+        else if (typeof descriptor.get === "function")
+            interface.__defineGetter__(member, descriptor.get.bind(implementation));
+        else
+            Object.defineProperty(interface, member, descriptor);
     }
 }
 
@@ -498,17 +824,56 @@ function declareInterfaceClass(implConstructor)
     }
 }
 
+function defineDeprecatedProperty(object, className, oldName, newName)
+{
+    var warningGiven = false;
+    function getter()
+    {
+        if (!warningGiven) {
+            console.warn(className + "." + oldName + " is deprecated. Use " + className + "." + newName + " instead");
+            warningGiven = true;
+        }
+        return object[newName];
+    }
+    object.__defineGetter__(oldName, getter);
+}
+
+function extractCallbackArgument(args)
+{
+    var lastArgument = args[args.length - 1];
+    return typeof lastArgument === "function" ? lastArgument : undefined;
+}
+
 var AuditCategory = declareInterfaceClass(AuditCategoryImpl);
 var AuditResult = declareInterfaceClass(AuditResultImpl);
+var Button = declareInterfaceClass(ButtonImpl);
 var EventSink = declareInterfaceClass(EventSinkImpl);
+var ExtensionPanel = declareInterfaceClass(ExtensionPanelImpl);
 var ExtensionSidebarPane = declareInterfaceClass(ExtensionSidebarPaneImpl);
-var Panel = declareInterfaceClass(PanelImpl);
 var PanelWithSidebar = declareInterfaceClass(PanelWithSidebarImpl);
+var Request = declareInterfaceClass(RequestImpl);
 var Resource = declareInterfaceClass(ResourceImpl);
-var WatchExpressionSidebarPane = declareInterfaceClass(WatchExpressionSidebarPaneImpl);
+var Timeline = declareInterfaceClass(TimelineImpl);
 
-var extensionServer = new ExtensionServerClient();
+// extensionServer is a closure variable defined by the glue below -- make sure we fail if it's not there.
+if (!extensionServer)
+    extensionServer = new ExtensionServerClient();
 
-webInspector = new InspectorExtensionAPI();
+return new InspectorExtensionAPI();
+}
 
+/**
+ * @param {ExtensionDescriptor} extensionInfo
+ * @return {string}
+ */
+function buildExtensionAPIInjectedScript(extensionInfo)
+{
+    return "(function(injectedScriptId){ " +
+        "var extensionServer;" +
+        defineCommonExtensionSymbols.toString() + ";" +
+        injectedExtensionAPI.toString() + ";" +
+        buildPlatformExtensionAPI(extensionInfo) + ";" +
+        "platformExtensionAPI(injectedExtensionAPI(injectedScriptId));" +
+        "return {};" +
+        "})";
 }

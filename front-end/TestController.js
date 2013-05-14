@@ -28,54 +28,22 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-WebInspector.TestController = function(callId)
-{
-    this._callId = callId;
-    this._waitUntilDone = false;
-    this.results = [];
-}
-
-WebInspector.TestController.prototype = {
-    waitUntilDone: function()
-    {
-        this._waitUntilDone = true;
-    },
-
-    notifyDone: function(result)
-    {
-        if (typeof result === "undefined" && this.results.length)
-            result = this.results;
-        var message = typeof result === "undefined" ? "\"<undefined>\"" : JSON.stringify(result);
-        InspectorBackend.didEvaluateForTestInFrontend(this._callId, message);
-    },
-
-    runAfterPendingDispatches: function(callback)
-    {
-        if (WebInspector.pendingDispatches === 0) {
-            callback();
-            return;
-        }
-        setTimeout(this.runAfterPendingDispatches.bind(this), 0, callback);
-    }
-}
-
 WebInspector.evaluateForTestInFrontend = function(callId, script)
 {
-    var controller = new WebInspector.TestController(callId);
+    if (!InspectorFrontendHost.isUnderTest())
+        return;
+
     function invokeMethod()
     {
+        var message;
         try {
-            var result;
-            if (window[script] && typeof window[script] === "function")
-                result = window[script].call(WebInspector, controller);
-            else
-                result = window.eval(script);
-
-            if (!controller._waitUntilDone)
-                controller.notifyDone(result);
+            script = script + "//@ sourceURL=evaluateInWebInspector" + callId + ".js";
+            var result = window.eval(script);
+            message = typeof result === "undefined" ? "\"<undefined>\"" : JSON.stringify(result);
         } catch (e) {
-            controller.notifyDone(e.toString());
+            message = e.toString();
         }
+        RuntimeAgent.evaluate("didEvaluateForTestInFrontend(" + callId + ", " + message + ")", "test");
     }
-    controller.runAfterPendingDispatches(invokeMethod);
+    InspectorBackend.runAfterPendingDispatches(invokeMethod);
 }

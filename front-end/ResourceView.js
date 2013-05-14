@@ -27,9 +27,15 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @extends {WebInspector.View}
+ * @constructor
+ */
 WebInspector.ResourceView = function(resource)
 {
     WebInspector.View.call(this);
+    this.registerRequiredCSS("resourceView.css");
+
     this.element.addStyleClass("resource-view");
     this.resource = resource;
 }
@@ -38,7 +44,97 @@ WebInspector.ResourceView.prototype = {
     hasContent: function()
     {
         return false;
+    },
+
+    __proto__: WebInspector.View.prototype
+}
+
+/**
+ * @param {WebInspector.Resource} resource
+ */
+WebInspector.ResourceView.hasTextContent = function(resource)
+{
+    if (resource.type.isTextType())
+        return true; 
+    if (resource.type === WebInspector.resourceTypes.Other)
+        return resource.content && !resource.contentEncoded;
+    return false;
+}
+
+/**
+ * @param {WebInspector.Resource} resource
+ */
+WebInspector.ResourceView.nonSourceViewForResource = function(resource)
+{
+    switch (resource.type) {
+    case WebInspector.resourceTypes.Image:
+        return new WebInspector.ImageView(resource);
+    case WebInspector.resourceTypes.Font:
+        return new WebInspector.FontView(resource);
+    default:
+        return new WebInspector.ResourceView(resource);
     }
 }
 
-WebInspector.ResourceView.prototype.__proto__ = WebInspector.View.prototype;
+/**
+ * @extends {WebInspector.SourceFrame}
+ * @constructor
+ * @param {WebInspector.Resource} resource
+ */
+WebInspector.ResourceSourceFrame = function(resource)
+{
+    this._resource = resource;
+    WebInspector.SourceFrame.call(this, resource);
+}
+
+WebInspector.ResourceSourceFrame.prototype = {
+    get resource()
+    {
+        return this._resource;
+    },
+
+    populateTextAreaContextMenu: function(contextMenu, lineNumber)
+    {
+        contextMenu.appendApplicableItems(this._resource);
+        if (this._resource.request)
+            contextMenu.appendApplicableItems(this._resource.request);
+    },
+
+    __proto__: WebInspector.SourceFrame.prototype
+}
+
+/**
+ * @constructor
+ * @extends {WebInspector.View}
+ * @param {WebInspector.Resource} resource
+ */
+WebInspector.ResourceSourceFrameFallback = function(resource)
+{
+    WebInspector.View.call(this);
+    this._resource = resource;
+    this.element.addStyleClass("fill");
+    this.element.addStyleClass("script-view");
+    this._content = this.element.createChild("div", "script-view-fallback monospace");
+}
+
+WebInspector.ResourceSourceFrameFallback.prototype = {
+    wasShown: function()
+    {
+        if (!this._contentRequested) {
+            this._contentRequested = true;
+            this._resource.requestContent(this._contentLoaded.bind(this));
+        }
+    },
+
+ /**
+     * @param {?string} content
+     * @param {boolean} contentEncoded
+     * @param {string} mimeType
+     */
+    _contentLoaded: function(content, contentEncoded, mimeType)
+    {
+        this._content.textContent = content;
+    },
+
+    __proto__: WebInspector.View.prototype
+}

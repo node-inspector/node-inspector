@@ -28,100 +28,91 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @constructor
+ * @extends {WebInspector.DialogDelegate}
+ */
 WebInspector.GoToLineDialog = function(view)
 {
-    this._element = document.createElement("div");
-    this._element.className = "go-to-line-dialog";
-    this._element.addEventListener("keydown", this._onKeyDown.bind(this), false);
-    this._closeKeys = [
-        WebInspector.KeyboardShortcut.Keys.Enter.code,
-        WebInspector.KeyboardShortcut.Keys.Esc.code,
-    ];
+    WebInspector.DialogDelegate.call(this);
+    
+    this.element = document.createElement("div");
+    this.element.className = "go-to-line-dialog";
 
-    var dialogWindow = this._element;
+    this.element.createChild("label").textContent = WebInspector.UIString("Go to line: ");
 
-    dialogWindow.createChild("label").innerText = WebInspector.UIString("Go to line: ");
-
-    this._input = dialogWindow.createChild("input");
+    this._input = this.element.createChild("input");
     this._input.setAttribute("type", "text");
     this._input.setAttribute("size", 6);
-    var linesCount = view.sourceFrame.textModel.linesCount;
-    if (linesCount)
-        this._input.setAttribute("title", WebInspector.UIString("1 - %d", linesCount));
-    var blurHandler = this._onBlur.bind(this);
-    this._input.addEventListener("blur", blurHandler, false);
-    
 
-    var go = dialogWindow.createChild("button");
-    go.innerText = WebInspector.UIString("Go");
-    go.addEventListener("click", this._onClick.bind(this), false);
-    go.addEventListener("mousedown", function(e) {
-        // Ok button click will close the dialog, removing onBlur listener
-        // to let click event be handled.
-        this._input.removeEventListener("blur", blurHandler, false);
-    }.bind(this), false);
+    this._goButton = this.element.createChild("button");
+    this._goButton.textContent = WebInspector.UIString("Go");
+    this._goButton.addEventListener("click", this._onGoClick.bind(this), false);
 
     this._view = view;
-    view.element.appendChild(this._element);
-
-    this._previousFocusElement = WebInspector.currentFocusElement;
-    WebInspector.currentFocusElement = this._input;
-    this._input.select();
 }
 
-WebInspector.GoToLineDialog.show = function(sourceView)
+/**
+ * @param {WebInspector.Panel} panel
+ * @param {function():?WebInspector.View} viewGetter
+ */
+WebInspector.GoToLineDialog.install = function(panel, viewGetter)
 {
-    if (this._instance)
-        return;
-    this._instance = new WebInspector.GoToLineDialog(sourceView);
+    var goToLineShortcut = WebInspector.GoToLineDialog.createShortcut();
+    panel.registerShortcuts([goToLineShortcut], WebInspector.GoToLineDialog._show.bind(null, viewGetter));
+}
+
+/**
+ * @param {function():?WebInspector.View} viewGetter
+ * @param {Event=} event
+ * @return {boolean}
+ */
+WebInspector.GoToLineDialog._show = function(viewGetter, event)
+{
+    var sourceView = viewGetter();
+    if (!sourceView || !sourceView.canHighlightLine())
+        return false;
+    WebInspector.Dialog.show(sourceView.element, new WebInspector.GoToLineDialog(sourceView));
+    return true;
+}
+
+/**
+ * @return {!WebInspector.KeyboardShortcut.Descriptor}
+ */
+WebInspector.GoToLineDialog.createShortcut = function()
+{
+    var isMac = WebInspector.isMac();
+    var shortcut;
+    if (isMac)
+        return WebInspector.KeyboardShortcut.makeDescriptor("l", WebInspector.KeyboardShortcut.Modifiers.Meta);
+    return WebInspector.KeyboardShortcut.makeDescriptor("g", WebInspector.KeyboardShortcut.Modifiers.Ctrl);
 }
 
 WebInspector.GoToLineDialog.prototype = {
-    _hide: function()
+    focus: function()
     {
-        if (this._isHiding)
-            return;
-        this._isHiding = true;
-
-        WebInspector.currentFocusElement = this._previousFocusElement;
-        WebInspector.GoToLineDialog._instance = null;
-        this._element.parentElement.removeChild(this._element);
+        WebInspector.setCurrentFocusElement(this._input);
+        this._input.select();
     },
-
-    _onBlur: function(event)
+    
+    _onGoClick: function()
     {
-        this._hide();
+        this._applyLineNumber();
+        WebInspector.Dialog.hide();
     },
-
-    _onKeyDown: function(event)
-    {
-        if (event.keyCode === WebInspector.KeyboardShortcut.Keys.Tab.code) {
-            event.preventDefault();
-            return;
-        }
-
-        if (event.keyCode === WebInspector.KeyboardShortcut.Keys.Enter.code)
-            this._highlightSelectedLine();
-
-        if (this._closeKeys.indexOf(event.keyCode) >= 0) {
-            this._hide();
-            event.stopPropagation();
-        }
-    },
-
-    _onClick: function(event)
-    {
-        this._highlightSelectedLine();
-        this._hide();
-    },
-
-    _highlightSelectedLine: function()
+    
+    _applyLineNumber: function()
     {
         var value = this._input.value;
-        var lineNumber = parseInt(value, 10);
-        if (!isNaN(lineNumber) && lineNumber > 0) {
-            lineNumber = Math.min(lineNumber, this._view.sourceFrame.textModel.linesCount);
+        var lineNumber = parseInt(value, 10) - 1;
+        if (!isNaN(lineNumber) && lineNumber >= 0)
             this._view.highlightLine(lineNumber);
-        }
-    }
-};
+    },
+    
+    onEnter: function()
+    {
+        this._applyLineNumber();
+    },
+
+    __proto__: WebInspector.DialogDelegate.prototype
+}

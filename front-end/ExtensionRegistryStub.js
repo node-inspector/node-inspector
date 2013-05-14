@@ -30,6 +30,9 @@
 
 if (!window.InspectorExtensionRegistry) {
 
+/**
+ * @constructor
+ */
 WebInspector.InspectorExtensionRegistryStub = function()
 {
 }
@@ -38,8 +41,8 @@ WebInspector.InspectorExtensionRegistryStub.prototype = {
     getExtensionsAsync: function()
     {
     }
-};
+}
 
-InspectorExtensionRegistry = new WebInspector.InspectorExtensionRegistryStub();
+var InspectorExtensionRegistry = new WebInspector.InspectorExtensionRegistryStub();
 
 }

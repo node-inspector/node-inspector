@@ -23,6 +23,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @constructor
+ * @param {string} title
+ * @param {string} subtitle
+ */
 WebInspector.Placard = function(title, subtitle)
 {
     this.element = document.createElement("div");
@@ -44,6 +49,7 @@ WebInspector.Placard = function(title, subtitle)
 }
 
 WebInspector.Placard.prototype = {
+    /** @return {string} */
     get title()
     {
         return this._title;
@@ -57,6 +63,7 @@ WebInspector.Placard.prototype = {
         this.titleElement.textContent = x;
     },
 
+    /** @return {string} */
     get subtitle()
     {
         return this._subtitle;
@@ -67,9 +74,10 @@ WebInspector.Placard.prototype = {
         if (this._subtitle === x)
             return;
         this._subtitle = x;
-        this.subtitleElement.innerHTML = x;
+        this.subtitleElement.textContent = x;
     },
 
+    /** @return {boolean} */
     get selected()
     {
         return this._selected;
@@ -102,5 +110,9 @@ WebInspector.Placard.prototype = {
     toggleSelected: function()
     {
         this.selected = !this.selected;
+    },
+
+    discard: function()
+    {
     }
 }

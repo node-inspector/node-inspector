@@ -26,10 +26,16 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @constructor
+ * @extends {WebInspector.SidebarPane}
+ */
 WebInspector.PropertiesSidebarPane = function()
 {
     WebInspector.SidebarPane.call(this, WebInspector.UIString("Properties"));
 }
+
+WebInspector.PropertiesSidebarPane._objectGroupName = "properties-sidebar-pane";
 
 WebInspector.PropertiesSidebarPane.prototype = {
     update: function(node)
@@ -42,25 +48,58 @@ WebInspector.PropertiesSidebarPane.prototype = {
             return;
         }
 
-        var self = this;
-        var callback = function(prototypes) {
-            var body = self.bodyElement;
+        WebInspector.RemoteObject.resolveNode(node, WebInspector.PropertiesSidebarPane._objectGroupName, nodeResolved.bind(this));
+
+        function nodeResolved(object)
+        {
+            if (!object)
+                return;
+            function protoList()
+            {
+                var proto = this;
+                var result = {};
+                var counter = 1;
+                while (proto) {
+                    result[counter++] = proto;
+                    proto = proto.__proto__;
+                }
+                return result;
+            }
+            object.callFunction(protoList, undefined, nodePrototypesReady.bind(this));
+            object.release();
+        }
+
+        function nodePrototypesReady(object)
+        {
+            if (!object)
+                return;
+            object.getOwnProperties(fillSection.bind(this));
+        }
+
+        function fillSection(prototypes)
+        {
+            if (!prototypes)
+                return;
+
+            var body = this.bodyElement;
             body.removeChildren();
-            self.sections = [];
+            this.sections = [];
 
             // Get array of prototype user-friendly names.
             for (var i = 0; i < prototypes.length; ++i) {
-                var prototype = WebInspector.RemoteObject.fromPayload(prototypes[i]);
+                if (!parseInt(prototypes[i].name, 10))
+                    continue;
+
+                var prototype = prototypes[i].value;
                 var title = prototype.description;
                 if (title.match(/Prototype$/))
                     title = title.replace(/Prototype$/, "");
                 var section = new WebInspector.ObjectPropertiesSection(prototype, title);
-                self.sections.push(section);
+                this.sections.push(section);
                 body.appendChild(section.element);
             }
-        };
-        InjectedScriptAccess.getForNode(node).getPrototypes(node.id, callback);
-    }
-}
+        }
+    },
 
-WebInspector.PropertiesSidebarPane.prototype.__proto__ = WebInspector.SidebarPane.prototype;
+    __proto__: WebInspector.SidebarPane.prototype
+}

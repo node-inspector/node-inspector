@@ -26,52 +26,28 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @extends {WebInspector.View}
+ * @constructor
+ */
 WebInspector.Panel = function(name)
 {
     WebInspector.View.call(this);
+    WebInspector.panels[name] = this;
 
     this.element.addStyleClass("panel");
     this.element.addStyleClass(name);
     this._panelName = name;
 
-    WebInspector.settings.installApplicationSetting(this._sidebarWidthSettingName(), undefined);
+    this._shortcuts = /** !Object.<number, function(Event=):boolean> */ ({});
+
+    WebInspector.settings[this._sidebarWidthSettingName()] = WebInspector.settings.createSetting(this._sidebarWidthSettingName(), undefined);
 }
 
 // Should by in sync with style declarations.
 WebInspector.Panel.counterRightMargin = 25;
 
 WebInspector.Panel.prototype = {
-    get toolbarItem()
-    {
-        if (this._toolbarItem)
-            return this._toolbarItem;
-
-        // Sample toolbar item as markup:
-        // <button class="toolbar-item resources toggleable">
-        // <div class="toolbar-icon"></div>
-        // <div class="toolbar-label">Resources</div>
-        // </button>
-
-        this._toolbarItem = document.createElement("button");
-        this._toolbarItem.className = "toolbar-item toggleable";
-        this._toolbarItem.panel = this;
-
-        this._toolbarItem.addStyleClass(this._panelName);
-
-        var iconElement = document.createElement("div");
-        iconElement.className = "toolbar-icon";
-        this._toolbarItem.appendChild(iconElement);
-
-        if ("toolbarItemLabel" in this) {
-            var labelElement = document.createElement("div");
-            labelElement.className = "toolbar-label";
-            labelElement.textContent = this.toolbarItemLabel;
-            this._toolbarItem.appendChild(labelElement);
-        }
-
-        return this._toolbarItem;
-    },
-
     get name()
     {
         return this._panelName;
@@ -79,243 +55,147 @@ WebInspector.Panel.prototype = {
 
     show: function()
     {
-        WebInspector.View.prototype.show.call(this);
+        WebInspector.View.prototype.show.call(this, WebInspector.inspectorView.panelsElement());
+    },
 
+    wasShown: function()
+    {
+        var panelStatusBar = document.getElementById("panel-status-bar")
+        var drawerViewAnchor = document.getElementById("drawer-view-anchor");
         var statusBarItems = this.statusBarItems;
         if (statusBarItems) {
             this._statusBarItemContainer = document.createElement("div");
             for (var i = 0; i < statusBarItems.length; ++i)
                 this._statusBarItemContainer.appendChild(statusBarItems[i]);
-            document.getElementById("main-status-bar").appendChild(this._statusBarItemContainer);
+            panelStatusBar.insertBefore(this._statusBarItemContainer, drawerViewAnchor);
+        }
+        var statusBarText = this.statusBarText();
+        if (statusBarText) {
+            this._statusBarTextElement = statusBarText;
+            panelStatusBar.appendChild(statusBarText);
         }
 
-        if ("_toolbarItem" in this)
-            this._toolbarItem.addStyleClass("toggled-on");
-
-        WebInspector.currentFocusElement = this.defaultFocusedElement;
-
-        this.restoreSidebarWidth();
-        this._restoreScrollPositions();
+        this.focus();
     },
 
-    hide: function()
+    willHide: function()
     {
-        this._storeScrollPositions();
-        WebInspector.View.prototype.hide.call(this);
-
         if (this._statusBarItemContainer && this._statusBarItemContainer.parentNode)
             this._statusBarItemContainer.parentNode.removeChild(this._statusBarItemContainer);
         delete this._statusBarItemContainer;
-        if ("_toolbarItem" in this)
-            this._toolbarItem.removeStyleClass("toggled-on");
+
+        if (this._statusBarTextElement && this._statusBarTextElement.parentNode)
+            this._statusBarTextElement.parentNode.removeChild(this._statusBarTextElement);
+        delete this._statusBarTextElement;
     },
 
-    get defaultFocusedElement()
+    reset: function()
+    {
+        this.searchCanceled();
+    },
+
+    defaultFocusedElement: function()
     {
         return this.sidebarTreeElement || this.element;
     },
 
-    attach: function()
-    {
-        if (!this.element.parentNode)
-            document.getElementById("main-panels").appendChild(this.element);
-    },
-
     searchCanceled: function()
     {
-        if (this._searchResults) {
-            for (var i = 0; i < this._searchResults.length; ++i) {
-                var view = this._searchResults[i];
-                if (view.searchCanceled)
-                    view.searchCanceled();
-                delete view.currentQuery;
-            }
-        }
-
-        WebInspector.updateSearchMatchesCount(0, this);
-
-        if (this._currentSearchChunkIntervalIdentifier) {
-            clearInterval(this._currentSearchChunkIntervalIdentifier);
-            delete this._currentSearchChunkIntervalIdentifier;
-        }
-
-        this._totalSearchMatches = 0;
-        this._currentSearchResultIndex = 0;
-        this._searchResults = [];
+        WebInspector.searchController.updateSearchMatchesCount(0, this);
     },
 
+    /**
+     * @param {string} query
+     */
     performSearch: function(query)
     {
         // Call searchCanceled since it will reset everything we need before doing a new search.
-        this.searchCanceled(true);
-
-        var searchableViews = this.searchableViews;
-        if (!searchableViews || !searchableViews.length)
-            return;
-
-        var parentElement = this.viewsContainerElement;
-        var visibleView = this.visibleView;
-        var sortFuction = this.searchResultsSortFunction;
-
-        var matchesCountUpdateTimeout = null;
-
-        function updateMatchesCount()
-        {
-            WebInspector.updateSearchMatchesCount(this._totalSearchMatches, this);
-            matchesCountUpdateTimeout = null;
-        }
-
-        function updateMatchesCountSoon()
-        {
-            if (matchesCountUpdateTimeout)
-                return;
-            // Update the matches count every half-second so it doesn't feel twitchy.
-            matchesCountUpdateTimeout = setTimeout(updateMatchesCount.bind(this), 500);
-        }
-
-        function finishedCallback(view, searchMatches)
-        {
-            if (!searchMatches)
-                return;
-
-            this._totalSearchMatches += searchMatches;
-            this._searchResults.push(view);
-
-            if (sortFuction)
-                this._searchResults.sort(sortFuction);
-
-            if (this.searchMatchFound)
-                this.searchMatchFound(view, searchMatches);
-
-            updateMatchesCountSoon.call(this);
-
-            if (view === visibleView)
-                view.jumpToFirstSearchResult();
-        }
-
-        var i = 0;
-        var panel = this;
-        var boundFinishedCallback = finishedCallback.bind(this);
-        var chunkIntervalIdentifier = null;
-
-        // Split up the work into chunks so we don't block the
-        // UI thread while processing.
-
-        function processChunk()
-        {
-            var view = searchableViews[i];
-
-            if (++i >= searchableViews.length) {
-                if (panel._currentSearchChunkIntervalIdentifier === chunkIntervalIdentifier)
-                    delete panel._currentSearchChunkIntervalIdentifier;
-                clearInterval(chunkIntervalIdentifier);
-            }
-
-            if (!view)
-                return;
-
-            if (view.element.parentNode !== parentElement && view.element.parentNode && parentElement)
-                view.detach();
-
-            view.currentQuery = query;
-            view.performSearch(query, boundFinishedCallback);
-        }
-
-        processChunk();
-
-        chunkIntervalIdentifier = setInterval(processChunk, 25);
-        this._currentSearchChunkIntervalIdentifier = chunkIntervalIdentifier;
+        this.searchCanceled();
     },
 
     jumpToNextSearchResult: function()
     {
-        if (!this.showView || !this._searchResults || !this._searchResults.length)
-            return;
-
-        var showFirstResult = false;
-
-        this._currentSearchResultIndex = this._searchResults.indexOf(this.visibleView);
-        if (this._currentSearchResultIndex === -1) {
-            this._currentSearchResultIndex = 0;
-            showFirstResult = true;
-        }
-
-        var currentView = this._searchResults[this._currentSearchResultIndex];
-
-        if (currentView.showingLastSearchResult()) {
-            if (++this._currentSearchResultIndex >= this._searchResults.length)
-                this._currentSearchResultIndex = 0;
-            currentView = this._searchResults[this._currentSearchResultIndex];
-            showFirstResult = true;
-        }
-
-        if (currentView !== this.visibleView) {
-            this.showView(currentView);
-            WebInspector.focusSearchField();
-        }
-
-        if (showFirstResult)
-            currentView.jumpToFirstSearchResult();
-        else
-            currentView.jumpToNextSearchResult();
     },
 
     jumpToPreviousSearchResult: function()
     {
-        if (!this.showView || !this._searchResults || !this._searchResults.length)
-            return;
-
-        var showLastResult = false;
-
-        this._currentSearchResultIndex = this._searchResults.indexOf(this.visibleView);
-        if (this._currentSearchResultIndex === -1) {
-            this._currentSearchResultIndex = 0;
-            showLastResult = true;
-        }
-
-        var currentView = this._searchResults[this._currentSearchResultIndex];
-
-        if (currentView.showingFirstSearchResult()) {
-            if (--this._currentSearchResultIndex < 0)
-                this._currentSearchResultIndex = (this._searchResults.length - 1);
-            currentView = this._searchResults[this._currentSearchResultIndex];
-            showLastResult = true;
-        }
-
-        if (currentView !== this.visibleView) {
-            this.showView(currentView);
-            WebInspector.focusSearchField();
-        }
-
-        if (showLastResult)
-            currentView.jumpToLastSearchResult();
-        else
-            currentView.jumpToPreviousSearchResult();
     },
 
-    createSidebar: function(parentElement, resizerParentElement)
+    /**
+     * @return {boolean}
+     */
+    canSearchAndReplace: function()
     {
-        if (this.sidebarElement)
+        return false;
+    },
+
+    /**
+     * @param {string} text
+     */
+    replaceSelectionWith: function(text)
+    {
+    },
+
+    /**
+     * @param {string} query
+     * @param {string} text
+     */
+    replaceAllWith: function(query, text)
+    {
+    },
+
+    /**
+     * @return {boolean}
+     */
+    canFilter: function()
+    {
+        return false;
+    },
+
+    /**
+     * @param {string} query
+     */
+    performFilter: function(query)
+    {
+    },
+
+    /**
+     * @param {Element=} parentElement
+     * @param {string=} position
+     * @param {number=} defaultWidth
+     * @param {number=} defaultHeight
+     */
+    createSidebarView: function(parentElement, position, defaultWidth, defaultHeight)
+    {
+        if (this.splitView)
             return;
 
         if (!parentElement)
             parentElement = this.element;
 
-        if (!resizerParentElement)
-            resizerParentElement = parentElement;
+        this.splitView = new WebInspector.SidebarView(position, this._sidebarWidthSettingName(), defaultWidth, defaultHeight);
+        this.splitView.show(parentElement);
+        this.splitView.addEventListener(WebInspector.SidebarView.EventTypes.Resized, this.sidebarResized.bind(this));
 
-        this.sidebarElement = document.createElement("div");
-        this.sidebarElement.className = "sidebar";
-        parentElement.appendChild(this.sidebarElement);
+        this.sidebarElement = this.splitView.sidebarElement;
+    },
 
-        this.sidebarResizeElement = document.createElement("div");
-        this.sidebarResizeElement.className = "sidebar-resizer-vertical";
-        this.sidebarResizeElement.addEventListener("mousedown", this._startSidebarDragging.bind(this), false);
-        resizerParentElement.appendChild(this.sidebarResizeElement);
+    /**
+     * @param {Element=} parentElement
+     * @param {string=} position
+     * @param {number=} defaultWidth
+     */
+    createSidebarViewWithTree: function(parentElement, position, defaultWidth)
+    {
+        if (this.splitView)
+            return;
+
+        this.createSidebarView(parentElement, position);
 
         this.sidebarTreeElement = document.createElement("ol");
         this.sidebarTreeElement.className = "sidebar-tree";
-        this.sidebarElement.appendChild(this.sidebarTreeElement);
+        this.splitView.sidebarElement.appendChild(this.sidebarTreeElement);
+        this.splitView.sidebarElement.addStyleClass("sidebar");
 
         this.sidebarTree = new TreeOutline(this.sidebarTreeElement);
         this.sidebarTree.panel = this;
@@ -326,88 +206,37 @@ WebInspector.Panel.prototype = {
         return this._panelName + "SidebarWidth";
     },
 
-    _startSidebarDragging: function(event)
+    // Should be implemented by ancestors.
+
+    get statusBarItems()
     {
-        WebInspector.elementDragStart(this.sidebarResizeElement, this._sidebarDragging.bind(this), this._endSidebarDragging.bind(this), event, "col-resize");
     },
 
-    _sidebarDragging: function(event)
+    /**
+     * @param {WebInspector.Event} event
+     */
+    sidebarResized: function(event)
     {
-        this.updateSidebarWidth(event.pageX);
-
-        event.preventDefault();
     },
 
-    _endSidebarDragging: function(event)
+    statusBarResized: function()
     {
-        WebInspector.elementDragEnd(event);
-        this.saveSidebarWidth();
     },
 
-    updateSidebarWidth: function(width)
-    {
-        if (!this.sidebarElement)
-            return;
-
-        if (this.sidebarElement.offsetWidth <= 0) {
-            // The stylesheet hasn't loaded yet or the window is closed,
-            // so we can't calculate what is need. Return early.
-            return;
-        }
-
-        if (!("_currentSidebarWidth" in this))
-            this._currentSidebarWidth = this.sidebarElement.offsetWidth;
-
-        if (typeof width === "undefined")
-            width = this._currentSidebarWidth;
-
-        width = Number.constrain(width, Preferences.minSidebarWidth, window.innerWidth / 2);
-
-        this._currentSidebarWidth = width;
-        this.setSidebarWidth(width);
-
-        this.updateMainViewWidth(width);
-    },
-
-    setSidebarWidth: function(width)
-    {
-        this.sidebarElement.style.width = width + "px";
-        this.sidebarResizeElement.style.left = (width - 3) + "px";
-    },
-
-    restoreSidebarWidth: function()
-    {
-        var sidebarWidth = WebInspector.settings[this._sidebarWidthSettingName()];
-        this.updateSidebarWidth(sidebarWidth);
-    },
-
-    saveSidebarWidth: function()
-    {
-        if (!this.sidebarElement)
-            return;
-        WebInspector.settings[this._sidebarWidthSettingName()] = this.sidebarElement.offsetWidth;
-    },
-
-    updateMainViewWidth: function(width)
-    {
-        // Should be implemented by ancestors.
-    },
-
-    resize: function()
-    {
-        var visibleView = this.visibleView;
-        if (visibleView && "resize" in visibleView)
-            visibleView.resize();
-    },
-
-    canShowSourceLine: function(url, line)
+    /**
+     * @param {Element} anchor
+     * @return {boolean}
+     */
+    canShowAnchorLocation: function(anchor)
     {
         return false;
     },
 
-    showSourceLine: function(url, line)
+    /**
+     * @param {Element} anchor
+     */
+    showAnchorLocation: function(anchor)
     {
-        return false;
     },
 
     elementsToRestoreScrollPositionsFor: function()
@@ -415,24 +244,92 @@ WebInspector.Panel.prototype = {
         return [];
     },
 
-    _storeScrollPositions: function()
+    /**
+     * @param {KeyboardEvent} event
+     */
+    handleShortcut: function(event)
     {
-        var elements = this.elementsToRestoreScrollPositionsFor();
-        for (var i = 0; i < elements.length; ++i) {
-            var container = elements[i];
-            container._scrollTop = container.scrollTop;
-        }
+        var shortcutKey = WebInspector.KeyboardShortcut.makeKeyFromEvent(event);
+        var handler = this._shortcuts[shortcutKey];
+        if (handler && handler(event))
+            event.handled = true;
     },
 
-    _restoreScrollPositions: function()
+    /**
+     * @param {!Array.<!WebInspector.KeyboardShortcut.Descriptor>} keys
+     * @param {function(Event=):boolean} handler
+     */
+    registerShortcuts: function(keys, handler)
     {
-        var elements = this.elementsToRestoreScrollPositionsFor();
-        for (var i = 0; i < elements.length; ++i) {
-            var container = elements[i];
-            if (container._scrollTop)
-                container.scrollTop = container._scrollTop;
-        }
-    }
+        for (var i = 0; i < keys.length; ++i)
+            this._shortcuts[keys[i].key] = handler;
+    },
+
+    __proto__: WebInspector.View.prototype
 }
 
-WebInspector.Panel.prototype.__proto__ = WebInspector.View.prototype;
+/**
+ * @constructor
+ * @param {string} name
+ * @param {string} title
+ * @param {string=} className
+ * @param {string=} scriptName
+ * @param {WebInspector.Panel=} panel
+ */
+WebInspector.PanelDescriptor = function(name, title, className, scriptName, panel)
+{
+    this._name = name;
+    this._title = title;
+    this._className = className;
+    this._scriptName = scriptName;
+    this._panel = panel;
+}
+
+WebInspector.PanelDescriptor.prototype = {
+    /**
+     * @return {string}
+     */
+    name: function()
+    {
+        return this._name;
+    },
+
+    /**
+     * @return {string}
+     */
+    title: function()
+    {
+        return this._title;
+    },
+
+    /**
+     * @return {string}
+     */
+    iconURL: function()
+    {
+        return this._iconURL;
+    },
+
+    /**
+     * @param {string} iconURL
+     */
+    setIconURL: function(iconURL)
+    {
+        this._iconURL = iconURL;
+    },
+
+    /**
+     * @return {WebInspector.Panel}
+     */
+    panel: function()
+    {
+        if (this._panel)
+            return this._panel;
+        if (this._scriptName)
+            loadScript(this._scriptName);
+        this._panel = new WebInspector[this._className];
+        return this._panel;
+    },
+
+    registerShortcuts: function() {}
+}

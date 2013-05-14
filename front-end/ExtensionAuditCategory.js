@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 Google Inc. All rights reserved.
+ * Copyright (C) 2012 Google Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -28,8 +28,17 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-WebInspector.ExtensionAuditCategory = function(id, displayName, ruleCount)
+/**
+ * @constructor
+ * @extends {WebInspector.AuditCategory}
+ * @param {string} extensionOrigin
+ * @param {string} id
+ * @param {string} displayName
+ * @param {number=} ruleCount
+ */
+WebInspector.ExtensionAuditCategory = function(extensionOrigin, id, displayName, ruleCount)
 {
+    this._extensionOrigin = extensionOrigin;
     this._id = id;
     this._displayName = displayName;
     this._ruleCount  = ruleCount;
@@ -47,37 +56,45 @@ WebInspector.ExtensionAuditCategory.prototype = {
         return this._displayName;
     },
 
-    get ruleCount()
+    /**
+     * @param {Array.<WebInspector.NetworkRequest>} requests
+     * @param {function(WebInspector.AuditRuleResult)} ruleResultCallback
+     * @param {function()} categoryDoneCallback
+     * @param {WebInspector.Progress} progress
+     */
+    run: function(requests, ruleResultCallback, categoryDoneCallback, progress)
     {
-        return this._ruleCount;
-    },
-
-    run: function(resources, callback)
-    {
-        new WebInspector.ExtensionAuditCategoryResults(this, callback);
+        var results = new WebInspector.ExtensionAuditCategoryResults(this, ruleResultCallback, categoryDoneCallback, progress);
+        WebInspector.extensionServer.startAuditRun(this, results);
     }
 }
 
-WebInspector.ExtensionAuditCategoryResults = function(category, callback)
+/**
+ * @constructor
+ * @param {WebInspector.ExtensionAuditCategory} category
+ * @param {function(WebInspector.AuditRuleResult)} ruleResultCallback
+ * @param {function()} categoryDoneCallback
+ * @param {WebInspector.Progress} progress
+ */
+WebInspector.ExtensionAuditCategoryResults = function(category, ruleResultCallback, categoryDoneCallback, progress)
 {
     this._category = category;
-    this._pendingRules = category.ruleCount;
-    this._ruleCompletionCallback = callback;
+    this._ruleResultCallback = ruleResultCallback;
+    this._categoryDoneCallback = categoryDoneCallback;
+    this._progress = progress;
+    this._progress.setTotalWork(1);
+    this._expectedResults = category._ruleCount;
+    this._actualResults = 0;
 
     this.id = category.id + "-" + ++WebInspector.ExtensionAuditCategoryResults._lastId;
-    WebInspector.extensionServer.startAuditRun(category, this);
 }
 
 WebInspector.ExtensionAuditCategoryResults.prototype = {
-    get complete()
+    done: function()
     {
-        return !this._pendingRules;
-    },
-
-    cancel: function()
-    {
-        while (!this.complete)
-            this._addResult(null);
+        WebInspector.extensionServer.stopAuditRun(this);
+        this._progress.done();
+        this._categoryDoneCallback();
     },
 
     addResult: function(displayName, description, severity, details)
@@ -92,7 +109,8 @@ WebInspector.ExtensionAuditCategoryResults.prototype = {
 
     _addNode: function(parent, node)
     {
-        var addedNode = parent.addChild(node.contents, node.expanded);
+        var contents = WebInspector.auditFormatters.partiallyApply(WebInspector.ExtensionAuditFormatters, this, node.contents);
+        var addedNode = parent.addChild(contents, node.expanded);
         if (node.children) {
             for (var i = 0; i < node.children.length; ++i)
                 this._addNode(addedNode, node.children[i]);
@@ -101,10 +119,96 @@ WebInspector.ExtensionAuditCategoryResults.prototype = {
 
     _addResult: function(result)
     {
-        this._ruleCompletionCallback(result);
-        this._pendingRules--;
-        if (!this._pendingRules)
-            WebInspector.extensionServer.stopAuditRun(this);
+        this._ruleResultCallback(result);
+        ++this._actualResults;
+        if (typeof this._expectedResults === "number") {
+            this._progress.setWorked(this._actualResults / this._expectedResults);
+            if (this._actualResults === this._expectedResults)
+                this.done();
+        }
+    },
+
+    /**
+     * @param {number} progress
+     */
+    updateProgress: function(progress)
+    {
+        this._progress.setWorked(progress);
+    },
+
+    /**
+     * @param {string} expression
+     * @param {function(WebInspector.RemoteObject)} callback
+     */
+    evaluate: function(expression, evaluateOptions, callback)
+    {
+        /**
+         * @param {?string} error
+         * @param {?RuntimeAgent.RemoteObject} result
+         * @param {boolean=} wasThrown
+         */
+        function onEvaluate(error, result, wasThrown)
+        {
+            if (wasThrown)
+                return;
+            var object = WebInspector.RemoteObject.fromPayload(result);
+            callback(object);
+        }
+        WebInspector.extensionServer.evaluate(expression, false, false, evaluateOptions, this._category._extensionOrigin, onEvaluate);
+    }
+}
+
+WebInspector.ExtensionAuditFormatters = {
+    /**
+     * @this {WebInspector.ExtensionAuditCategoryResults}
+     * @param {string} expression
+     * @param {string} title
+     * @param {Object} evaluateOptions
+     */
+    object: function(expression, title, evaluateOptions)
+    {
+        var parentElement = document.createElement("div");
+        function onEvaluate(remoteObject)
+        {
+            var section = new WebInspector.ObjectPropertiesSection(remoteObject, title);
+            section.expanded = true;
+            section.editable = false;
+            parentElement.appendChild(section.element);
+        }
+        this.evaluate(expression, evaluateOptions, onEvaluate);
+        return parentElement;
+    },
+
+    /**
+     * @this {WebInspector.ExtensionAuditCategoryResults}
+     * @param {string} expression
+     * @param {Object} evaluateOptions
+     */
+    node: function(expression, evaluateOptions)
+    {
+        var parentElement = document.createElement("div");
+        /**
+         * @param {?number} nodeId
+         */
+        function onNodeAvailable(nodeId)
+        {
+            if (!nodeId)
+                return;
+            var treeOutline = new WebInspector.ElementsTreeOutline(false, false, true);
+            treeOutline.rootDOMNode = WebInspector.domAgent.nodeForId(nodeId);
+            treeOutline.element.addStyleClass("outline-disclosure");
+            treeOutline.setVisible(true);
+            parentElement.appendChild(treeOutline.element);
+        }
+        /**
+         * @param {WebInspector.RemoteObject} remoteObject
+         */
+        function onEvaluate(remoteObject)
+        {
+            remoteObject.pushNodeToFrontend(onNodeAvailable);
+        }
+        this.evaluate(expression, evaluateOptions, onEvaluate);
+        return parentElement;
     }
 }
 

@@ -26,23 +26,27 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-WebInspector.Database = function(id, domain, name, version)
+/**
+ * @constructor
+ * @param {WebInspector.DatabaseModel} model
+ */
+WebInspector.Database = function(model, id, domain, name, version)
 {
+    this._model = model;
     this._id = id;
     this._domain = domain;
     this._name = name;
     this._version = version;
 }
 
-WebInspector.Database.successCallbacks = {};
-WebInspector.Database.errorCallbacks = {};
-
 WebInspector.Database.prototype = {
+    /** @return {string} */
     get id()
     {
         return this._id;
     },
 
+    /** @return {string} */
     get name()
     {
         return this._name;
@@ -53,6 +57,7 @@ WebInspector.Database.prototype = {
         this._name = x;
     },
 
+    /** @return {string} */
     get version()
     {
         return this._version;
@@ -63,6 +68,7 @@ WebInspector.Database.prototype = {
         this._version = x;
     },
 
+    /** @return {string} */
     get domain()
     {
         return this._domain;
@@ -73,49 +79,129 @@ WebInspector.Database.prototype = {
         this._domain = x;
     },
 
-    get displayDomain()
-    {
-        return WebInspector.Resource.prototype.__lookupGetter__("displayDomain").call(this);
-    },
-
+    /**
+     * @param {function(Array.<string>)} callback
+     */
     getTableNames: function(callback)
     {
-        function sortingCallback(names)
+        function sortingCallback(error, names)
         {
-            callback(names.sort());
+            if (!error)
+                callback(names.sort());
         }
-        InspectorBackend.getDatabaseTableNames(this._id, sortingCallback);
+        DatabaseAgent.getDatabaseTableNames(this._id, sortingCallback);
     },
-    
+
+    /**
+     * @param {string} query
+     * @param {function(Array.<string>=, Array.<*>=)} onSuccess
+     * @param {function(string)} onError
+     */
     executeSql: function(query, onSuccess, onError)
     {
-        function callback(success, transactionId)
+        /**
+         * @param {?Protocol.Error} error
+         * @param {Array.<string>=} columnNames
+         * @param {Array.<*>=} values
+         * @param {DatabaseAgent.Error=} errorObj
+         */
+        function callback(error, columnNames, values, errorObj)
         {
-            if (!success) {
-                onError(WebInspector.UIString("Database not found."));
+            if (error) {
+                onError(error);
                 return;
             }
-            WebInspector.Database.successCallbacks[transactionId] = onSuccess;
-            WebInspector.Database.errorCallbacks[transactionId] = onError;
+            if (errorObj) {
+                var message;
+                if (errorObj.message)
+                    message = errorObj.message;
+                else if (errorObj.code == 2)
+                    message = WebInspector.UIString("Database no longer has expected version.");
+                else
+                    message = WebInspector.UIString("An unexpected error %s occurred.", errorObj.code);
+                onError(message);
+                return;
+            }
+            onSuccess(columnNames, values);
         }
-        InspectorBackend.executeSQL(this._id, query, callback);
+        DatabaseAgent.executeSQL(this._id, query, callback.bind(this));
     }
 }
 
-WebInspector.sqlTransactionSucceeded = function(transactionId, columnNames, values)
+/**
+ * @constructor
+ * @extends {WebInspector.Object}
+ */
+WebInspector.DatabaseModel = function()
 {
-    var callback = WebInspector.Database.successCallbacks[transactionId];
-    if (!callback)
-        return;
-    delete WebInspector.Database.successCallbacks[transactionId];
-    callback(columnNames, values);
+    this._databases = [];
+    InspectorBackend.registerDatabaseDispatcher(new WebInspector.DatabaseDispatcher(this));
+    DatabaseAgent.enable();
 }
 
-WebInspector.sqlTransactionFailed = function(transactionId, errorObj)
-{
-    var callback = WebInspector.Database.errorCallbacks[transactionId];
-    if (!callback)
-        return;
-    delete WebInspector.Database.errorCallbacks[transactionId];
-    callback(errorObj);
+WebInspector.DatabaseModel.Events = {
+    DatabaseAdded: "DatabaseAdded"
 }
+
+WebInspector.DatabaseModel.prototype = {
+    /**
+     * @return {Array.<WebInspector.Database>}
+     */
+    databases: function()
+    {
+        var result = [];
+        for (var databaseId in this._databases)
+            result.push(this._databases[databaseId]);
+        return result;
+    },
+
+    /**
+     * @param {DatabaseAgent.DatabaseId} databaseId
+     * @return {WebInspector.Database}
+     */
+    databaseForId: function(databaseId)
+    {
+        return this._databases[databaseId];
+    },
+
+    /**
+     * @param {WebInspector.Database} database
+     */
+    _addDatabase: function(database)
+    {
+        this._databases.push(database);
+        this.dispatchEventToListeners(WebInspector.DatabaseModel.Events.DatabaseAdded, database);
+    },
+
+    __proto__: WebInspector.Object.prototype
+}
+
+/**
+ * @constructor
+ * @implements {DatabaseAgent.Dispatcher}
+ * @param {WebInspector.DatabaseModel} model
+ */
+WebInspector.DatabaseDispatcher = function(model)
+{
+    this._model = model;
+}
+
+WebInspector.DatabaseDispatcher.prototype = {
+    /**
+     * @param {DatabaseAgent.Database} payload
+     */
+    addDatabase: function(payload)
+    {
+        this._model._addDatabase(new WebInspector.Database(
+            this._model,
+            payload.id,
+            payload.domain,
+            payload.name,
+            payload.version));
+    }
+}
+
+/**
+ * @type {WebInspector.DatabaseModel}
+ */
+WebInspector.databaseModel = null;

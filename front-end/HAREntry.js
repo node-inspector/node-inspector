@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 Google Inc. All rights reserved.
+ * Copyright (C) 2012 Google Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -31,71 +31,96 @@
 // See http://groups.google.com/group/http-archive-specification/web/har-1-2-spec
 // for HAR specification.
 
-WebInspector.HAREntry = function(resource)
+// FIXME: Some fields are not yet supported due to back-end limitations.
+// See https://bugs.webkit.org/show_bug.cgi?id=58127 for details.
+
+/**
+ * @constructor
+ * @param {WebInspector.NetworkRequest} request
+ */
+WebInspector.HAREntry = function(request)
 {
-    this._resource = resource;
+    this._request = request;
 }
 
 WebInspector.HAREntry.prototype = {
+    /**
+     * @return {Object}
+     */
     build: function()
     {
-        return {
-            pageref: this._resource.documentURL,
-            startedDateTime: new Date(this._resource.startTime * 1000),
-            time: WebInspector.HAREntry._toMilliseconds(this._resource.duration),
+        var entry =  {
+            startedDateTime: new Date(this._request.startTime * 1000),
+            time: WebInspector.HAREntry._toMilliseconds(this._request.duration),
             request: this._buildRequest(),
             response: this._buildResponse(),
-            // cache: {...}, -- Not supproted yet.
+            cache: { }, // Not supported yet.
             timings: this._buildTimings()
         };
+        var page = WebInspector.networkLog.pageLoadForRequest(this._request);
+        if (page)
+            entry.pageref = "page_" + page.id;
+        return entry;
     },
 
+    /**
+     * @return {Object}
+     */
     _buildRequest: function()
     {
         var res = {
-            method: this._resource.requestMethod,
-            url: this._resource.url,
-            // httpVersion: "HTTP/1.1" -- Not available.
-            headers: this._buildHeaders(this._resource.requestHeaders),
-            headersSize: -1, // Not available.
-            bodySize: -1 // Not available.
+            method: this._request.requestMethod,
+            url: this._buildRequestURL(this._request.url),
+            httpVersion: this._request.requestHttpVersion,
+            headers: this._request.requestHeaders,
+            queryString: this._buildParameters(this._request.queryParameters || []),
+            cookies: this._buildCookies(this._request.requestCookies || []),
+            headersSize: this._request.requestHeadersSize,
+            bodySize: this.requestBodySize
         };
-        if (this._resource.queryParameters)
-            res.queryString = this._buildParameters(this._resource.queryParameters);
-        if (this._resource.requestFormData)
+        if (this._request.requestFormData)
             res.postData = this._buildPostData();
-        if (this._resource.requestCookies)
-            res.cookies = this._buildCookies(this._resource.requestCookies);
+
         return res;
     },
 
+    /**
+     * @return {Object}
+     */
     _buildResponse: function()
     {
-        var res = {
-            status: this._resource.statusCode,
-            statusText: this._resource.statusText,
-            // "httpVersion": "HTTP/1.1" -- Not available.
-            headers: this._buildHeaders(this._resource.responseHeaders),
+        return {
+            status: this._request.statusCode,
+            statusText: this._request.statusText,
+            httpVersion: this._request.responseHttpVersion,
+            headers: this._request.responseHeaders,
+            cookies: this._buildCookies(this._request.responseCookies || []),
             content: this._buildContent(),
-            redirectURL: this._resource.responseHeaderValue("Location") || "",
-            headersSize: -1, // Not available.
-            bodySize: this._resource.resourceSize
+            redirectURL: this._request.responseHeaderValue("Location") || "",
+            headersSize: this._request.responseHeadersSize,
+            bodySize: this.responseBodySize
         };
-        if (this._resource.responseCookies)
-            res.cookies = this._buildCookies(this._resource.responseCookies);
-        return res;
     },
 
+    /**
+     * @return {Object}
+     */
     _buildContent: function()
     {
-        return {
-            size: this._resource.resourceSize,
-            // compression: 0, -- Not available.
-            mimeType: this._resource.mimeType,
-            // text: -- Not available.
+        var content = {
+            size: this._request.resourceSize,
+            mimeType: this._request.mimeType,
+            // text: this._request.content // TODO: pull out into a boolean flag, as content can be huge (and needs to be requested with an async call)
         };
+        var compression = this.responseCompression;
+        if (typeof compression === "number")
+            content.compression = compression;
+        return content;
     },
 
+    /**
+     * @return {Object}
+     */
     _buildTimings: function()
     {
         var waitForConnection = this._interval("connectStart", "connectEnd");
@@ -108,7 +133,7 @@ WebInspector.HAREntry.prototype = {
         if (ssl !== -1 && send !== -1)
             send -= ssl;
 
-        if (this._resource.connectionReused) {
+        if (this._request.connectionReused) {
             connect = -1;
             blocked = waitForConnection;
         } else {
@@ -124,123 +149,291 @@ WebInspector.HAREntry.prototype = {
             connect: connect,
             send: send,
             wait: this._interval("sendEnd", "receiveHeadersEnd"),
-            receive: WebInspector.HAREntry._toMilliseconds(this._resource.receiveDuration),
+            receive: WebInspector.HAREntry._toMilliseconds(this._request.receiveDuration),
             ssl: ssl
         };
     },
 
-    _buildHeaders: function(headers)
-    {
-        var result = [];
-        for (var name in headers)
-            result.push({ name: name, value: headers[name] });
-        return result;
-    },
-
+    /**
+     * @return {Object}
+     */
     _buildPostData: function()
     {
         var res = {
-            mimeType: this._resource.requestHeaderValue("Content-Type"),
-            text: this._resource.requestFormData
+            mimeType: this._request.requestHeaderValue("Content-Type"),
+            text: this._request.requestFormData
         };
-        if (this._resource.formParameters)
-           res.params = this._buildParameters(this._resource.formParameters);
+        if (this._request.formParameters)
+            res.params = this._buildParameters(this._request.formParameters);
         return res;
     },
 
+    /**
+     * @param {Array.<Object>} parameters
+     * @return {Array.<Object>}
+     */
     _buildParameters: function(parameters)
     {
         return parameters.slice();
     },
 
+    /**
+     * @param {string} url
+     * @return {string}
+     */
+    _buildRequestURL: function(url)
+    {
+        return url.split("#", 2)[0];
+    },
+
+    /**
+     * @param {Array.<WebInspector.Cookie>} cookies
+     * @return {Array.<Object>}
+     */
     _buildCookies: function(cookies)
     {
         return cookies.map(this._buildCookie.bind(this));
     },
 
+    /**
+     * @param {WebInspector.Cookie} cookie
+     * @return {Object}
+     */
     _buildCookie: function(cookie)
     {
-        
         return {
-            name: cookie.name,
-            value: cookie.value,
-            path: cookie.path,
-            domain: cookie.domain,
-            expires: cookie.expires(new Date(this._resource.startTime * 1000)),
-            httpOnly: cookie.httpOnly,
-            secure: cookie.secure
+            name: cookie.name(),
+            value: cookie.value(),
+            path: cookie.path(),
+            domain: cookie.domain(),
+            expires: cookie.expiresDate(new Date(this._request.startTime * 1000)),
+            httpOnly: cookie.httpOnly(),
+            secure: cookie.secure()
         };
     },
 
+    /**
+     * @param {string} start
+     * @param {string} end
+     * @return {number}
+     */
     _interval: function(start, end)
     {
-        var timing = this._resource.timing;
+        var timing = this._request.timing;
         if (!timing)
             return -1;
         var startTime = timing[start];
         return typeof startTime !== "number" || startTime === -1 ? -1 : Math.round(timing[end] - startTime);
+    },
+
+    /**
+     * @return {number}
+     */
+    get requestBodySize()
+    {
+        return !this._request.requestFormData ? 0 : this._request.requestFormData.length;
+    },
+
+    /**
+     * @return {number}
+     */
+    get responseBodySize()
+    {
+        if (this._request.cached || this._request.statusCode === 304)
+            return 0;
+        return this._request.transferSize - this._request.responseHeadersSize
+    },
+
+    /**
+     * @return {number|undefined}
+     */
+    get responseCompression()
+    {
+        if (this._request.cached || this._request.statusCode === 304)
+            return;
+        return this._request.resourceSize - (this._request.transferSize - this._request.responseHeadersSize);
     }
 }
 
+/**
+ * @param {number} time
+ * @return {number}
+ */
 WebInspector.HAREntry._toMilliseconds = function(time)
 {
     return time === -1 ? -1 : Math.round(time * 1000);
 }
 
-WebInspector.HARLog = function()
+/**
+ * @constructor
+ * @param {Array.<WebInspector.NetworkRequest>} requests
+ */
+WebInspector.HARLog = function(requests)
 {
-    this.includeResourceIds = false;
+    this._requests = requests;
 }
 
 WebInspector.HARLog.prototype = {
+    /**
+     * @return {Object}
+     */
     build: function()
     {
-        var webKitVersion = /AppleWebKit\/([^ ]+)/.exec(window.navigator.userAgent);
-        
         return {
             version: "1.2",
-            creator: {
-                name: "WebInspector",
-                version: webKitVersion ? webKitVersion[1] : "n/a"
-            },
+            creator: this._creator(),
             pages: this._buildPages(),
-            entries: Object.keys(WebInspector.networkResources).map(this._convertResource.bind(this))
+            entries: this._requests.map(this._convertResource.bind(this))
         }
     },
 
+    _creator: function()
+    {
+        var webKitVersion = /AppleWebKit\/([^ ]+)/.exec(window.navigator.userAgent);
+
+        return {
+            name: "WebInspector",
+            version: webKitVersion ? webKitVersion[1] : "n/a"
+        };
+    },
+
+    /**
+     * @return {Array}
+     */
     _buildPages: function()
     {
-        return [
-            {
-                startedDateTime: new Date(WebInspector.mainResource.startTime * 1000),
-                id: WebInspector.mainResource.documentURL,
-                title: "",
-                pageTimings: this.buildMainResourceTimings()
-            }
-        ];
+        var seenIdentifiers = {};
+        var pages = [];
+        for (var i = 0; i < this._requests.length; ++i) {
+            var page = WebInspector.networkLog.pageLoadForRequest(this._requests[i]);
+            if (!page || seenIdentifiers[page.id])
+                continue;
+            seenIdentifiers[page.id] = true;
+            pages.push(this._convertPage(page));
+        }
+        return pages;
     },
 
-    buildMainResourceTimings: function()
+    /**
+     * @param {WebInspector.PageLoad} page
+     * @return {Object}
+     */
+    _convertPage: function(page)
     {
         return {
-             onContentLoad: this._pageEventTime(WebInspector.mainResourceDOMContentTime),
-             onLoad: this._pageEventTime(WebInspector.mainResourceLoadTime),
+            startedDateTime: new Date(page.startTime * 1000),
+            id: "page_" + page.id,
+            title: page.url, // We don't have actual page title here. URL is probably better than nothing.
+            pageTimings: {
+                onContentLoad: this._pageEventTime(page, page.contentLoadTime),
+                onLoad: this._pageEventTime(page, page.loadTime)
+            }
         }
     },
 
-    _convertResource: function(id)
+    /**
+     * @param {WebInspector.NetworkRequest} request
+     * @return {Object}
+     */
+    _convertResource: function(request)
     {
-        var entry = (new WebInspector.HAREntry(WebInspector.networkResources[id])).build();
-        if (this.includeResourceIds)
-            entry._resourceId = id;
-        return entry;
+        return (new WebInspector.HAREntry(request)).build();
     },
 
-    _pageEventTime: function(time)
+    /**
+     * @param {WebInspector.PageLoad} page
+     * @param {number} time
+     * @return {number}
+     */
+    _pageEventTime: function(page, time)
     {
-        var startTime = WebInspector.mainResource.startTime;
+        var startTime = page.startTime;
         if (time === -1 || startTime === -1)
             return -1;
         return WebInspector.HAREntry._toMilliseconds(time - startTime);
+    }
+}
+
+/**
+ * @constructor
+ */
+WebInspector.HARWriter = function()
+{
+}
+
+WebInspector.HARWriter.prototype = {
+    /**
+     * @param {WebInspector.OutputStream} stream
+     * @param {Array.<WebInspector.NetworkRequest>} requests
+     * @param {WebInspector.Progress} progress
+     */
+    write: function(stream, requests, progress)
+    {
+        this._stream = stream;
+        this._harLog = (new WebInspector.HARLog(requests)).build();
+        this._pendingRequests = 1; // Guard against completing resource transfer before all requests are made.
+        var entries = this._harLog.entries;
+        for (var i = 0; i < entries.length; ++i) {
+            var content = requests[i].content;
+            if (typeof content === "undefined" && requests[i].finished) {
+                ++this._pendingRequests;
+                requests[i].requestContent(this._onContentAvailable.bind(this, entries[i]));
+            } else if (content !== null)
+                entries[i].response.content.text = content;
+        }
+        var compositeProgress = new WebInspector.CompositeProgress(progress);
+        this._writeProgress = compositeProgress.createSubProgress();
+        if (--this._pendingRequests) {
+            this._requestsProgress = compositeProgress.createSubProgress();
+            this._requestsProgress.setTitle(WebInspector.UIString("Collecting content…"));
+            this._requestsProgress.setTotalWork(this._pendingRequests);
+        } else
+            this._beginWrite();
+    },
+
+    /**
+     * @param {Object} entry
+     * @param {string|null} content
+     * @param {boolean} contentEncoded
+     * @param {string=} mimeType
+     */
+    _onContentAvailable: function(entry, content, contentEncoded, mimeType)
+    {
+        if (content !== null)
+            entry.response.content.text = content;
+        if (this._requestsProgress)
+            this._requestsProgress.worked();
+        if (!--this._pendingRequests) {
+            this._requestsProgress.done();
+            this._beginWrite();
+        }
+    },
+
+    _beginWrite: function()
+    {
+        const jsonIndent = 2;
+        this._text = JSON.stringify({log: this._harLog}, null, jsonIndent);
+        this._writeProgress.setTitle(WebInspector.UIString("Writing file…"));
+        this._writeProgress.setTotalWork(this._text.length);
+        this._bytesWritten = 0;
+        this._writeNextChunk(this._stream);
+    },
+
+    /**
+     * @param {WebInspector.OutputStream} stream
+     * @param {string=} error
+     */
+    _writeNextChunk: function(stream, error)
+    {
+        if (this._bytesWritten >= this._text.length || error) {
+            stream.close();
+            this._writeProgress.done();
+            return;
+        }
+        const chunkSize = 100000;
+        var text = this._text.substring(this._bytesWritten, this._bytesWritten + chunkSize);
+        this._bytesWritten += text.length;
+        stream.write(text, this._writeNextChunk.bind(this));
+        this._writeProgress.setWorked(this._bytesWritten);
     }
 }

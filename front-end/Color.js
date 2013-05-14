@@ -27,172 +27,159 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-WebInspector.Color = function(str)
+/**
+ * @param {Array.<number>} rgba
+ * @param {string=} format
+ * @param {string=} originalText
+ * @constructor
+ */
+WebInspector.Color = function(rgba, format, originalText)
 {
-    this.value = str;
-    this._parse();
+    this._rgba = rgba;
+    this._originalText = originalText || null;
+    this._format = format || null;
+    if (typeof this._rgba[3] === "undefined")
+        this._rgba[3] = 1;
+    for (var i = 0; i < 4; ++i) {
+        if (this._rgba[i] < 0)
+            this._rgba[i] = 0;
+        if (this._rgba[i] > 1)
+            this._rgba[i] = 1;
+    }
+}
+
+/**
+ * @param {string} text
+ * @return {?WebInspector.Color}
+ */
+WebInspector.Color.parse = function(text)
+{
+    // Simple - #hex, rgb(), nickname, hsl()
+    var value = text.toLowerCase().replace(/\s+/g, "");
+    var simple = /^(?:#([0-9a-f]{3,6})|rgb\(([^)]+)\)|(\w+)|hsl\(([^)]+)\))$/i;
+    var match = value.match(simple);
+    if (match) {
+        if (match[1]) { // hex
+            var hex = match[1].toUpperCase();
+            var format;
+            if (hex.length === 3) {
+                format = WebInspector.Color.Format.ShortHEX;
+                hex = hex.charAt(0) + hex.charAt(0) + hex.charAt(1) + hex.charAt(1) + hex.charAt(2) + hex.charAt(2);
+            } else
+                format = WebInspector.Color.Format.HEX;
+            var r = parseInt(hex.substring(0,2), 16);
+            var g = parseInt(hex.substring(2,4), 16);
+            var b = parseInt(hex.substring(4,6), 16);
+            return new WebInspector.Color([r / 255, g / 255, b / 255, 1], format, text);
+        }
+
+        if (match[2]) { // rgb
+            var rgbString = match[2].split(/\s*,\s*/);
+            var rgba = [ WebInspector.Color._parseRgbNumeric(rgbString[0]),
+                         WebInspector.Color._parseRgbNumeric(rgbString[1]),
+                         WebInspector.Color._parseRgbNumeric(rgbString[2]), 1 ];
+            return new WebInspector.Color(rgba, WebInspector.Color.Format.RGB, text);
+        }
+
+        if (match[3]) { // nickname
+            var nickname = match[3].toLowerCase();
+            if (nickname in WebInspector.Color.Nicknames) {
+                var rgba = WebInspector.Color.Nicknames[nickname];
+                var color = WebInspector.Color.fromRGBA(rgba);
+                color._format = WebInspector.Color.Format.Nickname;
+                color._originalText = nickname;
+                return color;
+            }
+            return null;
+        }
+
+        if (match[4]) { // hsl
+            var hslString = match[4].replace(/%/g, "").split(/\s*,\s*/);
+            var hsla = [ WebInspector.Color._parseHueNumeric(hslString[0]),
+                         WebInspector.Color._parseSatLightNumeric(hslString[1]),
+                         WebInspector.Color._parseSatLightNumeric(hslString[2]), 1 ];
+            var rgba = WebInspector.Color._hsl2rgb(hsla);
+            return new WebInspector.Color(rgba, WebInspector.Color.Format.HSL, text);
+        }
+
+        return null;
+    }
+
+    // Advanced - rgba(), hsla()
+    var advanced = /^(?:rgba\(([^)]+)\)|hsla\(([^)]+)\))$/;
+    match = value.match(advanced);
+    if (match) {
+        if (match[1]) { // rgba
+            var rgbaString = match[1].split(/\s*,\s*/);
+            var rgba = [ WebInspector.Color._parseRgbNumeric(rgbaString[0]),
+                         WebInspector.Color._parseRgbNumeric(rgbaString[1]),
+                         WebInspector.Color._parseRgbNumeric(rgbaString[2]),
+                         WebInspector.Color._parseAlphaNumeric(rgbaString[3]) ];
+            return new WebInspector.Color(rgba, WebInspector.Color.Format.RGBA, text);
+        }
+
+        if (match[2]) { // hsla
+            var hslaString = match[2].replace(/%/g, "").split(/\s*,\s*/);
+            var hsla = [ WebInspector.Color._parseHueNumeric(hslaString[0]),
+                         WebInspector.Color._parseSatLightNumeric(hslaString[1]),
+                         WebInspector.Color._parseSatLightNumeric(hslaString[2]),
+                         WebInspector.Color._parseAlphaNumeric(hslaString[3]) ];
+            var rgba = WebInspector.Color._hsl2rgb(hsla);
+            return new WebInspector.Color(rgba, WebInspector.Color.Format.HSLA, text);
+        }
+    }
+
+    return null;
+}
+
+/**
+ * @param {Array.<number>} rgba
+ * @return {WebInspector.Color}
+ */
+WebInspector.Color.fromRGBA = function(rgba)
+{
+    return new WebInspector.Color([rgba[0] / 255, rgba[1] / 255, rgba[2] / 255, rgba[3]]);
+}
+
+/**
+ * @param {Array.<number>} hsva
+ * @return {WebInspector.Color}
+ */
+WebInspector.Color.fromHSVA = function(hsva)
+{
+    var h = hsva[0];
+    var s = hsva[1];
+    var v = hsva[2];
+
+    var t = (2 - s) * v;
+    if (v === 0 || s === 0)
+        s = 0;
+    else
+        s *= v / (t < 1 ? t : 2 - t);
+    var hsla = [h, s, t / 2, hsva[3]];
+
+    return new WebInspector.Color(WebInspector.Color._hsl2rgb(hsla), WebInspector.Color.Format.HSLA);
 }
 
 WebInspector.Color.prototype = {
-    get shorthex()
+    /**
+     * @return {?string}
+     */
+    format: function()
     {
-        if ("_short" in this)
-            return this._short;
-
-        if (!this.simple)
-            return null;
-
-        var hex = this.hex;
-        if (hex.charAt(0) === hex.charAt(1) && hex.charAt(2) === hex.charAt(3) && hex.charAt(4) === hex.charAt(5))
-            this._short = hex.charAt(0) + hex.charAt(2) + hex.charAt(4);
-        else
-            this._short = hex;
-
-        return this._short;
+        return this._format;
     },
 
-    get hex()
+    /**
+     * @return {Array.<number>} HSLA with components within [0..1]
+     */
+    hsla: function()
     {
-        if (!this.simple)
-            return null;
-
-        return this._hex;
-    },
-
-    set hex(x)
-    {
-        this._hex = x;
-    },
-
-    get rgb()
-    {
-        if ("_rgb" in this)
-            return this._rgb;
-
-        if (this.simple)
-            this._rgb = this._hexToRGB(this.hex);
-        else {
-            var rgba = this.rgba;
-            this._rgb = [rgba[0], rgba[1], rgba[2]];
-        }
-
-        return this._rgb;
-    },
-
-    set rgb(x)
-    {
-        this._rgb = x;
-    },
-
-    get hsl()
-    {
-        if ("_hsl" in this)
-            return this._hsl;
-
-        this._hsl = this._rgbToHSL(this.rgb);
-        return this._hsl;
-    },
-
-    set hsl(x)
-    {
-        this._hsl = x;
-    },
-
-    get nickname()
-    {
-        if (typeof this._nickname !== "undefined") // would be set on parse if there was a nickname
-            return this._nickname;
-        else
-            return null;
-    },
-
-    set nickname(x)
-    {
-        this._nickname = x;
-    },
-
-    get rgba()
-    {
-        return this._rgba;
-    },
-
-    set rgba(x)
-    {
-        this._rgba = x;
-    },
-
-    get hsla()
-    {
-        return this._hsla;
-    },
-
-    set hsla(x)
-    {
-        this._hsla = x;
-    },
-
-    hasShortHex: function()
-    {
-        var shorthex = this.shorthex;
-        return (shorthex && shorthex.length === 3);
-    },
-
-    toString: function(format)
-    {
-        if (!format)
-            format = this.format;
-
-        switch (format) {
-            case "rgb":
-                return "rgb(" + this.rgb.join(", ") + ")";
-            case "rgba":
-                return "rgba(" + this.rgba.join(", ") + ")";
-            case "hsl":
-                var hsl = this.hsl;
-                return "hsl(" + hsl[0] + ", " + hsl[1] + "%, " + hsl[2] + "%)";
-            case "hsla":
-                var hsla = this.hsla;
-                return "hsla(" + hsla[0] + ", " + hsla[1] + "%, " + hsla[2] + "%, " + hsla[3] + ")";
-            case "hex":
-                return "#" + this.hex;
-            case "shorthex":
-                return "#" + this.shorthex;
-            case "nickname":
-                return this.nickname;
-        }
-
-        throw "invalid color format";
-    },
-
-    _rgbToHex: function(rgb)
-    {
-        var r = parseInt(rgb[0]).toString(16);
-        var g = parseInt(rgb[1]).toString(16);
-        var b = parseInt(rgb[2]).toString(16);
-        if (r.length === 1)
-            r = "0" + r;
-        if (g.length === 1)
-            g = "0" + g;
-        if (b.length === 1)
-            b = "0" + b;
-
-        return (r + g + b).toUpperCase();
-    },
-
-    _hexToRGB: function(hex)
-    {
-        var r = parseInt(hex.substring(0,2), 16);
-        var g = parseInt(hex.substring(2,4), 16);
-        var b = parseInt(hex.substring(4,6), 16);
-
-        return [r, g, b];
-    },
-
-    _rgbToHSL: function(rgb)
-    {
-        var r = parseInt(rgb[0]) / 255;
-        var g = parseInt(rgb[1]) / 255;
-        var b = parseInt(rgb[2]) / 255;
+        if (this._hsla)
+            return this._hsla;
+        var r = this._rgba[0];
+        var g = this._rgba[1];
+        var b = this._rgba[2];
         var max = Math.max(r, g, b);
         var min = Math.min(r, g, b);
         var diff = max - min;
@@ -201,11 +188,11 @@ WebInspector.Color.prototype = {
         if (min === max)
             var h = 0;
         else if (r === max)
-            var h = ((60 * (g - b) / diff) + 360) % 360;
+            var h = ((1/6 * (g - b) / diff) + 1) % 1;
         else if (g === max)
-            var h = (60 * (b - r) / diff) + 120;
+            var h = (1/6 * (b - r) / diff) + 1/3;
         else
-            var h = (60 * (r - g) / diff) + 240;
+            var h = (1/6 * (r - g) / diff) + 2/3;
 
         var l = 0.5 * add;
 
@@ -218,444 +205,407 @@ WebInspector.Color.prototype = {
         else
             var s = diff / (2 - add);
 
-        h = Math.round(h);
-        s = Math.round(s*100);
-        l = Math.round(l*100);
-
-        return [h, s, l];
+        this._hsla = [h, s, l, this._rgba[3]];
+        return this._hsla;
     },
 
-    _hslToRGB: function(hsl)
+    /**
+     * @return {Array.<number>} HSVA with components within [0..1]
+     */
+    hsva: function()
     {
-        var h = parseFloat(hsl[0]) / 360;
-        var s = parseFloat(hsl[1]) / 100;
-        var l = parseFloat(hsl[2]) / 100;
+        var hsla = this.hsla();
+        var h = hsla[0];
+        var s = hsla[1];
+        var l = hsla[2];
 
-        if (l <= 0.5)
-            var q = l * (1 + s);
-        else
-            var q = l + s - (l * s);
+        s *= l < 0.5 ? l : 1 - l;
+        return [h, s !== 0 ? 2 * s / (l + s) : 0, (l + s), hsla[3]];
+    },
 
-        var p = 2 * l - q;
+    /**
+     * @return {boolean}
+     */
+    hasAlpha: function()
+    {
+        return this._rgba[3] !== 1;
+    },
 
-        var tr = h + (1 / 3);
-        var tg = h;
-        var tb = h - (1 / 3);
-
-        var r = Math.round(hueToRGB(p, q, tr) * 255);
-        var g = Math.round(hueToRGB(p, q, tg) * 255);
-        var b = Math.round(hueToRGB(p, q, tb) * 255);
-        return [r, g, b];
-
-        function hueToRGB(p, q, h) {
-            if (h < 0)
-                h += 1;
-            else if (h > 1)
-                h -= 1;
-
-            if ((h * 6) < 1)
-                return p + (q - p) * h * 6;
-            else if ((h * 2) < 1)
-                return q;
-            else if ((h * 3) < 2)
-                return p + (q - p) * ((2 / 3) - h) * 6;
-            else
-                return p;
+    /**
+     * @return {boolean}
+     */
+    canBeShortHex: function()
+    {
+        if (this.hasAlpha())
+            return false;
+        for (var i = 0; i < 3; ++i) {
+            var c = Math.round(this._rgba[i] * 255);
+            if (c % 17)
+                return false;
         }
+        return true;
     },
 
-    _rgbaToHSLA: function(rgba)
+    /**
+     * @return {?string}
+     */
+    toString: function(format)
     {
-        var alpha = rgba[3];
-        var hsl = this._rgbToHSL(rgba)
-        hsl.push(alpha);
-        return hsl;
-    },
+        if (!format)
+            format = this._format;
 
-    _hslaToRGBA: function(hsla)
-    {
-        var alpha = hsla[3];
-        var rgb = this._hslToRGB(hsla);
-        rgb.push(alpha);
-        return rgb;
-    },
-
-    _parse: function()
-    {
-        // Special Values - Advanced but Must Be Parsed First - transparent
-        var value = this.value.toLowerCase().replace(/%|\s+/g, "");
-        if (value in WebInspector.Color.AdvancedNickNames) {
-            this.format = "nickname";
-            var set = WebInspector.Color.AdvancedNickNames[value];
-            this.simple = false;
-            this.rgba = set[0];
-            this.hsla = set[1];
-            this.nickname = set[2];
-            this.alpha = set[0][3];
-            return;
+        /**
+         * @param {number} value
+         * @return {number}
+         */
+        function toRgbValue(value)
+        {
+            return Math.round(value * 255);
         }
 
-        // Simple - #hex, rgb(), nickname, hsl()
-        var simple = /^(?:#([0-9a-f]{3,6})|rgb\(([^)]+)\)|(\w+)|hsl\(([^)]+)\))$/i;
-        var match = this.value.match(simple);
-        if (match) {
-            this.simple = true;
+        /**
+         * @param {number} value
+         * @return {string}
+         */
+        function toHexValue(value)
+        {
+            var hex = Math.round(value * 255).toString(16);
+            return hex.length === 1 ? "0" + hex : hex;
+        }
 
-            if (match[1]) { // hex
-                var hex = match[1].toUpperCase();
-                if (hex.length === 3) {
-                    this.format = "shorthex";
-                    this.hex = hex.charAt(0) + hex.charAt(0) + hex.charAt(1) + hex.charAt(1) + hex.charAt(2) + hex.charAt(2);
-                } else {
-                    this.format = "hex";
-                    this.hex = hex;
-                }
-            } else if (match[2]) { // rgb
-                this.format = "rgb";
-                var rgb = match[2].split(/\s*,\s*/);
-                this.rgb = rgb;
-                this.hex = this._rgbToHex(rgb);
-            } else if (match[3]) { // nickname
-                var nickname = match[3].toLowerCase();
-                if (nickname in WebInspector.Color.Nicknames) {
-                    this.format = "nickname";
-                    this.hex = WebInspector.Color.Nicknames[nickname];
-                } else // unknown name
-                    throw "unknown color name";
-            } else if (match[4]) { // hsl
-                this.format = "hsl";
-                var hsl = match[4].replace(/%g/, "").split(/\s*,\s*/);
-                this.hsl = hsl;
-                this.rgb = this._hslToRGB(hsl);
-                this.hex = this._rgbToHex(this.rgb);
+        /**
+         * @param {number} value
+         * @return {string}
+         */
+        function toShortHexValue(value)
+        {
+            return (Math.round(value * 255) / 17).toString(16);
+        }
+
+        switch (format) {
+        case WebInspector.Color.Format.Original:
+            return this._originalText;
+        case WebInspector.Color.Format.RGB:
+            if (this.hasAlpha())
+                return null;
+            return String.sprintf("rgb(%d, %d, %d)", toRgbValue(this._rgba[0]), toRgbValue(this._rgba[1]), toRgbValue(this._rgba[2]));
+        case WebInspector.Color.Format.RGBA:
+            return String.sprintf("rgba(%d, %d, %d, %f)", toRgbValue(this._rgba[0]), toRgbValue(this._rgba[1]), toRgbValue(this._rgba[2]), this._rgba[3]);
+        case WebInspector.Color.Format.HSL:
+            if (this.hasAlpha())
+                return null;
+            var hsl = this.hsla();
+            return String.sprintf("hsl(%d, %d%, %d%)", Math.round(hsl[0] * 360), Math.round(hsl[1] * 100), Math.round(hsl[2] * 100));
+        case WebInspector.Color.Format.HSLA:
+            var hsla = this.hsla();
+            return String.sprintf("hsla(%d, %d%, %d%, %f)", Math.round(hsla[0] * 360), Math.round(hsla[1] * 100), Math.round(hsla[2] * 100), hsla[3]);
+        case WebInspector.Color.Format.HEX:
+            if (this.hasAlpha())
+                return null;
+            return String.sprintf("#%s%s%s", toHexValue(this._rgba[0]), toHexValue(this._rgba[1]), toHexValue(this._rgba[2])).toUpperCase();
+        case WebInspector.Color.Format.ShortHEX:
+            if (!this.canBeShortHex())
+                return null;
+            return String.sprintf("#%s%s%s", toShortHexValue(this._rgba[0]), toShortHexValue(this._rgba[1]), toShortHexValue(this._rgba[2])).toUpperCase();
+        case WebInspector.Color.Format.Nickname:
+            return this.nickname();
+        }
+
+        return this._originalText;
+    },
+
+    /**
+     * @return {Array.<number>}
+     */
+    _canonicalRGBA: function()
+    {
+        var rgba = new Array(3);
+        for (var i = 0; i < 3; ++i)
+            rgba[i] = Math.round(this._rgba[i] * 255);
+        if (this._rgba[3] !== 1)
+            rgba.push(this._rgba[3]);
+        return rgba;
+    },
+
+    /**
+     * @return {?string} nickname
+     */
+    nickname: function()
+    {
+        if (!WebInspector.Color._rgbaToNickname) {
+            WebInspector.Color._rgbaToNickname = {};
+            for (var nickname in WebInspector.Color.Nicknames) {
+                var rgba = WebInspector.Color.Nicknames[nickname];
+                WebInspector.Color._rgbaToNickname[rgba] = nickname;
             }
-
-            // Fill in the values if this is a known hex color
-            var hex = this.hex;
-            if (hex && hex in WebInspector.Color.HexTable) {
-                var set = WebInspector.Color.HexTable[hex];
-                this.rgb = set[0];
-                this.hsl = set[1];
-                this.nickname = set[2];
-            }
-
-            return;
         }
 
-        // Advanced - rgba(), hsla()
-        var advanced = /^(?:rgba\(([^)]+)\)|hsla\(([^)]+)\))$/;
-        match = this.value.match(advanced);
-        if (match) {
-            this.simple = false;
-            if (match[1]) { // rgba
-                this.format = "rgba";
-                this.rgba = match[1].split(/\s*,\s*/);
-                this.hsla = this._rgbaToHSLA(this.rgba);
-                this.alpha = this.rgba[3];
-            } else if (match[2]) { // hsla
-                this.format = "hsla";
-                this.hsla = match[2].replace(/%/g, "").split(/\s*,\s*/);
-                this.rgba = this._hslaToRGBA(this.hsla);
-                this.alpha = this.hsla[3];
-            }
+        return WebInspector.Color._rgbaToNickname[this._canonicalRGBA()] || null;
+    },
 
-            return;
-        }
-
-        // Could not parse as a valid color
-        throw "could not parse color";
+    /**
+     * @return {DOMAgent.RGBA}
+     */
+    toProtocolRGBA: function()
+    {
+        var rgba = this._canonicalRGBA();
+        var result = { r: rgba[0], g: rgba[1], b: rgba[2] };
+        if (rgba[3] !== 1)
+            result.a = rgba[3];
+        return result;
     }
 }
 
-// Simple Values: [rgb, hsl, nickname]
-WebInspector.Color.HexTable = {
-    "000000": [[0, 0, 0], [0, 0, 0], "black"],
-    "000080": [[0, 0, 128], [240, 100, 25], "navy"],
-    "00008B": [[0, 0, 139], [240, 100, 27], "darkBlue"],
-    "0000CD": [[0, 0, 205], [240, 100, 40], "mediumBlue"],
-    "0000FF": [[0, 0, 255], [240, 100, 50], "blue"],
-    "006400": [[0, 100, 0], [120, 100, 20], "darkGreen"],
-    "008000": [[0, 128, 0], [120, 100, 25], "green"],
-    "008080": [[0, 128, 128], [180, 100, 25], "teal"],
-    "008B8B": [[0, 139, 139], [180, 100, 27], "darkCyan"],
-    "00BFFF": [[0, 191, 255], [195, 100, 50], "deepSkyBlue"],
-    "00CED1": [[0, 206, 209], [181, 100, 41], "darkTurquoise"],
-    "00FA9A": [[0, 250, 154], [157, 100, 49], "mediumSpringGreen"],
-    "00FF00": [[0, 255, 0], [120, 100, 50], "lime"],
-    "00FF7F": [[0, 255, 127], [150, 100, 50], "springGreen"],
-    "00FFFF": [[0, 255, 255], [180, 100, 50], "cyan"],
-    "191970": [[25, 25, 112], [240, 64, 27], "midnightBlue"],
-    "1E90FF": [[30, 144, 255], [210, 100, 56], "dodgerBlue"],
-    "20B2AA": [[32, 178, 170], [177, 70, 41], "lightSeaGreen"],
-    "228B22": [[34, 139, 34], [120, 61, 34], "forestGreen"],
-    "2E8B57": [[46, 139, 87], [146, 50, 36], "seaGreen"],
-    "2F4F4F": [[47, 79, 79], [180, 25, 25], "darkSlateGray"],
-    "32CD32": [[50, 205, 50], [120, 61, 50], "limeGreen"],
-    "3CB371": [[60, 179, 113], [147, 50, 47], "mediumSeaGreen"],
-    "40E0D0": [[64, 224, 208], [174, 72, 56], "turquoise"],
-    "4169E1": [[65, 105, 225], [225, 73, 57], "royalBlue"],
-    "4682B4": [[70, 130, 180], [207, 44, 49], "steelBlue"],
-    "483D8B": [[72, 61, 139], [248, 39, 39], "darkSlateBlue"],
-    "48D1CC": [[72, 209, 204], [178, 60, 55], "mediumTurquoise"],
-    "4B0082": [[75, 0, 130], [275, 100, 25], "indigo"],
-    "556B2F": [[85, 107, 47], [82, 39, 30], "darkOliveGreen"],
-    "5F9EA0": [[95, 158, 160], [182, 25, 50], "cadetBlue"],
-    "6495ED": [[100, 149, 237], [219, 79, 66], "cornflowerBlue"],
-    "66CDAA": [[102, 205, 170], [160, 51, 60], "mediumAquaMarine"],
-    "696969": [[105, 105, 105], [0, 0, 41], "dimGray"],
-    "6A5ACD": [[106, 90, 205], [248, 53, 58], "slateBlue"],
-    "6B8E23": [[107, 142, 35], [80, 60, 35], "oliveDrab"],
-    "708090": [[112, 128, 144], [210, 13, 50], "slateGray"],
-    "778899": [[119, 136, 153], [210, 14, 53], "lightSlateGray"],
-    "7B68EE": [[123, 104, 238], [249, 80, 67], "mediumSlateBlue"],
-    "7CFC00": [[124, 252, 0], [90, 100, 49], "lawnGreen"],
-    "7FFF00": [[127, 255, 0], [90, 100, 50], "chartreuse"],
-    "7FFFD4": [[127, 255, 212], [160, 100, 75], "aquamarine"],
-    "800000": [[128, 0, 0], [0, 100, 25], "maroon"],
-    "800080": [[128, 0, 128], [300, 100, 25], "purple"],
-    "808000": [[128, 128, 0], [60, 100, 25], "olive"],
-    "808080": [[128, 128, 128], [0, 0, 50], "gray"],
-    "87CEEB": [[135, 206, 235], [197, 71, 73], "skyBlue"],
-    "87CEFA": [[135, 206, 250], [203, 92, 75], "lightSkyBlue"],
-    "8A2BE2": [[138, 43, 226], [271, 76, 53], "blueViolet"],
-    "8B0000": [[139, 0, 0], [0, 100, 27], "darkRed"],
-    "8B008B": [[139, 0, 139], [300, 100, 27], "darkMagenta"],
-    "8B4513": [[139, 69, 19], [25, 76, 31], "saddleBrown"],
-    "8FBC8F": [[143, 188, 143], [120, 25, 65], "darkSeaGreen"],
-    "90EE90": [[144, 238, 144], [120, 73, 75], "lightGreen"],
-    "9370D8": [[147, 112, 219], [260, 60, 65], "mediumPurple"],
-    "9400D3": [[148, 0, 211], [282, 100, 41], "darkViolet"],
-    "98FB98": [[152, 251, 152], [120, 93, 79], "paleGreen"],
-    "9932CC": [[153, 50, 204], [280, 61, 50], "darkOrchid"],
-    "9ACD32": [[154, 205, 50], [80, 61, 50], "yellowGreen"],
-    "A0522D": [[160, 82, 45], [19, 56, 40], "sienna"],
-    "A52A2A": [[165, 42, 42], [0, 59, 41], "brown"],
-    "A9A9A9": [[169, 169, 169], [0, 0, 66], "darkGray"],
-    "ADD8E6": [[173, 216, 230], [195, 53, 79], "lightBlue"],
-    "ADFF2F": [[173, 255, 47], [84, 100, 59], "greenYellow"],
-    "AFEEEE": [[175, 238, 238], [180, 65, 81], "paleTurquoise"],
-    "B0C4DE": [[176, 196, 222], [214, 41, 78], "lightSteelBlue"],
-    "B0E0E6": [[176, 224, 230], [187, 52, 80], "powderBlue"],
-    "B22222": [[178, 34, 34], [0, 68, 42], "fireBrick"],
-    "B8860B": [[184, 134, 11], [43, 89, 38], "darkGoldenrod"],
-    "BA55D3": [[186, 85, 211], [288, 59, 58], "mediumOrchid"],
-    "BC8F8F": [[188, 143, 143], [0, 25, 65], "rosyBrown"],
-    "BDB76B": [[189, 183, 107], [56, 38, 58], "darkKhaki"],
-    "C0C0C0": [[192, 192, 192], [0, 0, 75], "silver"],
-    "C71585": [[199, 21, 133], [322, 81, 43], "mediumVioletRed"],
-    "CD5C5C": [[205, 92, 92], [0, 53, 58], "indianRed"],
-    "CD853F": [[205, 133, 63], [30, 59, 53], "peru"],
-    "D2691E": [[210, 105, 30], [25, 75, 47], "chocolate"],
-    "D2B48C": [[210, 180, 140], [34, 44, 69], "tan"],
-    "D3D3D3": [[211, 211, 211], [0, 0, 83], "lightGrey"],
-    "D87093": [[219, 112, 147], [340, 60, 65], "paleVioletRed"],
-    "D8BFD8": [[216, 191, 216], [300, 24, 80], "thistle"],
-    "DA70D6": [[218, 112, 214], [302, 59, 65], "orchid"],
-    "DAA520": [[218, 165, 32], [43, 74, 49], "goldenrod"],
-    "DC143C": [[237, 164, 61], [35, 83, 58], "crimson"],
-    "DCDCDC": [[220, 220, 220], [0, 0, 86], "gainsboro"],
-    "DDA0DD": [[221, 160, 221], [300, 47, 75], "plum"],
-    "DEB887": [[222, 184, 135], [34, 57, 70], "burlyWood"],
-    "E0FFFF": [[224, 255, 255], [180, 100, 94], "lightCyan"],
-    "E6E6FA": [[230, 230, 250], [240, 67, 94], "lavender"],
-    "E9967A": [[233, 150, 122], [15, 72, 70], "darkSalmon"],
-    "EE82EE": [[238, 130, 238], [300, 76, 72], "violet"],
-    "EEE8AA": [[238, 232, 170], [55, 67, 80], "paleGoldenrod"],
-    "F08080": [[240, 128, 128], [0, 79, 72], "lightCoral"],
-    "F0E68C": [[240, 230, 140], [54, 77, 75], "khaki"],
-    "F0F8FF": [[240, 248, 255], [208, 100, 97], "aliceBlue"],
-    "F0FFF0": [[240, 255, 240], [120, 100, 97], "honeyDew"],
-    "F0FFFF": [[240, 255, 255], [180, 100, 97], "azure"],
-    "F4A460": [[244, 164, 96], [28, 87, 67], "sandyBrown"],
-    "F5DEB3": [[245, 222, 179], [39, 77, 83], "wheat"],
-    "F5F5DC": [[245, 245, 220], [60, 56, 91], "beige"],
-    "F5F5F5": [[245, 245, 245], [0, 0, 96], "whiteSmoke"],
-    "F5FFFA": [[245, 255, 250], [150, 100, 98], "mintCream"],
-    "F8F8FF": [[248, 248, 255], [240, 100, 99], "ghostWhite"],
-    "FA8072": [[250, 128, 114], [6, 93, 71], "salmon"],
-    "FAEBD7": [[250, 235, 215], [34, 78, 91], "antiqueWhite"],
-    "FAF0E6": [[250, 240, 230], [30, 67, 94], "linen"],
-    "FAFAD2": [[250, 250, 210], [60, 80, 90], "lightGoldenrodYellow"],
-    "FDF5E6": [[253, 245, 230], [39, 85, 95], "oldLace"],
-    "FF0000": [[255, 0, 0], [0, 100, 50], "red"],
-    "FF00FF": [[255, 0, 255], [300, 100, 50], "magenta"],
-    "FF1493": [[255, 20, 147], [328, 100, 54], "deepPink"],
-    "FF4500": [[255, 69, 0], [16, 100, 50], "orangeRed"],
-    "FF6347": [[255, 99, 71], [9, 100, 64], "tomato"],
-    "FF69B4": [[255, 105, 180], [330, 100, 71], "hotPink"],
-    "FF7F50": [[255, 127, 80], [16, 100, 66], "coral"],
-    "FF8C00": [[255, 140, 0], [33, 100, 50], "darkOrange"],
-    "FFA07A": [[255, 160, 122], [17, 100, 74], "lightSalmon"],
-    "FFA500": [[255, 165, 0], [39, 100, 50], "orange"],
-    "FFB6C1": [[255, 182, 193], [351, 100, 86], "lightPink"],
-    "FFC0CB": [[255, 192, 203], [350, 100, 88], "pink"],
-    "FFD700": [[255, 215, 0], [51, 100, 50], "gold"],
-    "FFDAB9": [[255, 218, 185], [28, 100, 86], "peachPuff"],
-    "FFDEAD": [[255, 222, 173], [36, 100, 84], "navajoWhite"],
-    "FFE4B5": [[255, 228, 181], [38, 100, 85], "moccasin"],
-    "FFE4C4": [[255, 228, 196], [33, 100, 88], "bisque"],
-    "FFE4E1": [[255, 228, 225], [6, 100, 94], "mistyRose"],
-    "FFEBCD": [[255, 235, 205], [36, 100, 90], "blanchedAlmond"],
-    "FFEFD5": [[255, 239, 213], [37, 100, 92], "papayaWhip"],
-    "FFF0F5": [[255, 240, 245], [340, 100, 97], "lavenderBlush"],
-    "FFF5EE": [[255, 245, 238], [25, 100, 97], "seaShell"],
-    "FFF8DC": [[255, 248, 220], [48, 100, 93], "cornsilk"],
-    "FFFACD": [[255, 250, 205], [54, 100, 90], "lemonChiffon"],
-    "FFFAF0": [[255, 250, 240], [40, 100, 97], "floralWhite"],
-    "FFFAFA": [[255, 250, 250], [0, 100, 99], "snow"],
-    "FFFF00": [[255, 255, 0], [60, 100, 50], "yellow"],
-    "FFFFE0": [[255, 255, 224], [60, 100, 94], "lightYellow"],
-    "FFFFF0": [[255, 255, 240], [60, 100, 97], "ivory"],
-    "FFFFFF": [[255, 255, 255], [0, 100, 100], "white"]
-};
+/**
+ * @param {string} value
+ * return {number}
+ */
+WebInspector.Color._parseRgbNumeric = function(value)
+{
+    var parsed = parseInt(value, 10);
+    if (value.indexOf("%") !== -1)
+        parsed /= 100;
+    else
+        parsed /= 255;
+    return parsed;
+}
 
-// Simple Values
+/**
+ * @param {string} value
+ * return {number}
+ */
+WebInspector.Color._parseHueNumeric = function(value)
+{
+    return isNaN(value) ? 0 : (parseFloat(value) / 360) % 1;
+}
+
+/**
+ * @param {string} value
+ * return {number}
+ */
+WebInspector.Color._parseSatLightNumeric = function(value)
+{
+    return parseFloat(value) / 100;
+}
+
+/**
+ * @param {string} value
+ * return {number}
+ */
+WebInspector.Color._parseAlphaNumeric = function(value)
+{
+    return isNaN(value) ? 0 : parseFloat(value);
+}
+
+/**
+ * @param {Array.<number>} hsl
+ * @return {Array.<number>}
+ */
+WebInspector.Color._hsl2rgb = function(hsl)
+{
+    var h = hsl[0];
+    var s = hsl[1];
+    var l = hsl[2];
+
+    function hue2rgb(p, q, h)
+    {
+        if (h < 0)
+            h += 1;
+        else if (h > 1)
+            h -= 1;
+
+        if ((h * 6) < 1)
+            return p + (q - p) * h * 6;
+        else if ((h * 2) < 1)
+            return q;
+        else if ((h * 3) < 2)
+            return p + (q - p) * ((2 / 3) - h) * 6;
+        else
+            return p;
+    }
+
+    if (s < 0)
+        s = 0;
+
+    if (l <= 0.5)
+        var q = l * (1 + s);
+    else
+        var q = l + s - (l * s);
+
+    var p = 2 * l - q;
+
+    var tr = h + (1 / 3);
+    var tg = h;
+    var tb = h - (1 / 3);
+
+    var r = hue2rgb(p, q, tr);
+    var g = hue2rgb(p, q, tg);
+    var b = hue2rgb(p, q, tb);
+    return [r, g, b, hsl[3]];
+}
+
 WebInspector.Color.Nicknames = {
-    "aliceblue": "F0F8FF",
-    "antiquewhite": "FAEBD7",
-    "aqua": "00FFFF",
-    "aquamarine": "7FFFD4",
-    "azure": "F0FFFF",
-    "beige": "F5F5DC",
-    "bisque": "FFE4C4",
-    "black": "000000",
-    "blanchedalmond": "FFEBCD",
-    "blue": "0000FF",
-    "blueviolet": "8A2BE2",
-    "brown": "A52A2A",
-    "burlywood": "DEB887",
-    "cadetblue": "5F9EA0",
-    "chartreuse": "7FFF00",
-    "chocolate": "D2691E",
-    "coral": "FF7F50",
-    "cornflowerblue": "6495ED",
-    "cornsilk": "FFF8DC",
-    "crimson": "DC143C",
-    "cyan": "00FFFF",
-    "darkblue": "00008B",
-    "darkcyan": "008B8B",
-    "darkgoldenrod": "B8860B",
-    "darkgray": "A9A9A9",
-    "darkgreen": "006400",
-    "darkkhaki": "BDB76B",
-    "darkmagenta": "8B008B",
-    "darkolivegreen": "556B2F",
-    "darkorange": "FF8C00",
-    "darkorchid": "9932CC",
-    "darkred": "8B0000",
-    "darksalmon": "E9967A",
-    "darkseagreen": "8FBC8F",
-    "darkslateblue": "483D8B",
-    "darkslategray": "2F4F4F",
-    "darkturquoise": "00CED1",
-    "darkviolet": "9400D3",
-    "deeppink": "FF1493",
-    "deepskyblue": "00BFFF",
-    "dimgray": "696969",
-    "dodgerblue": "1E90FF",
-    "firebrick": "B22222",
-    "floralwhite": "FFFAF0",
-    "forestgreen": "228B22",
-    "fuchsia": "FF00FF",
-    "gainsboro": "DCDCDC",
-    "ghostwhite": "F8F8FF",
-    "gold": "FFD700",
-    "goldenrod": "DAA520",
-    "gray": "808080",
-    "green": "008000",
-    "greenyellow": "ADFF2F",
-    "honeydew": "F0FFF0",
-    "hotpink": "FF69B4",
-    "indianred": "CD5C5C",
-    "indigo": "4B0082",
-    "ivory": "FFFFF0",
-    "khaki": "F0E68C",
-    "lavender": "E6E6FA",
-    "lavenderblush": "FFF0F5",
-    "lawngreen": "7CFC00",
-    "lemonchiffon": "FFFACD",
-    "lightblue": "ADD8E6",
-    "lightcoral": "F08080",
-    "lightcyan": "E0FFFF",
-    "lightgoldenrodyellow": "FAFAD2",
-    "lightgreen": "90EE90",
-    "lightgrey": "D3D3D3",
-    "lightpink": "FFB6C1",
-    "lightsalmon": "FFA07A",
-    "lightseagreen": "20B2AA",
-    "lightskyblue": "87CEFA",
-    "lightslategray": "778899",
-    "lightsteelblue": "B0C4DE",
-    "lightyellow": "FFFFE0",
-    "lime": "00FF00",
-    "limegreen": "32CD32",
-    "linen": "FAF0E6",
-    "magenta": "FF00FF",
-    "maroon": "800000",
-    "mediumaquamarine": "66CDAA",
-    "mediumblue": "0000CD",
-    "mediumorchid": "BA55D3",
-    "mediumpurple": "9370D8",
-    "mediumseagreen": "3CB371",
-    "mediumslateblue": "7B68EE",
-    "mediumspringgreen": "00FA9A",
-    "mediumturquoise": "48D1CC",
-    "mediumvioletred": "C71585",
-    "midnightblue": "191970",
-    "mintcream": "F5FFFA",
-    "mistyrose": "FFE4E1",
-    "moccasin": "FFE4B5",
-    "navajowhite": "FFDEAD",
-    "navy": "000080",
-    "oldlace": "FDF5E6",
-    "olive": "808000",
-    "olivedrab": "6B8E23",
-    "orange": "FFA500",
-    "orangered": "FF4500",
-    "orchid": "DA70D6",
-    "palegoldenrod": "EEE8AA",
-    "palegreen": "98FB98",
-    "paleturquoise": "AFEEEE",
-    "palevioletred": "D87093",
-    "papayawhip": "FFEFD5",
-    "peachpuff": "FFDAB9",
-    "peru": "CD853F",
-    "pink": "FFC0CB",
-    "plum": "DDA0DD",
-    "powderblue": "B0E0E6",
-    "purple": "800080",
-    "red": "FF0000",
-    "rosybrown": "BC8F8F",
-    "royalblue": "4169E1",
-    "saddlebrown": "8B4513",
-    "salmon": "FA8072",
-    "sandybrown": "F4A460",
-    "seagreen": "2E8B57",
-    "seashell": "FFF5EE",
-    "sienna": "A0522D",
-    "silver": "C0C0C0",
-    "skyblue": "87CEEB",
-    "slateblue": "6A5ACD",
-    "slategray": "708090",
-    "snow": "FFFAFA",
-    "springgreen": "00FF7F",
-    "steelblue": "4682B4",
-    "tan": "D2B48C",
-    "teal": "008080",
-    "thistle": "D8BFD8",
-    "tomato": "FF6347",
-    "turquoise": "40E0D0",
-    "violet": "EE82EE",
-    "wheat": "F5DEB3",
-    "white": "FFFFFF",
-    "whitesmoke": "F5F5F5",
-    "yellow": "FFFF00",
-    "yellowgreen": "9ACD32"
+    "aliceBlue":          [240,248,255],
+    "antiqueWhite":       [250,235,215],
+    "aquamarine":         [127,255,212],
+    "azure":              [240,255,255],
+    "beige":              [245,245,220],
+    "bisque":             [255,228,196],
+    "black":              [0,0,0],
+    "blanchedAlmond":     [255,235,205],
+    "blue":               [0,0,255],
+    "blueViolet":         [138,43,226],
+    "brown":              [165,42,42],
+    "burlyWood":          [222,184,135],
+    "cadetBlue":          [95,158,160],
+    "chartreuse":         [127,255,0],
+    "chocolate":          [210,105,30],
+    "coral":              [255,127,80],
+    "cornflowerBlue":     [100,149,237],
+    "cornsilk":           [255,248,220],
+    "crimson":            [237,20,61],
+    "cyan":               [0,255,255],
+    "darkBlue":           [0,0,139],
+    "darkCyan":           [0,139,139],
+    "darkGoldenrod":      [184,134,11],
+    "darkGray":           [169,169,169],
+    "darkGreen":          [0,100,0],
+    "darkKhaki":          [189,183,107],
+    "darkMagenta":        [139,0,139],
+    "darkOliveGreen":     [85,107,47],
+    "darkOrange":         [255,140,0],
+    "darkOrchid":         [153,50,204],
+    "darkRed":            [139,0,0],
+    "darkSalmon":         [233,150,122],
+    "darkSeaGreen":       [143,188,143],
+    "darkSlateBlue":      [72,61,139],
+    "darkSlateGray":      [47,79,79],
+    "darkTurquoise":      [0,206,209],
+    "darkViolet":         [148,0,211],
+    "deepPink":           [255,20,147],
+    "deepSkyBlue":        [0,191,255],
+    "dimGray":            [105,105,105],
+    "dodgerBlue":         [30,144,255],
+    "fireBrick":          [178,34,34],
+    "floralWhite":        [255,250,240],
+    "forestGreen":        [34,139,34],
+    "gainsboro":          [220,220,220],
+    "ghostWhite":         [248,248,255],
+    "gold":               [255,215,0],
+    "goldenrod":          [218,165,32],
+    "gray":               [128,128,128],
+    "green":              [0,128,0],
+    "greenYellow":        [173,255,47],
+    "honeyDew":           [240,255,240],
+    "hotPink":            [255,105,180],
+    "indianRed":          [205,92,92],
+    "indigo":             [75,0,130],
+    "ivory":              [255,255,240],
+    "khaki":              [240,230,140],
+    "lavender":           [230,230,250],
+    "lavenderBlush":      [255,240,245],
+    "lawnGreen":          [124,252,0],
+    "lemonChiffon":       [255,250,205],
+    "lightBlue":          [173,216,230],
+    "lightCoral":         [240,128,128],
+    "lightCyan":          [224,255,255],
+    "lightGoldenrodYellow":[250,250,210],
+    "lightGreen":         [144,238,144],
+    "lightGrey":          [211,211,211],
+    "lightPink":          [255,182,193],
+    "lightSalmon":        [255,160,122],
+    "lightSeaGreen":      [32,178,170],
+    "lightSkyBlue":       [135,206,250],
+    "lightSlateGray":     [119,136,153],
+    "lightSteelBlue":     [176,196,222],
+    "lightYellow":        [255,255,224],
+    "lime":               [0,255,0],
+    "limeGreen":          [50,205,50],
+    "linen":              [250,240,230],
+    "magenta":            [255,0,255],
+    "maroon":             [128,0,0],
+    "mediumAquaMarine":   [102,205,170],
+    "mediumBlue":         [0,0,205],
+    "mediumOrchid":       [186,85,211],
+    "mediumPurple":       [147,112,219],
+    "mediumSeaGreen":     [60,179,113],
+    "mediumSlateBlue":    [123,104,238],
+    "mediumSpringGreen":  [0,250,154],
+    "mediumTurquoise":    [72,209,204],
+    "mediumVioletRed":    [199,21,133],
+    "midnightBlue":       [25,25,112],
+    "mintCream":          [245,255,250],
+    "mistyRose":          [255,228,225],
+    "moccasin":           [255,228,181],
+    "navajoWhite":        [255,222,173],
+    "navy":               [0,0,128],
+    "oldLace":            [253,245,230],
+    "olive":              [128,128,0],
+    "oliveDrab":          [107,142,35],
+    "orange":             [255,165,0],
+    "orangeRed":          [255,69,0],
+    "orchid":             [218,112,214],
+    "paleGoldenrod":      [238,232,170],
+    "paleGreen":          [152,251,152],
+    "paleTurquoise":      [175,238,238],
+    "paleVioletRed":      [219,112,147],
+    "papayaWhip":         [255,239,213],
+    "peachPuff":          [255,218,185],
+    "peru":               [205,133,63],
+    "pink":               [255,192,203],
+    "plum":               [221,160,221],
+    "powderBlue":         [176,224,230],
+    "purple":             [128,0,128],
+    "red":                [255,0,0],
+    "rosyBrown":          [188,143,143],
+    "royalBlue":          [65,105,225],
+    "saddleBrown":        [139,69,19],
+    "salmon":             [250,128,114],
+    "sandyBrown":         [244,164,96],
+    "seaGreen":           [46,139,87],
+    "seaShell":           [255,245,238],
+    "sienna":             [160,82,45],
+    "silver":             [192,192,192],
+    "skyBlue":            [135,206,235],
+    "slateBlue":          [106,90,205],
+    "slateGray":          [112,128,144],
+    "snow":               [255,250,250],
+    "springGreen":        [0,255,127],
+    "steelBlue":          [70,130,180],
+    "tan":                [210,180,140],
+    "teal":               [0,128,128],
+    "thistle":            [216,191,216],
+    "tomato":             [255,99,71],
+    "turquoise":          [64,224,208],
+    "violet":             [238,130,238],
+    "wheat":              [245,222,179],
+    "white":              [255,255,255],
+    "whiteSmoke":         [245,245,245],
+    "yellow":             [255,255,0],
+    "yellowGreen":        [154,205,50],
+    "transparent":        [0, 0, 0, 0],
 };
 
-// Advanced Values [rgba, hsla, nickname]
-WebInspector.Color.AdvancedNickNames = {
-    "transparent": [[0, 0, 0, 0], [0, 0, 0, 0], "transparent"],
-    "rgba(0,0,0,0)": [[0, 0, 0, 0], [0, 0, 0, 0], "transparent"],
-    "hsla(0,0,0,0)": [[0, 0, 0, 0], [0, 0, 0, 0], "transparent"],
-};
+WebInspector.Color.PageHighlight = {
+    Content: WebInspector.Color.fromRGBA([111, 168, 220, .66]),
+    ContentLight: WebInspector.Color.fromRGBA([111, 168, 220, .5]),
+    ContentOutline: WebInspector.Color.fromRGBA([9, 83, 148]),
+    Padding: WebInspector.Color.fromRGBA([147, 196, 125, .55]),
+    PaddingLight: WebInspector.Color.fromRGBA([147, 196, 125, .4]),
+    Border: WebInspector.Color.fromRGBA([255, 229, 153, .66]),
+    BorderLight: WebInspector.Color.fromRGBA([255, 229, 153, .5]),
+    Margin: WebInspector.Color.fromRGBA([246, 178, 107, .66]),
+    MarginLight: WebInspector.Color.fromRGBA([246, 178, 107, .5]),
+    EventTarget: WebInspector.Color.fromRGBA([255, 196, 196, .66])
+}
+
+WebInspector.Color.Format = {
+    Original: "original",
+    Nickname: "nickname",
+    HEX: "hex",
+    ShortHEX: "shorthex",
+    RGB: "rgb",
+    RGBA: "rgba",
+    HSL: "hsl",
+    HSLA: "hsla"
+}

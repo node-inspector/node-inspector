@@ -28,63 +28,156 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-WebInspector.NetworkItemView = function(resource)
+/**
+ * @constructor
+ * @extends {WebInspector.TabbedPane}
+ * @param {WebInspector.NetworkRequest} request
+ */
+WebInspector.NetworkItemView = function(request)
 {
-    WebInspector.View.call(this);
-
+    WebInspector.TabbedPane.call(this);
     this.element.addStyleClass("network-item-view");
 
-    this._headersView = new WebInspector.ResourceHeadersView(resource);
-    // Do not store reference to content view - it can be recreated.
-    var contentView = WebInspector.ResourceManager.resourceViewForResource(resource);
-    this._cookiesView = new WebInspector.ResourceCookiesView(resource);
+    var headersView = new WebInspector.RequestHeadersView(request);
+    this.appendTab("headers", WebInspector.UIString("Headers"), headersView);
 
-    this._tabbedPane = new WebInspector.TabbedPane(this.element);
-    this._tabbedPane.appendTab("headers", WebInspector.UIString("Headers"), this._headersView);
-    if (contentView.hasContent()) {
-        // Reusing this view, so hide it at first.
-        contentView.visible = false;
-        this._tabbedPane.appendTab("content", WebInspector.UIString("Content"), contentView);
-    }
-    this._tabbedPane.appendTab("cookies", WebInspector.UIString("Cookies"), this._cookiesView);
+    this.addEventListener(WebInspector.TabbedPane.EventTypes.TabSelected, this._tabSelected, this);
 
-    if (Preferences.showTimingTab) {
-        var timingView = new WebInspector.ResourceTimingView(resource);
-        this._tabbedPane.appendTab("timing", WebInspector.UIString("Timing"), timingView);
+    if (request.type === WebInspector.resourceTypes.WebSocket) {
+        var frameView = new WebInspector.ResourceWebSocketFrameView(request);
+        this.appendTab("webSocketFrames", WebInspector.UIString("Frames"), frameView);
+    } else {
+        var responseView = new WebInspector.RequestResponseView(request);
+        var previewView = new WebInspector.RequestPreviewView(request, responseView);
+        this.appendTab("preview", WebInspector.UIString("Preview"), previewView);
+        this.appendTab("response", WebInspector.UIString("Response"), responseView);
     }
 
-    this._tabbedPane.addEventListener("tab-selected", this._tabSelected, this);
+    if (request.requestCookies || request.responseCookies) {
+        this._cookiesView = new WebInspector.RequestCookiesView(request);
+        this.appendTab("cookies", WebInspector.UIString("Cookies"), this._cookiesView);
+    }
+
+    if (request.timing) {
+        var timingView = new WebInspector.RequestTimingView(request);
+        this.appendTab("timing", WebInspector.UIString("Timing"), timingView);
+    }
+    this._request = request;
 }
 
 WebInspector.NetworkItemView.prototype = {
-    show: function(parentElement)
+    wasShown: function()
     {
-        WebInspector.View.prototype.show.call(this, parentElement);
+        WebInspector.TabbedPane.prototype.wasShown.call(this);
         this._selectTab();
     },
 
+    /**
+     * @param {string=} tabId
+     */
     _selectTab: function(tabId)
     {
         if (!tabId)
-            tabId = WebInspector.settings.resourceViewTab;
+            tabId = WebInspector.settings.resourceViewTab.get();
 
-        if (!this._tabbedPane.selectTab(tabId)) {
+        if (!this.selectTab(tabId)) {
             this._isInFallbackSelection = true;
-            this._tabbedPane.selectTab("headers");
+            this.selectTab("headers");
             delete this._isInFallbackSelection;
         }
     },
 
     _tabSelected: function(event)
     {
-        WebInspector.settings.resourceViewTab = event.data.tabId;
+        if (!event.data.isUserGesture)
+            return;
+
+        WebInspector.settings.resourceViewTab.set(event.data.tabId);
+
+        WebInspector.notifications.dispatchEventToListeners(WebInspector.UserMetrics.UserAction, {
+            action: WebInspector.UserMetrics.UserActionNames.NetworkRequestTabSelected,
+            tab: event.data.tabId,
+            url: this._request.url
+        });
     },
 
-    resize: function()
+    /**
+      * @return {WebInspector.NetworkRequest}
+      */
+    request: function()
     {
-        if (this._cookiesView.visible)
-            this._cookiesView.resize();
-    }
+        return this._request;
+    },
+
+    __proto__: WebInspector.TabbedPane.prototype
 }
 
-WebInspector.NetworkItemView.prototype.__proto__ = WebInspector.View.prototype;
+/**
+ * @constructor
+ * @extends {WebInspector.RequestView}
+ * @param {WebInspector.NetworkRequest} request
+ */
+WebInspector.RequestContentView = function(request)
+{
+    WebInspector.RequestView.call(this, request);
+}
+
+WebInspector.RequestContentView.prototype = {
+    hasContent: function()
+    {
+        return true;
+    },
+
+    get innerView()
+    {
+        return this._innerView;
+    },
+
+    set innerView(innerView)
+    {
+        this._innerView = innerView;
+    },
+
+    wasShown: function()
+    {
+        this._ensureInnerViewShown();
+    },
+
+    _ensureInnerViewShown: function()
+    {
+        if (this._innerViewShowRequested)
+            return;
+        this._innerViewShowRequested = true;
+
+        /**
+         * @param {?string} content
+         * @param {boolean} contentEncoded
+         * @param {string} mimeType
+         */
+        function callback(content, contentEncoded, mimeType)
+        {
+            this._innerViewShowRequested = false;
+            this.contentLoaded();
+        }
+
+        this.request.requestContent(callback.bind(this));
+    },
+
+    contentLoaded: function()
+    {
+        // Should be implemented by subclasses.
+    },
+
+    canHighlightLine: function()
+    {
+        return this._innerView && this._innerView.canHighlightLine();
+    },
+
+    highlightLine: function(line)
+    {
+        if (this.canHighlightLine())
+            this._innerView.highlightLine(line);
+    },
+
+    __proto__: WebInspector.RequestView.prototype
+}
