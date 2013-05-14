@@ -2,84 +2,51 @@
 // Wire up websocket to talk to backend
 WebInspector.loaded = function() {
   WebInspector.socket = io.connect("http://" + window.location.host + '/');
-  WebInspector.socket.on('message', function(message) {
-    if (message && message !== 'ping') {
-      WebInspector_syncDispatch(message);
-    }
-  });
+  WebInspector.socket.on('message', onWebSocketMessage);
   WebInspector.socket.on('error', function(error) { console.error(error); });
-  WebInspector.socket.on('connect', function() {
-      InspectorFrontendHost.sendMessageToBackend = WebInspector.socket.send.bind(WebInspector.socket);
-      WebInspector.doLoadedDone();
-  });
-  return;
+  WebInspector.socket.on('connect', onWebSocketConnected);
 };
 
-// debugger always enabled
-Preferences.debuggerAlwaysEnabled = true;
-// enable LiveEdit
-Preferences.canEditScriptSource = true;
-// enable heap profiler
-Preferences.heapProfilerPresent = true;
+var _inspectorInitialized = false;
+function onWebSocketConnected() {
+  if (_inspectorInitialized) return;
+  InspectorFrontendHost.sendMessageToBackend = WebInspector.socket.send.bind(WebInspector.socket);
 
-// patch new watch expression (default crashes node)
-WebInspector.WatchExpressionsSection.NewWatchExpression = "''";
+  WebInspector.dockController = new WebInspector.DockController();
+  WebInspector.doLoadedDone();
+  WebInspector._doLoadedDoneWithCapabilities();
 
-// enable ctrl+click for conditional breakpoints
-WebInspector.SourceFrame.prototype._mouseDown = function(event)
-{
-  this._resetHoverTimer();
-  this._hidePopup();
-  if (event.button != 0 || event.altKey || event.metaKey)
-      return;
-  var target = event.target.enclosingNodeOrSelfWithClass("webkit-line-number");
-  if (!target)
-      return;
-  var row = target.parentElement;
+  WebInspector.showPanel("scripts");
 
-  var lineNumber = row.lineNumber;
+  _inspectorInitialized = true;
+}
 
-  var breakpoint = this._textModel.getAttribute(lineNumber, "breakpoint");
-  if (breakpoint) {
-      if (event.shiftKey) {
-          breakpoint.enabled = !breakpoint.enabled;
-      }
-      else if (!event.ctrlKey) {
-          breakpoint.remove();
-      }
+function onWebSocketMessage(message) {
+  if (!message || message === 'ping') return;
+
+  if (message === 'debuggerWasDisabled') {
+    WebInspector.debuggerModel.disableDebugger();
+  } else if (message === 'showConsolePanel') {
+    InspectorFrontendAPI.showConsole();
   } else {
-      this._addBreakpointDelegate(lineNumber + 1);
-      breakpoint = this._textModel.getAttribute(lineNumber, "breakpoint");
+    InspectorBackend.dispatch(message);
   }
-  if (breakpoint && event.ctrlKey) {
-      this._editBreakpointCondition(breakpoint);
-  }
-  event.preventDefault();
-};
+}
 
-// patch _addScriptToFilesMenu to enable breakpoint marks in scripts
-// loaded after the breakpoints were restored
-WebInspector.ScriptsPanel.prototype._orig_addScriptToFilesMenu =
-    WebInspector.ScriptsPanel.prototype._addScriptToFilesMenu;
+// Disable HTML & CSS inspections
+WebInspector.queryParamsObject['isSharedWorker'] = true;
 
-WebInspector.ScriptsPanel.prototype._addScriptToFilesMenu =
-    function(script, force) {
-      this._orig_addScriptToFilesMenu(script, force);
+// disable everything besides scripts and console
+// that means 'profiles' and 'timeline' at the moment
+WebInspector._orig_panelDescriptors = WebInspector._panelDescriptors;
+WebInspector._panelDescriptors = function() {
+  var panelDescriptors = this._orig_panelDescriptors();
+  return panelDescriptors.filter(function(pd) {
+    return ['scripts', 'console'].indexOf(pd.name()) != -1;
+  });
+}
 
-      if (!script.sourceURL && !force)
-        return;
+Preferences.localizeUI = false;
 
-      if (script.resource &&
-          this._resourceForURLInFilesSelect[script.resource.url])
-          return;
-
-      // enable breakpoint marks in scripts loaded later after start
-      var self = this;
-      WebInspector.breakpointManager
-          .breakpointsForURL(script.sourceURL)
-          .forEach(function fnAddBreakpoint(breakpoint) {
-            self._breakpointAdded({ data: breakpoint });
-          });
-
-    }
+WebInspector._platformFlavor = WebInspector.PlatformFlavor.MacLeopard;
 
