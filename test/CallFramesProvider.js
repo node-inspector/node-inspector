@@ -1,51 +1,51 @@
 var expect = require('chai').expect,
+  launcher = require('./helpers/launcher.js'),
   CallFramesProvider = require('../lib/CallFramesProvider').CallFramesProvider;
 
 describe('CallFramesProvider', function() {
+  launcher.stopAllDebuggersAfterEachTest();
+
   it('gets stack trace', function(done) {
-    startDebugger('BreakInFunction.js', function(childProcess, debuggerClient) {
-      debuggerClient.on('break', function() {
-        var provider = new CallFramesProvider(debuggerClient);
-        provider.fetchCallFrames(function(error, callFrames) {
-          if (error !== undefined && error !== null) {
-            done(error);
-            return;
-          }
+    launcher.runOnBreakInFunction(function(debuggerClient) {
+      var provider = new CallFramesProvider(debuggerClient);
+      provider.fetchCallFrames(function(error, callFrames) {
+        if (error !== undefined && error !== null) {
+          done(error);
+          return;
+        }
 
-          expect(callFrames).to.have.length.least(2);
+        expect(callFrames).to.have.length.least(2);
 
-          assertFrame({
-              callFrameId: '0',
-              functionName: 'MyObj.myFunc',
-              location: {scriptId: '28', lineNumber: 7, columnNumber: 4},
-              scopeChain: [
-                { object: { type: 'object', objectId: '-1', className: 'Object', description: 'Object'}, type: 'local' },
-                { object: { type: 'object', objectId: '-2', className: 'Object', description: 'Object'}, type: 'closure' },
-                { object: { type: 'object', objectId: '88', className: 'Object', description: 'Object'}, type: 'global' },
-              ],
-              'this': {type: 'object', objectId: '1', className: 'Object', description: 'Object'},
-            },
-            callFrames[0],
-            'frame[0]');
+        assertFrame({
+            callFrameId: '0',
+            functionName: 'MyObj.myFunc',
+            location: {scriptId: '28', lineNumber: 7, columnNumber: 4},
+            scopeChain: [
+              { object: { type: 'object', objectId: '-1', className: 'Object', description: 'Object'}, type: 'local' },
+              { object: { type: 'object', objectId: '-2', className: 'Object', description: 'Object'}, type: 'closure' },
+              { object: { type: 'object', objectId: '88', className: 'Object', description: 'Object'}, type: 'global' },
+            ],
+            'this': {type: 'object', objectId: '1', className: 'Object', description: 'Object'},
+          },
+          callFrames[0],
+          'frame[0]');
 
-          assertFrame({
-              callFrameId: '1',
-              functionName: 'globalFunc',
-              location: {scriptId: '28', lineNumber: 12, columnNumber: 6},
-              scopeChain: [
-                { object: { type: 'object', objectId: '-3', className: 'Object', description: 'Object'}, type: 'local' },
-                { object: { type: 'object', objectId: '-4', className: 'Object', description: 'Object'}, type: 'closure' },
-                { object: { type: 'object', objectId: '88', className: 'Object', description: 'Object'}, type: 'global' },
-              ],
-              'this': {type: 'object', objectId: '9', className: 'global', description: 'global'},
-            },
-            callFrames[1],
-            'frame[1]');
+        assertFrame({
+            callFrameId: '1',
+            functionName: 'globalFunc',
+            location: {scriptId: '28', lineNumber: 12, columnNumber: 6},
+            scopeChain: [
+              { object: { type: 'object', objectId: '-3', className: 'Object', description: 'Object'}, type: 'local' },
+              { object: { type: 'object', objectId: '-4', className: 'Object', description: 'Object'}, type: 'closure' },
+              { object: { type: 'object', objectId: '88', className: 'Object', description: 'Object'}, type: 'global' },
+            ],
+            'this': {type: 'object', objectId: '9', className: 'global', description: 'Object'},
+          },
+          callFrames[1],
+          'frame[1]');
 
-          done();
-        });
+        done();
       });
-      childProcess.stdin.write('go!\n');
     });
   });
 });
@@ -72,32 +72,3 @@ function assertJSONEqual(expected, actual, message) {
   expect(actualString, message).to.equal(expectedString);
 }
 
-function startDebugger(scriptPath, done) {
-  var spawn = require('child_process').spawn,
-    path = require('path'),
-    attachDebugger = require('../lib/debugger').attachDebugger,
-    testDir = path.dirname(__filename),
-    debugPort = 61000,
-    child,
-    debuggerClient;
-
-  scriptPath = path.join(testDir, 'fixtures', scriptPath);
-  child = spawn('node', ['--debug=' + debugPort, scriptPath]);
-
-  process.on('exit', function() {
-    child.kill();
-  });
-
-  function setupDebuggerClient() {
-    debuggerClient = attachDebugger(debugPort);
-    debuggerClient.on('connect', function() {
-      done(child, debuggerClient);
-    });
-    debuggerClient.on('error', function(e) {
-      throw new Error('Debugger connection error: ' + e);
-    });
-  }
-
-  // give the child process some time to start up the debugger
-  setTimeout(setupDebuggerClient, 200);
-}
