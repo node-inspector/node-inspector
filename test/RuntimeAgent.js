@@ -27,14 +27,22 @@ describe('RuntimeAgent', function() {
           if (error)
             done(error);
 
-          expect(result.result.length, 'number of local variables').to.equal(1);
+          expect(result.result.length, 'number of local variables').to.equal(2);
           expect(result.result[0], 'local var 1').to.deep.equal({
             name: 'msg',
             value: {
               type: 'string',
-              objectId: '6',
-              className: undefined,
+              value: 'hello',
               description: 'hello'
+            }
+          });
+          expect(result.result[1], 'local var 2').to.deep.equal({
+            name: 'meta',
+            value: {
+              type: 'object',
+              objectId: '7',
+              className: 'Object',
+              description: 'Object'
             }
           });
 

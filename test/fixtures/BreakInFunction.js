@@ -2,20 +2,20 @@ function MyObj() {
 }
 
 MyObj.prototype = {
-  myFunc: function(msg) {
-    console.log(msg);
+  myFunc: function(msg, meta) {
+    console.log(msg, meta);
     this.called = true;
     debugger;
   }
 };
 
-function globalFunc(msg) {
-  obj.myFunc(msg);
+function globalFunc(msg, meta) {
+  obj.myFunc(msg, meta);
 }
 
 var obj = new MyObj();
 
 process.stdin.once('data', function() {
-  globalFunc('hello');
+  globalFunc('hello', { world: 'true' });
   console.log(obj.called);
 });

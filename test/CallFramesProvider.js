@@ -23,7 +23,7 @@ describe('CallFramesProvider', function() {
             scopeChain: [
               { object: { type: 'object', objectId: '-1', className: 'Object', description: 'Object'}, type: 'local' },
               { object: { type: 'object', objectId: '-2', className: 'Object', description: 'Object'}, type: 'closure' },
-              { object: { type: 'object', objectId: '88', className: 'Object', description: 'Object'}, type: 'global' },
+              { object: { type: 'object', objectId: '90', className: 'Object', description: 'Object'}, type: 'global' },
             ],
             'this': {type: 'object', objectId: '1', className: 'Object', description: 'Object'},
           },
@@ -37,9 +37,9 @@ describe('CallFramesProvider', function() {
             scopeChain: [
               { object: { type: 'object', objectId: '-3', className: 'Object', description: 'Object'}, type: 'local' },
               { object: { type: 'object', objectId: '-4', className: 'Object', description: 'Object'}, type: 'closure' },
-              { object: { type: 'object', objectId: '88', className: 'Object', description: 'Object'}, type: 'global' },
+              { object: { type: 'object', objectId: '90', className: 'Object', description: 'Object'}, type: 'global' },
             ],
-            'this': {type: 'object', objectId: '9', className: 'global', description: 'Object'},
+            'this': {type: 'object', objectId: '10', className: 'global', description: 'Object'},
           },
           callFrames[1],
           'frame[1]');
