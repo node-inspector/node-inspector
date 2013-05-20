@@ -42,6 +42,15 @@ WebInspector._panelDescriptors = function() {
 }
 
 Preferences.localizeUI = false;
+Preferences.applicationTitle = 'Node Inspector'
 
 WebInspector._platformFlavor = WebInspector.PlatformFlavor.MacLeopard;
 
+// Front-end uses `eval location.href` to get url of inspected page
+// This does not work in node.js from obvious reasons, and cause
+// a 'null' message to be printed in front-end console.
+// Since Preferences.applicationTitle does not include inspected url,
+// we can return arbitrary string as inspected URL.
+WebInspector.WorkerManager._calculateWorkerInspectorTitle = function() {
+  InspectorFrontendHost.inspectedURLChanged('');
+}
