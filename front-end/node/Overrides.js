@@ -21,9 +21,7 @@ function onWebSocketConnected() {
 function onWebSocketMessage(message) {
   if (!message || message === 'ping') return;
 
-  if (message === 'debuggerWasDisabled') {
-    WebInspector.debuggerModel.disableDebugger();
-  } else if (message === 'showConsolePanel') {
+  if (message === 'showConsolePanel') {
     InspectorFrontendAPI.showConsole();
   } else {
     InspectorBackend.dispatch(message);
