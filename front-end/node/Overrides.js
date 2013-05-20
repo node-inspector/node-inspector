@@ -14,9 +14,6 @@ function onWebSocketConnected() {
 
   WebInspector.dockController = new WebInspector.DockController();
   WebInspector.doLoadedDone();
-  WebInspector._doLoadedDoneWithCapabilities();
-
-  WebInspector.showPanel("scripts");
 
   _inspectorInitialized = true;
 }
