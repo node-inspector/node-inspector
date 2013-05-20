@@ -26,10 +26,10 @@ describe('convert', function() {
   });
 
   describe('v8RefToInspectorObject', function() {
-    it('returns type, objectId and className', function() {
+    it('returns type, objectId and className for objects', function() {
       var ref = {
           handle: 1,
-          type: 'a-type',
+          type: 'object',
           className: 'a-class-name',
           text: 'a-text'
         },
@@ -38,8 +38,23 @@ describe('convert', function() {
       obj = convert.v8RefToInspectorObject(ref);
 
       expect(obj.objectId, 'objectId').to.equal('1');
-      expect(obj.type, 'type').to.equal('a-type');
+      expect(obj.type, 'type').to.equal('object');
       expect(obj.className, 'className').to.equal('a-class-name');
+    });
+
+    it('returns type, objectId for functions', function() {
+      var ref = {
+          handle: 1,
+          type: 'function',
+          className: 'Function',
+          text: 'function (a, b) { /*...*/ }'
+        },
+        obj;
+
+      obj = convert.v8RefToInspectorObject(ref);
+
+      expect(obj.objectId, 'objectId').to.equal('1');
+      expect(obj.type, 'type').to.equal('function');
     });
 
     it('describes string value', function() {
