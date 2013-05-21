@@ -1,4 +1,3 @@
-
 // Wire up websocket to talk to backend
 WebInspector.loaded = function() {
   WebInspector.socket = io.connect("http://" + window.location.host + '/');
@@ -78,3 +77,17 @@ WebInspector.documentKeyDown = function(event) {
   }
   WebInspector._orig_documentKeyDown(event);
 };
+
+var orig_createResourceFromFramePayload =
+  WebInspector.ResourceTreeModel.prototype._createResourceFromFramePayload;
+
+WebInspector.ResourceTreeModel.prototype._createResourceFromFramePayload =
+  function(frame, url, type, mimeType) {
+    // Force Script type for all node frames.
+    // Front-end assigns Document type (i.e. HTML) to our main script file.
+    if (frame._isNodeInspectorScript) {
+      type = WebInspector.resourceTypes.Script;
+    }
+
+    return orig_createResourceFromFramePayload(frame, url, type, mimeType);
+  };
