@@ -21,8 +21,8 @@ function onWebSocketConnected() {
 function onWebSocketMessage(message) {
   if (!message || message === 'ping') return;
 
-  if (message === 'showConsolePanel') {
-    InspectorFrontendAPI.showConsole();
+  if (message === 'showConsole') {
+    WebInspector.showConsole();
   } else {
     InspectorBackend.dispatch(message);
   }
@@ -58,4 +58,11 @@ WebInspector._platformFlavor = WebInspector.PlatformFlavor.MacLeopard;
 // we can return arbitrary string as inspected URL.
 WebInspector.WorkerManager._calculateWorkerInspectorTitle = function() {
   InspectorFrontendHost.inspectedURLChanged('');
+}
+
+// Do not offer download of the edited file when saving changes to V8.
+// DevTools' implementation changes window.location which closes
+// web-socket connection to the server and thus breaks the inspector.
+InspectorFrontendHost.close = function(url, content, forceSaveAs) {
+  delete this._fileBuffers[url];
 }
