@@ -66,3 +66,15 @@ WebInspector.WorkerManager._calculateWorkerInspectorTitle = function() {
 InspectorFrontendHost.close = function(url, content, forceSaveAs) {
   delete this._fileBuffers[url];
 }
+
+// Front-end intercepts Cmd+R, Ctrl+R and F5 keys and reloads the debugged
+// page instead of the front-end page.  We want to disable this behaviour.
+WebInspector._orig_documentKeyDown = WebInspector.documentKeyDown;
+WebInspector.documentKeyDown = function(event) {
+  switch (event.keyIdentifier) {
+    case "U+0052": // R key
+    case "F5":
+      return;
+  }
+  WebInspector._orig_documentKeyDown(event);
+};
