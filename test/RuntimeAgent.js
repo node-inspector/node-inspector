@@ -9,7 +9,7 @@ describe('RuntimeAgent', function() {
   it('gets scope properties', function(done) {
     // Hard-coded value for local scope of MyObj.myFunc().
     // See CallFramesProvider 'gets stack trace'
-    var MYFUNC_LOCAL_SCOPE_ID = '-1';
+    var MYFUNC_LOCAL_SCOPE_ID = 'scope:0:0';
 
     launcher.runOnBreakInFunction(function(debuggerClient) {
       var callFramesProvider = new CallFramesProvider(debuggerClient),

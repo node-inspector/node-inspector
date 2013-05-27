@@ -21,7 +21,7 @@ describe('CallFramesProvider', function() {
            type: 'object',
            objectId: id,
            className: className || 'Object',
-           description: 'Object'
+           description: className || 'Object'
          };
         }
 
@@ -30,9 +30,9 @@ describe('CallFramesProvider', function() {
             functionName: 'MyObj.myFunc',
             location: {scriptId: '28', lineNumber: 7, columnNumber: 4},
             scopeChain: [
-              { object: objectValueWithId('-1'), type: 'local' },
-              { object: objectValueWithId('-2'), type: 'closure' },
-              { object: objectValueWithId('90'), type: 'global' }
+              { object: objectValueWithId('scope:0:0'), type: 'local' },
+              { object: objectValueWithId('scope:0:1'), type: 'closure' },
+              { object: objectValueWithId('scope:0:2'), type: 'global' }
             ],
             'this': objectValueWithId('1')
           },
@@ -44,9 +44,9 @@ describe('CallFramesProvider', function() {
             functionName: 'globalFunc',
             location: {scriptId: '28', lineNumber: 12, columnNumber: 6},
             scopeChain: [
-              { object: objectValueWithId('-3'), type: 'local' },
-              { object: objectValueWithId('-4'), type: 'closure' },
-              { object: objectValueWithId('90'), type: 'global' }
+              { object: objectValueWithId('scope:1:0'), type: 'local' },
+              { object: objectValueWithId('scope:1:1'), type: 'closure' },
+              { object: objectValueWithId('scope:1:2'), type: 'global' }
             ],
             'this': objectValueWithId('10', 'global')
           },
