@@ -18,7 +18,7 @@ function onWebSocketConnected() {
 }
 
 function onWebSocketMessage(message) {
-  if (!message || message === 'ping') return;
+  if (!message) return;
 
   if (message === 'showConsole') {
     WebInspector.showConsole();
