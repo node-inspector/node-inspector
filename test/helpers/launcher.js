@@ -1,6 +1,6 @@
 var spawn = require('child_process').spawn,
   path = require('path'),
-  attachDebugger = require('../../lib/debugger').attachDebugger,
+  DebuggerClient = require('../../lib/DebuggerClient').DebuggerClient,
   stopDebuggerCallbacks = [];
 
 function startDebugger(scriptPath, done) {
@@ -20,7 +20,8 @@ function startDebugger(scriptPath, done) {
   });
 
   function setupDebuggerClient() {
-    debuggerClient = attachDebugger(debugPort);
+    debuggerClient = new DebuggerClient(debugPort);
+    debuggerClient.connect();
     debuggerClient.on('connect', function() {
       done(child, debuggerClient);
     });
