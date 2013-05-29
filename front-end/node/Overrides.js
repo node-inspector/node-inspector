@@ -1,6 +1,6 @@
 // Wire up websocket to talk to backend
 WebInspector.loaded = function() {
-  WebInspector.socket = io.connect("http://" + window.location.host + '/');
+  WebInspector.socket = io.connect('http://' + window.location.host + '/');
   WebInspector.socket.on('message', onWebSocketMessage);
   WebInspector.socket.on('error', function(error) { console.error(error); });
   WebInspector.socket.on('connect', onWebSocketConnected);
@@ -38,15 +38,15 @@ WebInspector._panelDescriptors = function() {
   return panelDescriptors.filter(function(pd) {
     return ['scripts', 'console'].indexOf(pd.name()) != -1;
   });
-}
+};
 
 // Patch the expression used as an initial value for a new watch.
 // DevTools' value "\n" breaks the debugger protocol.
-importScript("WatchExpressionsSidebarPane.js");
+importScript('WatchExpressionsSidebarPane.js');
 WebInspector.WatchExpressionsSection.NewWatchExpression = "''";
 
 Preferences.localizeUI = false;
-Preferences.applicationTitle = 'Node Inspector'
+Preferences.applicationTitle = 'Node Inspector';
 
 WebInspector._platformFlavor = WebInspector.PlatformFlavor.MacLeopard;
 
@@ -57,22 +57,22 @@ WebInspector._platformFlavor = WebInspector.PlatformFlavor.MacLeopard;
 // we can return arbitrary string as inspected URL.
 WebInspector.WorkerManager._calculateWorkerInspectorTitle = function() {
   InspectorFrontendHost.inspectedURLChanged('');
-}
+};
 
 // Do not offer download of the edited file when saving changes to V8.
 // DevTools' implementation changes window.location which closes
 // web-socket connection to the server and thus breaks the inspector.
 InspectorFrontendHost.close = function(url, content, forceSaveAs) {
   delete this._fileBuffers[url];
-}
+};
 
 // Front-end intercepts Cmd+R, Ctrl+R and F5 keys and reloads the debugged
 // page instead of the front-end page.  We want to disable this behaviour.
 WebInspector._orig_documentKeyDown = WebInspector.documentKeyDown;
 WebInspector.documentKeyDown = function(event) {
   switch (event.keyIdentifier) {
-    case "U+0052": // R key
-    case "F5":
+    case 'U+0052': // R key
+    case 'F5':
       return;
   }
   WebInspector._orig_documentKeyDown(event);

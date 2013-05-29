@@ -100,7 +100,7 @@ describe('convert', function() {
         handle: 0,
         type: 'object',
         className: 'Object',
-        text: '#<MyObject>',
+        text: '#<MyObject>'
       };
 
       expect(convert.v8RefToInspectorObject(ref).description).to.equal('MyObject');
@@ -133,7 +133,7 @@ describe('convert', function() {
           { name: '1' },
           { name: '3' },
           { name: 'length' },
-          { name: 'parent' },
+          { name: 'parent' }
         ]
       };
 

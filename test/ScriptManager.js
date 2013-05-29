@@ -26,5 +26,5 @@ describe('ScriptManager', function() {
       manager.reset();
       expect(manager.findScriptByID('id')).to.be.undefined;
     });
-  })
+  });
 });

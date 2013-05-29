@@ -29,7 +29,7 @@ describe('RuntimeAgent', function() {
           {
             objectId: MYFUNC_LOCAL_SCOPE_ID
           },
-          function (error, result) {
+          function(error, result) {
             if (error)
               done(error);
 
@@ -55,7 +55,7 @@ describe('RuntimeAgent', function() {
 
             done();
           });
-      })
+      });
     });
   });
 
@@ -73,7 +73,7 @@ describe('RuntimeAgent', function() {
             functionDeclaration: getCompletions.toString(),
             returnByValue: true
           },
-          function (err, response) {
+          function(err, response) {
             if (err) {
               done(err);
               return;
@@ -91,7 +91,7 @@ describe('RuntimeAgent', function() {
           {
             expression: 'console'
           },
-          function (err, response) {
+          function(err, response) {
             if (err) {
               done(err);
               return;
@@ -102,18 +102,18 @@ describe('RuntimeAgent', function() {
         );
       }
     });
-  })
+  });
 });
 
 
-// copied from front-end/RuntimeModel.js
+// copied from front-end/RuntimeModel.js and replaced " with '
 function getCompletions(primitiveType) {
   var object;
-  if (primitiveType === "string")
-    object = new String("");
-  else if (primitiveType === "number")
+  if (primitiveType === 'string')
+    object = new String('');
+  else if (primitiveType === 'number')
     object = new Number(0);
-  else if (primitiveType === "boolean")
+  else if (primitiveType === 'boolean')
     object = new Boolean(false);
   else
     object = this;
