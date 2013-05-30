@@ -1,11 +1,16 @@
 var expect = require('chai').expect,
+    EventEmitter = require('events').EventEmitter,
     ScriptManager = require('../lib/ScriptManager').ScriptManager;
 
 describe('ScriptManager', function() {
   var manager;
 
   beforeEach(function() {
-    manager = new ScriptManager();
+    var frontendClientStub = {
+      sendEvent: function() { }
+    };
+    var debuggerClientStub = new EventEmitter;
+    manager = new ScriptManager([], frontendClientStub, debuggerClientStub);
   });
 
 
