@@ -12,11 +12,8 @@ describe('RuntimeAgent', function() {
     var MYFUNC_LOCAL_SCOPE_ID = '-1';
 
     launcher.runOnBreakInFunction(function(debuggerClient) {
-      var sessionStub = {
-          sendDebugRequest: debuggerClient.sendDebugRequest.bind(debuggerClient)
-        },
-        callFramesProvider = new CallFramesProvider(debuggerClient),
-        agent = new RuntimeAgent(sessionStub);
+      var callFramesProvider = new CallFramesProvider(debuggerClient),
+        agent = new RuntimeAgent(debuggerClient);
 
       // request call frames so that scope properties are initialized
       callFramesProvider.fetchCallFrames(function(cferror) {
@@ -61,10 +58,7 @@ describe('RuntimeAgent', function() {
 
   it('calls function on an object to get completions', function(done) {
     launcher.runOnBreakInFunction(function(debuggerClient) {
-      var sessionStub = {
-          sendDebugRequest: debuggerClient.sendDebugRequest.bind(debuggerClient)
-        },
-        agent = new RuntimeAgent(sessionStub);
+      var agent = new RuntimeAgent(debuggerClient);
 
       fetchConsoleObjectId(function(consoleObjectId) {
         agent.callFunctionOn(
