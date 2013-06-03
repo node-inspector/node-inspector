@@ -131,5 +131,5 @@ This project respectfully uses code from and thanks the authors of:
 * [Blink](http://www.chromium.org/blink)
 * [node](http://github.com/ry/node)
 * [socket.io](http://github.com/LearnBoost/socket.io)
-* [node-paperboy](http://github.com/felixge/node-paperboy)
+* [express](http://expressjs.com/)
 
