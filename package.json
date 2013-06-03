@@ -30,6 +30,7 @@
     "mocha": "latest",
     "chai": "latest"
   },
+  "preferGlobal": true,
   "scripts": {
     "test": "mocha"
   }
