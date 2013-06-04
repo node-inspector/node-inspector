@@ -56,11 +56,42 @@ describe('RuntimeAgent', function() {
     });
   });
 
+  it('returns object properties with metadata', function(done) {
+    launcher.runInspectObject(function(debuggerClient, inspectedObjectId) {
+      var agent = new RuntimeAgent(debuggerClient);
+      agent.getProperties(
+        {
+          objectId: inspectedObjectId
+        },
+        function(error, result) {
+          if (error)
+            done(error);
+
+          var props = convertPropertyArrayToLookup(result.result);
+
+          expect(props['writableProp'].writable, 'writableProp.writable')
+            .to.be.true;
+
+          expect(props['writableProp'].enumerable, 'writableProp.enumerable')
+            .to.be.true;
+
+          expect(props['readonlyProp'].writable, 'readonlyProp.writable')
+            .to.be.false;
+
+          expect(props['readonlyProp'].enumerable, 'readonlyProp.enumerable')
+            .to.be.false;
+
+          done();
+        }
+      );
+    });
+  });
+
   it('calls function on an object to get completions', function(done) {
     launcher.runOnBreakInFunction(function(debuggerClient) {
       var agent = new RuntimeAgent(debuggerClient);
 
-      fetchConsoleObjectId(function(consoleObjectId) {
+      debuggerClient.fetchObjectId(agent, 'console', function(consoleObjectId) {
         agent.callFunctionOn(
           {
             objectId: consoleObjectId,
@@ -79,25 +110,18 @@ describe('RuntimeAgent', function() {
           }
         );
       });
-
-      function fetchConsoleObjectId(cb) {
-        agent.evaluate(
-          {
-            expression: 'console'
-          },
-          function(err, response) {
-            if (err) {
-              done(err);
-              return;
-            }
-
-            cb(response.result.objectId);
-          }
-        );
-      }
     });
   });
 });
+
+function convertPropertyArrayToLookup(array) {
+  var lookup = {};
+  for (var i in array) {
+    var prop = array[i];
+    lookup[prop.name] = prop;
+  }
+  return lookup;
+}
 
 
 // copied from front-end/RuntimeModel.js and replaced " with '
