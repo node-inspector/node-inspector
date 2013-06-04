@@ -4,7 +4,10 @@ function InspectedClass() {
 }
 
 process.stdin.once('data', function() {
+  function localFunc() { return 'local'; }
+
   var inspectedObject = new InspectedClass();
+
   debugger;
-  console.log(inspectedObject.writableProp);
+  console.log(inspectedObject.writableProp, localFunc());
 });

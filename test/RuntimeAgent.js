@@ -4,7 +4,7 @@ var expect = require('chai').expect,
   RuntimeAgent = require('../lib/RuntimeAgent.js').RuntimeAgent;
 
 describe('RuntimeAgent', function() {
-  launcher.stopAllDebuggersAfterEachTest();
+  after(launcher.stopAllDebuggers);
 
   it('gets scope properties', function(done) {
     // Hard-coded value for local scope of MyObj.myFunc().
@@ -112,6 +112,126 @@ describe('RuntimeAgent', function() {
       });
     });
   });
+
+  describe('calls function on an object to change property value', function() {
+    before(setupDebugScenario);
+
+    toValueType(
+      'a string',
+      { type: 'string', value: 'new-value', description: 'new-value' }
+    );
+
+    toValueType(
+      'a number',
+      { type: 'number', value: 10, description: '10' }
+    );
+
+    toValueType(
+      'null',
+      { type: 'null', description: 'null' }
+    );
+
+    toValueType(
+      'undefined',
+      { type: 'undefined', description: 'undefined' }
+    );
+
+    toRefType(
+      'an object',
+      'inspectedObject',
+      function(valueId) {
+        return {
+          type: 'object',
+          objectId: valueId,
+          className: 'Object',
+          description: 'InspectedClass'
+        };
+      }
+    );
+
+    toRefType(
+      'a function',
+      'localFunc',
+      function(valueId) {
+        return {
+          type: 'function',
+          objectId: valueId,
+          className: 'Function',
+          description: 'function localFunc() { return \'local\'; }'
+        };
+      }
+    );
+
+    // helpers (implementation details) below this line
+
+    var debuggerClient, inspectedObjectId, agent;
+
+    function setupDebugScenario(done) {
+      launcher.runInspectObject(function(client, objectId) {
+        debuggerClient = client;
+        inspectedObjectId = objectId;
+        agent = new RuntimeAgent(debuggerClient);
+        done();
+      });
+    }
+
+    function to(type, test) {
+      it('to ' + type, test);
+    }
+
+    function toValueType(type, value) {
+      to(type, function(done) {
+        verifyPropertySetter(
+          agent,
+          inspectedObjectId,
+          value,
+          value,
+          done
+        );
+      });
+    }
+
+    function toRefType(type, expression, valueCb) {
+      to(type, function(done) {
+        debuggerClient.fetchObjectId(agent, expression, function(valueId) {
+          verifyPropertySetter(
+            agent,
+            inspectedObjectId,
+            valueCb(valueId),
+            valueCb(valueId),
+            done
+          );
+        });
+      });
+    }
+
+    function verifyPropertySetter(agent,
+                                  objectId,
+                                  argumentDef,
+                                  expectedValue,
+                                  done) {
+      agent.callFunctionOn(
+        {
+          objectId: objectId,
+          functionDeclaration: setPropertyValue.toString(),
+          arguments: [
+            { value: 'prop' },
+            argumentDef
+          ]
+        },
+        function(err, result) {
+          if (err) throw err;
+
+          verifyPropertyValue(
+            agent,
+            objectId,
+            'prop',
+            expectedValue,
+            done);
+        }
+      );
+    }
+  });
 });
 
 function convertPropertyArrayToLookup(array) {
@@ -121,6 +241,27 @@ function convertPropertyArrayToLookup(array) {
     lookup[prop.name] = prop;
   }
   return lookup;
+}
+
+function verifyPropertyValue(runtimeAgent,
+                             objectId,
+                             name,
+                             expectedValue,
+                             callback) {
+  runtimeAgent.getProperties(
+    {
+      objectId: objectId
+    },
+    function(err, result) {
+      if (err) throw err;
+
+      var props = convertPropertyArrayToLookup(result.result);
+      var value = props[name] ? props[name].value : undefined;
+      expect(JSON.stringify(value), name)
+        .to.equal(JSON.stringify(expectedValue));
+      callback();
+    }
+  );
 }
 
 
@@ -146,4 +287,9 @@ function getCompletions(primitiveType) {
     }
   }
   return resultSet;
+}
+
+// copied from front-end/RemoteObject.js
+function setPropertyValue(name, value) {
+  this[name] = value;
 }

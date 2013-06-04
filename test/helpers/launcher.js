@@ -37,6 +37,7 @@ function startDebugger(scriptPath, done) {
 }
 
 function runOnBreakInFunction(test) {
+  stopAllDebuggers();
   startDebugger('BreakInFunction.js', function(childProcess, debuggerClient) {
     debuggerClient.on('break', function() {
       test(debuggerClient);
@@ -47,6 +48,7 @@ function runOnBreakInFunction(test) {
 
 /** @param {function(DebuggerClient, string)} test */
 function runInspectObject(test) {
+  stopAllDebuggers();
   startDebugger('InspectObject.js', function(childProcess, debuggerClient) {
     debuggerClient.on('break', function() {
       debuggerClient.fetchObjectId(
