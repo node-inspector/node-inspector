@@ -107,6 +107,13 @@ describe('DebuggerAgent', function() {
           newValue: newValue
         },
         function(err, result) {
+          if (process.version < 'v0.11.2') {
+            expect(err)
+              .to.have.string('does not support setting variable value');
+            done();
+            return;
+          }
+
           if (err) throw err;
 
           verifyVariableValue(
