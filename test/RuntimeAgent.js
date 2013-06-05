@@ -132,7 +132,7 @@ describe('RuntimeAgent', function() {
 
     toValueType(
       'null',
-      { type: 'null', description: 'null' }
+      { type: 'null', value: null, description: 'null' }
     );
 
     toValueType(
