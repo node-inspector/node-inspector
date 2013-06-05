@@ -1,0 +1,50 @@
+#!/bin/sh
+
+FILE=""
+LIST=false
+TAG="n.n.n"
+
+while [ "$1" != "" ]; do
+  case $1 in
+    -l | --list )
+      LIST=true
+      ;;
+    -t | --tag )
+      TAG=$2
+      shift
+      ;;
+    * )
+      FILE=$1
+      ;;
+  esac
+  shift
+done
+
+DATE=`date +'%Y-%m-%d'`
+HEAD="$DATE, Version $TAG\n\n"
+
+if $LIST; then
+	lasttag=$(git rev-list --tags --max-count=1 2>/dev/null)
+	version=$(git describe --tags --abbrev=0 $lasttag 2>/dev/null)
+  if test -z "$version"; then
+	  git log --no-merges --pretty="format:* %s (%an)%n"
+  else
+	  git log --no-merges --pretty="format:* %s (%an)%n" $version..
+  fi
+  exit
+fi
+
+CHANGELOG=$FILE
+if test "$CHANGELOG" = ""; then
+  CHANGELOG=`ls | egrep 'change|history' -i|head -n1`
+  if test "$CHANGELOG" = ""; then
+    CHANGELOG='History.md';
+  fi
+fi
+tmp="/tmp/changelog"
+printf "$HEAD" > $tmp
+$0 --list >> $tmp
+printf '\n' >> $tmp
+if [ -f $CHANGELOG ]; then echo "" >> $tmp; cat $CHANGELOG >> $tmp; fi
+mv $tmp $CHANGELOG
+test -n "$EDITOR" && $EDITOR $CHANGELOG
