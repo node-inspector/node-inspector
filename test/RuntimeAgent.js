@@ -34,6 +34,8 @@ describe('RuntimeAgent', function() {
               .to.equal(2);
             expect(result.result[0], 'local var 1').to.deep.equal({
               name: 'msg',
+              writable: true,
+              enumerable: true,
               value: {
                 type: 'string',
                 value: 'hello',
@@ -42,6 +44,8 @@ describe('RuntimeAgent', function() {
             });
             expect(result.result[1], 'local var 2').to.deep.equal({
               name: 'meta',
+              writable: true,
+              enumerable: true,
               value: {
                 type: 'object',
                 objectId: '7',
