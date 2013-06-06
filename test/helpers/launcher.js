@@ -9,7 +9,8 @@ function startDebugger(scriptPath, done) {
     child,
     debuggerClient;
 
-  scriptPath = path.join(testDir, '..', 'fixtures', scriptPath);
+  if (scriptPath.indexOf(path.sep) == -1)
+    scriptPath = path.join(testDir, '..', 'fixtures', scriptPath);
   child = spawn('node', ['--debug=' + debugPort, scriptPath]);
 
   child.stderr.on('data', function(data) { process.stderr.write(data); });
