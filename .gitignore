@@ -2,3 +2,4 @@
 node_modules
 v8.log
 .DS_Store
+/test/fixtures/work
