@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "socket.io": "~0.9.14",
-    "express": "~3.2.6",
+    "express": "~3.2",
     "async": "~0.2.8"
   },
   "devDependencies": {
