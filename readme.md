@@ -1,23 +1,66 @@
-Node Inspector is a debugger interface for nodeJS using the WebKit Web Inspector.
+# Overview
+Node Inspector is a debugger interface for node.js using the
+Blink Developer Tools (former WebKit Web Inspector).
 
-## Getting Started
+## Features
 
-### Requirements
+The Blink DevTools debugger is a great javascript debugger interface;
+it works just as well for node. Node Inspector supports almost all
+of the debugging features of DevTools.
 
-* [nodeJS](http://github.com/ry/node)
-  - versions: 0.3.0 or later
+* Navigate in your source files
+* Set breakpoints (and specify trigger conditions)
+* Break on exceptions
+* Step over, step in, step out, resume (continue)
+* Continue to location
+* Disable/enable all breakpoints
+* Inspect scopes, variables, object properties
+* Hover your mouse over an expression in your source to display its value in
+  a tooltip
+* Edit variables and object properties
+* (etc.)
+
+### Cool stuff
+* Node Inspector uses WebSockets, so no polling for breaks.
+* Remote debugging
+* [Live edit of running code](http://github.com/dannycoates/node-inspector/wiki/LiveEdit),
+  optionally persisting changes back to the file-system.
+* Set breakpoints in files that are not loaded into V8 yet - useful for
+  debugging module loading/initialization.
+* Javascript from top to bottom :)
+
+## Known Issues
+
+This is beta-quality code, so use at your own risk.
+
+* Be careful about viewing the contents of Buffer objects,
+  each byte is displayed as an individual array element;
+  for most Buffers this will take too long to render.
+* While not stopped at a breakpoint the console doesn't always
+  behave as you might expect.
+* Profiler is not implemented yet. Have a look at
+  [node-webkit-agent](https://github.com/c4milo/node-webkit-agent)
+  in the meantime.
+* Break on uncaught exceptions does not work because of missing
+  [support in node](https://github.com/joyent/node/pull/5713).
+* Debugging multiple processes (e.g. cluster) is cumbersome.
+
+# Getting Started
+
+## Requirements
+
+* [node.js](http://github.com/ry/node)
+  - version 0.8 or later
 * [npm](http://github.com/isaacs/npm)
-* A WebKit based browser: Chrome, Safari, etc.
+* A Blink-based browser (i.e. Google Chrome)
 
-* Optional [v8-profiler](http://github.com/dannycoates/v8-profiler) to use the profiles panel
-
-### Install
+## Install
 
 * With [npm](http://github.com/isaacs/npm)
 
         $ npm install -g node-inspector
 
-### Enable debug mode
+## Enable debug mode
 
 To use node-inspector, enable debugging on the node you wish to debug.
 You can either start node with a debug flag like:
@@ -31,7 +74,8 @@ or, to pause your script on the first line:
 Or you can enable debugging on a node that is already running by sending
 it a signal:
 
-1. Get the PID of the node process using your favorite method. `pgrep` or `ps -ef` are good
+1. Get the PID of the node process using your favorite method.
+`pgrep` or `ps -ef` are good
 
 		$ pgrep -l node
 		2345 node your/node/server.js
@@ -42,13 +86,13 @@ it a signal:
 
 Great! Now you are ready to attach node-inspector
 
-### Debugging
+## Debugging
 
 1. start the inspector. I usually put it in the background
 
 		$ node-inspector &
 
-2. open http://127.0.0.1:8080/debug?port=5858 in your favorite WebKit based browser
+2. open http://127.0.0.1:8080/debug?port=5858 in Chrome
 
 3. you should now see the javascript source from node. If you don't, click the scripts tab.
 
@@ -58,78 +102,37 @@ Great! Now you are ready to attach node-inspector
 
 For more information on getting started see the [wiki](http://github.com/dannycoates/node-inspector/wiki/Getting-Started---from-scratch)
 
-node-inspector works almost exactly like the web inspector in Safari and
+node-inspector works almost exactly like the web inspector in
 Chrome. Here's a good [overview](http://code.google.com/chrome/devtools/docs/scripts.html) of the UI
-
-## FAQ / WTF
-
-1. I don't see one of my script files in the file list.
-
-    > try refreshing the browser (F5 or command-r)
-
-2. My script runs too fast to attach the debugger.
-
-    > use `--debug-brk` to pause the script on the first line
-
-3. I got the ui in a weird state.
-
-    > when in doubt, refresh
-    
-4. Can I debug remotely?
-
-    > Yes. node-inspector must be running on the same machine, but your browser can be anywhere. Just make sure port 8080 is accessible
 
 ## Inspector options
 
     --web-port=[port]     port to host the inspector (default 8080)
+    --web-host=[host]     host to listen on (default 0.0.0.0)
 
-## Cool stuff
+# FAQ / WTF
 
-* the WebKit Web Inspector debugger is a great js debugger interface, it works just as well for node
-* uses WebSockets, so no polling for breaks
-* remote debugging
-* javascript top to bottom :)
-* [edit running code](http://github.com/dannycoates/node-inspector/wiki/LiveEdit)
+1. My script runs too fast to attach the debugger.
 
-## Known Issues
+  > use `--debug-brk` to pause the script on the first line
 
-This is beta quality code, so use at your own risk:
+2. I got the ui in a weird state.
 
-* be careful about viewing the contents of Buffer objects, each byte is displayed as an individual array element, for anything but tiny Buffers this will take too long to render
-* while not stopped at a breakpoint the console doesn't always behave as you might expect
+  > when in doubt, refresh
 
-## Profiling
+3. Can I debug remotely?
 
-**VERY EXPERIMENTAL**
-I don't recommend using this yet
+  > Yes. node-inspector must be running on the same machine,
+  > but your browser can be anywhere.
+  > Just make sure port 8080 is accessible
 
-To use the profiles panel, install the v8-profiler module:
-
-    npm install v8-profiler
-
-To use it do something like:
-
-```javascript
-var profiler = require('v8-profiler');
-
-profiler.startProfiling('startup');
-slowStartupFoo();
-profiler.stopProfiling('startup');
-
-profiler.takeSnapshot('beforeLeak');
-leakyFoo();
-profiler.takeSnapshot('afterLeak');
-```
-
-Then view the profiling results with the profiles panel in node-inspector. You can
-also take heap snapshots on demand from the profiles panel.
-
-## Thanks
+# Thanks
 
 This project respectfully uses code from and thanks the authors of:
 
 * [Blink](http://www.chromium.org/blink)
-* [node](http://github.com/ry/node)
+* [node](http://github.com/joyent/node)
 * [socket.io](http://github.com/LearnBoost/socket.io)
 * [express](http://expressjs.com/)
-
+* [async](https://github.com/caolan/async)
+* [glob](https://github.com/isaacs/node-glob)
