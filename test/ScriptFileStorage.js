@@ -117,7 +117,7 @@ describe('ScriptFileStorage', function() {
     var files = [];
     fs.mkdirSync(TEMP_DIR);
     Array.prototype.forEach.call(arguments, function(f) {
-      f = path.join(TEMP_DIR, f);
+      f = path.join(TEMP_DIR, globPathToNative(f));
       if (isDir(f)) {
         fs.mkdirSync(f);
       } else {
@@ -128,6 +128,10 @@ describe('ScriptFileStorage', function() {
     return files;
   }
 });
+
+function globPathToNative(p) {
+  return p.split('/').join(path.sep);
+}
 
 function getScriptSourceByName(debuggerClient, scriptName, callback) {
   debuggerClient.request(
@@ -145,7 +149,7 @@ function getScriptSourceByName(debuggerClient, scriptName, callback) {
 }
 
 function isDir(path) {
-  return path.match(/\/$/);
+  return path.match(/[\/\\]$/);
 }
 
 function deleteTemps() {
@@ -164,7 +168,9 @@ function deleteTemps() {
     );
 
     entries = entries
-      .map(function(f) { return path.join(TEMP_DIR, f); })
+      .map(function(f) {
+        return path.join(TEMP_DIR, globPathToNative(f));
+      })
       .sort()
       .reverse();
 
