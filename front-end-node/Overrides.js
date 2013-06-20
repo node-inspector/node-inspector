@@ -91,3 +91,16 @@ WebInspector.ResourceTreeModel.prototype._createResourceFromFramePayload =
 
     return orig_createResourceFromFramePayload(frame, url, type, mimeType);
   };
+
+var _orig_loadXHR = loadXHR;
+var loadXHR = function patchedLoadXHR(url, async, callback) {
+  var match = url.match(/^file:\/\/(.*)$/);
+  if (match) {
+    var encodedPath = match[1]
+      .split('/')
+      .map(encodeURIComponent)
+      .join('/');
+    url = '/file-resource/' + encodedPath;
+  }
+  return _orig_loadXHR(url, async, callback);
+}
