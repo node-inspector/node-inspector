@@ -56,6 +56,29 @@ describe('ScriptFileStorage', function() {
     );
   });
 
+  it('finds application root for nonbin/app.js', function(done) {
+    // If the argv1 file is not in the bin/ folder, then we must not consider
+    // parent folder as an application root.
+    // Since we are detecting also 'test' folder as an indicator of an app root,
+    // considering a parent folder may return a folder that is not an app root,
+    // but contains lots of other projects instead.
+    // Consider following structure:
+    //   ~/work/debugged-app/app.js  # no more files, no node_modules folder
+    //   ~/work/test/playground.js   # test folder for trying out things
+    //   ~/work/project1
+    //   ~/work/project2
+    //   (etc.)                      # other projects - a lot of files
+    givenTempFiles('nonbin/', 'nonbin/app.js', 'node_modules/');
+    storage.findApplicationRoot(
+      path.join(TEMP_DIR, 'nonbin', 'app.js'),
+      function(err, root) {
+        if (err) throw err;
+        expect(root).to.equal(path.join(TEMP_DIR, 'nonbin'));
+        done();
+      }
+    );
+  });
+
   it('finds application root for app.js by checking lib/ folder', function(done) {
     givenTempFiles('app.js', 'lib/');
     storage.findApplicationRoot(
