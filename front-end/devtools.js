@@ -39302,6 +39302,36 @@ if (selection.type === "Range" && !selection.isCollapsed)
 WebInspector.evaluateInConsole(selection.toString());
 },
 
+_toggleBreakpoint: function()
+{
+	var view = this.visibleView;
+	if (!view) {
+		return;
+	}
+	var textViewer = view.textViewer;
+	if (!textViewer) {
+		return;
+	}
+	var mainPanel = textViewer._mainPanel;
+	if (!mainPanel) {
+		return;
+	}
+	var selection = mainPanel._getSelection();
+	if (!selection) {
+		return;
+	}
+	var lineNumber = selection.startLine;
+	if (typeof lineNumber !== 'number') {
+		return;
+	}
+	var breakpoint = view._breakpointManager.findBreakpoint(view._uiSourceCode, lineNumber);
+	if (breakpoint) {
+	breakpoint.remove();
+} else{
+	view._setBreakpoint(lineNumber, "", true);
+}
+},
+
 _createDebugToolbar: function(section)
 {
 var debugToolbar = document.createElement("div");
@@ -39355,6 +39385,11 @@ debugToolbar.appendChild(this._toggleBreakpointsButton.element);
 this.debuggerStatusElement = document.createElement("div");
 this.debuggerStatusElement.id = "scripts-debugger-status";
 debugToolbar.appendChild(this.debuggerStatusElement);
+
+handler = this._toggleBreakpoint.bind(this);
+shortcuts = [];
+shortcuts.push(WebInspector.KeyboardShortcut.makeDescriptor("b", WebInspector.KeyboardShortcut.Modifiers.Ctrl));
+this.registerShortcut(shortcuts[0].key, handler);
 
 return debugToolbar;
 },
