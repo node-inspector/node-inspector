@@ -40,79 +40,37 @@ describe('ScriptFileStorage', function() {
     });
   });
 
-  it('finds application root for bin/app.js by checking lib/ folder', function(done) {
-    givenTempFiles('bin/', 'bin/app.js', 'lib/');
-    storage.findApplicationRoot(
-      path.join(TEMP_DIR, 'bin', 'app.js'),
-      expectRootToEqualTempDir.bind(this, done)
-    );
-  });
+  it('finds application root for subdir/app.js by checking package.json file in parent',
+    function(done) {
+      givenTempFiles('subdir/', 'subdir/app.js', 'package.json');
+      storage.findApplicationRoot(
+        path.join(TEMP_DIR, 'subdir', 'app.js'),
+        expectRootToEqual.bind(this, done, TEMP_DIR)
+      );
+    }
+  );
 
-  it('finds application root for bin/app.js by checking node_modules/ folder', function(done) {
-    givenTempFiles('bin/', 'bin/app.js', 'node_modules/');
-    storage.findApplicationRoot(
-      path.join(TEMP_DIR, 'bin', 'app.js'),
-      expectRootToEqualTempDir.bind(this, done)
-    );
-  });
+  it('finds application root for root/app.js with no package.json files around',
+    function(done) {
+      // If the parent directory of app.js does not contain package.json,
+      // it should not be considered as an application root.
+      givenTempFiles('root/', 'root/app.js');
+      storage.findApplicationRoot(
+        path.join(TEMP_DIR, 'root', 'app.js'),
+        expectRootToEqual.bind(this, done, path.join(TEMP_DIR, 'root'))
+      );
+    }
+  );
 
-  it('finds application root for nonbin/app.js', function(done) {
-    // If the argv1 file is not in the bin/ folder, then we must not consider
-    // parent folder as an application root.
-    // Since we are detecting also 'test' folder as an indicator of an app root,
-    // considering a parent folder may return a folder that is not an app root,
-    // but contains lots of other projects instead.
-    // Consider following structure:
-    //   ~/work/debugged-app/app.js  # no more files, no node_modules folder
-    //   ~/work/test/playground.js   # test folder for trying out things
-    //   ~/work/project1
-    //   ~/work/project2
-    //   (etc.)                      # other projects - a lot of files
-    givenTempFiles('nonbin/', 'nonbin/app.js', 'node_modules/');
-    storage.findApplicationRoot(
-      path.join(TEMP_DIR, 'nonbin', 'app.js'),
-      function(err, root) {
-        if (err) throw err;
-        expect(root).to.equal(path.join(TEMP_DIR, 'nonbin'));
-        done();
-      }
-    );
-  });
-
-  it('finds application root for app.js by checking lib/ folder', function(done) {
-    givenTempFiles('app.js', 'lib/');
-    storage.findApplicationRoot(
-      path.join(TEMP_DIR, 'app.js'),
-      expectRootToEqualTempDir.bind(this, done)
-    );
-  });
-
-  it('finds application root for app.js by checking node_modules/ folder', function(done) {
-    givenTempFiles('app.js', 'node_modules/');
-    storage.findApplicationRoot(
-      path.join(TEMP_DIR, 'app.js'),
-      expectRootToEqualTempDir.bind(this, done)
-    );
-  });
-
-  it('finds all application files', function(done) {
-    var expectedFiles = givenTempFiles(
-      'bin/', 'bin/app.js',
-      'lib/', 'lib/module.js',
-      'toplevel.js'
-    );
-
-    storage.findAllApplicationScripts(
-      NON_APP_DIR,
-      path.join(TEMP_DIR, 'bin', 'app.js'),
-      function(err, files) {
-        if (err) throw err;
-        expect(files.map(relativeToTemp))
-          .to.have.members(expectedFiles.map(relativeToTemp));
-        done();
-      }
-    );
-  });
+  it('finds application root for root/app.js by checking package.json file in root/',
+    function(done) {
+      givenTempFiles('root/', 'root/app.js', 'root/package.json', 'package.json');
+      storage.findApplicationRoot(
+        path.join(TEMP_DIR, 'root', 'app.js'),
+        expectRootToEqual.bind(this, done, path.join(TEMP_DIR, 'root'))
+      );
+    }
+  );
 
   it('finds also files in start directory', function(done) {
     var expectedFiles = givenTempFiles(
@@ -128,6 +86,8 @@ describe('ScriptFileStorage', function() {
       'unrelated/',
       'unrelated/file.js'
     );
+
+    givenTempFiles('global/package.json', 'local/package.json');
 
     // remove unrelated/file.js
     expect(expectedFiles.pop()).to.match(/unrelated[\/\\]file.js$/);
@@ -145,7 +105,7 @@ describe('ScriptFileStorage', function() {
   });
 
   it('removes duplicate entries from files found', function(done) {
-    var expectedFiles = givenTempFiles('app.js', 'node_modules/');
+    var expectedFiles = givenTempFiles('app.js');
 
     storage.findAllApplicationScripts(
       TEMP_DIR,
@@ -164,9 +124,9 @@ describe('ScriptFileStorage', function() {
     return path.relative(TEMP_DIR, p);
   }
 
-  function expectRootToEqualTempDir(done, err, root) {
+  function expectRootToEqual(done, expected, err, root) {
     if (err) throw err;
-    expect(root).to.equal(TEMP_DIR);
+    expect(root).to.equal(expected);
     done();
   }
 
@@ -192,7 +152,7 @@ describe('ScriptFileStorage', function() {
 
   function givenTempFiles() {
     var files = [];
-    fs.mkdirSync(TEMP_DIR);
+    if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR);
     Array.prototype.forEach.call(arguments, function(f) {
       f = path.join(TEMP_DIR, globPathToNative(f));
       if (isDir(f)) {
