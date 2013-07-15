@@ -1,3 +1,180 @@
+2013-07-15, Version 0.3.0
+
+* MAINTAINERS.md: fixed typo. (Miroslav Bajtos)
+
+* squash! ScriptFileStorage: root detection change (Miroslav Bajtos)
+
+* ScriptFileStorage: improved detection of app root (Miroslav Bajtos)
+
+* ScriptManager: fixed crash (mocha --debug-brk) (Miroslav Bajtos)
+
+* DebuggerClient: fixed crash in getScriptSource (Miroslav Bajtos)
+
+* AUTHORS: updated Stronglooper's emails (Miroslav Bajtos)
+
+* Added MAINTAINERS.md (Miroslav Bajtos)
+
+* Added AUTHORS (Miroslav Bajtos)
+
+* Updated documentation. (Miroslav Bajtos)
+
+* List unit-test files on session start. (Miroslav Bajtos)
+
+* DebuggerClient: workaround for string truncation (Miroslav Bajtos)
+
+* Fixed sourcemap support on Windows (Miroslav Bajtos)
+
+* ScriptFileStorage: fixed issues on windows (Miroslav Bajtos)
+
+* Sourcemap support (Miroslav Bajtos)
+
+* Change the default server ip to be 127.0.0.1 as 0.0.0.0 doesn't work on windows (Raymond Feng)
+
+* PageAgent: removed forgotten console.log call. (Miroslav Bajtos)
+
+* Set breakpoint in a file not loaded yet. (Miroslav Bajtos)
+
+* DebuggerAgent: setVariableValue for node v0.10.12+ (Miroslav Bajtos)
+
+* package.json: relaxed express version spec (Miroslav Bajtos)
+
+* Added few more dummy command handlers. (Miroslav Bajtos)
+
+* DebuggerAgent: handle unsupported node version (Miroslav Bajtos)
+
+* Implemented setVariableValue. (Miroslav Bajtos)
+
+* Fixed 'get scope properties' to include flags (Miroslav Bajtos)
+
+* RuntimeAgent: callFunctionOn with arguments (Miroslav Bajtos)
+
+* RuntimeAgent: added writable and enumerable flags (Miroslav Bajtos)
+
+* DebuggerAgent: implemented restartFrame. (Miroslav Bajtos)
+
+* Improved handling of agent methods not implemented (Miroslav Bajtos)
+
+* DebuggerAgent: save live-edit changes. (Miroslav Bajtos)
+
+* Run ./tools/git-changelog to update ChangeLog (Sam Roberts)
+
+* session: removed improper warning message (Miroslav Bajtos)
+
+* Moved frontend overrides out of front-end folder (Miroslav Bajtos)
+
+* Replaced paperboy with express. (Miroslav Bajtos)
+
+* Added header to enable IE support via Chrome Frame (Miroslav Bajtos)
+
+* added preferGlobal to package.json (Miroslav Bajtos)
+
+* Changed fetchCallFrames to not fetch scope details (Miroslav Bajtos)
+
+* Implemented DebuggerClient.clearBreakpoint (Miroslav Bajtos)
+
+* Moved afterCompile handler to ScriptManager. (Miroslav Bajtos)
+
+* Cleanup: Agents depend on debuggerClient (Miroslav Bajtos)
+
+* Moved session.attach to DebuggerAgent. (Miroslav Bajtos)
+
+* Refactored 'break'/'exception' handling (Miroslav Bajtos)
+
+* Started rename of Debugger.sendDebugRequest. (Miroslav Bajtos)
+
+* Extracted debugger communication to DebuggerClient (Miroslav Bajtos)
+
+* Extracted frontend communication to FrontendClient (Miroslav Bajtos)
+
+* Removed unused code from session.js (Miroslav Bajtos)
+
+* Moved detection of conn errors to debugger. (Miroslav Bajtos)
+
+* Style: added gjslint rules and fixed style issues (Miroslav Bajtos)
+
+* Code-completions in console. (Miroslav Bajtos)
+
+* Display the main document as a script file. (Miroslav Bajtos)
+
+* Upgraded dependencies to recent versions. (Miroslav Bajtos)
+
+* Code clean-up (Miroslav Bajtos)
+
+* Removed overload of Reload page key shortcut. (Miroslav Bajtos)
+
+* Implemented live edit of script sources. (Miroslav Bajtos)
+
+* Fixed creation of a new watch expression (Miroslav Bajtos)
+
+* Prepared for v0.3.0preview1 release. (Miroslav Bajtos)
+
+* Removed leftover file. (Miroslav Bajtos)
+
+* Convert windows paths to file:// URLs. (Miroslav Bajtos)
+
+* Fixed title of html page and removed null error (Miroslav Bajtos)
+
+* Detach from debugger when front-end disconnects. (Miroslav Bajtos)
+
+* Removed test/hello.js (Miroslav Bajtos)
+
+* Code clean-up: removed unused code. (Miroslav Bajtos)
+
+* Fixed DebuggerAgent.setPauseOnExceptions. (Miroslav Bajtos)
+
+* DebuggerAgent.getFunctionDetails() (Miroslav Bajtos)
+
+* v8NameToInspectorUrl for `evaluate` scripts (Miroslav Bajtos)
+
+* Commands not used/supported, capability queries (Miroslav Bajtos)
+
+* Breaking on an Exception now provides a reason. (Michael Schoonmaker)
+
+* Updated the Console methods under both Runtime and Debugger. (Michael Schoonmaker)
+
+* Implemented 'Continue to Here' command (Miroslav Bajtos)
+
+* Implemented activate/deactivate breakpoints. (Miroslav Bajtos)
+
+* Implemented RuntimeAget.getProperties() (Miroslav Bajtos)
+
+* Implemented execution-control related commands (Miroslav Bajtos)
+
+* Implemented Call Stack. (Miroslav Bajtos)
+
+* Implemented breakpoints (Miroslav Bajtos)
+
+* Rework backend to support the new frontend. (Miroslav Bajtos)
+
+* Reuse stubs and commands from webkit-inspector. (Miroslav Bajtos)
+
+* Patched front-end/inspector.html (Miroslav Bajtos)
+
+* Updated front-end to blink branch 1507. (Miroslav Bajtos)
+
+* Display breakpoints in scripts loaded later. (Miroslav Bajtos)
+
+* Fixed breakpoint restore bug. (Miroslav Bajtos)
+
+* Update list of scripts on afterCompile event. (Miroslav Bajtos)
+
+* Restore breakpoints on debugee restart. (Miroslav Bajtos)
+
+* default should be backwards compatible (Philip Tellis)
+
+* missing " (Philip Tellis)
+
+* configure which interface to listen on so that we can avoid opening the debugger to the world if not needed (Philip Tellis)
+
+* Added meta tag to enable IE support via Chrome Frame (Glenn Block)
+
+* Added BSD License (Danny Coates)
+
+* updated 'Thanks' on readme (Danny Coates)
+
+* Syntax highlighting (Akzhan Abdulin)
+
+
 v0.1.10
 
 * switched to socket.io, now works with Chrome 14+
