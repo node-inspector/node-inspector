@@ -1,3 +1,10 @@
+2013-07-15, Version n.n.n
+
+* Added version log message. (Miroslav Bajtos)
+
+* Fixed RuntimeAgent.callFunctionOn() error handling (Miroslav Bajtos)
+
+
 2013-07-15, Version 0.3.0
 
 * MAINTAINERS.md: fixed typo. (Miroslav Bajtos)
