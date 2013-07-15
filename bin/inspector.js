@@ -3,6 +3,7 @@
 var DebugServer = require('../lib/debug-server').DebugServer,
     fs = require('fs'),
     path = require('path'),
+    packageJson = require('../package.json'),
     options = {};
 
 process.argv.forEach(function (arg) {
@@ -62,6 +63,8 @@ fs.readFile(path.join(__dirname, '../config.json'), function(err, data) {
   if (options.webHost) {
     config.webHost = options.webHost;
   }
+
+  console.log('Node Inspector v%s', packageJson.version);
 
   debugServer = new DebugServer();
   debugServer.on('close', function () {
