@@ -1,4 +1,10 @@
-# Overview
+# Node Inspector
+
+[![Build Status](https://travis-ci.org/strongloop/node-inspector.png?branch=master)](https://travis-ci.org/strongloop/node-inspector)
+[![NPM version](https://badge.fury.io/js/node-inspector.png)](http://badge.fury.io/js/node-inspector)
+
+
+## Overview
 Node Inspector is a debugger interface for node.js using the
 Blink Developer Tools (former WebKit Web Inspector).
 
