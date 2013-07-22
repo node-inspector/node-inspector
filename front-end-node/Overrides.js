@@ -104,3 +104,55 @@ var loadXHR = function patchedLoadXHR(url, async, callback) {
   }
   return _orig_loadXHR(url, async, callback);
 }
+
+//
+// Open the main application file on startup
+//
+
+WebInspector.notifications.addEventListener(
+  WebInspector.Events.InspectorLoaded,
+  function() {
+    WebInspector.resourceTreeModel.addEventListener(
+      WebInspector.ResourceTreeModel.EventTypes.CachedResourcesLoaded,
+      showMainAppFile,
+      null
+    );
+  },
+  null
+);
+
+
+function showMainAppFile() {
+  var fileTabs = WebInspector.showPanel('scripts')._editorContainer._files;
+  if (Object.keys(fileTabs).length > 0){
+    // Some files are already opened - do not change user's workspace
+    return;
+  }
+
+  var uiSourceCodes = getAllUiSourceCodes();
+  var uriToShow = WebInspector.inspectedPageURL;
+
+  for (var i in uiSourceCodes) {
+    if (uiSourceCodes[i].uri() !== uriToShow) continue;
+    WebInspector.showPanel('scripts').showUISourceCode(uiSourceCodes[i]);
+    return true;
+  }
+
+  console.error('Cannot show the main application file ', uriToShow);
+}
+
+function getAllUiSourceCodes() {
+  // Based on FilteredItemSectionDialog.js > SelectUISourceCodeDialog()
+  var projects = WebInspector.workspace.projects();
+  var uiSourceCodes = [];
+  var projectFiles;
+
+  for (var i = 0; i < projects.length; ++i) {
+    projectFiles = projects[i]
+      .uiSourceCodes()
+      .filter(function(p) { return p.name(); });
+    uiSourceCodes = uiSourceCodes.concat(projectFiles);
+  }
+
+  return uiSourceCodes;
+}
