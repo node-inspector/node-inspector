@@ -1,4 +1,11 @@
-2013-07-15, Version n.n.n
+2013-07-22, Version 0.3.2
+
+* Overrides: show main app file (Miroslav Bajtos)
+
+* PageAgent: fix for main script without extension (Miroslav Bajtos)
+
+
+2013-07-15, Version 0.3.1
 
 * Added version log message. (Miroslav Bajtos)
 
