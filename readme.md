@@ -43,7 +43,7 @@ This is beta-quality code, so use at your own risk.
   each byte is displayed as an individual array element;
   for most Buffers this will take too long to render.
 * While not stopped at a breakpoint the console doesn't always
-  behave as you might expect.
+  behave as you might expect. See issue #146.
 * Profiler is not implemented yet. Have a look at
   [node-webkit-agent](https://github.com/c4milo/node-webkit-agent)
   in the meantime.
