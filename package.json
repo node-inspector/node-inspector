@@ -32,6 +32,7 @@
   },
   "preferGlobal": true,
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "lint": "./tools/gjslint.sh"
   }
 }
