@@ -133,6 +133,16 @@ Chrome. Here's a good [overview](http://code.google.com/chrome/devtools/docs/scr
   > but your browser can be anywhere.
   > Just make sure port 8080 is accessible
 
+# Contributing Code
+
+Making Node Inspector the best debugger for node.js cannot be achieved without
+the help of the community. The following resources should help you to get
+started.
+
+* [Contributing](https://github.com/node-inspector/node-inspector/wiki/Contributing)
+* [Developer's Guide](https://github.com/node-inspector/node-inspector/wiki/Developer%27s-Guide)
+* [Easy Picks](https://github.com/node-inspector/node-inspector/issues?direction=asc&labels=Easy+Pick&page=1&sort=updated&state=open)
+
 # Thanks
 
 [Danny Coates](https://github.com/dannycoates) for starting the project
