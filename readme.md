@@ -114,8 +114,40 @@ Chrome. Here's a good [overview](http://code.google.com/chrome/devtools/docs/scr
 
 ## Inspector options
 
-    --web-port=[port]     port to host the inspector (default 8080)
-    --web-host=[host]     host to listen on (default 0.0.0.0)
+Node-inspector uses [rc](https://npmjs.org/package/rc)
+[[github]](https://github.com/dominictarr/rc) module to collect options.
+
+Places for configuration:
+* command line arguments (parsed by optimist)
+* enviroment variables prefixed with ```node-inspector_```
+* if you passed an option ```--config file``` then from that file
+* a local ```.node-inspectorrc``` or the first found looking in ```./ ../ ../../
+ ../../../``` etc.
+* ```$HOME/.node-inspectorrc```
+* ```$HOME/.node-inspector/config```
+* ```$HOME/.config/node-inspector```
+* ```$HOME/.config/node-inspector/config```
+* ```/etc/node-inspectorrc```
+* ```/etc/node-inspector/config```
+* options from ```config.json``` for backward compatibility
+* defaults described in Node Inspector`s [./lib/config.js](lib/config.js).
+
+All configuration sources that where found will be flattened into one object,
+so that sources earlier in this list override later ones.
+
+
+
+List of predefined options:
+```
+         Option             Default                  Description
+    --help            |                 |   Print information about options
+    --web-port        |      8080       |   Port to host the inspector
+    --web-host        |    127.0.0.1    |   Host to listen on
+    --debug-port      |      5858       |   Port to connect to the debugging app
+    --save-live-edit  |      false      |   Save live edit changes to disk (update the edited files)
+    --hidden          |       []        |   Array of files to hide from the UI
+                      |                 |   Breakpoints in these files will be ignored
+```
 
 # FAQ / WTF
 
