@@ -135,11 +135,11 @@ Chrome. Here's a good [overview](http://code.google.com/chrome/devtools/docs/scr
 
 # Thanks
 
-This project respectfully uses code from and thanks the authors of:
+[Danny Coates](https://github.com/dannycoates) for starting the project
+and maintaining it for several years.
 
-* [Blink](http://www.chromium.org/blink)
-* [node](http://github.com/joyent/node)
-* [socket.io](http://github.com/LearnBoost/socket.io)
-* [express](http://expressjs.com/)
-* [async](https://github.com/caolan/async)
-* [glob](https://github.com/isaacs/node-glob)
+[StrongLoop](http://strongloop.com) for upgrading to the Blink front-end
+and maintaining the project onwards.
+
+And of course all developers that contributed patches and features, as listed
+in the [AUTHORS](AUTHORS) file.
