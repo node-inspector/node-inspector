@@ -13,7 +13,7 @@ while doing the next relase.
 
 1. Commit the changes to git and push them to the server
 
-        git commit ChangeLog -m 'released version vX.Y.Z'
+        git commit ChangeLog -m 'ChangeLog: updated for version vX.Y.Z'
         git push origin master
 
 1. Create and publish a git tag
