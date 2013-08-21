@@ -1,3 +1,7 @@
+2013-08-21, Version 0.3.4
+
+* Bugfix: crash when breakpoint was hit in eval()-ed (Miroslav Bajtos)
+
 2013-08-12, Version 0.3.3
 
 * package.json: upgraded to express 3.3 (Miroslav Bajtos)
