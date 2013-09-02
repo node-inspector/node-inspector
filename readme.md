@@ -35,6 +35,8 @@ of the debugging features of DevTools.
 * Set breakpoints in files that are not loaded into V8 yet - useful for
   debugging module loading/initialization.
 * Javascript from top to bottom :)
+* Embeddable in other applications - see [Embedding HOWTO](docs/embedding.md)
+  for more details.
 
 ## Known Issues
 
