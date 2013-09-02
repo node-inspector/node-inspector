@@ -52,22 +52,22 @@ This is beta-quality code, so use at your own risk.
   [support in node](https://github.com/joyent/node/pull/5713).
 * Debugging multiple processes (e.g. cluster) is cumbersome.
 
-# Getting Started
+## Getting Started
 
-## Requirements
+### Requirements
 
 * [node.js](http://github.com/ry/node)
   - version 0.8 or later
 * [npm](http://github.com/isaacs/npm)
 * A Blink-based browser (i.e. Google Chrome)
 
-## Install
+### Install
 
 * With [npm](http://github.com/isaacs/npm)
 
         $ npm install -g node-inspector
 
-## Enable debug mode
+### Enable debug mode
 
 To use node-inspector, enable debugging on the node you wish to debug.
 You can either start node with a debug flag like:
@@ -93,7 +93,7 @@ it a signal:
 
 Great! Now you are ready to attach node-inspector
 
-## Debugging
+### Debugging
 
 1. start the inspector. I usually put it in the background
 
@@ -112,7 +112,7 @@ For more information on getting started see the [wiki](http://github.com/dannyco
 node-inspector works almost exactly like the web inspector in
 Chrome. Here's a good [overview](http://code.google.com/chrome/devtools/docs/scripts.html) of the UI
 
-## Inspector options
+### Inspector options
 
 Node-inspector uses [rc](https://npmjs.org/package/rc)
 [[github]](https://github.com/dominictarr/rc) module to collect options.
@@ -149,7 +149,7 @@ List of predefined options:
                       |                 |   Breakpoints in these files will be ignored
 ```
 
-# FAQ / WTF
+## FAQ / WTF
 
 1. My script runs too fast to attach the debugger.
 
@@ -165,7 +165,7 @@ List of predefined options:
   > but your browser can be anywhere.
   > Just make sure port 8080 is accessible
 
-# Contributing Code
+## Contributing Code
 
 Making Node Inspector the best debugger for node.js cannot be achieved without
 the help of the community. The following resources should help you to get
@@ -175,7 +175,7 @@ started.
 * [Developer's Guide](https://github.com/node-inspector/node-inspector/wiki/Developer%27s-Guide)
 * [Easy Picks](https://github.com/node-inspector/node-inspector/issues?direction=asc&labels=Easy+Pick&page=1&sort=updated&state=open)
 
-# Thanks
+## Thanks
 
 [Danny Coates](https://github.com/dannycoates) for starting the project
 and maintaining it for several years.
