@@ -24,7 +24,8 @@
     "socket.io": "~0.9.14",
     "express": "~3.3",
     "async": "~0.2.8",
-    "glob": "~3.2.1"
+    "glob": "~3.2.1",
+    "rc": "~0.3.0"
   },
   "devDependencies": {
     "mocha": "latest",
