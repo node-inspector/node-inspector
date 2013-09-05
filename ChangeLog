@@ -1,6 +1,16 @@
+2013-09-05, Version 0.4.0
+
+* Emit 'listening' and 'error' events (Miroslav Bajtos)
+
+* README: fixed headings level (Miroslav Bajtos)
+
+* New configuration system based on RC module (3y3)
+
+
 2013-08-21, Version 0.3.4
 
 * Bugfix: crash when breakpoint was hit in eval()-ed (Miroslav Bajtos)
+
 
 2013-08-12, Version 0.3.3
 
