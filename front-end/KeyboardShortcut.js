@@ -57,19 +57,19 @@ WebInspector.KeyboardShortcut.Key;
 /** @type {!Object.<string, !WebInspector.KeyboardShortcut.Key>} */
 WebInspector.KeyboardShortcut.Keys = {
     Backspace: { code: 8, name: "\u21a4" },
-    Tab: { code: 9, name: { mac: "\u21e5", other: "<Tab>" } },
-    Enter: { code: 13, name: { mac: "\u21a9", other: "<Enter>" } },
-    Esc: { code: 27, name: { mac: "\u238b", other: "<Esc>" } },
-    Space: { code: 32, name: "<Space>" },
-    PageUp: { code: 33,  name: { mac: "\u21de", other: "<PageUp>" } },      // also NUM_NORTH_EAST
-    PageDown: { code: 34, name: { mac: "\u21df", other: "<PageDown>" } },   // also NUM_SOUTH_EAST
-    End: { code: 35, name: { mac: "\u2197", other: "<End>" } },             // also NUM_SOUTH_WEST
-    Home: { code: 36, name: { mac: "\u2196", other: "<Home>" } },           // also NUM_NORTH_WEST
-    Left: { code: 37, name: "<Left>" },           // also NUM_WEST
-    Up: { code: 38, name: "<Up>" },             // also NUM_NORTH
-    Right: { code: 39, name: "<Right>" },          // also NUM_EAST
-    Down: { code: 40, name: "<Down>" },           // also NUM_SOUTH
-    Delete: { code: 46, name: "<Del>" },
+    Tab: { code: 9, name: { mac: "\u21e5", other: "Tab" } },
+    Enter: { code: 13, name: { mac: "\u21a9", other: "Enter" } },
+    Esc: { code: 27, name: { mac: "\u238b", other: "Esc" } },
+    Space: { code: 32, name: "Space" },
+    PageUp: { code: 33,  name: { mac: "\u21de", other: "PageUp" } },      // also NUM_NORTH_EAST
+    PageDown: { code: 34, name: { mac: "\u21df", other: "PageDown" } },   // also NUM_SOUTH_EAST
+    End: { code: 35, name: { mac: "\u2197", other: "End" } },             // also NUM_SOUTH_WEST
+    Home: { code: 36, name: { mac: "\u2196", other: "Home" } },           // also NUM_NORTH_WEST
+    Left: { code: 37, name: "\u2190" },           // also NUM_WEST
+    Up: { code: 38, name: "\u2191" },             // also NUM_NORTH
+    Right: { code: 39, name: "\u2192" },          // also NUM_EAST
+    Down: { code: 40, name: "\u2193" },           // also NUM_SOUTH
+    Delete: { code: 46, name: "Del" },
     Zero: { code: 48, name: "0" },
     F1: { code: 112, name: "F1" },
     F2: { code: 113, name: "F2" },
@@ -90,8 +90,17 @@ WebInspector.KeyboardShortcut.Keys = {
     Period: { code: 190, name: "." },
     Slash: { code: 191, name: "/" },
     Apostrophe: { code: 192, name: "`" },
+    Backslash: { code: 220, name: "\\" },
     SingleQuote: { code: 222, name: "\'" },
-    H: { code: 72, name: "H" }
+    H: { code: 72, name: "H" },
+    Ctrl: { code: 17, name: "Ctrl" },
+    Meta: { code: 91, name: "Meta" },
+    Tilde: { code: 192, name: "Tilde" },
+    get CtrlOrMeta()
+    {
+        // "default" command/ctrl key for platform, Command on Mac, Ctrl on other platforms
+        return WebInspector.isMac() ? this.Meta : this.Ctrl;
+    },
 };
 
 /**
@@ -138,7 +147,7 @@ WebInspector.KeyboardShortcut.eventHasCtrlOrMeta = function(event)
 }
 
 /**
- * @param {KeyboardEvent} event
+ * @param {Event} event
  * @return {boolean}
  */
 WebInspector.KeyboardShortcut.hasNoModifiers = function(event)
@@ -209,13 +218,13 @@ WebInspector.KeyboardShortcut._modifiersToString = function(modifiers)
     var isMac = WebInspector.isMac();
     var res = "";
     if (modifiers & WebInspector.KeyboardShortcut.Modifiers.Ctrl)
-        res += isMac ? ctrlKey : "<Ctrl> + ";
+        res += isMac ? ctrlKey : "Ctrl + ";
     if (modifiers & WebInspector.KeyboardShortcut.Modifiers.Alt)
-        res += isMac ? optKey : "<Alt> + ";
+        res += isMac ? optKey : "Alt + ";
     if (modifiers & WebInspector.KeyboardShortcut.Modifiers.Shift)
-        res += isMac ? shiftKey : "<Shift> + ";
+        res += isMac ? shiftKey : "Shift + ";
     if (modifiers & WebInspector.KeyboardShortcut.Modifiers.Meta)
-        res += isMac ? cmdKey : "<Win> + ";
+        res += isMac ? cmdKey : "Win + ";
 
     return res;
 };

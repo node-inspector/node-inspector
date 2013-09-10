@@ -46,6 +46,10 @@ var WebInspector = {
         var audits = new WebInspector.PanelDescriptor("audits", WebInspector.UIString("Audits"), "AuditsPanel", "AuditsPanel.js");
         var console = new WebInspector.PanelDescriptor("console", WebInspector.UIString("Console"), "ConsolePanel");
         var allDescriptors = [elements, resources, network, scripts, timeline, profiles, audits, console];
+        if (WebInspector.experimentsSettings.layersPanel.isEnabled()) {
+            var layers = new WebInspector.LayersPanelDescriptor();
+            allDescriptors.push(layers);
+        }
         var allProfilers = [profiles];
         if (WebInspector.experimentsSettings.customizableToolbar.isEnabled()) {
             allProfilers = [];
@@ -55,10 +59,6 @@ var WebInspector = {
             allProfilers.push(new WebInspector.PanelDescriptor("heap-profiler", WebInspector.UIString("Heap Profiler"), "HeapProfilerPanel", "ProfilesPanel.js"));
             if (!WebInspector.WorkerManager.isWorkerFrontend() && WebInspector.experimentsSettings.canvasInspection.isEnabled())
                 allProfilers.push(new WebInspector.PanelDescriptor("canvas-profiler", WebInspector.UIString("Canvas Profiler"), "CanvasProfilerPanel", "ProfilesPanel.js"));
-            if (!WebInspector.WorkerManager.isWorkerFrontend() && WebInspector.experimentsSettings.nativeMemorySnapshots.isEnabled()) {
-                allProfilers.push(new WebInspector.PanelDescriptor("memory-chart-profiler", WebInspector.UIString("Memory Distribution"), "MemoryChartProfilerPanel", "ProfilesPanel.js"));
-                allProfilers.push(new WebInspector.PanelDescriptor("memory-snapshot-profiler", WebInspector.UIString("Memory Snapshots"), "NativeMemoryProfilerPanel", "ProfilesPanel.js"));
-            }
             Array.prototype.splice.bind(allDescriptors, allDescriptors.indexOf(profiles), 1).apply(null, allProfilers);
         }
 
@@ -95,6 +95,12 @@ var WebInspector = {
         if (this.inspectElementModeController)
             mainStatusBar.insertBefore(this.inspectElementModeController.toggleSearchButton.element, bottomStatusBarContainer);
 
+        if (WebInspector.queryParamsObject["remoteFrontend"] && WebInspector.experimentsSettings.screencast.isEnabled()) {
+            this._toggleScreencastButton = new WebInspector.StatusBarButton(WebInspector.UIString("Toggle screencast."), "screencast-status-bar-item");
+            this._toggleScreencastButton.addEventListener("click", this._toggleScreencastButtonClicked.bind(this), false);
+            mainStatusBar.insertBefore(this._toggleScreencastButton.element, bottomStatusBarContainer);
+        }
+
         mainStatusBar.appendChild(this.settingsController.statusBarItem);
     },
 
@@ -109,6 +115,29 @@ var WebInspector = {
             this.closeConsole(animationType);
         else
             this.showConsole(animationType);
+    },
+
+    _toggleScreencastButtonClicked: function()
+    {
+        this._toggleScreencastButton.toggled = !this._toggleScreencastButton.toggled;
+
+        if (!this._screencastView) {
+            // Rebuild the UI upon first invocation.
+            this._screencastView = new WebInspector.ScreencastView();
+            this._screencastSplitView = new WebInspector.SplitView(true, "screencastSplitView");
+            this._screencastSplitView.markAsRoot();
+            this._screencastSplitView.show(document.body);
+
+            this._screencastView.show(this._screencastSplitView.firstElement());
+            this._screencastSplitView.secondElement().appendChild(document.getElementById("root"));
+            this.inspectorView.element.remove();
+            this.inspectorView.show(document.getElementById("main"));
+        }
+
+        if (this._toggleScreencastButton.toggled)
+            this._screencastSplitView.showBoth();
+        else
+            this._screencastSplitView.showOnlySecond();
     },
 
     /**
@@ -153,7 +182,7 @@ var WebInspector = {
     _removeDrawerView: function()
     {
         if (this._drawerStatusBarHeader) {
-            this._drawerStatusBarHeader.removeSelf();
+            this._drawerStatusBarHeader.remove();
             if (this._drawerStatusBarHeader.onclose)
                 this._drawerStatusBarHeader.onclose();
             delete this._drawerStatusBarHeader;
@@ -167,7 +196,7 @@ var WebInspector = {
     {
         animationType = animationType || WebInspector.Drawer.AnimationType.Normal;
 
-        if (this.consoleView.isShowing())
+        if (this.consoleView.isShowing() && !WebInspector.drawer.isHiding())
             return;
 
         if (WebInspector.drawer.visible)
@@ -195,19 +224,28 @@ var WebInspector = {
         this._consoleWasShown = false;
     },
 
-
-    _updateErrorAndWarningCounts: function()
+    _resetErrorAndWarningCounts: function()
     {
         var errorWarningElement = document.getElementById("error-warning-count");
         if (!errorWarningElement)
             return;
 
+        errorWarningElement.addStyleClass("hidden");
+    },
+
+    _updateErrorAndWarningCounts: function()
+    {
         var errors = WebInspector.console.errors;
         var warnings = WebInspector.console.warnings;
+
         if (!errors && !warnings) {
-            errorWarningElement.addStyleClass("hidden");
+            this._resetErrorAndWarningCounts();
             return;
         }
+
+        var errorWarningElement = document.getElementById("error-warning-count");
+        if (!errorWarningElement)
+            return;
 
         errorWarningElement.removeStyleClass("hidden");
 
@@ -295,51 +333,6 @@ var WebInspector = {
     {
         // Create scripts panel upon demand.
         WebInspector.panel("scripts");
-    },
-
-    _setupTethering: function()
-    {
-        if (!this._portForwardings) {
-            this._portForwardings = {};
-            WebInspector.settings.portForwardings.addChangeListener(this._setupTethering.bind(this));
-        }
-        var entries = WebInspector.settings.portForwardings.get();
-        var newForwardings = {};
-        for (var i = 0; i < entries.length; ++i)
-            newForwardings[entries[i].port] = entries[i].location;
-
-        for (var port in this._portForwardings) {
-            if (!newForwardings[port])
-                unbind(port);
-        }
-
-        for (var port in newForwardings) {
-            if (this._portForwardings[port] && newForwardings[port] === this._portForwardings[port])
-                continue;
-            if (this._portForwardings[port])
-              unbind(port);
-            bind(port, newForwardings[port]);
-        }
-        this._portForwardings = newForwardings;
-
-        /**
-         * @param {string} port
-         * @param {string} location
-         */
-        function bind(port, location)
-        {
-            var command = { method: "Tethering.bind", params: { port: parseInt(port, 10), location: location }, id: InspectorBackend.nextCallbackId() };
-            InspectorBackend.sendMessageObjectToBackend(command);
-        }
-
-        /**
-         * @param {string} port
-         */
-        function unbind(port)
-        {
-            var command = { method: "Tethering.unbind", params: { port: parseInt(port, 10) }, id: InspectorBackend.nextCallbackId() };
-            InspectorBackend.sendMessageObjectToBackend(command);
-        }
     }
 }
 
@@ -369,6 +362,8 @@ WebInspector.suggestReload = function()
 
 WebInspector.reload = function()
 {
+    InspectorAgent.reset();
+
     var queryParams = window.location.search;
     var url = window.location.href;
     url = url.substring(0, url.length - queryParams.length);
@@ -380,8 +375,6 @@ WebInspector.reload = function()
     var names = Object.keys(queryParamsObject);
     for (var i = 0; i < names.length; ++i)
         url += (i ? "&" : "?") + names[i] + "=" + queryParamsObject[names[i]];
-
-    InspectorBackend.disconnect();
     document.location = url;
 }
 
@@ -441,8 +434,6 @@ WebInspector.doLoadedDone = function()
 
     WebInspector.WorkerManager.loaded();
 
-    PageAgent.canShowFPSCounter(WebInspector._initializeCapability.bind(WebInspector, "canShowFPSCounter", null));
-    PageAgent.canContinuouslyPaint(WebInspector._initializeCapability.bind(WebInspector, "canContinuouslyPaint", null));
     WorkerAgent.canInspectWorkers(WebInspector._initializeCapability.bind(WebInspector, "canInspectWorkers", WebInspector._doLoadedDoneWithCapabilities.bind(WebInspector)));
 }
 
@@ -462,7 +453,7 @@ WebInspector._doLoadedDoneWithCapabilities = function()
         panelDescriptors[i].registerShortcuts();
 
     this.console = new WebInspector.ConsoleModel();
-    this.console.addEventListener(WebInspector.ConsoleModel.Events.ConsoleCleared, this._updateErrorAndWarningCounts, this);
+    this.console.addEventListener(WebInspector.ConsoleModel.Events.ConsoleCleared, this._resetErrorAndWarningCounts, this);
     this.console.addEventListener(WebInspector.ConsoleModel.Events.MessageAdded, this._updateErrorAndWarningCounts, this);
     this.console.addEventListener(WebInspector.ConsoleModel.Events.RepeatCountUpdated, this._updateErrorAndWarningCounts, this);
 
@@ -485,12 +476,12 @@ WebInspector._doLoadedDoneWithCapabilities = function()
 
     this.isolatedFileSystemManager = new WebInspector.IsolatedFileSystemManager();
     this.isolatedFileSystemDispatcher = new WebInspector.IsolatedFileSystemDispatcher(this.isolatedFileSystemManager);
-    this.fileMapping = new WebInspector.FileMapping();
-    this.workspace = new WebInspector.Workspace(this.fileMapping, this.isolatedFileSystemManager.mapping());
+    this.workspace = new WebInspector.Workspace(this.isolatedFileSystemManager.mapping());
 
     this.cssModel = new WebInspector.CSSStyleModel(this.workspace);
     this.timelineManager = new WebInspector.TimelineManager();
-    this.userAgentSupport = new WebInspector.UserAgentSupport();
+    this.tracingAgent = new WebInspector.TracingAgent();
+    this.overridesSupport = new WebInspector.OverridesSupport();
 
     this.searchController = new WebInspector.SearchController();
     this.advancedSearchController = new WebInspector.AdvancedSearchController();
@@ -524,10 +515,7 @@ WebInspector._doLoadedDoneWithCapabilities = function()
     new WebInspector.DebuggerScriptMapping(this.workspace, this.networkWorkspaceProvider);
     this.liveEditSupport = new WebInspector.LiveEditSupport(this.workspace);
     this.styleContentBinding = new WebInspector.StyleContentBinding(this.cssModel, this.workspace);
-    new WebInspector.StylesSourceMapping(this.cssModel, this.workspace);
-    if (WebInspector.experimentsSettings.sass.isEnabled())
-        new WebInspector.SASSSourceMapping(this.cssModel, this.workspace, this.networkWorkspaceProvider);
-
+    new WebInspector.CSSStyleSheetMapping(this.cssModel, this.workspace, this.networkWorkspaceProvider);
     new WebInspector.PresentationConsoleMessageHelper(this.workspace);
 
     this._createGlobalStatusBarItems();
@@ -562,25 +550,22 @@ WebInspector._doLoadedDoneWithCapabilities = function()
 
     ProfilerAgent.enable();
 
-    if (WebInspector.settings.showPaintRects.get())
-        PageAgent.setShowPaintRects(true);
+    WebInspector.settings.forceCompositingMode = WebInspector.settings.createBackendSetting("forceCompositingMode", false, PageAgent.setForceCompositingMode.bind(PageAgent));
+    WebInspector.settings.showPaintRects = WebInspector.settings.createBackendSetting("showPaintRects", false, PageAgent.setShowPaintRects.bind(PageAgent));
+    WebInspector.settings.showDebugBorders = WebInspector.settings.createBackendSetting("showDebugBorders", false, PageAgent.setShowDebugBorders.bind(PageAgent));
+    WebInspector.settings.continuousPainting = WebInspector.settings.createBackendSetting("continuousPainting", false, PageAgent.setContinuousPaintingEnabled.bind(PageAgent));
+    WebInspector.settings.showFPSCounter = WebInspector.settings.createBackendSetting("showFPSCounter", false, PageAgent.setShowFPSCounter.bind(PageAgent));
+    WebInspector.settings.showScrollBottleneckRects = WebInspector.settings.createBackendSetting("showScrollBottleneckRects", false, PageAgent.setShowScrollBottleneckRects.bind(PageAgent));
 
-    if (WebInspector.settings.showDebugBorders.get())
-        PageAgent.setShowDebugBorders(true);
-
-    if (WebInspector.settings.continuousPainting.get())
-        PageAgent.setContinuousPaintingEnabled(true);
-
-    if (WebInspector.settings.showFPSCounter.get())
-        PageAgent.setShowFPSCounter(true);
-
-    this.domAgent._emulateTouchEventsChanged();
+    WebInspector.settings.showMetricsRulers.addChangeListener(showRulersChanged);
+    function showRulersChanged()
+    {
+        PageAgent.setShowViewportSizeOnResize(true, WebInspector.settings.showMetricsRulers.get());
+    }
+    showRulersChanged();
 
     WebInspector.WorkerManager.loadCompleted();
     InspectorFrontendAPI.loadCompleted();
-
-    if (WebInspector.experimentsSettings.tethering.isEnabled())
-        this._setupTethering();
 
     WebInspector.notifications.dispatchEventToListeners(WebInspector.Events.InspectorLoaded);
 }
@@ -623,6 +608,8 @@ WebInspector.windowResize = function(event)
         WebInspector.toolbar.resize();
     if (WebInspector.settingsController)
         WebInspector.settingsController.resize();
+    if (WebInspector._screencastSplitView)
+        WebInspector._screencastSplitView.doResize();
 }
 
 WebInspector.setDockingUnavailable = function(unavailable)
@@ -651,7 +638,11 @@ WebInspector.documentClick = function(event)
 
     function followLink()
     {
-        if (WebInspector.isBeingEdited(event.target) || WebInspector._showAnchorLocation(anchor))
+        if (WebInspector.isBeingEdited(event.target))
+            return;
+        if (WebInspector.openAnchorLocationRegistry.dispatch({ url: anchor.href, lineNumber: anchor.lineNumber}))
+            return;
+        if (WebInspector.showAnchorLocation(anchor))
             return;
 
         const profileMatch = WebInspector.ProfilesPanelDescriptor.ProfileURLRegExp.exec(anchor.href);
@@ -712,7 +703,11 @@ WebInspector._registerShortcuts = function()
     ];
     section.addRelatedKeys(keys, WebInspector.UIString("Go back/forward in panel history"));
 
-    section.addKey(shortcut.makeDescriptor(shortcut.Keys.Esc), WebInspector.UIString("Toggle console"));
+    var toggleConsoleLabel = WebInspector.UIString("Toggle console");
+    if (WebInspector.experimentsSettings.openConsoleWithCtrlTilde.isEnabled())
+        section.addKey(shortcut.makeDescriptor(shortcut.Keys.Esc), toggleConsoleLabel);
+    else
+        section.addKey(shortcut.makeDescriptor(shortcut.Keys.Tilde, shortcut.Modifiers.CtrlOrMeta), toggleConsoleLabel);
     section.addKey(shortcut.makeDescriptor("f", shortcut.Modifiers.CtrlOrMeta), WebInspector.UIString("Search"));
 
     var advancedSearchShortcut = WebInspector.AdvancedSearchController.createShortcut();
@@ -739,7 +734,7 @@ WebInspector._registerShortcuts = function()
         shortcut.Keys.F1,
         shortcut.makeDescriptor("?")
     ];
-    section.addAlternateKeys(keys, WebInspector.UIString("Show keyboard shortcuts"));
+    section.addAlternateKeys(keys, WebInspector.UIString("Show general settings"));
 }
 
 /**
@@ -747,15 +742,6 @@ WebInspector._registerShortcuts = function()
  */
 WebInspector.documentKeyDown = function(event)
 {
-    const helpKey = WebInspector.isMac() ? "U+003F" : "U+00BF"; // "?" for both platforms
-
-    if (event.keyIdentifier === "F1" ||
-        (event.keyIdentifier === helpKey && event.shiftKey && (!WebInspector.isBeingEdited(event.target) || event.metaKey))) {
-        this.settingsController.showSettingsScreen(WebInspector.SettingsScreen.Tabs.General);
-        event.consume(true);
-        return;
-    }
-
     if (WebInspector.currentFocusElement() && WebInspector.currentFocusElement().handleKeyEvent) {
         WebInspector.currentFocusElement().handleKeyEvent(event);
         if (event.handled) {
@@ -781,6 +767,7 @@ WebInspector.documentKeyDown = function(event)
 
     switch (event.keyIdentifier) {
         case "U+004F": // O key
+        case "U+0050": // P key
             if (!event.shiftKey && !event.altKey && WebInspector.KeyboardShortcut.eventHasCtrlOrMeta(event)) {
                 WebInspector.showPanel("scripts").showGoToSourceDialog();
                 event.consume(true);
@@ -788,6 +775,7 @@ WebInspector.documentKeyDown = function(event)
             break;
         case "U+0052": // R key
             if (WebInspector.KeyboardShortcut.eventHasCtrlOrMeta(event)) {
+                DebuggerAgent.setSkipAllPauses(true, true);
                 PageAgent.reload(event.shiftKey);
                 event.consume(true);
             }
@@ -834,14 +822,35 @@ WebInspector.documentKeyDown = function(event)
 
 WebInspector.postDocumentKeyDown = function(event)
 {
+    const helpKey = WebInspector.isMac() ? "U+003F" : "U+00BF"; // "?" for both platforms
+
+    if (event.keyIdentifier === "F1" ||
+        (event.keyIdentifier === helpKey && event.shiftKey && (!WebInspector.isBeingEdited(event.target) || event.metaKey))) {
+        this.settingsController.showSettingsScreen(WebInspector.SettingsScreen.Tabs.General);
+        event.consume(true);
+        return;
+    }
+
+    const Esc = "U+001B";
+
     if (event.handled)
         return;
 
-    if (event.keyCode === WebInspector.KeyboardShortcut.Keys.Esc.code) {
+    var openConsoleWithCtrlTildeEnabled = WebInspector.experimentsSettings.openConsoleWithCtrlTilde.isEnabled();
+    if (event.keyIdentifier === Esc) {
+        if (WebInspector.searchController.isSearchVisible()) {
+            WebInspector.searchController.closeSearch();
+            return;
+        }
         // If drawer is open with some view other than console then close it.
         if (!this._toggleConsoleButton.toggled && WebInspector.drawer.visible)
             this.closeViewInDrawer();
-        else
+        else if (this._toggleConsoleButton.toggled || !openConsoleWithCtrlTildeEnabled)
+            this._toggleConsoleButtonClicked();
+    }
+
+    if (WebInspector.experimentsSettings.openConsoleWithCtrlTilde.isEnabled()) {
+        if (event.keyCode === WebInspector.KeyboardShortcut.Keys.Tilde.code && WebInspector.KeyboardShortcut.eventHasCtrlOrMeta(event))
             this._toggleConsoleButtonClicked();
     }
 }
@@ -978,11 +987,32 @@ WebInspector.inspect = function(payload, hints)
         return;
     }
 
+    if (object.type === "function") {
+        function didGetDetails(error, response)
+        {
+            object.release();
+
+            if (error) {
+                console.error(error);
+                return;
+            }
+
+            var uiLocation = WebInspector.debuggerModel.rawLocationToUILocation(response.location);
+            if (!uiLocation)
+                return;
+
+            WebInspector.showPanel("scripts").showUILocation(uiLocation);
+        }
+        DebuggerAgent.getFunctionDetails(object.objectId, didGetDetails.bind(this));
+        return;
+    }
+
     if (hints.databaseId)
         WebInspector.showPanel("resources").selectDatabase(WebInspector.databaseModel.databaseForId(hints.databaseId));
     else if (hints.domStorageId)
         WebInspector.showPanel("resources").selectDOMStorage(WebInspector.domStorageModel.storageForId(hints.domStorageId));
-
+    else if (hints.copyToClipboard)
+        InspectorFrontendHost.copyText(object.value);
     object.release();
 }
 
@@ -1014,10 +1044,8 @@ WebInspector._updateFocusedNode = function(nodeId)
     WebInspector.showPanel("elements").revealAndSelectNode(nodeId);
 }
 
-WebInspector._showAnchorLocation = function(anchor)
+WebInspector.showAnchorLocation = function(anchor)
 {
-    if (WebInspector.openAnchorLocationRegistry.dispatch({ url: anchor.href, lineNumber: anchor.lineNumber}))
-        return true;
     var preferredPanel = this.panels[anchor.preferredPanel];
     if (preferredPanel && WebInspector._showAnchorLocationInPanel(anchor, preferredPanel))
         return true;
@@ -1041,7 +1069,7 @@ WebInspector._showAnchorLocationInPanel = function(anchor, panel)
         anchor.addStyleClass("webkit-html-resource-link");
     }
 
-    WebInspector.inspectorView.showPanelForAnchorNavigation(panel);
+    WebInspector.inspectorView.setCurrentPanel(panel);
     panel.showAnchorLocation(anchor);
     return true;
 }

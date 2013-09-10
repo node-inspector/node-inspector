@@ -36,6 +36,10 @@ WebInspector.CallStackSidebarPane = function()
     this.bodyElement.tabIndex = 0;
 }
 
+WebInspector.CallStackSidebarPane.Events = {
+    CallFrameSelected: "CallFrameSelected"
+}
+
 WebInspector.CallStackSidebarPane.prototype = {
     update: function(callFrames)
     {
@@ -121,7 +125,7 @@ WebInspector.CallStackSidebarPane.prototype = {
 
     _placardSelected: function(placard)
     {
-        this._model.setSelectedCallFrame(placard._callFrame);
+        this.dispatchEventToListeners(WebInspector.CallStackSidebarPane.Events.CallFrameSelected, placard._callFrame);
     },
 
     _copyStackTrace: function()

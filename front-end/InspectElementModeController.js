@@ -56,6 +56,7 @@ WebInspector.InspectElementModeController.prototype = {
     toggleSearch: function()
     {
         var enabled = !this.enabled();
+
         /**
          * @param {?Protocol.Error} error
          */
@@ -64,7 +65,7 @@ WebInspector.InspectElementModeController.prototype = {
             if (!error)
                 this.toggleSearchButton.toggled = enabled;
         }
-        WebInspector.domAgent.setInspectModeEnabled(enabled, callback.bind(this));
+        WebInspector.domAgent.setInspectModeEnabled(enabled, WebInspector.settings.showShadowDOM.get(), callback.bind(this));
     },
 
     /**
@@ -80,3 +81,6 @@ WebInspector.InspectElementModeController.prototype = {
         return true;
     }
 }
+
+/** @type {WebInspector.InspectElementModeController} */
+WebInspector.inspectElementModeController = null;

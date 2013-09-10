@@ -42,7 +42,6 @@ WebInspector.HelpScreen = function(title)
     this.element.className = "help-window-outer";
     this.element.addEventListener("keydown", this._onKeyDown.bind(this), false);
     this.element.tabIndex = 0;
-    this.element.addEventListener("focus", this._onBlur.bind(this), false);
 
     if (title) {
         var mainWindow = this.element.createChild("div", "help-window-main");
@@ -57,6 +56,19 @@ WebInspector.HelpScreen = function(title)
  * @type {WebInspector.HelpScreen}
  */
 WebInspector.HelpScreen._visibleScreen = null;
+
+/**
+ * @return {boolean}
+ */
+WebInspector.HelpScreen.isVisible = function()
+{
+    return !!WebInspector.HelpScreen._visibleScreen;
+}
+
+WebInspector.HelpScreen.focus = function()
+{
+    WebInspector.HelpScreen._visibleScreen.element.focus();
+}
 
 WebInspector.HelpScreen.prototype = {
     _createCloseButton: function()
@@ -110,13 +122,6 @@ WebInspector.HelpScreen.prototype = {
             this.hide();
             event.consume();
         }
-    },
-
-    _onBlur: function(event)
-    {
-        // Pretend we're modal, grab focus back if we're still shown.
-        if (this.isShowing() && !this.element.isSelfOrAncestor(event.target))
-            WebInspector.setCurrentFocusElement(this.element);
     },
 
     __proto__: WebInspector.View.prototype

@@ -44,11 +44,8 @@ WebInspector.SourceFrame = function(contentProvider)
 
     var textEditorDelegate = new WebInspector.TextEditorDelegateForSourceFrame(this);
 
-    if (WebInspector.settings.codemirror.get()) {
-        loadScript("CodeMirrorTextEditor.js");
-        this._textEditor = new WebInspector.CodeMirrorTextEditor(this._url, textEditorDelegate);
-    } else
-        this._textEditor = new WebInspector.DefaultTextEditor(this._url, textEditorDelegate);
+    loadScript("CodeMirrorTextEditor.js");
+    this._textEditor = new WebInspector.CodeMirrorTextEditor(this._url, textEditorDelegate);
 
     this._currentSearchResultIndex = -1;
     this._searchResults = [];
@@ -60,7 +57,7 @@ WebInspector.SourceFrame = function(contentProvider)
     this._textEditor.setReadOnly(!this.canEditSource());
 
     this._shortcuts = {};
-    this._shortcuts[WebInspector.KeyboardShortcut.makeKey("s", WebInspector.KeyboardShortcut.Modifiers.CtrlOrMeta)] = this._commitEditing.bind(this);
+    this.addShortcut(WebInspector.KeyboardShortcut.makeKey("s", WebInspector.KeyboardShortcut.Modifiers.CtrlOrMeta), this._commitEditing.bind(this));
     this.element.addEventListener("keydown", this._handleKeyDown.bind(this), false);
 
     this._sourcePosition = new WebInspector.StatusBarText("", "source-frame-cursor-position");
@@ -69,6 +66,7 @@ WebInspector.SourceFrame = function(contentProvider)
 /**
  * @param {string} query
  * @param {string=} modifiers
+ * @return {!RegExp}
  */
 WebInspector.SourceFrame.createSearchRegex = function(query, modifiers)
 {
@@ -77,8 +75,10 @@ WebInspector.SourceFrame.createSearchRegex = function(query, modifiers)
 
     // First try creating regex if user knows the / / hint.
     try {
-        if (/^\/.*\/$/.test(query))
+        if (/^\/.+\/$/.test(query)) {
             regex = new RegExp(query.substring(1, query.length - 1), modifiers);
+            regex.__fromRegExpQuery = true;
+        }
     } catch (e) {
         // Silent catch.
     }
@@ -96,6 +96,15 @@ WebInspector.SourceFrame.Events = {
 }
 
 WebInspector.SourceFrame.prototype = {
+    /**
+     * @param {number} key
+     * @param {function()} handler
+     */
+    addShortcut: function(key, handler)
+    {
+        this._shortcuts[key] = handler;
+    },
+
     wasShown: function()
     {
         this._ensureContentLoaded();
@@ -116,7 +125,7 @@ WebInspector.SourceFrame.prototype = {
     {
         WebInspector.View.prototype.willHide.call(this);
 
-        this._clearLineHighlight();
+        this._clearPositionHighlight();
         this._clearLineToReveal();
     },
 
@@ -185,39 +194,41 @@ WebInspector.SourceFrame.prototype = {
     },
 
     /**
-     * @param {number} line
+     * @override
      */
-    canHighlightLine: function(line)
+    canHighlightPosition: function()
     {
         return true;
     },
 
     /**
-     * @param {number} line
+     * @override
      */
-    highlightLine: function(line)
+    highlightPosition: function(line, column)
     {
         this._clearLineToReveal();
         this._clearLineToScrollTo();
-        this._lineToHighlight = line;
-        this._innerHighlightLineIfNeeded();
-        this._textEditor.setSelection(WebInspector.TextRange.createFromLocation(line, 0));
+        this._clearSelectionToSet();
+        this._positionToHighlight = { line: line, column: column };
+        this._innerHighlightPositionIfNeeded();
     },
 
-    _innerHighlightLineIfNeeded: function()
+    _innerHighlightPositionIfNeeded: function()
     {
-        if (typeof this._lineToHighlight === "number") {
-            if (this.loaded && this._isEditorShowing()) {
-                this._textEditor.highlightLine(this._lineToHighlight);
-                delete this._lineToHighlight
-            }
-        }
+        if (!this._positionToHighlight)
+            return;
+
+        if (!this.loaded || !this._isEditorShowing())
+            return;
+
+        this._textEditor.highlightPosition(this._positionToHighlight.line, this._positionToHighlight.column);
+        delete this._positionToHighlight;
     },
 
-    _clearLineHighlight: function()
+    _clearPositionHighlight: function()
     {
-        this._textEditor.clearLineHighlight();
-        delete this._lineToHighlight;
+        this._textEditor.clearPositionHighlight();
+        delete this._positionToHighlight;
     },
 
     /**
@@ -225,8 +236,9 @@ WebInspector.SourceFrame.prototype = {
      */
     revealLine: function(line)
     {
-        this._clearLineHighlight();
+        this._clearPositionHighlight();
         this._clearLineToScrollTo();
+        this._clearSelectionToSet();
         this._lineToReveal = line;
         this._innerRevealLineIfNeeded();
     },
@@ -236,7 +248,7 @@ WebInspector.SourceFrame.prototype = {
         if (typeof this._lineToReveal === "number") {
             if (this.loaded && this._isEditorShowing()) {
                 this._textEditor.revealLine(this._lineToReveal);
-                delete this._lineToReveal
+                delete this._lineToReveal;
             }
         }
     },
@@ -251,7 +263,7 @@ WebInspector.SourceFrame.prototype = {
      */
     scrollToLine: function(line)
     {
-        this._clearLineHighlight();
+        this._clearPositionHighlight();
         this._clearLineToReveal();
         this._lineToScrollTo = line;
         this._innerScrollToLineIfNeeded();
@@ -289,12 +301,17 @@ WebInspector.SourceFrame.prototype = {
         }
     },
 
+    _clearSelectionToSet: function()
+    {
+        delete this._selectionToSet;
+    },
+
     _wasShownOrLoaded: function()
     {
-        this._innerHighlightLineIfNeeded();
+        this._innerHighlightPositionIfNeeded();
         this._innerRevealLineIfNeeded();
-        this._innerScrollToLineIfNeeded();
         this._innerSetSelectionIfNeeded();
+        this._innerScrollToLineIfNeeded();
     },
 
     onTextChanged: function(oldRange, newRange)
@@ -304,7 +321,7 @@ WebInspector.SourceFrame.prototype = {
         this.clearMessages();
     },
 
-    _simplifyMimeType: function(mimeType)
+    _simplifyMimeType: function(content, mimeType)
     {
         if (!mimeType)
             return "";
@@ -312,6 +329,9 @@ WebInspector.SourceFrame.prototype = {
             mimeType.indexOf("jscript") >= 0 ||
             mimeType.indexOf("ecmascript") >= 0)
             return "text/javascript";
+        // A hack around the fact that files with "php" extension might be either standalone or html embedded php scripts.
+        if (mimeType === "text/x-php" && content.match(/\<\?.*\?\>/g))
+            return "application/x-httpd-php";
         return mimeType;
     },
 
@@ -322,14 +342,19 @@ WebInspector.SourceFrame.prototype = {
      */
     setContent: function(content, contentEncoded, mimeType)
     {
-        this._textEditor.mimeType = this._simplifyMimeType(mimeType);
-
         if (!this._loaded) {
             this._loaded = true;
             this._textEditor.setText(content || "");
             this._textEditor.markClean();
-        } else
-            this._textEditor.editRange(this._textEditor.range(), content || "");
+        } else {
+            var firstLine = this._textEditor.firstVisibleLine();
+            var selection = this._textEditor.selection();
+            this._textEditor.setText(content || "");
+            this._textEditor.scrollToLine(firstLine);
+            this._textEditor.setSelection(selection);
+        }
+
+        this._textEditor.setMimeType(this._simplifyMimeType(content, mimeType));
 
         this._textEditor.beginUpdates();
 
@@ -363,35 +388,31 @@ WebInspector.SourceFrame.prototype = {
 
     /**
      * @param {string} query
+     * @param {boolean} shouldJump
      * @param {function(WebInspector.View, number)} callback
+     * @param {function(number)=} currentMatchChangedCallback
      */
-    performSearch: function(query, callback)
+    performSearch: function(query, shouldJump, callback, currentMatchChangedCallback)
     {
-        // Call searchCanceled since it will reset everything we need before doing a new search.
-        this.searchCanceled();
-
         function doFindSearchMatches(query)
         {
             this._currentSearchResultIndex = -1;
             this._searchResults = [];
 
             var regex = WebInspector.SourceFrame.createSearchRegex(query);
+            this._searchRegex = regex;
             this._searchResults = this._collectRegexMatches(regex);
-            var shiftToIndex = 0;
-            var selection = this._textEditor.lastSelection();
-            for (var i = 0; selection && i < this._searchResults.length; ++i) {
-                if (this._searchResults[i].compareTo(selection) >= 0) {
-                    shiftToIndex = i;
-                    break;
-                }
-            }
-
-            if (shiftToIndex)
-                this._searchResults = this._searchResults.rotate(shiftToIndex);
-
+            if (!this._searchResults.length)
+                this._textEditor.cancelSearchResultsHighlight();
+            else if (shouldJump)
+                this.jumpToNextSearchResult();
+            else
+                this._textEditor.highlightSearchResults(regex, null);
             callback(this, this._searchResults.length);
         }
 
+        this._resetSearch();
+        this._currentSearchMatchChangedCallback = currentMatchChangedCallback;
         if (this.loaded)
             doFindSearchMatches.call(this, query);
         else
@@ -400,15 +421,45 @@ WebInspector.SourceFrame.prototype = {
         this._ensureContentLoaded();
     },
 
-    searchCanceled: function()
+    _editorFocused: function()
+    {
+        if (!this._searchResults.length)
+            return;
+        this._currentSearchResultIndex = -1;
+        if (this._currentSearchMatchChangedCallback)
+            this._currentSearchMatchChangedCallback(this._currentSearchResultIndex);
+        this._textEditor.highlightSearchResults(this._searchRegex, null);
+    },
+
+    _searchResultAfterSelectionIndex: function(selection)
+    {
+        if (!selection)
+            return 0;
+        for (var i = 0; i < this._searchResults.length; ++i) {
+            if (this._searchResults[i].compareTo(selection) >= 0)
+                return i;
+        }
+        return 0;
+    },
+
+    _resetSearch: function()
     {
         delete this._delayedFindSearchMatches;
-        if (!this.loaded)
-            return;
-
+        delete this._currentSearchMatchChangedCallback;
         this._currentSearchResultIndex = -1;
         this._searchResults = [];
-        this._textEditor.markAndRevealRange(null);
+        delete this._searchRegex;
+    },
+
+    searchCanceled: function()
+    {
+        var range = this._currentSearchResultIndex !== -1 ? this._searchResults[this._currentSearchResultIndex] : null;
+        this._resetSearch();
+        if (!this.loaded)
+            return;
+        this._textEditor.cancelSearchResultsHighlight();
+        if (range)
+            this._textEditor.setSelection(range);
     },
 
     hasSearchResults: function()
@@ -428,12 +479,15 @@ WebInspector.SourceFrame.prototype = {
 
     jumpToNextSearchResult: function()
     {
-        this.jumpToSearchResult(this._currentSearchResultIndex + 1);
+        var currentIndex = this._searchResultAfterSelectionIndex(this._textEditor.selection());
+        var nextIndex = this._currentSearchResultIndex === -1 ? currentIndex : currentIndex + 1;
+        this.jumpToSearchResult(nextIndex);
     },
 
     jumpToPreviousSearchResult: function()
     {
-        this.jumpToSearchResult(this._currentSearchResultIndex - 1);
+        var currentIndex = this._searchResultAfterSelectionIndex(this._textEditor.selection());
+        this.jumpToSearchResult(currentIndex - 1);
     },
 
     showingFirstSearchResult: function()
@@ -456,7 +510,9 @@ WebInspector.SourceFrame.prototype = {
         if (!this.loaded || !this._searchResults.length)
             return;
         this._currentSearchResultIndex = (index + this._searchResults.length) % this._searchResults.length;
-        this._textEditor.markAndRevealRange(this._searchResults[this._currentSearchResultIndex]);
+        if (this._currentSearchMatchChangedCallback)
+            this._currentSearchMatchChangedCallback(this._currentSearchResultIndex);
+        this._textEditor.highlightSearchResults(this._searchRegex, this._searchResults[this._currentSearchResultIndex]);
     },
 
     /**
@@ -467,7 +523,7 @@ WebInspector.SourceFrame.prototype = {
         var range = this._searchResults[this._currentSearchResultIndex];
         if (!range)
             return;
-        this._textEditor.markAndRevealRange(null);
+        this._textEditor.highlightSearchResults(this._searchRegex, null);
 
         this._isReplacing = true;
         var newRange = this._textEditor.editRange(range, text);
@@ -482,11 +538,15 @@ WebInspector.SourceFrame.prototype = {
      */
     replaceAllWith: function(query, replacement)
     {
-        this._textEditor.markAndRevealRange(null);
+        this._textEditor.highlightSearchResults(this._searchRegex, null);
 
         var text = this._textEditor.text();
         var range = this._textEditor.range();
-        text = text.replace(WebInspector.SourceFrame.createSearchRegex(query, "g"), replacement);
+        var regex = WebInspector.SourceFrame.createSearchRegex(query, "g");
+        if (regex.__fromRegExpQuery)
+            text = text.replace(regex, replacement);
+        else
+            text = text.replace(regex, function() { return replacement; });
 
         this._isReplacing = true;
         this._textEditor.editRange(range, text);
@@ -744,6 +804,11 @@ WebInspector.TextEditorDelegateForSourceFrame.prototype = {
     scrollChanged: function(lineNumber)
     {
         this._sourceFrame.scrollChanged(lineNumber);
+    },
+
+    editorFocused: function()
+    {
+        this._sourceFrame._editorFocused();
     },
 
     populateLineGutterContextMenu: function(contextMenu, lineNumber)

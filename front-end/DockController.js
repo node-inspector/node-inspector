@@ -38,10 +38,9 @@ WebInspector.DockController = function()
     this._dockToggleButtonOption = new WebInspector.StatusBarButton("", "dock-status-bar-item", 3);
     this._dockToggleButton.addEventListener("click", this._toggleDockState, this);
     this._dockToggleButtonOption.addEventListener("click", this._toggleDockState, this);
-    this._dockToggleButton.makeLongClickOptionsEnabled(this._createDockOptions.bind(this));
+    this._dockToggleButton.setLongClickOptionsEnabled(this._createDockOptions.bind(this));
 
     this.setDockSide(WebInspector.queryParamsObject["dockSide"] || "bottom");
-    WebInspector.settings.showToolbarIcons.addChangeListener(this._updateUI.bind(this));
 }
 
 WebInspector.DockController.State = {
@@ -120,11 +119,6 @@ WebInspector.DockController.prototype = {
             body.removeStyleClass("dock-to-bottom");
             break;
         }
-
-        if (WebInspector.settings.showToolbarIcons.get())
-            document.body.addStyleClass("show-toolbar-icons");
-        else
-            document.body.removeStyleClass("show-toolbar-icons");
 
         if (this._isDockingUnavailable && this._dockSide === WebInspector.DockController.State.Undocked) {
             this._dockToggleButton.state = "undock";

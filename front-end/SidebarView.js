@@ -38,14 +38,10 @@ WebInspector.SidebarView = function(sidebarPosition, sidebarWidthSettingName, de
 {
     WebInspector.SplitView.call(this, true, sidebarWidthSettingName, defaultSidebarWidth, defaultSidebarHeight);
 
-    this._minimumSidebarWidth = Preferences.minSidebarWidth;
-    this._minimumMainWidthPercent = 50;
+    this.setSidebarElementConstraints(Preferences.minSidebarWidth, Preferences.minSidebarHeight);
+    this.setMainElementConstraints(0.5, 0.5);
 
-    this._minimumSidebarHeight = Preferences.minSidebarHeight;
-    this._minimumMainHeightPercent = 50;
-
-    this._sidebarPosition = sidebarPosition || WebInspector.SidebarView.SidebarPosition.Start;
-    this.setSecondIsSidebar(this._sidebarPosition === WebInspector.SidebarView.SidebarPosition.End);
+    this.setSecondIsSidebar(sidebarPosition === WebInspector.SidebarView.SidebarPosition.End);
 }
 
 WebInspector.SidebarView.EventTypes = {
@@ -61,38 +57,6 @@ WebInspector.SidebarView.SidebarPosition = {
 }
 
 WebInspector.SidebarView.prototype = {
-    /**
-     * @param {number} width
-     */
-    setMinimumSidebarWidth: function(width)
-    {
-        this._minimumSidebarWidth = width;
-    },
-
-    /**
-     * @param {number} height
-     */
-    setMinimumSidebarHeight: function(height)
-    {
-        this._minimumSidebarHeight = height;
-    },
-
-    /**
-     * @param {number} widthPercent
-     */
-    setMinimumMainWidthPercent: function(widthPercent)
-    {
-        this._minimumMainWidthPercent = widthPercent;
-    },
-
-    /**
-     * @param {number} heightPercent
-     */
-    setMinimumMainHeightPercent: function(heightPercent)
-    {
-        this._minimumMainHeightPercent = heightPercent;
-    },
-
     /**
      * @param {number} width
      */
@@ -113,17 +77,6 @@ WebInspector.SidebarView.prototype = {
     {
         WebInspector.SplitView.prototype.onResize.call(this);
         this.dispatchEventToListeners(WebInspector.SidebarView.EventTypes.Resized, this.sidebarWidth());
-    },
-
-    /**
-     * @param {number} size
-     */
-    applyConstraints: function(size)
-    {
-        var from = this.isVertical() ? this._minimumSidebarWidth : this._minimumSidebarHeight;
-        var minMainSizePercent = this.isVertical() ? this._minimumMainWidthPercent : this._minimumMainHeightPercent;
-        var to = this.totalSize() * (100 - minMainSizePercent) / 100;
-        return from > to ? -1 : Number.constrain(size, from, to);
     },
 
     hideMainElement: function()

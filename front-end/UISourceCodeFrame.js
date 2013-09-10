@@ -35,9 +35,12 @@ WebInspector.UISourceCodeFrame = function(uiSourceCode)
 {
     this._uiSourceCode = uiSourceCode;
     WebInspector.SourceFrame.call(this, this._uiSourceCode);
+    this.textEditor.setCompletionDictionary(new WebInspector.SampleCompletionDictionary());
+
     this._uiSourceCode.addEventListener(WebInspector.UISourceCode.Events.FormattedChanged, this._onFormattedChanged, this);
     this._uiSourceCode.addEventListener(WebInspector.UISourceCode.Events.WorkingCopyChanged, this._onWorkingCopyChanged, this);
     this._uiSourceCode.addEventListener(WebInspector.UISourceCode.Events.WorkingCopyCommitted, this._onWorkingCopyCommitted, this);
+    this._updateStyle();
 }
 
 WebInspector.UISourceCodeFrame.prototype = {
@@ -137,11 +140,17 @@ WebInspector.UISourceCodeFrame.prototype = {
      */
     _onWorkingCopyCommitted: function(event)
     {
+        if (!this._muteSourceCodeEvents) {
+            this._innerSetContent(this._uiSourceCode.workingCopy());
+            this.onUISourceCodeContentChanged();
+        }
         this._textEditor.markClean();
-        if (this._muteSourceCodeEvents)
-            return;
-        this._innerSetContent(this._uiSourceCode.workingCopy());
-        this.onUISourceCodeContentChanged();
+        this._updateStyle();
+    },
+
+    _updateStyle: function()
+    {
+        this.element.enableStyleClass("source-frame-unsaved-committed-changes", this._uiSourceCode.hasUnsavedCommittedChanges());
     },
 
     onUISourceCodeContentChanged: function()

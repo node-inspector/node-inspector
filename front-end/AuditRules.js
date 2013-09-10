@@ -345,14 +345,13 @@ WebInspector.AuditRules.UnusedCssRule.prototype = {
             if (!styleSheets.length)
                 return callback(null);
 
-            var pseudoSelectorRegexp = /:hover|:link|:active|:visited|:focus|:before|:after/;
             var selectors = [];
             var testedSelectors = {};
             for (var i = 0; i < styleSheets.length; ++i) {
                 var styleSheet = styleSheets[i];
                 for (var curRule = 0; curRule < styleSheet.rules.length; ++curRule) {
                     var selectorText = styleSheet.rules[curRule].selectorText;
-                    if (selectorText.match(pseudoSelectorRegexp) || testedSelectors[selectorText])
+                    if (testedSelectors[selectorText])
                         continue;
                     selectors.push(selectorText);
                     testedSelectors[selectorText] = 1;
@@ -417,10 +416,12 @@ WebInspector.AuditRules.UnusedCssRule.prototype = {
             }
 
             function documentLoaded(selectors, document) {
+                var pseudoSelectorRegexp = /::?(?:[\w-]+)(?:\(.*?\))?/g;
                 for (var i = 0; i < selectors.length; ++i) {
                     if (progress.isCanceled())
                         return;
-                    WebInspector.domAgent.querySelector(document.id, selectors[i], queryCallback.bind(null, i === selectors.length - 1 ? selectorsCallback.bind(null, callback, styleSheets, testedSelectors) : null, selectors[i], styleSheets, testedSelectors));
+                    var effectiveSelector = selectors[i].replace(pseudoSelectorRegexp, "");
+                    WebInspector.domAgent.querySelector(document.id, effectiveSelector, queryCallback.bind(null, i === selectors.length - 1 ? selectorsCallback.bind(null, callback, styleSheets, testedSelectors) : null, selectors[i], styleSheets, testedSelectors));
                 }
             }
 
@@ -1183,7 +1184,7 @@ WebInspector.AuditRules.VendorPrefixedCSSProperties.prototype = {
             if (!this._ruleResult) {
                 var anchor = WebInspector.linkifyURLAsNode(rule.sourceURL, rule.selectorText);
                 anchor.preferredPanel = "resources";
-                anchor.lineNumber = rule.sourceLine;
+                anchor.lineNumber = rule.lineNumberInSource();
                 this._ruleResult = this._styleSheetResult.addChild(anchor);
             }
             ++result.violationCount;

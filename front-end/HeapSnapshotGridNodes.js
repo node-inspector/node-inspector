@@ -554,7 +554,7 @@ WebInspector.HeapSnapshotObjectNode.prototype = {
     createProvider: function()
     {
         var tree = this._dataGrid;
-        var showHiddenData = WebInspector.settings.showHeapSnapshotObjectsHiddenProperties.get();
+        var showHiddenData = WebInspector.settings.showAdvancedHeapSnapshotProperties.get();
         var snapshot = this._isFromBaseSnapshot ? tree.baseSnapshot : tree.snapshot;
         if (this.showRetainingEdges)
             return snapshot.createRetainingEdgesProvider(this.snapshotNodeIndex, showHiddenData);
@@ -666,7 +666,7 @@ WebInspector.HeapSnapshotInstanceNode = function(tree, baseSnapshot, snapshot, n
 WebInspector.HeapSnapshotInstanceNode.prototype = {
     createProvider: function()
     {
-        var showHiddenData = WebInspector.settings.showHeapSnapshotObjectsHiddenProperties.get();
+        var showHiddenData = WebInspector.settings.showAdvancedHeapSnapshotProperties.get();
         return this._baseSnapshotOrSnapshot.createEdgesProvider(
             this.snapshotNodeIndex,
             showHiddenData);

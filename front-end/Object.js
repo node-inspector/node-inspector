@@ -38,7 +38,8 @@ WebInspector.Object.prototype = {
      */
     addEventListener: function(eventType, listener, thisObject)
     {
-        console.assert(listener);
+        if (!listener)
+            console.assert(false);
 
         if (!this._listeners)
             this._listeners = {};

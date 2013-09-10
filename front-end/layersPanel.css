@@ -1,0 +1,141 @@
+/*
+ * Copyright (C) 2013 Google Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *     * Neither the name of Google Inc. nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+.layers.panel .outline-disclosure {
+    z-index: 10;
+}
+
+.layers.panel div.outline-disclosure > ol {
+    margin-left: -12px;
+}
+
+.layers.panel .outline-disclosure ol.children {
+    padding-left: 12px;
+}
+
+.layers.panel .outline-disclosure li {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding: 1 1 1 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.layers.panel .outline-disclosure .dimmed {
+    opacity: 0.6;
+}
+
+.layers-3d-view {
+    overflow: hidden;
+}
+
+.layers-3d-view .rotating-container {
+    -webkit-transform-style: preserve-3d;
+}
+
+.layers-3d-view .rotating-container > .layer-container {
+    -webkit-transform-origin: 0 0;
+}
+
+.layers-3d-view .layer-container {
+    position: absolute;
+    border: 1px solid rgba(40, 40, 40, 0.8);
+    -webkit-transform-style: preserve-3d;
+}
+
+.layers-3d-view .layer-container.invisible {
+    opacity: 0.4;
+    border-type: dashed;
+}
+
+.layer-container .side-wall {
+    position: absolute;
+    background-color: inherit;
+    top: 0px;
+    right: 0px;
+    bottom: 0px;
+    left: 0px;
+    -webkit-transform-origin: 0 0;
+    border: inherit;
+    border-width: 1px;
+}
+
+.layer-container .back-wall {
+    background-color: inherit;
+    border: inherit;
+    border-width: 1px;
+}
+
+.layer-container .side-wall.top {
+    width: auto;
+    bottom: auto;
+    -webkit-transform: rotateX(-90deg);
+}
+
+.layer-container .side-wall.bottom {
+    width: auto;
+    top: auto;
+    -webkit-transform: translateY(100%) rotateX(-90deg);
+}
+
+.layer-container .side-wall.left {
+    height: auto;
+    right: auto;
+    -webkit-transform: rotateY(90deg);
+}
+
+.layer-container .side-wall.right {
+    height: auto;
+    left: auto;
+    -webkit-transform: translateX(100%) rotateY(90deg);
+}
+
+.layer-container.selected {
+    border-color: black;
+}
+
+.layer-container.hovered:not(.selected) {
+    border-color: rgb(150, 150, 255);
+}
+
+.layer-details-view .empty-view {
+    font-size: 16px;
+}
+
+.layer-details-view table td {
+    padding-left: 8px;
+}
+
+.layer-details-view table td:first-child {
+    font-weight: bold;
+}
+
+}

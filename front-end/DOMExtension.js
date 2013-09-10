@@ -211,15 +211,6 @@ Element.prototype.isScrolledToBottom = function()
     return this.scrollTop + this.clientHeight === this.scrollHeight;
 }
 
-Element.prototype.removeSelf = function()
-{
-    if (this.parentElement)
-        this.parentElement.removeChild(this);
-}
-
-CharacterData.prototype.removeSelf = Element.prototype.removeSelf;
-DocumentType.prototype.removeSelf = Element.prototype.removeSelf;
-
 /**
  * @param {Node} fromNode
  * @param {Node} toNode
@@ -229,7 +220,7 @@ function removeSubsequentNodes(fromNode, toNode)
     for (var node = fromNode; node && node !== toNode; ) {
         var nodeToRemove = node;
         node = node.nextSibling;
-        nodeToRemove.removeSelf();
+        nodeToRemove.remove();
     }
 }
 
@@ -255,7 +246,7 @@ Element.prototype.measurePreferredSize = function(containerElement)
     this.positionAt(0, 0);
     var result = new Size(this.offsetWidth, this.offsetHeight);
     this.positionAt(undefined, undefined);
-    this.removeSelf();
+    this.remove();
     return result;
 }
 

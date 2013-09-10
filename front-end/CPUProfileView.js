@@ -82,14 +82,14 @@ WebInspector.CPUProfileView = function(profileHeader)
     this._statusBarButtonsElement.appendChild(this.resetButton.element);
 
     this.profileHead = /** @type {?ProfilerAgent.CPUProfileNode} */ (null);
-    this.profileHeader = profileHeader;
+    this.profile = profileHeader;
 
     this._linkifier = new WebInspector.Linkifier(new WebInspector.Linkifier.DefaultFormatter(30));
 
-    if (this.profileHeader._profile) // If the profile has been loaded from file then use it.
-        this._processProfileData(this.profileHeader._profile);
+    if (this.profile._profile) // If the profile has been loaded from file then use it.
+        this._processProfileData(this.profile._profile);
     else
-        ProfilerAgent.getCPUProfile(this.profileHeader.uid, this._getCPUProfileCallback.bind(this));
+        ProfilerAgent.getCPUProfile(this.profile.uid, this._getCPUProfileCallback.bind(this));
 }
 
 WebInspector.CPUProfileView._TypeFlame = "Flame";
@@ -141,8 +141,7 @@ WebInspector.CPUProfileView.prototype = {
         this.profileHead = profile.head;
         this.samples = profile.samples;
 
-        if (profile.idleTime)
-            this._injectIdleTimeNode(profile);
+        this._calculateTimes(profile);
 
         this._assignParentsInProfile();
         if (this.samples)
@@ -222,8 +221,6 @@ WebInspector.CPUProfileView.prototype = {
 
                 delete profileNode._searchMatchedSelfColumn;
                 delete profileNode._searchMatchedTotalColumn;
-                delete profileNode._searchMatchedAverageColumn;
-                delete profileNode._searchMatchedCallsColumn;
                 delete profileNode._searchMatchedFunctionColumn;
 
                 profileNode.refresh();
@@ -268,14 +265,12 @@ WebInspector.CPUProfileView.prototype = {
         if (!isNaN(queryNumber) && !(greaterThan || lessThan))
             equalTo = true;
 
-        var matcher = new RegExp(query.escapeForRegExp(), "i");
+        var matcher = createPlainTextSearchRegex(query, "i");
 
         function matchesQuery(/*ProfileDataGridNode*/ profileDataGridNode)
         {
             delete profileDataGridNode._searchMatchedSelfColumn;
             delete profileDataGridNode._searchMatchedTotalColumn;
-            delete profileDataGridNode._searchMatchedAverageColumn;
-            delete profileDataGridNode._searchMatchedCallsColumn;
             delete profileDataGridNode._searchMatchedFunctionColumn;
 
             if (percentUnits) {
@@ -284,15 +279,11 @@ WebInspector.CPUProfileView.prototype = {
                         profileDataGridNode._searchMatchedSelfColumn = true;
                     if (profileDataGridNode.totalPercent < queryNumber)
                         profileDataGridNode._searchMatchedTotalColumn = true;
-                    if (profileDataGridNode.averagePercent < queryNumberMilliseconds)
-                        profileDataGridNode._searchMatchedAverageColumn = true;
                 } else if (greaterThan) {
                     if (profileDataGridNode.selfPercent > queryNumber)
                         profileDataGridNode._searchMatchedSelfColumn = true;
                     if (profileDataGridNode.totalPercent > queryNumber)
                         profileDataGridNode._searchMatchedTotalColumn = true;
-                    if (profileDataGridNode.averagePercent < queryNumberMilliseconds)
-                        profileDataGridNode._searchMatchedAverageColumn = true;
                 }
 
                 if (equalTo) {
@@ -300,8 +291,6 @@ WebInspector.CPUProfileView.prototype = {
                         profileDataGridNode._searchMatchedSelfColumn = true;
                     if (profileDataGridNode.totalPercent == queryNumber)
                         profileDataGridNode._searchMatchedTotalColumn = true;
-                    if (profileDataGridNode.averagePercent < queryNumberMilliseconds)
-                        profileDataGridNode._searchMatchedAverageColumn = true;
                 }
             } else if (millisecondsUnits || secondsUnits) {
                 if (lessThan) {
@@ -309,15 +298,11 @@ WebInspector.CPUProfileView.prototype = {
                         profileDataGridNode._searchMatchedSelfColumn = true;
                     if (profileDataGridNode.totalTime < queryNumberMilliseconds)
                         profileDataGridNode._searchMatchedTotalColumn = true;
-                    if (profileDataGridNode.averageTime < queryNumberMilliseconds)
-                        profileDataGridNode._searchMatchedAverageColumn = true;
                 } else if (greaterThan) {
                     if (profileDataGridNode.selfTime > queryNumberMilliseconds)
                         profileDataGridNode._searchMatchedSelfColumn = true;
                     if (profileDataGridNode.totalTime > queryNumberMilliseconds)
                         profileDataGridNode._searchMatchedTotalColumn = true;
-                    if (profileDataGridNode.averageTime > queryNumberMilliseconds)
-                        profileDataGridNode._searchMatchedAverageColumn = true;
                 }
 
                 if (equalTo) {
@@ -325,16 +310,7 @@ WebInspector.CPUProfileView.prototype = {
                         profileDataGridNode._searchMatchedSelfColumn = true;
                     if (profileDataGridNode.totalTime == queryNumberMilliseconds)
                         profileDataGridNode._searchMatchedTotalColumn = true;
-                    if (profileDataGridNode.averageTime == queryNumberMilliseconds)
-                        profileDataGridNode._searchMatchedAverageColumn = true;
                 }
-            } else {
-                if (equalTo && profileDataGridNode.numberOfCalls == queryNumber)
-                    profileDataGridNode._searchMatchedCallsColumn = true;
-                if (greaterThan && profileDataGridNode.numberOfCalls > queryNumber)
-                    profileDataGridNode._searchMatchedCallsColumn = true;
-                if (lessThan && profileDataGridNode.numberOfCalls < queryNumber)
-                    profileDataGridNode._searchMatchedCallsColumn = true;
             }
 
             if (profileDataGridNode.functionName.match(matcher) || (profileDataGridNode.url && profileDataGridNode.url.match(matcher)))
@@ -342,8 +318,6 @@ WebInspector.CPUProfileView.prototype = {
 
             if (profileDataGridNode._searchMatchedSelfColumn ||
                 profileDataGridNode._searchMatchedTotalColumn ||
-                profileDataGridNode._searchMatchedAverageColumn ||
-                profileDataGridNode._searchMatchedCallsColumn ||
                 profileDataGridNode._searchMatchedFunctionColumn)
             {
                 profileDataGridNode.refresh();
@@ -434,17 +408,20 @@ WebInspector.CPUProfileView.prototype = {
     _onSelectedNode: function(event)
     {
         var node = event.data;
-        if (!node || !node.url)
+        if (!node || !node.scriptId)
             return;
-        var uiSourceCode = WebInspector.workspace.uiSourceCodeForURL(node.url);
-        if (!uiSourceCode)
+        var script = WebInspector.debuggerModel.scriptForId(node.scriptId)
+        if (!script)
             return;
-        WebInspector.showPanel("scripts").showUISourceCode(uiSourceCode, node.lineNumber);
+        var uiLocation = script.rawLocationToUILocation(node.lineNumber);
+        if (!uiLocation)
+            return;
+        WebInspector.showPanel("scripts").showUILocation(uiLocation);
     },
 
     _changeView: function()
     {
-        if (!this.profileHeader)
+        if (!this.profile)
             return;
 
         switch (this.viewSelectComboBox.selectedOption().value) {
@@ -555,10 +532,8 @@ WebInspector.CPUProfileView.prototype = {
         var sortAscending = this.dataGrid.isSortOrderAscending();
         var sortColumnIdentifier = this.dataGrid.sortColumnIdentifier();
         var sortProperty = {
-                "average": "averageTime",
                 "self": "selfTime",
                 "total": "totalTime",
-                "calls": "numberOfCalls",
                 "function": "functionName"
             }[sortColumnIdentifier];
 
@@ -586,6 +561,31 @@ WebInspector.CPUProfileView.prototype = {
         this.refreshShowAsPercents();
 
         event.consume(true);
+    },
+
+    _calculateTimes: function(profile)
+    {
+        function totalHitCount(node) {
+            var result = node.hitCount;
+            for (var i = 0; i < node.children.length; i++)
+                result += totalHitCount(node.children[i]);
+            return result;
+        }
+        profile.totalHitCount = totalHitCount(profile.head);
+
+        var durationMs = 1000 * profile.endTime - 1000 * profile.startTime;
+        var samplingRate = profile.totalHitCount / durationMs;
+        this.samplesPerMs = samplingRate;
+
+        function calculateTimesForNode(node) {
+            node.selfTime = node.hitCount * samplingRate;
+            var totalTime = node.selfTime;
+            for (var i = 0; i < node.children.length; i++)
+                totalTime += calculateTimesForNode(node.children[i]);
+            node.totalTime = totalTime;
+            return totalTime;
+        }
+        calculateTimesForNode(profile.head);
     },
 
     _assignParentsInProfile: function()
@@ -618,41 +618,15 @@ WebInspector.CPUProfileView.prototype = {
             for (var i = 0; i < node.children.length; i++)
                 stack.push(node.children[i]);
         }
-    },
 
-    /**
-     * @param {ProfilerAgent.CPUProfile} profile
-     */
-    _injectIdleTimeNode: function(profile)
-    {
-        var idleTime = profile.idleTime;
-        var nodes = profile.head.children;
-
-        var programNode = {selfTime: 0};
-        for (var i = nodes.length - 1; i >= 0; --i) {
-            if (nodes[i].functionName === "(program)") {
-                programNode = nodes[i];
+        var topLevelNodes = this.profileHead.children;
+        for (var i = 0; i < topLevelNodes.length; i++) {
+            var node = topLevelNodes[i];
+            if (node.functionName == "(garbage collector)") {
+                this._gcNode = node;
                 break;
             }
         }
-        var programTime = programNode.selfTime;
-        if (idleTime > programTime)
-            idleTime = programTime;
-        programTime = programTime - idleTime;
-        programNode.selfTime = programTime;
-        programNode.totalTime = programTime;
-        var idleNode = {
-            functionName: "(idle)",
-            url: null,
-            lineNumber: 0,
-            totalTime: idleTime,
-            selfTime: idleTime,
-            numberOfCalls: 0,
-            visible: true,
-            callUID: 0,
-            children: []
-        };
-        nodes.push(idleNode);
     },
 
     __proto__: WebInspector.View.prototype

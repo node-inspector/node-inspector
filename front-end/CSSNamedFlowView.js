@@ -74,7 +74,7 @@ WebInspector.CSSNamedFlowView.prototype = {
         if (!rootDOMNode)
             return null;
 
-        var treeOutline = new WebInspector.ElementsTreeOutline(false, false, true);
+        var treeOutline = new WebInspector.ElementsTreeOutline(false, false);
         treeOutline.element.addStyleClass("named-flow-element");
         treeOutline.setVisible(true);
         treeOutline.rootDOMNode = rootDOMNode;

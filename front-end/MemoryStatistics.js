@@ -260,23 +260,16 @@ WebInspector.MemoryStatistics.prototype = {
         var calculator = this._timelinePanel.calculator;
         var start = calculator.minimumBoundary() * 1000;
         var end = calculator.maximumBoundary() * 1000;
-        var firstIndex = 0;
-        var lastIndex = this._counters.length - 1;
-        for (var i = 0; i < this._counters.length; i++) {
-            var time = this._counters[i].time;
-            if (time <= start) {
-                firstIndex = i;
-            } else {
-                if (end < time)
-                    break;
-                lastIndex = i;
-            }
+        function comparator(value, sample)
+        {
+            return value - sample.time;
         }
-        // Maximum index of element whose time <= start.
-        this._minimumIndex = firstIndex;
 
-        // Maximum index of element whose time <= end.
-        this._maximumIndex = lastIndex;
+        // Maximum index of element whose time <= start.
+        this._minimumIndex = Number.constrain(this._counters.upperBound(start, comparator) - 1, 0, this._counters.length - 1);
+
+        // Minimum index of element whose time >= end.
+        this._maximumIndex = Number.constrain(this._counters.lowerBound(end, comparator), 0, this._counters.length - 1);
 
         // Current window bounds.
         this._minTime = start;
@@ -391,7 +384,12 @@ WebInspector.MemoryStatistics.prototype = {
     show: function()
     {
         var anchor = /** @type {Element|null} */ (this._containerAnchor.nextSibling);
+        var savedSidebarSize = this._timelinePanel.splitView.sidebarWidth();
         this._memorySidebarView.show(this._timelinePanel.element, anchor);
+        if (savedSidebarSize > 0) {
+            this.setSidebarWidth(savedSidebarSize);
+            this._timelinePanel.splitView.setSidebarWidth(savedSidebarSize);
+        }
         this._updateSize();
         this._refreshDividers();
         setTimeout(this._draw.bind(this), 0);

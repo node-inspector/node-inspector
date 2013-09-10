@@ -37,7 +37,7 @@ WebInspector.evaluateForTestInFrontend = function(callId, script)
     {
         var message;
         try {
-            script = script + "//@ sourceURL=evaluateInWebInspector" + callId + ".js";
+            script = script + "//# sourceURL=evaluateInWebInspector" + callId + ".js";
             var result = window.eval(script);
             message = typeof result === "undefined" ? "\"<undefined>\"" : JSON.stringify(result);
         } catch (e) {

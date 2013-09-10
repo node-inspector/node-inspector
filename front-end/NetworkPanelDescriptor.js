@@ -45,7 +45,7 @@ WebInspector.NetworkPanelDescriptor.prototype = {
      */
     appendApplicableItems: function(event, contextMenu, target)
     {
-        if (!(target instanceof WebInspector.NetworkRequest))
+        if (!(target instanceof WebInspector.NetworkRequest || target instanceof WebInspector.Resource || target instanceof WebInspector.UISourceCode))
             return;
         this.panel().appendApplicableItems(event, contextMenu, target);
     },

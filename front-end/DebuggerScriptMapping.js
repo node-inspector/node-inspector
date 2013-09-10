@@ -60,7 +60,7 @@ WebInspector.DebuggerScriptMapping.prototype = {
 
         this._resourceMapping.addScript(script);
 
-        if (WebInspector.settings.sourceMapsEnabled.get())
+        if (WebInspector.settings.jsSourceMapsEnabled.get())
             this._compilerMapping.addScript(script);
     }
 }

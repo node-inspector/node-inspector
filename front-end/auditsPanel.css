@@ -156,7 +156,7 @@
 .audit-result-view .severity-info {
     background-image: url(Images/statusbarButtonGlyphs2x.png);
 }
-}
+} /* media */
 
 .audit-result-view .severity-severe {
     background-position: -224px -96px;
@@ -190,7 +190,7 @@
 .audit-result-tree li.parent::before {
     background-image: url(Images/statusbarButtonGlyphs2x.png);
 }
-}
+} /* media */
 
 .audit-result-tree li.parent::before {
     background-position: -4px -96px;
@@ -213,7 +213,8 @@
     min-width: 100%;
 }
 
-.audit-result-tree, .audit-result-tree ol {
+.audit-result-tree,
+.audit-result-tree ol {
     list-style-type: none;
     -webkit-padding-start: 12px;
     margin: 0;

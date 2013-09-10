@@ -397,15 +397,14 @@ WebInspector.FileOutputStream.prototype = {
     {
         if (event.data !== this._fileName)
             return;
+        var callback = this._writeCallbacks.shift();
+        if (callback)
+            callback(this);
         if (!this._writeCallbacks.length) {
             if (this._closed) {
                 WebInspector.fileManager.removeEventListener(WebInspector.FileManager.EventTypes.AppendedToURL, this._onAppendDone, this);
                 WebInspector.fileManager.close(this._fileName);
             }
-            return;
         }
-        var callback = this._writeCallbacks.shift();
-        if (callback)
-            callback(this);
     }
 }

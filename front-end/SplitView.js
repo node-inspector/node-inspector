@@ -94,14 +94,14 @@ WebInspector.SplitView.prototype = {
         this.element.removeStyleClass(this._isVertical ? "split-view-vertical" : "split-view-horizontal");
         this._isVertical = isVertical;
         this.element.addStyleClass(this._isVertical ? "split-view-vertical" : "split-view-horizontal");
+        delete this._resizerElementSize;
+        this._sidebarSize = -1;
     },
   
     _updateLayout: function()
     {
-        this._updateTotalSize();
-
-        delete this._sidebarSize;  // Force update.
-        this.setSidebarSize(this._lastSidebarSize());
+        delete this._totalSize; // Lazy update.
+        this._innerSetSidebarSize(this._lastSidebarSize());
     },
 
     /**
@@ -185,6 +185,7 @@ WebInspector.SplitView.prototype = {
         this._removeAllLayoutProperties();
 
         this._isShowingOne = true;
+        this._sidebarSize = -1;
         this.setResizable(false);
         this.doResize();
     },
@@ -214,14 +215,13 @@ WebInspector.SplitView.prototype = {
 
     showBoth: function()
     {
-        this._isShowingOne = false;
         this._firstElement.removeStyleClass("hidden");
         this._firstElement.removeStyleClass("maximized");
         this._secondElement.removeStyleClass("hidden");
         this._secondElement.removeStyleClass("maximized");
 
-        this._updateLayout();
-
+        this._isShowingOne = false;
+        this._sidebarSize = -1;
         this.setResizable(true);
         this.doResize();
     },
@@ -231,13 +231,8 @@ WebInspector.SplitView.prototype = {
      */
     setResizable: function(resizable)
     {
-        if (this._resizable === resizable)
-            return;
         this._resizable = resizable;
-        if (resizable)
-            this._resizerElement.removeStyleClass("hidden");
-        else
-            this._resizerElement.addStyleClass("hidden");
+        this._resizerElement.enableStyleClass("hidden", !resizable);
     },
 
     /**
@@ -245,17 +240,8 @@ WebInspector.SplitView.prototype = {
      */
     setSidebarSize: function(size)
     {
-        if (this._sidebarSize === size)
-            return;
-
-        size = this.applyConstraints(size);
-        if (size < 0) {
-            // Never apply bad values, fix it upon onResize instead.
-            this._sidebarSize = size;
-            return;
-        }
         this._innerSetSidebarSize(size);
-        this._saveSidebarSize(size);
+        this._saveSidebarSize();
     },
 
     /**
@@ -263,7 +249,7 @@ WebInspector.SplitView.prototype = {
      */
     sidebarSize: function()
     {
-        return this._sidebarSize;
+        return Math.max(0, this._sidebarSize);
     },
 
     /**
@@ -271,14 +257,9 @@ WebInspector.SplitView.prototype = {
      */
     totalSize: function()
     {
+        if (!this._totalSize)
+            this._totalSize = this._isVertical ? this.element.offsetWidth : this.element.offsetHeight;
         return this._totalSize;
-    },
-
-    _updateTotalSize: function()
-    {
-        this._totalSize = this._isVertical ? this.element.offsetWidth : this.element.offsetHeight;
-        if (this._useFraction)
-            this._sidebarSize = this._lastSidebarSize();
     },
 
     /**
@@ -286,61 +267,127 @@ WebInspector.SplitView.prototype = {
      */
     _innerSetSidebarSize: function(size)
     {
-        if (this._isShowingOne)
+        if (this._isShowingOne) {
+            this._sidebarSize = size;
             return;
+        }
+
+        size = this._applyConstraints(size);
+        if (this._sidebarSize === size)
+            return;
+
+        if (size < 0) {
+            // Never apply bad values, fix it upon onResize instead.
+            return;
+        }
 
         this._removeAllLayoutProperties();
 
         var sizeValue;
         if (this._useFraction)
-            sizeValue = (size / this._totalSize) * 100 + "%";
+            sizeValue = (size / this.totalSize()) * 100 + "%";
         else
             sizeValue = size + "px";
 
+        if (!this._resizerElementSize)
+            this._resizerElementSize = this._isVertical ? this._resizerElement.offsetWidth : this._resizerElement.offsetHeight;
+
         if (this._isVertical) {
-            var resizerWidth = this._resizerElement.offsetWidth;
             if (this._secondIsSidebar) {
                 this._firstElement.style.right = sizeValue;
                 this._secondElement.style.width = sizeValue;
                 this._resizerElement.style.right = sizeValue;
-                this._resizerElement.style.marginRight = -resizerWidth / 2 + "px";
+                this._resizerElement.style.marginRight = -this._resizerElementSize / 2 + "px";
             } else {
                 this._firstElement.style.width = sizeValue;
                 this._secondElement.style.left = sizeValue;
                 this._resizerElement.style.left = sizeValue;
-                this._resizerElement.style.marginLeft = -resizerWidth / 2 + "px";
+                this._resizerElement.style.marginLeft = -this._resizerElementSize / 2 + "px";
             }
         } else {
-            var resizerHeight = this._resizerElement.offsetHeight;
-
             if (this._secondIsSidebar) {
                 this._firstElement.style.bottom = sizeValue;
                 this._secondElement.style.height = sizeValue;
                 this._resizerElement.style.bottom = sizeValue;
-                this._resizerElement.style.marginBottom = -resizerHeight / 2 + "px";
+                this._resizerElement.style.marginBottom = -this._resizerElementSize / 2 + "px";
             } else {
                 this._firstElement.style.height = sizeValue;
                 this._secondElement.style.top = sizeValue;
                 this._resizerElement.style.top = sizeValue;
-                this._resizerElement.style.marginTop = -resizerHeight / 2 + "px";
+                this._resizerElement.style.marginTop = -this._resizerElementSize / 2 + "px";
             }
         }
 
         this._sidebarSize = size;
+
+        // No need to recalculate this._sidebarSize and this._totalSize again.
+        this._muteOnResize = true;
         this.doResize();
+        delete this._muteOnResize;
     },
 
     /**
-     * @param {number} size
+     * @param {number=} minWidth
+     * @param {number=} minHeight
+     */
+    setSidebarElementConstraints: function(minWidth, minHeight)
+    {
+        if (typeof minWidth === "number")
+            this._minimumSidebarWidth = minWidth;
+        if (typeof minHeight === "number")
+            this._minimumSidebarHeight = minHeight;
+    },
+
+    /**
+     * @param {number=} minWidth
+     * @param {number=} minHeight
+     */
+    setMainElementConstraints: function(minWidth, minHeight)
+    {
+        if (typeof minWidth === "number")
+            this._minimumMainWidth = minWidth;
+        if (typeof minHeight === "number")
+            this._minimumMainHeight = minHeight;
+    },
+
+    /**
+     * @param {number} sidebarSize
      * @return {number}
      */
-    applyConstraints: function(size)
+    _applyConstraints: function(sidebarSize)
     {
-        const minSize = 20;
-        size = Math.max(size, minSize);
-        if (this._totalSize - size < minSize)
-            size = this._totalSize - minSize;
-        return size < minSize ? -1 : size;
+        const minPadding = 20;
+        var totalSize = this.totalSize();
+        var from = (this.isVertical() ? this._minimumSidebarWidth : this._minimumSidebarHeight) || 0;
+        var fromInPercents = false;
+        if (from && from < 1) {
+            fromInPercents = true;
+            from = Math.round(totalSize * from);
+        }
+        from = Math.max(from, minPadding);
+
+        var minMainSize = (this.isVertical() ? this._minimumMainWidth : this._minimumMainHeight) || 0;
+        var toInPercents = false;
+        if (minMainSize && minMainSize < 1) {
+            toInPercents = true;
+            minMainSize = Math.round(totalSize * minMainSize);
+        }
+        minMainSize = Math.max(minMainSize, minPadding);
+
+        var to = totalSize - minMainSize;
+        if (from <= to)
+            return Number.constrain(sidebarSize, from, to);
+
+        // Respect fixed constraints over percents. This will, for example, shrink
+        // the sidebar to its minimum size when possible.
+        if (!fromInPercents && !toInPercents)
+            return -1;
+        if (toInPercents && sidebarSize >= from && from < totalSize)
+            return from;
+        if (fromInPercents && sidebarSize <= to && to < totalSize)
+            return to;
+
+        return -1;
     },
 
     wasShown: function()
@@ -350,10 +397,9 @@ WebInspector.SplitView.prototype = {
 
     onResize: function()
     {
-        if (this._sidebarSize < 0)
-            this._updateLayout();
-        else
-            this._updateTotalSize();
+        if (this._muteOnResize)
+            return;
+        this._updateLayout();
     },
 
     /**
@@ -365,7 +411,8 @@ WebInspector.SplitView.prototype = {
         if (!this._resizable)
             return false;
 
-        this._dragOffset = (this._secondIsSidebar ? this._totalSize - this._sidebarSize : this._sidebarSize) - (this._isVertical ? event.pageX : event.pageY);
+        this._saveSidebarSizeRecursively();
+        this._dragOffset = (this._secondIsSidebar ? this.totalSize() - this._sidebarSize : this._sidebarSize) - (this._isVertical ? event.pageX : event.pageY);
         return true;
     },
 
@@ -375,7 +422,7 @@ WebInspector.SplitView.prototype = {
     _resizerDragging: function(event)
     {
         var newOffset = (this._isVertical ? event.pageX : event.pageY) + this._dragOffset;
-        var newSize = (this._secondIsSidebar ? this._totalSize - newOffset : newOffset);
+        var newSize = (this._secondIsSidebar ? this.totalSize() - newOffset : newOffset);
         this.setSidebarSize(newSize);
         event.preventDefault();
     },
@@ -386,6 +433,20 @@ WebInspector.SplitView.prototype = {
     _endResizerDragging: function(event)
     {
         delete this._dragOffset;
+        this._saveSidebarSizeRecursively();
+    },
+
+    _saveSidebarSizeRecursively: function()
+    {
+        /** @this {WebInspector.View} */
+        function doSaveSidebarSizeRecursively()
+        {
+            if (this._saveSidebarSize)
+                this._saveSidebarSize();
+            this._callOnVisibleChildren(doSaveSidebarSizeRecursively);
+        }
+        this._saveSidebarSize();
+        this._callOnVisibleChildren(doSaveSidebarSizeRecursively);
     },
 
     /**
@@ -430,17 +491,18 @@ WebInspector.SplitView.prototype = {
         if (!size)
              size = this._isVertical ? this._savedSidebarWidth : this._savedSidebarHeight;
         if (this._useFraction)
-            size *= this._totalSize;
+            size *= this.totalSize();
         return size;
     },
 
-    /**
-     * @param {number} size
-     */
-    _saveSidebarSize: function(size)
+    _saveSidebarSize: function()
     {
+        var size = this._sidebarSize;
+        if (size < 0)
+            return;
+
         if (this._useFraction)
-            size /= this._totalSize;
+            size /= this.totalSize();
 
         if (this._isVertical)
             this._savedSidebarWidth = size;

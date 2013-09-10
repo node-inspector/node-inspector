@@ -122,3 +122,59 @@ WebInspector.resourceTypes = {
     WebSocket: new WebInspector.ResourceType("websocket", "WebSocket", "WebSockets", "rgb(186,186,186)", false), // FIXME: Decide the color.
     Other: new WebInspector.ResourceType("other", "Other", "Other", "rgb(186,186,186)", false)
 }
+
+WebInspector.ResourceType.mimeTypesForExtensions = {
+    // Web extensions
+    "js": "text/javascript",
+    "css": "text/css",
+    "html": "text/html",
+    "htm": "text/html",
+    "xml": "application/xml",
+    "xsl": "application/xml",
+
+    // HTML Embedded Scripts: ASP, JSP
+    "asp": "application/x-aspx",
+    "aspx": "application/x-aspx",
+    "jsp": "application/x-jsp",
+
+    // C/C++
+    "c": "text/x-c++src",
+    "cc": "text/x-c++src",
+    "cpp": "text/x-c++src",
+    "h": "text/x-c++src",
+    "m": "text/x-c++src",
+    "mm": "text/x-c++src",
+
+    // CoffeeScript
+    "coffee": "text/x-coffeescript",
+
+    // Dart
+    "dart": "text/javascript",
+
+    // TypeScript
+    "ts": "text/typescript",
+
+    // JSON
+    "json": "application/json",
+    "gyp": "application/json",
+    "gypi": "application/json",
+
+    // C#
+    "cs": "text/x-csharp",
+
+    // Java
+    "java": "text/x-java",
+
+    // PHP
+    "php": "text/x-php",
+    "phtml": "application/x-httpd-php",
+
+    // Python
+    "py": "text/x-python",
+
+    // Shell
+    "sh": "text/x-sh",
+
+    // SCSS
+    "scss": "text/x-scss"
+}

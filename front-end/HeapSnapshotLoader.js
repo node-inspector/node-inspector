@@ -30,11 +30,13 @@
 
 /**
  * @constructor
+ * @param{WebInspector.HeapSnapshotWorkerDispatcher} dispatcher
  * @implements {WebInspector.OutputStream}
  */
-WebInspector.HeapSnapshotLoader = function()
+WebInspector.HeapSnapshotLoader = function(dispatcher)
 {
     this._reset();
+    this._progress = new WebInspector.HeapSnapshotProgress(dispatcher);
 }
 
 WebInspector.HeapSnapshotLoader.prototype = {
@@ -58,8 +60,9 @@ WebInspector.HeapSnapshotLoader.prototype = {
 
     buildSnapshot: function(constructorName)
     {
+        this._progress.updateStatus("Processing snapshot\u2026");
         var constructor = WebInspector[constructorName];
-        var result = new constructor(this._snapshot);
+        var result = new constructor(this._snapshot, this._progress);
         this._reset();
         return result;
     },
@@ -104,6 +107,7 @@ WebInspector.HeapSnapshotLoader.prototype = {
 
     _parseStringsArray: function()
     {
+        this._progress.updateStatus("Parsing strings\u2026");
         var closingBracketIndex = this._json.lastIndexOf("]");
         if (closingBracketIndex === -1)
             throw new Error("Incomplete JSON");
@@ -125,6 +129,7 @@ WebInspector.HeapSnapshotLoader.prototype = {
                 throw new Error("Snapshot token not found");
             this._json = this._json.slice(snapshotTokenIndex + snapshotToken.length + 1);
             this._state = "parse-snapshot-info";
+            this._progress.updateStatus("Loading snapshot info\u2026");
         }
         case "parse-snapshot-info": {
             var closingBracketIndex = WebInspector.findBalancedCurlyBrackets(this._json);
@@ -150,7 +155,9 @@ WebInspector.HeapSnapshotLoader.prototype = {
             this._state = "parse-nodes";
         }
         case "parse-nodes": {
-            if (this._parseUintArray())
+            var hasMoreData = this._parseUintArray();
+            this._progress.updateProgress("Loading nodes\u2026 %d\%", this._arrayIndex, this._array.length);
+            if (hasMoreData)
                 return;
             this._snapshot.nodes = this._array;
             this._state = "find-edges";
@@ -172,11 +179,14 @@ WebInspector.HeapSnapshotLoader.prototype = {
             this._state = "parse-edges";
         }
         case "parse-edges": {
-            if (this._parseUintArray())
+            var hasMoreData = this._parseUintArray();
+            this._progress.updateProgress("Loading edges\u2026 %d\%", this._arrayIndex, this._array.length);
+            if (hasMoreData)
                 return;
             this._snapshot.edges = this._array;
             this._array = null;
             this._state = "find-strings";
+            this._progress.updateStatus("Loading strings\u2026");
         }
         case "find-strings": {
             var stringsToken = "\"strings\"";

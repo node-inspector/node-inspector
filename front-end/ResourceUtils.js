@@ -83,7 +83,7 @@ WebInspector.displayNameForURL = function(url)
 
 /**
  * @param {string} string
- * @param {function(string,string,number=):Node} linkifier
+ * @param {function(string,string,number=,number=):Node} linkifier
  * @return {DocumentFragment}
  */
 WebInspector.linkifyStringAsFragmentWithCustomLinkifier = function(string, linkifier)
@@ -106,13 +106,19 @@ WebInspector.linkifyStringAsFragmentWithCustomLinkifier = function(string, linki
         var realURL = (linkString.startsWith("www.") ? "http://" + linkString : linkString);
         var lineColumnMatch = lineColumnRegEx.exec(realURL);
         var lineNumber;
+        var columnNumber;
         if (lineColumnMatch) {
             realURL = realURL.substring(0, realURL.length - lineColumnMatch[0].length);
             lineNumber = parseInt(lineColumnMatch[1], 10);
-            lineNumber = isNaN(lineNumber) ? undefined : lineNumber;
+            // Immediately convert line and column to 0-based numbers.
+            lineNumber = isNaN(lineNumber) ? undefined : lineNumber - 1;
+            if (typeof(lineColumnMatch[3]) === "string") {
+                columnNumber = parseInt(lineColumnMatch[3], 10);
+                columnNumber = isNaN(columnNumber) ? undefined : columnNumber - 1;
+            }
         }
 
-        var linkNode = linkifier(title, realURL, lineNumber);
+        var linkNode = linkifier(title, realURL, lineNumber, columnNumber);
         container.appendChild(linkNode);
         string = string.substring(linkIndex + linkString.length, string.length);
     }
@@ -133,15 +139,18 @@ WebInspector.linkifyStringAsFragment = function(string)
      * @param {string} title
      * @param {string} url
      * @param {number=} lineNumber
+     * @param {number=} columnNumber
      * @return {Node}
      */
-    function linkifier(title, url, lineNumber)
+    function linkifier(title, url, lineNumber, columnNumber)
     {
-        var isExternal = !WebInspector.resourceForURL(url);
+        var isExternal = !WebInspector.resourceForURL(url) && !WebInspector.workspace.uiSourceCodeForURL(url);
         var urlNode = WebInspector.linkifyURLAsNode(url, title, undefined, isExternal);
-        if (typeof(lineNumber) !== "undefined") {
+        if (typeof lineNumber !== "undefined") {
             urlNode.lineNumber = lineNumber;
             urlNode.preferredPanel = "scripts";
+            if (typeof columnNumber !== "undefined")
+                urlNode.columnNumber = columnNumber;
         }
         
         return urlNode; 
@@ -209,10 +218,9 @@ WebInspector.linkifyResourceAsNode = function(url, lineNumber, classes, tooltipT
 
 /**
  * @param {WebInspector.NetworkRequest} request
- * @param {string=} classes
  * @return {Element}
  */
-WebInspector.linkifyRequestAsNode = function(request, classes)
+WebInspector.linkifyRequestAsNode = function(request)
 {
     var anchor = WebInspector.linkifyURLAsNode(request.url);
     anchor.preferredPanel = "network";

@@ -150,7 +150,7 @@ WebInspector.EventListenersSection = function(title, nodeId, linkifier)
     WebInspector.PropertiesSection.call(this, title);
 
     // Changed from a Properties List
-    this.propertiesElement.parentNode.removeChild(this.propertiesElement);
+    this.propertiesElement.remove();
     delete this.propertiesElement;
     delete this.propertiesTreeOutline;
 

@@ -41,7 +41,7 @@ body.dock-to-right.inactive:not(.undocked) {
 }
 
 * {
-    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 :focus {
@@ -52,7 +52,8 @@ img {
     -webkit-user-drag: none;
 }
 
-iframe, a img {
+iframe,
+a img {
     border: none;
 }
 
@@ -97,16 +98,19 @@ iframe.view {
 .resources-dividers-label-bar {
     position: absolute;
     top: 0;
-    left: 0px;
+    left: 0;
     right: 0;
     background-color: rgba(255, 255, 255, 0.8);
-    background-clip: padding;
+    background-clip: padding-box;
     border-bottom: 1px solid rgba(0, 0, 0, 0.3);
     height: 20px;
     z-index: 200;
     pointer-events: none;
-    cursor: move;
     overflow: hidden;
+}
+
+.resize-enabled .resources-dividers-label-bar {
+    cursor: move;
 }
 
 .resources-divider {
@@ -156,15 +160,15 @@ iframe.view {
     left: 0;
     right: 0;
     top: 0;
-    bottom: 60px;
+    height: 20px;
     z-index: 150;
 }
 
 .overview-grid-dividers-background {
     left: 0%;
     right: 0%;
-    top: 0px;
-    bottom: 60px;
+    top: 0;
+    height: 20px;
     background-color: black;
     position: absolute;
 }
@@ -182,16 +186,24 @@ iframe.view {
 
 .overview-grid-window-resizer {
     position: absolute;
-    top: 0px;
-    bottom: 60px;
+    top: 0;
+    height: 20px;
     width: 5px;
-    margin-left: -3px;
-    margin-right: -2px;
+    margin-left: -2px;
+    margin-right: -3px;
     background-color: rgb(153, 153, 153);
     z-index: 500;
+    border-radius: 2px;
+    box-shadow: white 1px 0 0, white -1px 0 0, white 0 1px 0, white 0 -1px 0;
+}
+
+.resize-enabled .overview-grid-window-resizer {
     cursor: ew-resize;
-    -webkit-border-radius: 2px;
-    -webkit-box-shadow: white 1px 0 0, white -1px 0 0, white 0 1px 0, white 0 -1px 0;
+}
+
+.overview-grid-window-resizer-right {
+    margin-left: -3px;
+    margin-right: -2px;
 }
 
 /* Network timing is shared between popover and network item view pane */
@@ -216,14 +228,11 @@ iframe.view {
     top: 1px;
 }
 
-.webkit-search-result {
-    -webkit-border-radius: 4px;
-    padding: 2px 2px 2px 3px;
-    margin: -2px -2px -2px -3px;
-    opacity: 0.8;
-    -webkit-box-shadow: rgba(0, 0, 0, .5) 3px 3px 4px;
-    background-color: rgb(241, 234, 0);
-    color: #222;
+.highlighted-search-result {
+    border-radius: 1px;
+    padding: 1px;
+    margin: -1px;
+    background-color: rgba(255, 255, 0, 0.8);
 }
 
 .sidebar-separator {

@@ -180,6 +180,7 @@ WebInspector.SidebarPaneStack.prototype = {
 WebInspector.SidebarTabbedPane = function()
 {
     WebInspector.TabbedPane.call(this);
+    this.setRetainTabsOrder(true);
     this.element.addStyleClass("sidebar-tabbed-pane");
     this.registerRequiredCSS("sidebarPane.css");
 }

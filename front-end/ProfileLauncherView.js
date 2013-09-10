@@ -61,6 +61,7 @@ WebInspector.ProfileLauncherView.prototype = {
         if (decorationElement)
             this._innerContentElement.appendChild(decorationElement);
         this._isInstantProfile = profileType.isInstantProfile();
+        this._isEnabled = profileType.isEnabled();
     },
 
     _controlButtonClicked: function()
@@ -70,6 +71,10 @@ WebInspector.ProfileLauncherView.prototype = {
 
     _updateControls: function()
     {
+        if (this._isEnabled)
+            this._controlButton.removeAttribute("disabled");
+        else
+            this._controlButton.setAttribute("disabled", "");
         if (this._isInstantProfile) {
             this._controlButton.removeStyleClass("running");
             this._controlButton.textContent = WebInspector.UIString("Take Snapshot");
@@ -91,6 +96,16 @@ WebInspector.ProfileLauncherView.prototype = {
     profileFinished: function()
     {
         this._isProfiling = false;
+        this._updateControls();
+    },
+
+    /**
+     * @param {WebInspector.ProfileType} profileType
+     */
+    updateProfileType: function(profileType)
+    {
+        this._isInstantProfile = profileType.isInstantProfile();
+        this._isEnabled = profileType.isEnabled();
         this._updateControls();
     },
 
@@ -168,6 +183,7 @@ WebInspector.MultiProfileLauncherView.prototype = {
     {
         this.dispatchEventToListeners(WebInspector.MultiProfileLauncherView.EventTypes.ProfileTypeSelected, profileType);
         this._isInstantProfile = profileType.isInstantProfile();
+        this._isEnabled = profileType.isEnabled();
         this._updateControls();
     },
 

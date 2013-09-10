@@ -8,18 +8,18 @@
 }
 
 .network-log-grid.data-grid table.data {
-    -webkit-background-size: 1px 82px;
+    background-size: 1px 82px;
     background-image: -webkit-gradient(linear, left top, left bottom, from(rgba(0, 0, 0, 0)), color-stop(0.5, rgba(0, 0, 0, 0)), color-stop(0.5, rgba(0, 0, 0, 0.05)), to(rgba(0, 0, 0, 0.05)));
 }
 
 .network-log-grid.data-grid.small table.data {
-    -webkit-background-size: 1px 42px;
+    background-size: 1px 42px;
 }
 
 .network-log-grid.data-grid td {
     line-height: 17px;
     height: 41px;
-    border-right: 1px solid rgb(210, 210, 210);
+    border-left: 1px solid rgb(210, 210, 210);
     vertical-align: middle;
 }
 
@@ -36,7 +36,9 @@
     height: 22px;
 }
 
-.network-log-grid.data-grid th, .network-log-grid.data-grid th.sort-descending, .network-log-grid.data-grid th.sort-ascending {
+.network-log-grid.data-grid th,
+.network-log-grid.data-grid th.sort-descending,
+.network-log-grid.data-grid th.sort-ascending {
     background: -webkit-gradient(linear, left top, left bottom, from(rgb(236, 236, 236)), to(rgb(217, 217, 217)));
 }
 
@@ -53,7 +55,6 @@
     background-color: transparent;
     border: none;
     width: 100%;
-    font-size: inherit;
     color: inherit;
 }
 
@@ -94,7 +95,8 @@
     color: gray;
 }
 
-.network-error-row, .network-error-row .network-cell-subtitle {
+.network-error-row,
+.network-error-row .network-cell-subtitle {
     color: rgb(230, 0, 0);
 }
 
@@ -111,8 +113,8 @@
 }
 
 @-webkit-keyframes network-row-highlight-fadeout {
-    from {background-color: rgba(56, 121, 217, 1); }
-    to { background-color: rgba(56, 121, 217, 0); }
+    from {background-color: rgba(255, 255, 120, 1); }
+    to { background-color: rgba(255, 255, 120, 0); }
 }
 
 .network-header-subtitle {
@@ -120,8 +122,7 @@
 }
 
 .network-log-grid.data-grid.small .network-cell-subtitle,
-.network-log-grid.data-grid.small .network-header-subtitle
-{
+.network-log-grid.data-grid.small .network-header-subtitle {
     display: none;
 }
 
@@ -303,7 +304,8 @@
     -webkit-border-image: url(Images/timelinePillGray.png) 7 7 7 7;
 }
 
-.network-graph-bar.waiting, .network-graph-bar.waiting-right {
+.network-graph-bar.waiting,
+.network-graph-bar.waiting-right {
     opacity: 0.35;
 }
 
@@ -383,11 +385,6 @@
     left: 0;
     right: 14px; /* Keep in sync with td.corner width */
     pointer-events: none;
-}
-
-.network-log-grid.data-grid .timeline-column,
-.network.panel .data-grid th.timeline-column {
-    border-right: none;
 }
 
 .data-grid td.timeline-column {
@@ -502,19 +499,18 @@
     right: 0;
     width: 100%;
     height: 100%;
-    border-right: 0 none transparent;
     overflow-y: auto;
     overflow-x: hidden;
 }
 
-// Brief mode peculiarities.
+/* Brief mode peculiarities. */
 #network-container.brief-mode .network-timeline-grid {
     display: none;
 }
 
 #network-container.brief-mode td,
 #network-container.brief-mode th {
-    border-right: none;
+    border-left: none;
 }
 
 #network-container.brief-mode .network-log-grid.data-grid .data-grid-resizer {

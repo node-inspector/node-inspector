@@ -38,13 +38,19 @@ console.assert = function(vararg) {}
 console.error = function(vararg) {}
 console.trace = function() {}
 
-/** @param {boolean=} param */
-Element.prototype.scrollIntoViewIfNeeded = function(param) {}
 /** @type {boolean} */
 Event.prototype.isMetaOrCtrlForTest = false;
 /** @param {...*} vararg */
 Event.prototype.initWebKitWheelEvent = function(vararg) {}
 Event.prototype.stopImmediatePropagation = function() {}
+
+/**
+ * @constructor
+ * @extends {KeyboardEvent}
+ * @param {string} eventType
+ * @param {Object=} properties
+ */
+window.KeyboardEvent = function(eventType, properties) {}
 
 /** @param {Element} element */
 window.getComputedStyle = function(element) {}
@@ -84,13 +90,57 @@ WebKitMutationObserver.prototype.disconnect = function() {}
  */
 function addEventListener(eventName, listener, capturing) {}
 
-/** @param {boolean=} onlyFirst */
-Array.prototype.remove = function(obj, onlyFirst) {}
+/**
+ * @param {T} value
+ * @param {boolean=} onlyFirst
+ * @this {Array.<T>}
+ * @template T
+ */
+Array.prototype.remove = function(value, onlyFirst) {}
+/**
+ * @return {!Object.<string, boolean>}
+ * @this {Array.<*>}
+ */
 Array.prototype.keySet = function() {}
-/** @return {number} */
-Array.prototype.upperBound = function(anchor) {}
-/** @return {number} */
-Array.prototype.binaryIndexOf = function(anchor) {}
+/**
+ * @param {number} index
+ * @return {!Array.<T>}
+ * @this {Array.<T>}
+ * @template T
+ */
+Array.prototype.rotate = function(index) {}
+/**
+ * @param {T} object
+ * @param {function(T,S):number=} comparator
+ * @return {number}
+ * @this {Array.<S>}
+ * @template T,S
+ */
+Array.prototype.lowerBound = function(object, comparator) {}
+/**
+ * @param {T} object
+ * @param {function(T,S):number=} comparator
+ * @return {number}
+ * @this {Array.<S>}
+ * @template T,S
+ */
+Array.prototype.upperBound = function(object, comparator) {}
+/**
+ * @param {T} value
+ * @param {function(T,S):number} comparator
+ * @return {number}
+ * @this {Array.<S>}
+ * @template T,S
+ */
+Array.prototype.binaryIndexOf = function(value, comparator) {}
+/**
+ * @param {function(number, number): number} comparator
+ * @param {number} leftBound
+ * @param {number} rightBound
+ * @param {number} k
+ * @return {!Array.<number>}
+ * @this {Array.<number>}
+ */
 Array.prototype.sortRange = function(comparator, leftBound, rightBound, k) {}
 
 /**
@@ -112,15 +162,17 @@ Array.prototype.partition = function(comparator, left, right, pivotIndex) {}
 Array.prototype.qselect = function(k, comparator) {}
 
 /**
- * @this {Array.<*>}
  * @param {string} field
- * @return {Array.<*>}
+ * @return {!Array.<T>}
+ * @this {Array.<Object.<string,T>>}
+ * @template T
  */
 Array.prototype.select = function(field) {}
 
 /**
- * @this {Array.<*>}
- * @return {*}
+ * @return {T|undefined}
+ * @this {Array.<T>}
+ * @template T
  */
 Array.prototype.peekLast = function() {}
 
@@ -170,6 +222,7 @@ InspectorFrontendHostAPI.prototype.save = function(url, content, forceSaveAs) {}
 InspectorFrontendHostAPI.prototype.close = function(url) {}
 InspectorFrontendHostAPI.prototype.append = function(url, content) {}
 InspectorFrontendHostAPI.prototype.sendMessageToBackend = function(message) {}
+InspectorFrontendHostAPI.prototype.sendMessageToEmbedder = function(message) {}
 InspectorFrontendHostAPI.prototype.recordActionTaken = function(actionCode) {}
 InspectorFrontendHostAPI.prototype.recordPanelShown = function(panelCode) {}
 InspectorFrontendHostAPI.prototype.recordSettingChanged = function(settingCode) {}
@@ -179,6 +232,9 @@ InspectorFrontendHostAPI.prototype.requestFileSystems = function() {}
 InspectorFrontendHostAPI.prototype.addFileSystem = function() {}
 InspectorFrontendHostAPI.prototype.removeFileSystem = function(fileSystemPath) {}
 InspectorFrontendHostAPI.prototype.isolatedFileSystem = function(fileSystemId, registeredName) {}
+InspectorFrontendHostAPI.prototype.indexPath = function(requestId, fileSystemPath) {}
+InspectorFrontendHostAPI.prototype.stopIndexing = function(requestId) {}
+InspectorFrontendHostAPI.prototype.searchInPath = function(requestId, fileSystemPath, query) {}
 InspectorFrontendHostAPI.prototype.setZoomFactor = function(zoom) {}
 /** @type {InspectorFrontendHostAPI} */
 var InspectorFrontendHost;
@@ -245,10 +301,18 @@ WebInspector.evaluateInConsole = function(expression, showResultOnly) {}
 
 WebInspector.queryParamsObject = {}
 
+/**
+ * @param {Element} element
+ */
+WebInspector.showAnchorLocation = function(element) {}
+
 WebInspector.Events = {
     InspectorLoaded: "InspectorLoaded",
     InspectorClosing: "InspectorClosing"
 }
+
+/** @type {WebInspector.SettingsController} */
+WebInspector.settingsController;
 
 /** Extensions API */
 
@@ -290,6 +354,7 @@ function ExtensionDescriptor() {
 function ExtensionReloadOptions() {
     this.ignoreCache = false;
     this.injectedScript = "";
+    this.preprocessingScript = "";
     this.userAgent = "";
 }
 
@@ -321,10 +386,8 @@ difflib.SequenceMatcher = function(baseText, newText) { }
 difflib.SequenceMatcher.prototype.get_opcodes = function() { return []; }
 
 /** @constructor */
-WebInspector.AceTextEditor = function(url, delegate) { }
-
-/** @constructor */
 var CodeMirror = function() { }
+CodeMirror.on = function(obj, type, handler) { }
 CodeMirror.prototype = {
     addKeyMap: function(map) { },
     addLineClass: function(handle, where, cls) { },
@@ -354,6 +417,7 @@ CodeMirror.prototype = {
     firstLine: function() { },
     focus: function() { },
     getAllMarks: function() { },
+    /** @param {string=} start */
     getCursor: function(start) { },
     getDoc: function() { },
     getGutterElement: function() { },
@@ -368,6 +432,9 @@ CodeMirror.prototype = {
     getMode: function() { },
     getOption: function(option) { },
     getRange: function(from, to, lineSep) { },
+    /**
+     * @return {{left: number, top: number, width: number, height: number, clientWidth: number, clientHeight: number}}
+     */
     getScrollInfo: function() { },
     getScrollerElement: function() { },
     getSelection: function() { },
@@ -386,6 +453,11 @@ CodeMirror.prototype = {
     lastLine: function() { },
     lineCount: function() { },
     lineInfo: function(line) { },
+    /**
+     * @param {number} height
+     * @param {string=} mode
+     */
+    lineAtHeight: function(height, mode) { },
     linkedDoc: function(options) { },
     markClean: function() { },
     markText: function(from, to, options) { },
@@ -424,6 +496,14 @@ CodeMirror.prototype = {
 /** @type {number} */
 CodeMirror.prototype.lineCount;
 CodeMirror.Pass;
+CodeMirror.showHint = function(codeMirror, hintintFunction) { };
+CodeMirror.commands = {};
+CodeMirror.modes = {};
+CodeMirror.mimeModes = {};
+CodeMirror.getMode = function(options, spec) { };
+CodeMirror.overlayMode = function(mode1, mode2, squashSpans) { };
+CodeMirror.defineMode = function(modeName, modeConstructor) { };
+CodeMirror.startState = function(mode) { };
 
 /** @constructor */
 CodeMirror.Pos = function(line, ch) { }
@@ -433,7 +513,11 @@ CodeMirror.Pos.prototype.line;
 CodeMirror.Pos.prototype.ch;
 
 /** @constructor */
-CodeMirror.StringStream = function() { }
+CodeMirror.StringStream = function(line)
+{
+    this.pos = 0;
+    this.start = 0;
+}
 CodeMirror.StringStream.prototype = {
     backUp: function (n) { },
     column: function () { },
@@ -456,8 +540,18 @@ CodeMirror.StringStream.prototype = {
     sol: function () { }
 }
 
+/** @type {Object.<string, Object.<string, string>>} */
+CodeMirror.keyMap;
+
 WebInspector.suggestReload = function() { }
 WebInspector.reload = function() { }
+
+WebInspector.settings.continuousPainting = /** type {WebInspector.Setting} */ { }
+WebInspector.settings.showDebugBorders = /** type {WebInspector.Setting} */ { }
+WebInspector.settings.showScrollBottleneckRects = /** type {WebInspector.Setting} */ { }
+WebInspector.settings.forceCompositingMode = /** type {WebInspector.Setting} */ { }
+WebInspector.settings.showFPSCounter = /** type {WebInspector.Setting} */ { }
+WebInspector.settings.showPaintRects = /** type {WebInspector.Setting} */ { }
 
 /** @type {boolean} */
 window.dispatchStandaloneTestRunnerMessages;

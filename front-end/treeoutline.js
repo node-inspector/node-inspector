@@ -33,9 +33,7 @@
  */
 function TreeOutline(listNode, nonFocusable)
 {
-    /**
-     * @type {Array.<TreeElement>}
-     */
+    /** @type {!Array.<TreeElement>} */
     this.children = [];
     this.selectedTreeElement = null;
     this._childrenListNode = listNode;
@@ -47,12 +45,15 @@ function TreeOutline(listNode, nonFocusable)
     this.expanded = true;
     this.selected = false;
     this.treeOutline = this;
+    /** @type {function(TreeElement,TreeElement):number|null} */
     this.comparator = null;
 
     this.setFocusable(!nonFocusable);
     this._childrenListNode.addEventListener("keydown", this._treeKeyDown.bind(this), true);
-    
+
+    /** @type {!Map.<!Object, !Array.<!TreeElement>>} */
     this._treeElementsMap = new Map();
+    /** @type {!Map.<!Object, boolean>} */
     this._expandedStateMap = new Map();
 }
 
@@ -64,6 +65,9 @@ TreeOutline.prototype.setFocusable = function(focusable)
         this._childrenListNode.removeAttribute("tabIndex");
 }
 
+/**
+ * @param {TreeElement} child
+ */
 TreeOutline.prototype.appendChild = function(child)
 {
     var insertionIndex;
@@ -74,6 +78,29 @@ TreeOutline.prototype.appendChild = function(child)
     this.insertChild(child, insertionIndex);
 }
 
+/**
+ * @param {TreeElement} child
+ * @param {TreeElement} beforeChild
+ */
+TreeOutline.prototype.insertBeforeChild = function(child, beforeChild)
+{
+    if (!child)
+        throw("child can't be undefined or null");
+
+    if (!beforeChild)
+        throw("beforeChild can't be undefined or null");
+
+    var childIndex = this.children.indexOf(beforeChild);
+    if (childIndex === -1)
+        throw("beforeChild not found in this node's children");
+
+    this.insertChild(child, childIndex);
+}
+
+/**
+ * @param {TreeElement} child
+ * @param {number} index
+ */
 TreeOutline.prototype.insertChild = function(child, index)
 {
     if (!child)
@@ -122,6 +149,9 @@ TreeOutline.prototype.insertChild = function(child, index)
     child._attach();
 }
 
+/**
+ * @param {number} childIndex
+ */
 TreeOutline.prototype.removeChildAtIndex = function(childIndex)
 {
     if (childIndex < 0 || childIndex >= this.children.length)
@@ -157,6 +187,9 @@ TreeOutline.prototype.removeChildAtIndex = function(childIndex)
     child.previousSibling = null;
 }
 
+/**
+ * @param {TreeElement} child
+ */
 TreeOutline.prototype.removeChild = function(child)
 {
     if (!child)
@@ -190,6 +223,9 @@ TreeOutline.prototype.removeChildren = function()
     this.children = [];
 }
 
+/**
+ * @param {TreeElement} element
+ */
 TreeOutline.prototype._rememberTreeElement = function(element)
 {
     if (!this._treeElementsMap.get(element.representedObject))
@@ -204,6 +240,9 @@ TreeOutline.prototype._rememberTreeElement = function(element)
     elements.push(element);
 }
 
+/**
+ * @param {TreeElement} element
+ */
 TreeOutline.prototype._forgetTreeElement = function(element)
 {
     if (this._treeElementsMap.get(element.representedObject)) {
@@ -214,6 +253,9 @@ TreeOutline.prototype._forgetTreeElement = function(element)
     }
 }
 
+/**
+ * @param {TreeElement} parentElement
+ */
 TreeOutline.prototype._forgetChildrenRecursive = function(parentElement)
 {
     var child = parentElement.children[0];
@@ -223,6 +265,10 @@ TreeOutline.prototype._forgetChildrenRecursive = function(parentElement)
     }
 }
 
+/**
+ * @param {Object} representedObject
+ * @return {TreeElement}
+ */
 TreeOutline.prototype.getCachedTreeElement = function(representedObject)
 {
     if (!representedObject)
@@ -234,6 +280,10 @@ TreeOutline.prototype.getCachedTreeElement = function(representedObject)
     return null;
 }
 
+/**
+ * @param {Object} representedObject
+ * @return {TreeElement}
+ */
 TreeOutline.prototype.findTreeElement = function(representedObject, isAncestor, getParent)
 {
     if (!representedObject)
@@ -264,6 +314,11 @@ TreeOutline.prototype.findTreeElement = function(representedObject, isAncestor, 
     return this.getCachedTreeElement(representedObject);
 }
 
+/**
+ * @param {number} x
+ * @param {number} y
+ * @return {TreeElement}
+ */
 TreeOutline.prototype.treeElementFromPoint = function(x, y)
 {
     var node = this._childrenListNode.ownerDocument.elementFromPoint(x, y);
@@ -514,6 +569,7 @@ TreeElement.prototype = {
 
 TreeElement.prototype.appendChild = TreeOutline.prototype.appendChild;
 TreeElement.prototype.insertChild = TreeOutline.prototype.insertChild;
+TreeElement.prototype.insertBeforeChild = TreeOutline.prototype.insertBeforeChild;
 TreeElement.prototype.removeChild = TreeOutline.prototype.removeChild;
 TreeElement.prototype.removeChildAtIndex = TreeOutline.prototype.removeChildAtIndex;
 TreeElement.prototype.removeChildren = TreeOutline.prototype.removeChildren;

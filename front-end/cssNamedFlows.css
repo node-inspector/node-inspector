@@ -46,11 +46,11 @@
 }
 
 .css-named-flow-collections-view .split-view-sidebar .sidebar-content {
-    bottom: 0px;
-    left: 0px;
-    padding: 0px;
+    bottom: 0;
+    left: 0;
+    padding: 0;
     position: absolute;
-    right: 0px;
+    right: 0;
     top: 23px;
 }
 
@@ -63,7 +63,10 @@
     position: relative;
 }
 
-.css-named-flow-collections-view .split-view-sidebar .named-flow-overflow::before, .css-named-flow-collections-view .region-empty:before, .css-named-flow-collections-view .region-fit::before, .css-named-flow-collections-view .region-overset::before {
+.css-named-flow-collections-view .split-view-sidebar .named-flow-overflow::before,
+.css-named-flow-collections-view .region-empty:before,
+.css-named-flow-collections-view .region-fit::before,
+.css-named-flow-collections-view .region-overset::before {
     cursor: default;
     float: left;
     height: 10px;
@@ -76,7 +79,7 @@
 
 .css-named-flow-collections-view .split-view-sidebar .named-flow-overflow::before {
     content: url(Images/namedFlowOverflow.png);
-    margin: 2px 3px 0px -13px;
+    margin: 2px 3px 0 -13px;
 }
 
 .css-named-flow-collections-view .region-empty::before {
@@ -92,5 +95,5 @@
 }
 
 .css-named-flow-collections-view .split-view-contents .named-flow-element {
-    margin: 0px 0px 0px -24px;
+    margin: 0 0 0 -24px;
 }

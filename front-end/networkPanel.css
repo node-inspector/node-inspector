@@ -71,7 +71,8 @@
     padding-top: 5px;
 }
 
-.network.panel .data-grid th.sort-descending, .network.panel .data-grid th.sort-ascending {
+.network.panel .data-grid th.sort-descending,
+.network.panel .data-grid th.sort-ascending {
     background: -webkit-gradient(linear, left top, left bottom, from(rgb(236, 236, 236)), to(rgb(217, 217, 217)));
 }
 
@@ -270,7 +271,8 @@
     -webkit-user-select: text;
 }
 
-.resource-websocket, .resource-websocket .data-grid {
+.resource-websocket,
+.resource-websocket .data-grid {
     position: absolute;
     top: 0;
     left: 0;
@@ -290,8 +292,9 @@
 }
 
 .resource-websocket .data-column div {
-    word-break: break-all;
-    white-space: pre-wrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .resource-websocket-row-outcoming {
@@ -299,7 +302,7 @@
 }
 
 .resource-websocket-row-outcoming:not(.selected) td {
-    border-right-color: rgb(177, 209, 165);
+    border-left-color: rgb(177, 209, 165);
 }
 
 .resource-websocket-row-outcoming:not(.selected) td, .resource-websocket-row-outcoming:not(.selected) + tr td {

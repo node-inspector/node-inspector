@@ -81,6 +81,8 @@ WebInspector.ViewportControl.prototype = {
         if (!this.element.clientHeight)
             return;  // Do nothing for invisible controls.
 
+        // Secure scroller.
+        this._contentElement.style.setProperty("height", "100000px");
         this._contentElement.removeChildren();
         var itemCount = this._provider.itemCount();
         if (!itemCount) {
@@ -105,6 +107,8 @@ WebInspector.ViewportControl.prototype = {
 
         for (var i = this._firstVisibleIndex; i <= this._lastVisibleIndex; ++i)
             this._contentElement.appendChild(this._provider.itemElement(i));
+        // Release scroller protection.
+        this._contentElement.style.removeProperty("height");
     },
 
     /**

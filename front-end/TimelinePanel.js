@@ -31,7 +31,6 @@
 
 importScript("MemoryStatistics.js");
 importScript("DOMCountersGraph.js");
-importScript("NativeMemoryGraph.js");
 importScript("TimelineModel.js");
 importScript("TimelineOverviewPane.js");
 importScript("TimelinePresentationModel.js");
@@ -59,14 +58,7 @@ WebInspector.TimelinePanel = function()
 
     this.element.addEventListener("contextmenu", this._contextMenu.bind(this), false);
 
-    this.element.addStyleClass("split-view-vertical");
-
-    this._sidebarBackgroundElement = document.createElement("div");
-    this._sidebarBackgroundElement.className = "sidebar split-view-sidebar split-view-contents-first timeline-sidebar-background";
-    this.element.appendChild(this._sidebarBackgroundElement);
-
     this.createSidebarViewWithTree();
-    this.element.appendChild(this.splitView.resizerElement());
 
     this._containerElement = this.splitView.element;
     this._containerElement.tabIndex = 0;
@@ -78,14 +70,8 @@ WebInspector.TimelinePanel = function()
     WebInspector.installDragHandle(this._timelineMemorySplitter, this._startSplitterDragging.bind(this), this._splitterDragging.bind(this), this._endSplitterDragging.bind(this), "ns-resize");
     this._timelineMemorySplitter.addStyleClass("hidden");
     this._includeDomCounters = false;
-    this._includeNativeMemoryStatistics = false;
-    if (WebInspector.experimentsSettings.nativeMemoryTimeline.isEnabled()) {
-        this._memoryStatistics = new WebInspector.NativeMemoryGraph(this, this._model, this.splitView.sidebarWidth());
-        this._includeNativeMemoryStatistics = true;
-    } else {
-        this._memoryStatistics = new WebInspector.DOMCountersGraph(this, this._model, this.splitView.sidebarWidth());
-        this._includeDomCounters = true;
-    }
+    this._memoryStatistics = new WebInspector.DOMCountersGraph(this, this._model, this.splitView.sidebarWidth());
+    this._includeDomCounters = true;
     WebInspector.settings.memoryCounterGraphsHeight = WebInspector.settings.createSetting("memoryCounterGraphsHeight", 150);
 
     var itemsTreeElement = new WebInspector.SidebarSectionTreeElement(WebInspector.UIString("RECORDS"), {}, true);
@@ -282,17 +268,12 @@ WebInspector.TimelinePanel.prototype = {
             var category = categories[categoryName];
             if (category.overviewStripGroupIndex < 0)
                 continue;
-            this._statusBarFilters.appendChild(this._createTimelineCategoryStatusBarCheckbox(category, this._onCategoryCheckboxClicked.bind(this, category)));
+            this._statusBarFilters.appendChild(this._createTimelineCategoryStatusBarCheckbox(category));
         }
 
-        var statsContainer = this._statusBarFilters.createChild("div");
-        statsContainer.className = "timeline-records-stats-container";
-
-        this.recordsCounter = statsContainer.createChild("div");
-        this.recordsCounter.className = "timeline-records-stats";
-
-        this.frameStatistics = statsContainer.createChild("div");
-        this.frameStatistics.className = "timeline-records-stats hidden";
+        var statsContainer = this._statusBarFilters.createChild("div", "timeline-records-stats-container");
+        this.recordsCounter = statsContainer.createChild("div", "timeline-records-stats");
+        this.frameStatistics = statsContainer.createChild("div", "timeline-records-stats hidden");
 
         function getAnchor()
         {
@@ -301,40 +282,36 @@ WebInspector.TimelinePanel.prototype = {
         this._frameStatisticsPopoverHelper = new WebInspector.PopoverHelper(this.frameStatistics, getAnchor.bind(this), this._showFrameStatistics.bind(this));
     },
 
-    _createTimelineCategoryStatusBarCheckbox: function(category, onCheckboxClicked)
+    /**
+     * @param {WebInspector.TimelineCategory} category
+     */
+    _createTimelineCategoryStatusBarCheckbox: function(category)
     {
         var labelContainer = document.createElement("div");
         labelContainer.addStyleClass("timeline-category-statusbar-item");
         labelContainer.addStyleClass("timeline-category-" + category.name);
         labelContainer.addStyleClass("status-bar-item");
 
-        var label = document.createElement("label");
+        var label = labelContainer.createChild("label");
         var checkBorder = label.createChild("div", "timeline-category-checkbox");
         var checkElement = checkBorder.createChild("div", "timeline-category-checkbox-check timeline-category-checkbox-checked");
         checkElement.type = "checkbox";
         checkElement.checked = true;
-        checkElement.addEventListener("click", listener, false);
+        labelContainer.addEventListener("click", listener.bind(this), false);
 
         function listener(event)
         {
-            checkElement.checked = !checkElement.checked;
+            var checked = !checkElement.checked;
+            checkElement.checked = checked;
+            category.hidden = !checked;
             checkElement.enableStyleClass("timeline-category-checkbox-checked", checkElement.checked);
-            onCheckboxClicked(event);
+            this._invalidateAndScheduleRefresh(true, true);
         }
 
-        var typeElement = document.createElement("span");
-        typeElement.className = "type";
+        var typeElement = label.createChild("span", "type");
         typeElement.textContent = category.title;
-        label.appendChild(typeElement);
 
-        labelContainer.appendChild(label);
         return labelContainer;
-    },
-
-    _onCategoryCheckboxClicked: function(category, event)
-    {
-        category.hidden = !event.target.checked;
-        this._invalidateAndScheduleRefresh(true, true);
     },
 
     /**
@@ -594,7 +571,7 @@ WebInspector.TimelinePanel.prototype = {
             this._model.stopRecord();
             this.toggleTimelineButton.title = WebInspector.UIString("Record");
         } else {
-            this._model.startRecord(this._includeDomCounters, this._includeNativeMemoryStatistics);
+            this._model.startRecord(this._includeDomCounters);
             this.toggleTimelineButton.title = WebInspector.UIString("Stop");
             WebInspector.userMetrics.TimelineStarted.record();
         }
@@ -632,7 +609,7 @@ WebInspector.TimelinePanel.prototype = {
         var records = this._model.records;
         for (var i = 0; i < records.length; ++i)
             this._innerAddRecordToTimeline(records[i]);
-        this._invalidateAndScheduleRefresh(false, true);
+        this._invalidateAndScheduleRefresh(false, false);
     },
 
     _onTimelineEventRecorded: function(event)
@@ -672,7 +649,6 @@ WebInspector.TimelinePanel.prototype = {
     {
         var width = event.data;
         this._resize(width);
-        this._sidebarBackgroundElement.style.width = width + "px";
         this._overviewPane.sidebarResized(width);
         this._memoryStatistics.setSidebarWidth(width);
         this._timelineGrid.gridHeaderElement.style.left = width + "px";
@@ -689,9 +665,9 @@ WebInspector.TimelinePanel.prototype = {
     _resize: function(sidebarWidth)
     {
         this._closeRecordDetails();
-        this._scheduleRefresh(false, true);
         this._graphRowsElementWidth = this._graphRowsElement.offsetWidth;
         this._containerElementHeight = this._containerElement.clientHeight;
+        this._scheduleRefresh(false, true);
         var lastItemElement = this._statusBarItems[this._statusBarItems.length - 1].element;
         var minFloatingStatusBarItemsOffset = lastItemElement.totalOffsetLeft() + lastItemElement.offsetWidth;
         this._timelineGrid.gridHeaderElement.style.width = this._itemsGraphsElement.offsetWidth + "px";
@@ -953,7 +929,7 @@ WebInspector.TimelinePanel.prototype = {
         this._itemsGraphsElement.insertBefore(this._graphRowsElement, this._bottomGapElement);
         this._itemsGraphsElement.appendChild(this._expandElements);
         this._adjustScrollPosition((recordsInWindow.length + this._headerLineCount) * rowHeight);
-        this._updateSearchHighlight(false);
+        this._updateSearchHighlight(false, true);
 
         if (highlightedListRowElement) {
             highlightedListRowElement.addStyleClass("highlighted-timeline-record");
@@ -979,6 +955,11 @@ WebInspector.TimelinePanel.prototype = {
 
         var tasks = this._mainThreadMonitoringEnabled ? this._mainThreadTasks : [];
 
+        /**
+         * @param {number} value
+         * @param {{startTime: number, endTime: number}} task
+         * @return {number}
+         */
         function compareEndTime(value, task)
         {
             return value < task.endTime ? -1 : 1;
@@ -1139,21 +1120,23 @@ WebInspector.TimelinePanel.prototype = {
 
     jumpToNextSearchResult: function()
     {
-        this._jumpToAdjacentRecord(1);
+        if (!this._searchResults || !this._searchResults.length)
+            return;
+        var index = this._selectedSearchResult ? this._searchResults.indexOf(this._selectedSearchResult) : -1;
+        this._jumpToSearchResult(index + 1);
     },
 
     jumpToPreviousSearchResult: function()
     {
-        this._jumpToAdjacentRecord(-1);
+        if (!this._searchResults || !this._searchResults.length)
+            return;
+        var index = this._selectedSearchResult ? this._searchResults.indexOf(this._selectedSearchResult) : 0;
+        this._jumpToSearchResult(index - 1);
     },
 
-    _jumpToAdjacentRecord: function(offset)
+    _jumpToSearchResult: function(index)
     {
-        if (!this._searchResults || !this._searchResults.length || !this._selectedSearchResult)
-            return;
-        var index = this._searchResults.indexOf(this._selectedSearchResult);
-        index = (index + offset + this._searchResults.length) % this._searchResults.length;
-        this._selectSearchResult(index);
+        this._selectSearchResult((index + this._searchResults.length) % this._searchResults.length);
         this._highlightSelectedSearchResult(true);
     },
 
@@ -1193,8 +1176,9 @@ WebInspector.TimelinePanel.prototype = {
 
     /**
      * @param {boolean} revealRecord
+     * @param {boolean} shouldJump
      */
-    _updateSearchHighlight: function(revealRecord)
+    _updateSearchHighlight: function(revealRecord, shouldJump)
     {
         if (this._searchFilter || !this._searchRegExp) {
             this._clearHighlight();
@@ -1202,12 +1186,11 @@ WebInspector.TimelinePanel.prototype = {
         }
 
         if (!this._searchResults)
-            this._updateSearchResults();
-
+            this._updateSearchResults(shouldJump);
         this._highlightSelectedSearchResult(revealRecord);
     },
 
-    _updateSearchResults: function()
+    _updateSearchResults: function(shouldJump)
     {
         var searchRegExp = this._searchRegExp;
         if (!searchRegExp)
@@ -1230,7 +1213,7 @@ WebInspector.TimelinePanel.prototype = {
             WebInspector.searchController.updateSearchMatchesCount(matchesCount, this);
 
             var selectedIndex = matches.indexOf(this._selectedSearchResult);
-            if (selectedIndex === -1)
+            if (shouldJump && selectedIndex === -1)
                 selectedIndex = 0;
             this._selectSearchResult(selectedIndex);
         } else {
@@ -1257,21 +1240,32 @@ WebInspector.TimelinePanel.prototype = {
 
     performFilter: function(searchQuery)
     {
-        this._presentationModel.removeFilter(this._searchFilter);
+        this._presentationModel.setSearchFilter(null);
         delete this._searchFilter;
+
+        function cleanRecord(record)
+        {
+            delete record.clicked;
+        }
+        WebInspector.TimelinePresentationModel.forAllRecords(this._presentationModel.rootRecord().children, cleanRecord);
+
         this.searchCanceled();
         if (searchQuery) {
             this._searchFilter = new WebInspector.TimelineSearchFilter(createPlainTextSearchRegex(searchQuery, "i"));
-            this._presentationModel.addFilter(this._searchFilter);
+            this._presentationModel.setSearchFilter(this._searchFilter);
         }
         this._invalidateAndScheduleRefresh(true, true);
     },
 
-    performSearch: function(searchQuery)
+    /**
+     * @param {string} query
+     * @param {boolean} shouldJump
+     */
+    performSearch: function(query, shouldJump)
     {
-        this._searchRegExp = createPlainTextSearchRegex(searchQuery, "i");
+        this._searchRegExp = createPlainTextSearchRegex(query, "i");
         delete this._searchResults;
-        this._updateSearchHighlight(true);
+        this._updateSearchHighlight(true, shouldJump);
     },
 
     __proto__: WebInspector.Panel.prototype
@@ -1316,8 +1310,7 @@ WebInspector.TimelineCalculator.prototype = {
         var width = (percentages.end - percentages.start) / 100 * this._workingArea;
         if (width < WebInspector.TimelineCalculator._minWidth) {
             widthAdjustment = WebInspector.TimelineCalculator._minWidth - width;
-            left -= widthAdjustment / 2;
-            width += widthAdjustment;
+            width = WebInspector.TimelineCalculator._minWidth;
         }
         var widthWithChildren = (percentages.endWithChildren - percentages.start) / 100 * this._workingArea + widthAdjustment;
         var cpuWidth = percentages.cpuWidth / 100 * this._workingArea + widthAdjustment;
@@ -1429,7 +1422,7 @@ WebInspector.TimelineRecordListRow.prototype = {
 
     dispose: function()
     {
-        this.element.parentElement.removeChild(this.element);
+        this.element.remove();
     }
 }
 
@@ -1501,12 +1494,13 @@ WebInspector.TimelineRecordGraphRow.prototype = {
     _onClick: function(event)
     {
         this._record.collapsed = !this._record.collapsed;
+        this._record.clicked = true;
         this._scheduleRefresh(false, true);
     },
 
     dispose: function()
     {
-        this.element.parentElement.removeChild(this.element);
+        this.element.remove();
         this._expandElement._dispose();
     }
 }
@@ -1525,7 +1519,7 @@ WebInspector.TimelineExpandableElement.prototype = {
     _update: function(record, index, left, width)
     {
         const rowHeight = WebInspector.TimelinePanel.rowHeight;
-        if (record.visibleChildrenCount || record.invisibleChildrenCount) {
+        if (record.visibleChildrenCount || record.expandable) {
             this._element.style.top = index * rowHeight + "px";
             this._element.style.left = left + "px";
             this._element.style.width = Math.max(12, width + 25) + "px";
@@ -1545,7 +1539,7 @@ WebInspector.TimelineExpandableElement.prototype = {
 
     _dispose: function()
     {
-        this._element.parentElement.removeChild(this._element);
+        this._element.remove();
     }
 }
 

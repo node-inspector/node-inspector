@@ -17,6 +17,10 @@
     border-radius: 10px;
 }
 
+.help-window-main a {
+    color: rgb(17, 85, 204);
+}
+
 .help-window-caption {
     border-bottom: solid 1px rgb(153, 153, 153);
     margin: 0 8px;
@@ -34,34 +38,37 @@
 .help-content {
     overflow-y: auto;
     overflow-x: hidden;
-    scrollbar-width: 11px;
-    -webkit-flex: 1;
     margin: 8px;
     padding: 0 4px;
-    font-size: 13px;
 }
 
-.help-window-main ::-webkit-scrollbar {
+.help-footnote {
+    border-top: 1px solid #EEEEEE;
+    margin: 0;
+    padding: 12px;
+}
+
+.help-window-main .help-container-wrapper::-webkit-scrollbar {
     width: 11px;
 }
 
-.help-window-main ::-webkit-scrollbar-corner,
-.help-window-main ::-webkit-resizer {
+.help-window-main .help-container-wrapper::-webkit-scrollbar-corner,
+.help-window-main .help-container-wrapper::-webkit-resizer {
     display: none;
 }
 
-.help-window-main ::-webkit-scrollbar-thumb:vertical {
+.help-window-main .help-container-wrapper::-webkit-scrollbar-thumb:vertical {
     background: -webkit-gradient(linear, left top, right top, from(rgb(128, 128, 128)), to(rgb(128, 128, 128)), color-stop(40%, rgb(96, 96, 96)));
     border-radius: 5px;
     min-height: 20px;
 }
 
-.help-window-main ::-webkit-scrollbar-thumb:vertical:hover,
-.help-window-main ::-webkit-scrollbar-thumb:vertical:active {
+.help-window-main .help-container-wrapper::-webkit-scrollbar-thumb:vertical:hover,
+.help-window-main .help-container-wrapper::-webkit-scrollbar-thumb:vertical:active {
     background: -webkit-gradient(linear, left top, right top, from(rgb(176, 176, 176)), to(rgb(176, 176, 176)), color-stop(40%, rgb(144, 144, 144)));
 }
 
-.help-window-main ::-webkit-scrollbar-track:vertical {
+.help-window-main .help-container-wrapper::-webkit-scrollbar-track:vertical {
     background: -webkit-gradient(linear, left top, right top, from(rgb(10, 10, 10)), to(rgb(32, 32, 32)), color-stop(25%, rgb(32, 32, 32)));
     border-radius: 5px;
 }
@@ -90,12 +97,12 @@ body.platform-mac .help-window-main .help-window-title {
     -webkit-column-width: 470px;
 }
 
-body.platform-mac .settings-tab.help-container {
+body.platform-mac .settings-tab .help-container {
     -webkit-column-width: 430px;
 }
 
 body.platform-mac .help-container {
-    -webkit-column-width: 330px;
+    -webkit-column-width: 361px;
 }
 
 .help-block {
@@ -119,10 +126,16 @@ body.platform-mac .settings-tab .help-block {
 
 .settings-tab .help-block {
     width: 410px;
+    margin-left: 20px;
+}
+
+.settings-tab .field-error-message {
+    color: DarkRed;
 }
 
 .help-line {
-    padding-bottom: 3px;
+    padding-bottom: 5px;
+    margin-bottom: 5px;
 }
 
 .help-key-cell {
@@ -132,7 +145,7 @@ body.platform-mac .settings-tab .help-block {
 }
 
 body.platform-mac .help-key-cell {
-    width: 120px;
+    width: 151px;
 }
 
 .help-cell {
@@ -140,18 +153,30 @@ body.platform-mac .help-key-cell {
 }
 
 .help-section-title {
-    font-weight: bold;
+    font-size: 120%;
 }
 
 .help-key {
-    font-weight: bold;
+    padding: 0.1em 0.6em;
+    border: 1px solid #ccc;
+    font-size: 11px;
+    background-color: #f7f7f7;
+    color: #333;
+    box-shadow: 0 1px 0px rgba(0, 0, 0, 0.2), 0 0 0 2px #ffffff inset;
+    border-radius: 3px;
+    display: inline-block;
+    margin: 0 0.1em;
+    text-shadow: 0 1px 0 #fff;
+    line-height: 1.5;
+    white-space: nowrap;
 }
 
 body.platform-mac .help-key {
     font-family: Lucida Grande, sans-serif;
 }
 
-.help-combine-keys, .help-key-delimiter {
+.help-combine-keys,
+.help-key-delimiter {
     font-size: 9px;
 }
 
@@ -163,31 +188,27 @@ body.platform-mac .help-key {
     margin: 0 0.5em;
 }
 
-.help-content p {
-    margin: 3px 0;
-}
-
-.help-content fieldset {
+.settings-tab fieldset {
+    margin: 0;
+    padding: 0;
     border: none;
-    margin-left: 7px;
 }
 
-#general-tab-content .help-content fieldset legend {
+.settings-tab label {
+    padding-right: 4px;
+}
+
+#general-tab-content .help-block fieldset legend {
     font-size: 14px;
 }
 
-body.platform-mac .settings-tab.help-content fieldset {
-    margin-left: 10px;
+.help-block p p {
+    padding-left: 30px;
 }
 
-.help-content fieldset p {
-    border-left: 1px solid rgb(128,128,128);
-    margin: 0 0 0 6px;
-    padding-left: 3px;
-}
-
-.help-content fieldset label {
-    padding-right: 4px;
+#enable-devtools-on-startup {
+    margin: 0 0 0 80px;
+    display: inline-block;
 }
 
 .help-content p.help-section {
@@ -292,6 +313,8 @@ body.platform-mac .help-content input[type=radio] {
 }
 
 #settings-screen .tabbed-pane-header-tabs {
+    display: flex;
+    flex-direction: column;
     padding-top: 5px;
     width: 100px;
 }
@@ -304,7 +327,6 @@ body.platform-mac .help-content input[type=radio] {
     text-shadow: none;
     color: #999999;
     height: 22px;
-    font-size: 13px;
     padding-left: 0;
 }
 
@@ -338,11 +360,11 @@ body.platform-mac .help-content input[type=radio] {
     padding: 0;
 }
 
-.settings-tab input:not([type]), .settings-tab input[type="text"] {
+.settings-tab input:not([type]),
+.settings-tab input[type="text"] {
     border: 1px solid rgb(213, 213, 213);
     border-radius: 2px;
     color: #444444;
-    font: inherit;
     padding: 3px;
 }
 
@@ -379,19 +401,11 @@ body.platform-mac .help-content input[type=radio] {
 }
 
 .settings-tab .help-section-title {
+    margin-left: -20px;
     color: #222;
 }
 
-.settings-tab .help-block label {
-    font-size: 14px;
-}
-
-.settings-tab .help-block fieldset:not(.toplevel) label {
-    font-size: 13px;
-}
-
-.settings-tab .help-block fieldset:disabled label:hover,
-.settings-tab .help-block fieldset.toplevel label:hover {
+.settings-tab .help-block fieldset:disabled label:hover {
     color: inherit;
 }
 
@@ -400,12 +414,7 @@ body.platform-mac .help-content input[type=radio] {
 }
 
 .settings-tab p {
-    margin: 10px 0;
-}
-
-.settings-tab fieldset p {
-    border-left: none transparent;
-    padding: 2px 0 2px 3px;
+    margin: 12px 0;
 }
 
 .settings-tab select {
@@ -420,17 +429,14 @@ body.platform-mac .help-content input[type=radio] {
     background-color: rgb(221, 221, 221);
 }
 
-.settings-tab .file-systems-editor input.file-system-path {
-    width: 383px;
-}
-
 .settings-tab .workspace-settings-row input {
     width: 190px;
 }
 
-.settings-tab .file-mappings-editor .workspace-settings-row input.file-mapping-url {
-    margin-right: 3px;
+#workspace-tab-content .settings-tab.help-content.help-container {
+    -webkit-column-width: initial;
 }
+
 
 #workspace-tab-content .button:hover {
     opacity: 1.0 !important;
@@ -460,39 +466,227 @@ body.platform-mac .help-content input[type=radio] {
     background-image: url(Images/addIcon.png);
 }
 
-#workspace-tab-content .workspace-settings-row .file-system-add-button {
-    color: gray;
-    border: none;
-    border-bottom: 1px transparent solid;
-    -webkit-appearance: none;
-    background: transparent;
-}
-
-#workspace-tab-content .workspace-settings-row .file-system-add-button:hover {
-    border-bottom: 1px gray dashed;
-}
-
 #workspace-tab-content .workspace-settings-error {
     color: red;
 }
 
-.tethering-help-info {
-    padding-bottom: 5px;
+.settings-tab .text-button {
+    background-image: -webkit-linear-gradient(hsl(0, 0%, 93%), hsl(0, 0%, 93%) 38%, hsl(0, 0%, 87%));
+    border: 1px solid hsla(0, 0%, 0%, 0.25);
+    border-radius: 2px;
+    box-shadow: 0 1px 0 hsla(0, 0%, 0%, 0.08), inset 0 1px 2px hsla(0, 100%, 100%, 0.75);
+    color: hsl(0, 0%, 27%);
+    font-size: 12px;
+    margin: 0 1px 0 0;
+    text-shadow: 0 1px 0 hsl(0, 0%, 94%);
+    min-height: 2em;
+    padding-left: 10px;
+    padding-right: 10px;
 }
 
-.tethering-help-title-left {
-    padding-top: 20px;
-    display: inline-block;
-    width: 100px;
+.settings-tab .text-button:disabled {
+    background-image: -webkit-linear-gradient(#f1f1f1, #f1f1f1 38%, #e6e6e6);
+    border-color: rgba(80, 80, 80, 0.2);
+    box-shadow: 0 1px 0 rgba(80, 80, 80, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.75);
+    color: #aaa;
 }
 
-
-.tethering-help-title-right {
-    padding-top: 20px;
-    display: inline-block;
+.settings-tab .text-button:hover {
+    background-image: -webkit-linear-gradient(hsl(0, 0%, 94%), hsl(0, 0%, 94%) 38%, hsl(0, 0%, 88%));
+    border-color: hsla(0, 0%, 0%, 0.3);
+    box-shadow: 0 1px 0 hsla(0, 0%, 0%, 0.12), inset 0 1px 2px hsla(0, 100%, 100%, 0.95);
+    color: hsl(0, 0%, 0%);
 }
 
-.settings-tab .workspace-settings-row input.tethering-port-input {
-    width: 80px;
-    margin-right: 20px;
+.settings-tab .text-button:active {
+    background-image: -webkit-linear-gradient(hsl(0, 0%, 91%), hsl(0, 0%, 91%) 38%, hsl(0, 0%, 84%));
+    box-shadow: none;
+    text-shadow: none;
+}
+
+.settings-tab .settings-list-container {
+    background-color: white;
+    margin-bottom: 10px;
+}
+
+.settings-tab .settings-list {
+    border: 1px solid hsl(0, 0%, 85%);
+    border-radius: 2px;
+}
+
+.settings-tab .settings-list .settings-list-item .settings-list-item-contents {
+    width: 100%;
+    height: 40px;
+    -webkit-box-align: center;
+    -webkit-transition: 150ms background-color;
+    display: -webkit-box;
+    padding-right: 3px;
+}
+
+.settings-tab .settings-list .settings-list-item .settings-list-item-contents > :first-child {
+    -webkit-box-align: center;
+    -webkit-box-flex: 1;
+    -webkit-padding-end: 5px;
+    display: -webkit-box;
+}
+
+.settings-tab .settings-list .settings-list-item.selected:not(.editable) {
+    background-color: hsl(0, 0%, 82%);
+}
+
+.settings-tab .settings-list .settings-list-item:hover {
+    background-color: hsl(215, 54%, 93%);
+}
+
+.settings-tab .settings-list .settings-list-item.selected:not(.editable):hover {
+    background-color: hsl(215, 51%, 82%);
+}
+
+.settings-tab .settings-list .settings-list-item .remove-item-button {
+    -webkit-transition: 150ms opacity;
+    background-color: hsla(0, 0%, 0%, 0);
+    background-image: -webkit-image-set(
+        url(Images/settingsListRemove.png) 1x,
+        url(Images/settingsListRemove_2x.png) 2x);
+    background-size: 48px 16px;
+    border: none;
+    display: block;
+    height: 16px;
+    width: 16px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.settings-tab .settings-list .settings-list-item.selected .remove-item-button,
+.settings-tab .settings-list .settings-list-item:hover .remove-item-button {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.settings-tab .settings-list .settings-list-item .remove-item-button:hover {
+    background-position-x: -32px;
+}
+
+.settings-tab .settings-list .settings-list-item .remove-item-button:active {
+    background-position-x: -16px;
+}
+
+.settings-list-item-columns {
+    height: 100%;
+}
+
+.settings-tab .settings-list .settings-list-item .list-column {
+    displaY: -webkit-box;
+    -webkit-box-align: center;
+    padding-left: 5px;
+    padding-right: 2px;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    height: 100%;
+}
+
+.settings-tab .settings-list .settings-list-item .list-column .list-column-editor {
+    width: 100%;
+}
+
+.settings-tab .settings-list .settings-list-item.add-list-item .remove-item-button {
+    visibility: hidden;
+}
+
+.settings-tab .settings-list .settings-list-item.editable .list-column .list-column-editor {
+    display: none;
+}
+
+.settings-tab .settings-list .settings-list-item.editable.item-editing .list-column .list-column-editor {
+    display: block;
+}
+
+.settings-tab .settings-list .settings-list-item.editable.item-editing .list-column .list-column-text {
+    display: none;
+}
+
+.settings-tab .settings-list .settings-list-item.editable.item-editing .list-column .list-column-editor.editable-item-error {
+    background-color: pink;
+}
+
+.list-column-editor {
+    border: 1px solid rgb(213, 213, 213);
+    border-radius: 2px;
+    color: #444444;
+    padding: 3px;
+}
+
+.settings-tab .settings-list .settings-list-item .file-system-path {
+    white-space: nowrap;
+    font-size: 12px;
+    padding-left: 6px;
+    padding-right: 5px;
+    -webkit-box-flex: 1;
+    color: hsl(210, 16%, 22%);
+}
+
+.settings-tab .settings-list .settings-list-item .file-system-path-name {
+    padding-right: 6px;
+    font-weight: bold;
+}
+
+.file-mappings-list .settings-list-item .list-column.settings-list-column-url {
+    width: 50%;
+}
+
+.file-mappings-list .settings-list-item .list-column.settings-list-column-path {
+    width: 50%;
+}
+
+.excluded-folders-list .settings-list-item .list-column.settings-list-column-path {
+    width: 100%;
+}
+
+.settings-dialog {
+    border-radius: 3px;
+    box-shadow: 0 4px 23px 5px rgba(0, 0, 0, 0.2), 0 2px 6px rgba(0,0,0,0.15);
+    display: -webkit-flex;
+    -webkit-flex-direction: column;
+    background: white;
+}
+
+.settings-dialog .dialog-contents {
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-dialog .header {
+    flex: 0 0 auto;
+    color: #333;
+    font-size: 14px;
+    margin: 0;
+    padding: 14px 17px 14px;
+}
+
+.settings-dialog .contents {
+    flex: 1 1 auto;
+    padding: 0 17px;
+    overflow: auto;
+    margin-bottom: 10px;
+}
+
+.settings-dialog .block-header {
+    color: black;
+    font-size: 1.2em;
+    margin-bottom: 0.8em;
+}
+
+.settings-dialog .done-button {
+    float: right;
+}
+
+.settings-glass-pane {
+    -webkit-box-align: center;
+    -webkit-box-orient: vertical;
+    -webkit-box-pack: center;
+    display: -webkit-box;
+    z-index: 2000 !important;
+    padding: 5px;
+    background-color: rgba(255, 255, 255, 0.4) !important;
 }

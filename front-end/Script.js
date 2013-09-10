@@ -48,7 +48,9 @@ WebInspector.Script = function(scriptId, sourceURL, startLine, startColumn, endL
     this.isContentScript = isContentScript;
     this.sourceMapURL = sourceMapURL;
     this.hasSourceURL = hasSourceURL;
+    /** @type {!Set.<!WebInspector.Script.Location>} */
     this._locations = new Set();
+    /** @type {!Array.<!WebInspector.SourceMapping>} */
     this._sourceMappings = [];
 }
 
@@ -136,22 +138,24 @@ WebInspector.Script.prototype = {
 
     /**
      * @param {string} newSource
-     * @param {function(?Protocol.Error, Array.<DebuggerAgent.CallFrame>=)} callback
+     * @param {function(?Protocol.Error, DebuggerAgent.SetScriptSourceError=, Array.<DebuggerAgent.CallFrame>=, boolean=)} callback
      */
     editSource: function(newSource, callback)
     {
         /**
          * @this {WebInspector.Script}
          * @param {?Protocol.Error} error
+         * @param {DebuggerAgent.SetScriptSourceError=} errorData
          * @param {Array.<DebuggerAgent.CallFrame>=} callFrames
          * @param {Object=} debugData
          */
-        function didEditScriptSource(error, callFrames, debugData)
+        function didEditScriptSource(error, errorData, callFrames, debugData)
         {
             // FIXME: support debugData.stack_update_needs_step_in flag by calling WebInspector.debugger_model.callStackModified
             if (!error)
                 this._source = newSource;
-            callback(error, callFrames);
+            var needsStepIn = !!debugData && debugData["stack_update_needs_step_in"] === true;
+            callback(error, errorData, callFrames, needsStepIn);
             if (!error)
                 this.dispatchEventToListeners(WebInspector.Script.Events.ScriptEdited, newSource);
         }
@@ -180,27 +184,11 @@ WebInspector.Script.prototype = {
     },
 
     /**
-     * @param {boolean} isDynamicScript
-     */
-    setIsDynamicScript: function(isDynamicScript)
-    {
-        this._isDynamicScript = isDynamicScript;
-    },
-
-    /**
-     * @return {boolean}
-     */
-    isDynamicScript: function()
-    {
-        return !!this._isDynamicScript;
-    },
-
-    /**
      * @return {boolean}
      */
     isSnippet: function()
     {
-        return this.sourceURL && this.sourceURL.startsWith(WebInspector.Script.snippetSourceURLPrefix);
+        return !!this.sourceURL && this.sourceURL.startsWith(WebInspector.Script.snippetSourceURLPrefix);
     },
 
     /**
@@ -219,17 +207,11 @@ WebInspector.Script.prototype = {
     },
 
     /**
-     * @param {WebInspector.SourceMapping} sourceMapping
+     * @param {!WebInspector.SourceMapping} sourceMapping
      */
     pushSourceMapping: function(sourceMapping)
     {
         this._sourceMappings.push(sourceMapping);
-        this.updateLocations();
-    },
-
-    popSourceMapping: function()
-    {
-        this._sourceMappings.pop();
         this.updateLocations();
     },
 

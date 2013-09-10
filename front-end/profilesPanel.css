@@ -48,9 +48,8 @@
 }
 
 .profile-launcher-view-tree-item > .icon {
-    padding: 15px;
-    background-image: url(Images/toolbarIcons.png);
-    background-position-x: -160px;
+    width: 4px !important;
+    visibility: hidden;
 }
 
 .profile-sidebar-tree-item .icon {

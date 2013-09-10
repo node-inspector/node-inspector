@@ -54,6 +54,7 @@ WebInspector.ExtensionServer = function()
     this._registerHandler(commands.CreateSidebarPane, this._onCreateSidebarPane.bind(this));
     this._registerHandler(commands.CreateStatusBarButton, this._onCreateStatusBarButton.bind(this));
     this._registerHandler(commands.EvaluateOnInspectedPage, this._onEvaluateOnInspectedPage.bind(this));
+    this._registerHandler(commands.ForwardKeyboardEvent, this._onForwardKeyboardEvent.bind(this));
     this._registerHandler(commands.GetHAR, this._onGetHAR.bind(this));
     this._registerHandler(commands.GetConsoleMessages, this._onGetConsoleMessages.bind(this));
     this._registerHandler(commands.GetPageResources, this._onGetPageResources.bind(this));
@@ -68,6 +69,7 @@ WebInspector.ExtensionServer = function()
     this._registerHandler(commands.ShowPanel, this._onShowPanel.bind(this));
     this._registerHandler(commands.StopAuditCategoryRun, this._onStopAuditCategoryRun.bind(this));
     this._registerHandler(commands.Subscribe, this._onSubscribe.bind(this));
+    this._registerHandler(commands.OpenResource, this._onOpenResource.bind(this));
     this._registerHandler(commands.Unsubscribe, this._onUnsubscribe.bind(this));
     this._registerHandler(commands.UpdateButton, this._onUpdateButton.bind(this));
     this._registerHandler(commands.UpdateAuditProgress, this._onUpdateAuditProgress.bind(this));
@@ -120,6 +122,16 @@ WebInspector.ExtensionServer.prototype = {
     },
 
     /**
+     * @param {string} type
+     * @return {boolean}
+     */
+    hasSubscribers: function(type)
+    {
+        return !!this._subscribers[type];
+    },
+
+    /**
+     * @param {string} type
      * @param {...*} vararg
      */
     _postNotification: function(type, vararg)
@@ -193,7 +205,6 @@ WebInspector.ExtensionServer.prototype = {
 
         var page = this._expandResourcePath(port._extensionOrigin, message.page);
         var panelDescriptor = new WebInspector.PanelDescriptor(id, message.title, undefined, undefined, new WebInspector.ExtensionPanel(id, page));
-        panelDescriptor.setIconURL(this._expandResourcePath(port._extensionOrigin, message.icon));
         this._clientObjects[id] = panelDescriptor.panel();
         WebInspector.inspectorView.addPanel(panelDescriptor);
         return this._status.OK();
@@ -272,6 +283,14 @@ WebInspector.ExtensionServer.prototype = {
         sidebar.setPage(this._expandResourcePath(port._extensionOrigin, message.page));
     },
 
+    _onOpenResource: function(message)
+    {
+        var a = document.createElement("a");
+        a.href = message.url;
+        a.lineNumber = message.lineNumber;
+        return WebInspector.showAnchorLocation(a) ? this._status.OK() : this._status.E_NOTFOUND(message.url);
+    },
+
     _onSetOpenResourceHandler: function(message, port)
     {
         var name = this._registeredExtensions[port._extensionOrigin].name || ("Extension " + port._extensionOrigin);
@@ -306,7 +325,8 @@ WebInspector.ExtensionServer.prototype = {
         var injectedScript;
         if (options.injectedScript)
             injectedScript = "(function(){" + options.injectedScript + "})()";
-        PageAgent.reload(!!options.ignoreCache, injectedScript);
+        var preprocessingScript = options.preprocessingScript;
+        PageAgent.reload(!!options.ignoreCache, injectedScript, preprocessingScript);
         return this._status.OK();
     },
 
@@ -416,6 +436,9 @@ WebInspector.ExtensionServer.prototype = {
         };
     },
 
+    /**
+     * @return {!Array.<WebInspector.ContentProvider>}
+     */
     _onGetPageResources: function()
     {
         var resources = {};
@@ -547,6 +570,25 @@ WebInspector.ExtensionServer.prototype = {
         auditRun.done();
     },
 
+    _onForwardKeyboardEvent: function(message)
+    {
+        const Esc = "U+001B";
+
+        if (!message.ctrlKey && !message.altKey && !message.metaKey && !/^F\d+$/.test(message.keyIdentifier) && message.keyIdentifier !== Esc)
+            return;
+        // Fool around closure compiler -- it has its own notion of both KeyboardEvent constructor
+        // and initKeyboardEvent methods and overriding these in externs.js does not have effect.
+        var event = new window.KeyboardEvent(message.eventType, {
+            keyIdentifier: message.keyIdentifier,
+            location: message.location,
+            ctrlKey: message.ctrlKey,
+            altKey: message.altKey,
+            shiftKey: message.shiftKey,
+            metaKey: message.metaKey
+        });
+        document.dispatchEvent(event);
+    },
+
     _dispatchCallback: function(requestId, port, result)
     {
         if (requestId)
@@ -561,7 +603,7 @@ WebInspector.ExtensionServer.prototype = {
             WebInspector.networkManager, WebInspector.NetworkManager.EventTypes.RequestFinished, this._notifyRequestFinished);
         this._registerAutosubscriptionHandler(WebInspector.extensionAPI.Events.ResourceAdded,
             WebInspector.workspace,
-            WebInspector.UISourceCodeProvider.Events.UISourceCodeAdded,
+            WebInspector.Workspace.Events.UISourceCodeAdded,
             this._notifyResourceAdded);
         this._registerAutosubscriptionHandler(WebInspector.extensionAPI.Events.ElementsPanelObjectSelected,
             WebInspector.notifications,

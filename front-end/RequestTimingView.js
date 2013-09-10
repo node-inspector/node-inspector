@@ -71,7 +71,7 @@ WebInspector.RequestTimingView.prototype = {
     _refresh: function()
     {
         if (this._tableElement)
-            this._tableElement.parentElement.removeChild(this._tableElement);
+            this._tableElement.remove();
 
         this._tableElement = WebInspector.RequestTimingView.createTimingTable(this._request);
         this.element.appendChild(this._tableElement);
@@ -103,23 +103,12 @@ WebInspector.RequestTimingView.createTimingTable = function(request)
         addRow(WebInspector.UIString("DNS Lookup"), "dns", request.timing.dnsStart, request.timing.dnsEnd);
 
     if (request.timing.connectStart !== -1) {
-        if (request.connectionReused)
-            addRow(WebInspector.UIString("Blocking"), "connecting", request.timing.connectStart, request.timing.connectEnd);
-        else {
-            var connectStart = request.timing.connectStart;
-            // Connection includes DNS, subtract it here.
-            if (request.timing.dnsStart !== -1)
-                connectStart += request.timing.dnsEnd - request.timing.dnsStart;
-            addRow(WebInspector.UIString("Connecting"), "connecting", connectStart, request.timing.connectEnd);
-        }
+        var label = request.connectionReused ? WebInspector.UIString("Blocking") : WebInspector.UIString("Connecting");
+        addRow(label, "connecting", request.timing.connectStart, request.timing.connectEnd);
     }
 
     if (request.timing.sslStart !== -1)
         addRow(WebInspector.UIString("SSL"), "ssl", request.timing.sslStart, request.timing.sslEnd);
-
-    var sendStart = request.timing.sendStart;
-    if (request.timing.sslStart !== -1)
-        sendStart += request.timing.sslEnd - request.timing.sslStart;
 
     addRow(WebInspector.UIString("Sending"), "sending", request.timing.sendStart, request.timing.sendEnd);
     addRow(WebInspector.UIString("Waiting"), "waiting", request.timing.sendEnd, request.timing.receiveHeadersEnd);

@@ -150,6 +150,7 @@ WebInspector.MetricsSidebarPane.prototype = {
             else if (name === "position" && value === "auto")
                 value = "\u2012";
             value = value.replace(/px$/, "");
+            value = Number.toFixedIfFloating(value);
 
             var element = document.createElement("div");
             element.className = side;
@@ -161,27 +162,27 @@ WebInspector.MetricsSidebarPane.prototype = {
         function getContentAreaWidthPx(style)
         {
             var width = style.getPropertyValue("width").replace(/px$/, "");
-            if (style.getPropertyValue("box-sizing") === "border-box") {
+            if (!isNaN(width) && style.getPropertyValue("box-sizing") === "border-box") {
                 var borderBox = self._getBox(style, "border");
                 var paddingBox = self._getBox(style, "padding");
 
                 width = width - borderBox.left - borderBox.right - paddingBox.left - paddingBox.right;
             }
 
-            return width;
+            return Number.toFixedIfFloating(width);
         }
 
         function getContentAreaHeightPx(style)
         {
             var height = style.getPropertyValue("height").replace(/px$/, "");
-            if (style.getPropertyValue("box-sizing") === "border-box") {
+            if (!isNaN(height) && style.getPropertyValue("box-sizing") === "border-box") {
                 var borderBox = self._getBox(style, "border");
                 var paddingBox = self._getBox(style, "padding");
 
                 height = height - borderBox.top - borderBox.bottom - paddingBox.top - paddingBox.bottom;
             }
 
-            return height;
+            return Number.toFixedIfFloating(height);
         }
 
         // Display types for which margin is ignored.

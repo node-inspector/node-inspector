@@ -112,6 +112,11 @@ WebInspector.AuditLauncherView.prototype = {
             ++this._currentCategoriesCount;
         }
 
+        /**
+         * @param {!WebInspector.AuditCategory} a
+         * @param {!WebInspector.AuditCategory} b
+         * @return {number}
+         */
         function compareCategories(a, b)
         {
             var aTitle = a.displayName || "";

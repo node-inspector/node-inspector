@@ -77,6 +77,19 @@ WebInspector.SnippetStorage.prototype = {
         return this._snippets[id];
     },
 
+    /**
+     * @param {string} name
+     * @return {WebInspector.Snippet}
+     */
+    snippetForName: function(name)
+    {
+        var snippets = Object.values(this._snippets);
+        for (var i = 0; i < snippets.length; ++i)
+            if (snippets[i].name === name)
+                return snippets[i];
+        return null;
+    },
+
     _loadSettings: function()
     {
         var savedSnippets = this._snippetsSetting.get();

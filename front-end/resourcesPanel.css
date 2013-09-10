@@ -141,7 +141,9 @@ li.selected .base-storage-tree-element-subtitle {
     -webkit-user-select: text;
 }
 
-.database-user-query::before, .database-query-prompt::before, .database-query-result::before {
+.database-user-query::before,
+.database-query-prompt::before,
+.database-query-result::before {
     position: absolute;
     display: block;
     content: "";
@@ -156,10 +158,12 @@ li.selected .base-storage-tree-element-subtitle {
 }
 
 @media (-webkit-min-device-pixel-ratio: 1.5) {
-.database-user-query::before, .database-query-prompt::before, .database-query-result::before {
+.database-user-query::before,
+.database-query-prompt::before,
+.database-query-result::before {
     background-image: url(Images/statusbarButtonGlyphs2x.png);
 }
-}
+} /* media */
 
 .database-query-prompt::before {
     background-position: -192px -96px;

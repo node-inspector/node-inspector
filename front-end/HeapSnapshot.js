@@ -476,10 +476,57 @@ WebInspector.HeapSnapshotNodeIterator.prototype = {
     }
 }
 
+
 /**
+ * @param{WebInspector.HeapSnapshotWorkerDispatcher=} dispatcher
  * @constructor
  */
-WebInspector.HeapSnapshot = function(profile)
+WebInspector.HeapSnapshotProgress = function(dispatcher)
+{
+    this._dispatcher = dispatcher;
+}
+
+WebInspector.HeapSnapshotProgress.Event = {
+    Update: "ProgressUpdate"
+};
+
+WebInspector.HeapSnapshotProgress.prototype = {
+    /**
+     * @param{string} status
+     */
+    updateStatus: function(status)
+    {
+        this._sendUpdateEvent(WebInspector.UIString(status));
+    },
+
+    /**
+     * @param{string} title
+     * @param{number} value
+     * @param{number} total
+     */
+    updateProgress: function(title, value, total)
+    {
+        var percentValue = ((total ? (value / total) : 0) * 100).toFixed(0);
+        this._sendUpdateEvent(WebInspector.UIString(title, percentValue));
+    },
+
+    /**
+     * @param{string} text
+     */
+    _sendUpdateEvent: function(text)
+    {
+        // May be undefined in tests.
+        if (this._dispatcher)
+            this._dispatcher.sendEvent(WebInspector.HeapSnapshotProgress.Event.Update, text);
+    }
+}
+
+
+/**
+ * @param{WebInspector.HeapSnapshotProgress} progress
+ * @constructor
+ */
+WebInspector.HeapSnapshot = function(profile, progress)
 {
     this.uid = profile.snapshot.uid;
     this._nodes = profile.nodes;
@@ -487,7 +534,9 @@ WebInspector.HeapSnapshot = function(profile)
     /** @type{HeapSnapshotMetainfo} */
     this._metaNode = profile.snapshot.meta;
     this._strings = profile.strings;
+    this._progress = progress;
 
+    this._noDistance = -5;
     this._rootNodeIndex = 0;
     if (profile.snapshot.root_index)
         this._rootNodeIndex = profile.snapshot.root_index;
@@ -564,16 +613,26 @@ WebInspector.HeapSnapshot.prototype = {
         this.nodeCount = this._nodes.length / this._nodeFieldCount;
         this._edgeCount = this._containmentEdges.length / this._edgeFieldsCount;
 
+        this._progress.updateStatus("Building edge indexes\u2026");
         this._buildEdgeIndexes();
+        this._progress.updateStatus("Marking invisible edges\u2026");
         this._markInvisibleEdges();
+        this._progress.updateStatus("Building retainers\u2026");
         this._buildRetainers();
+        this._progress.updateStatus("Calculating node flags\u2026");
         this._calculateFlags();
+        this._progress.updateStatus("Calculating distances\u2026");
         this._calculateDistances();
+        this._progress.updateStatus("Building postorder index\u2026");
         var result = this._buildPostOrderIndex();
         // Actually it is array that maps node ordinal number to dominator node ordinal number.
+        this._progress.updateStatus("Building dominator tree\u2026");
         this._dominatorsTree = this._buildDominatorTree(result.postOrderIndex2NodeOrdinal, result.nodeOrdinal2PostOrderIndex);
+        this._progress.updateStatus("Calculating retained sizes\u2026");
         this._calculateRetainedSizes(result.postOrderIndex2NodeOrdinal);
+        this._progress.updateStatus("Buiding dominated nodes\u2026");
         this._buildDominatedNodes();
+        this._progress.updateStatus("Finished processing.");
     },
 
     _buildEdgeIndexes: function()
@@ -774,40 +833,71 @@ WebInspector.HeapSnapshot.prototype = {
         return this._aggregatesForDiff;
     },
 
-    distanceForUserRoot: function(node)
+    /**
+     * @param {!WebInspector.HeapSnapshotNode} node
+     * @return {!boolean}
+     */
+    _isUserRoot: function(node)
     {
-        return 1;
+        return true;
+    },
+
+    /**
+     * @param {function(!WebInspector.HeapSnapshotNode)} action
+     * @param {boolean=} userRootsOnly
+     */
+    forEachRoot: function(action, userRootsOnly)
+    {
+        for (var iter = this.rootNode().edges(); iter.hasNext(); iter.next()) {
+            var node = iter.edge.node();
+            if (!userRootsOnly || this._isUserRoot(node))
+                action(node);
+        }
     },
 
     _calculateDistances: function()
     {
         var nodeFieldCount = this._nodeFieldCount;
-        var distances = new Uint32Array(this.nodeCount);
+        var nodeCount = this.nodeCount;
+        var distances = new Int32Array(nodeCount);
+        var noDistance = this._noDistance;
+        for (var i = 0; i < nodeCount; ++i)
+            distances[i] = noDistance;
 
-        // bfs for Window roots
         var nodesToVisit = new Uint32Array(this.nodeCount);
         var nodesToVisitLength = 0;
-        for (var iter = this.rootNode().edges(); iter.hasNext(); iter.next()) {
-            var node = iter.edge.node();
-            var distance = this.distanceForUserRoot(node);
-            if (distance !== -1) {
-                nodesToVisit[nodesToVisitLength++] = node.nodeIndex;
-                distances[node.nodeIndex / nodeFieldCount] = distance;
-            }
+
+        /**
+         * @param {!WebInspector.HeapSnapshotNode} node
+         */
+        function enqueueNode(node)
+        {
+            var ordinal = node._ordinal();
+            if (distances[ordinal] !== noDistance)
+                return;
+            distances[ordinal] = 0;
+            nodesToVisit[nodesToVisitLength++] = node.nodeIndex;
         }
+
+        this.forEachRoot(enqueueNode, true);
         this._bfs(nodesToVisit, nodesToVisitLength, distances);
 
-        // bfs for root
+        // bfs for the rest of objects
         nodesToVisitLength = 0;
-        nodesToVisit[nodesToVisitLength++] = this._rootNodeIndex;
-        distances[this._rootNodeIndex / nodeFieldCount] = 1;
+        this.forEachRoot(enqueueNode);
         this._bfs(nodesToVisit, nodesToVisitLength, distances);
+
         this._nodeDistances = distances;
     },
 
+    /**
+     * @param {!Uint32Array} nodesToVisit
+     * @param {!number} nodesToVisitLength
+     * @param {!Int32Array} distances
+     */
     _bfs: function(nodesToVisit, nodesToVisitLength, distances)
     {
-        // Peload fields into local variables for better performance.
+        // Preload fields into local variables for better performance.
         var edgeFieldsCount = this._edgeFieldsCount;
         var nodeFieldCount = this._nodeFieldCount;
         var containmentEdges = this._containmentEdges;
@@ -818,6 +908,7 @@ WebInspector.HeapSnapshot.prototype = {
         var nodeCount = this.nodeCount;
         var containmentEdgesLength = containmentEdges.length;
         var edgeWeakType = this._edgeWeakType;
+        var noDistance = this._noDistance;
 
         var index = 0;
         while (index < nodesToVisitLength) {
@@ -832,7 +923,7 @@ WebInspector.HeapSnapshot.prototype = {
                     continue;
                 var childNodeIndex = containmentEdges[edgeIndex + edgeToNodeOffset];
                 var childNodeOrdinal = childNodeIndex / nodeFieldCount;
-                if (distances[childNodeOrdinal])
+                if (distances[childNodeOrdinal] !== noDistance)
                     continue;
                 distances[childNodeOrdinal] = distance;
                 nodesToVisit[nodesToVisitLength++] = childNodeIndex;
@@ -1028,19 +1119,19 @@ WebInspector.HeapSnapshot.prototype = {
         }
 
         if (postOrderIndex !== nodeCount) {
+            console.log("Error: Corrupted snapshot. " + (nodeCount - postOrderIndex) + " nodes are unreachable from the root:");
             var dumpNode = this.rootNode();
             for (var i = 0; i < nodeCount; ++i) {
                 if (painted[i] !== black) {
+                    // Fix it by giving the node a postorder index anyway.
+                    nodeOrdinal2PostOrderIndex[i] = postOrderIndex;
+                    postOrderIndex2NodeOrdinal[postOrderIndex++] = i;
                     dumpNode.nodeIndex = i * nodeFieldCount;
                     console.log(JSON.stringify(dumpNode.serialize()));
-                    var retainers = dumpNode.retainers();
-                    while (retainers) {
-                        console.log("edgeName: " + retainers.item().name() + " nodeClassName: " + retainers.item().node().className());
-                        retainers = retainers.item().node().retainers();
-                    }
+                    for (var retainers = dumpNode.retainers(); retainers.hasNext(); retainers = retainers.item().node().retainers())
+                        console.log("  edgeName: " + retainers.item().name() + " nodeClassName: " + retainers.item().node().className());
                 }
             }
-            throw new Error("Postordering failed. " + (nodeCount - postOrderIndex) + " hanging nodes");
         }
 
         return {postOrderIndex2NodeOrdinal: postOrderIndex2NodeOrdinal, nodeOrdinal2PostOrderIndex: nodeOrdinal2PostOrderIndex};
@@ -1240,11 +1331,6 @@ WebInspector.HeapSnapshot.prototype = {
     _markInvisibleEdges: function()
     {
         throw new Error("Not implemented");
-    },
-
-    _numbersComparator: function(a, b)
-    {
-        return a < b ? -1 : (a > b ? 1 : 0);
     },
 
     _calculateFlags: function()

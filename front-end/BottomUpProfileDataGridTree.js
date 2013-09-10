@@ -52,7 +52,6 @@ WebInspector.BottomUpProfileDataGridNode.prototype = {
 
         this.selfTime = profileDataGridNode.selfTime;
         this.totalTime = profileDataGridNode.totalTime;
-        this.numberOfCalls = profileDataGridNode.numberOfCalls;
     },
 
     /**
@@ -121,7 +120,6 @@ WebInspector.BottomUpProfileDataGridNode.prototype = {
                 var totalTimeAccountedFor = nodeInfo.totalTimeAccountedFor;
 
                 child.selfTime += focusNode.selfTime;
-                child.numberOfCalls += focusNode.numberOfCalls;
 
                 if (!totalTimeAccountedFor)
                     child.totalTime += focusNode.totalTime;
@@ -134,7 +132,6 @@ WebInspector.BottomUpProfileDataGridNode.prototype = {
                     // but the actual statistics from the "root" node (bottom of the callstack).
                     child.selfTime = focusNode.selfTime;
                     child.totalTime = focusNode.totalTime;
-                    child.numberOfCalls = focusNode.numberOfCalls;
                 }
 
                 this.appendChild(child);

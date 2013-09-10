@@ -86,13 +86,14 @@ WebInspector.Linkifier.prototype = {
     },
 
     /**
-     * @param {WebInspector.CSSRule} rule
+     * @param {CSSAgent.StyleSheetId} styleSheetId
+     * @param {WebInspector.CSSLocation} rawLocation
      * @return {?Element}
      */
-    linkifyCSSRuleLocation: function(rule)
+    linkifyCSSLocation: function(styleSheetId, rawLocation)
     {
         var anchor = WebInspector.linkifyURLAsNode("", "", "", false);
-        var liveLocation = WebInspector.cssModel.createLiveLocation(rule, this._updateAnchor.bind(this, anchor));
+        var liveLocation = WebInspector.cssModel.createLiveLocation(styleSheetId, rawLocation, this._updateAnchor.bind(this, anchor));
         if (!liveLocation)
             return null;
         this._liveLocations.push(liveLocation);
@@ -116,6 +117,7 @@ WebInspector.Linkifier.prototype = {
         anchor.href = sanitizeHref(uiLocation.uiSourceCode.originURL());
         anchor.uiSourceCode = uiLocation.uiSourceCode;
         anchor.lineNumber = uiLocation.lineNumber;
+        anchor.columnNumber = uiLocation.columnNumber;
         this._formatter.formatLiveAnchor(anchor, uiLocation);
     }
 }
@@ -157,8 +159,10 @@ WebInspector.Linkifier.DefaultFormatter.prototype = {
  */
 WebInspector.Linkifier.DefaultCSSFormatter = function()
 {
-    WebInspector.Linkifier.DefaultFormatter.call(this);
+    WebInspector.Linkifier.DefaultFormatter.call(this, WebInspector.Linkifier.DefaultCSSFormatter.MaxLengthForDisplayedURLs);
 }
+
+WebInspector.Linkifier.DefaultCSSFormatter.MaxLengthForDisplayedURLs = 30;
 
 WebInspector.Linkifier.DefaultCSSFormatter.prototype = {
     /**

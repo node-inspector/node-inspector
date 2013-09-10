@@ -70,9 +70,8 @@ WebInspector.DatabaseQueryView.prototype = {
     completions: function(proxyElement, wordRange, force, completionsReadyCallback)
     {
         var prefix = wordRange.toString().toLowerCase();
-        if (!prefix.length && !force)
+        if (!prefix)
             return;
-
         var results = [];
 
         function accumulateMatches(textArray)

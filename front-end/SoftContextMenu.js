@@ -383,8 +383,7 @@ WebInspector.SoftContextMenu.prototype = {
     {
         if (this._subMenu)
             this._subMenu._discardSubMenus();
-        if (this._contextMenuElement.parentElement)
-            this._contextMenuElement.parentElement.removeChild(this._contextMenuElement);
+        this._contextMenuElement.remove();
         if (this._parentMenu)
             delete this._parentMenu._subMenu;
     }

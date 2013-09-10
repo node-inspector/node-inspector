@@ -31,18 +31,28 @@
 /**
  * @constructor
  */
-WebInspector.UserAgentSupport = function()
+WebInspector.OverridesSupport = function()
 {
-    this._userAgentOverrideEnabled = false;
-    this._deviceMetricsOverrideEnabled = false;
-    this._geolocationPositionOverrideEnabled = false;
-    this._deviceOrientationOverrideEnabled = false;
+    this._overridesActive = WebInspector.settings.enableOverridesOnStartup.get();
+    this._updateAllOverrides();
 
+    WebInspector.settings.overrideUserAgent.addChangeListener(this._userAgentChanged, this);
     WebInspector.settings.userAgent.addChangeListener(this._userAgentChanged, this);
+
+    WebInspector.settings.overrideDeviceMetrics.addChangeListener(this._deviceMetricsChanged, this);
     WebInspector.settings.deviceMetrics.addChangeListener(this._deviceMetricsChanged, this);
     WebInspector.settings.deviceFitWindow.addChangeListener(this._deviceMetricsChanged, this);
+
+    WebInspector.settings.overrideGeolocation.addChangeListener(this._geolocationPositionChanged, this);
     WebInspector.settings.geolocationOverride.addChangeListener(this._geolocationPositionChanged, this);
+
+    WebInspector.settings.overrideDeviceOrientation.addChangeListener(this._deviceOrientationChanged, this);
     WebInspector.settings.deviceOrientationOverride.addChangeListener(this._deviceOrientationChanged, this);
+
+    WebInspector.settings.emulateTouchEvents.addChangeListener(this._emulateTouchEventsChanged, this);
+
+    WebInspector.settings.overrideCSSMedia.addChangeListener(this._cssMediaChanged, this);
+    WebInspector.settings.emulatedCSSMedia.addChangeListener(this._cssMediaChanged, this);
 }
 
 /**
@@ -51,7 +61,7 @@ WebInspector.UserAgentSupport = function()
  * @param {number} height
  * @param {number} fontScaleFactor
  */
-WebInspector.UserAgentSupport.DeviceMetrics = function(width, height, fontScaleFactor)
+WebInspector.OverridesSupport.DeviceMetrics = function(width, height, fontScaleFactor)
 {
     this.width = width;
     this.height = height;
@@ -59,22 +69,22 @@ WebInspector.UserAgentSupport.DeviceMetrics = function(width, height, fontScaleF
 }
 
 /**
- * @return {WebInspector.UserAgentSupport.DeviceMetrics}
+ * @return {WebInspector.OverridesSupport.DeviceMetrics}
  */
-WebInspector.UserAgentSupport.DeviceMetrics.parseSetting = function(value)
+WebInspector.OverridesSupport.DeviceMetrics.parseSetting = function(value)
 {
     if (value) {
         var splitMetrics = value.split("x");
         if (splitMetrics.length === 3)
-            return new WebInspector.UserAgentSupport.DeviceMetrics(parseInt(splitMetrics[0], 10), parseInt(splitMetrics[1], 10), parseFloat(splitMetrics[2]));
+            return new WebInspector.OverridesSupport.DeviceMetrics(parseInt(splitMetrics[0], 10), parseInt(splitMetrics[1], 10), parseFloat(splitMetrics[2]));
     }
-    return new WebInspector.UserAgentSupport.DeviceMetrics(0, 0, 1);
+    return new WebInspector.OverridesSupport.DeviceMetrics(0, 0, 1);
 }
 
 /**
- * @return {?WebInspector.UserAgentSupport.DeviceMetrics}
+ * @return {?WebInspector.OverridesSupport.DeviceMetrics}
  */
-WebInspector.UserAgentSupport.DeviceMetrics.parseUserInput = function(widthString, heightString, fontScaleFactorString)
+WebInspector.OverridesSupport.DeviceMetrics.parseUserInput = function(widthString, heightString, fontScaleFactorString)
 {
     function isUserInputValid(value, isInteger)
     {
@@ -97,10 +107,10 @@ WebInspector.UserAgentSupport.DeviceMetrics.parseUserInput = function(widthStrin
     var height = isHeightValid ? parseInt(heightString || "0", 10) : -1;
     var fontScaleFactor = isFontScaleFactorValid ? parseFloat(fontScaleFactorString) : -1;
 
-    return new WebInspector.UserAgentSupport.DeviceMetrics(width, height, fontScaleFactor);
+    return new WebInspector.OverridesSupport.DeviceMetrics(width, height, fontScaleFactor);
 }
 
-WebInspector.UserAgentSupport.DeviceMetrics.prototype = {
+WebInspector.OverridesSupport.DeviceMetrics.prototype = {
     /**
      * @return {boolean}
      */
@@ -174,14 +184,14 @@ WebInspector.UserAgentSupport.DeviceMetrics.prototype = {
  * @param {number} latitude
  * @param {number} longitude
  */
-WebInspector.UserAgentSupport.GeolocationPosition = function(latitude, longitude, error)
+WebInspector.OverridesSupport.GeolocationPosition = function(latitude, longitude, error)
 {
     this.latitude = latitude;
     this.longitude = longitude;
     this.error = error;
 }
 
-WebInspector.UserAgentSupport.GeolocationPosition.prototype = {
+WebInspector.OverridesSupport.GeolocationPosition.prototype = {
     /**
      * @return {string}
      */
@@ -192,25 +202,25 @@ WebInspector.UserAgentSupport.GeolocationPosition.prototype = {
 }
 
 /**
- * @return {WebInspector.UserAgentSupport.GeolocationPosition}
+ * @return {WebInspector.OverridesSupport.GeolocationPosition}
  */
-WebInspector.UserAgentSupport.GeolocationPosition.parseSetting = function(value)
+WebInspector.OverridesSupport.GeolocationPosition.parseSetting = function(value)
 {
     if (value) {
         var splitError = value.split(":");
         if (splitError.length === 2) {
             var splitPosition = splitError[0].split("@")
             if (splitPosition.length === 2)
-                return new WebInspector.UserAgentSupport.GeolocationPosition(parseFloat(splitPosition[0]), parseFloat(splitPosition[1]), splitError[1]);
+                return new WebInspector.OverridesSupport.GeolocationPosition(parseFloat(splitPosition[0]), parseFloat(splitPosition[1]), splitError[1]);
         }
     }
-    return new WebInspector.UserAgentSupport.GeolocationPosition(0, 0, "");
+    return new WebInspector.OverridesSupport.GeolocationPosition(0, 0, "");
 }
 
 /**
- * @return {?WebInspector.UserAgentSupport.GeolocationPosition}
+ * @return {?WebInspector.OverridesSupport.GeolocationPosition}
  */
-WebInspector.UserAgentSupport.GeolocationPosition.parseUserInput = function(latitudeString, longitudeString, errorStatus)
+WebInspector.OverridesSupport.GeolocationPosition.parseUserInput = function(latitudeString, longitudeString, errorStatus)
 {
     function isUserInputValid(value)
     {
@@ -231,10 +241,10 @@ WebInspector.UserAgentSupport.GeolocationPosition.parseUserInput = function(lati
     var latitude = isLatitudeValid ? parseFloat(latitudeString) : -1;
     var longitude = isLongitudeValid ? parseFloat(longitudeString) : -1;
 
-    return new WebInspector.UserAgentSupport.GeolocationPosition(latitude, longitude, errorStatus ? "PositionUnavailable" : "");
+    return new WebInspector.OverridesSupport.GeolocationPosition(latitude, longitude, errorStatus ? "PositionUnavailable" : "");
 }
 
-WebInspector.UserAgentSupport.GeolocationPosition.clearGeolocationOverride = function()
+WebInspector.OverridesSupport.GeolocationPosition.clearGeolocationOverride = function()
 {
     PageAgent.clearGeolocationOverride();
 }
@@ -245,14 +255,14 @@ WebInspector.UserAgentSupport.GeolocationPosition.clearGeolocationOverride = fun
  * @param {number} beta
  * @param {number} gamma
  */
-WebInspector.UserAgentSupport.DeviceOrientation = function(alpha, beta, gamma)
+WebInspector.OverridesSupport.DeviceOrientation = function(alpha, beta, gamma)
 {
     this.alpha = alpha;
     this.beta = beta;
     this.gamma = gamma;
 }
 
-WebInspector.UserAgentSupport.DeviceOrientation.prototype = {
+WebInspector.OverridesSupport.DeviceOrientation.prototype = {
     /**
      * @return {string}
      */
@@ -263,21 +273,21 @@ WebInspector.UserAgentSupport.DeviceOrientation.prototype = {
 }
 
 /**
- * @return {WebInspector.UserAgentSupport.DeviceOrientation}
+ * @return {WebInspector.OverridesSupport.DeviceOrientation}
  */
-WebInspector.UserAgentSupport.DeviceOrientation.parseSetting = function(value)
+WebInspector.OverridesSupport.DeviceOrientation.parseSetting = function(value)
 {
     if (value) {
         var jsonObject = JSON.parse(value);
-        return new WebInspector.UserAgentSupport.DeviceOrientation(jsonObject.alpha, jsonObject.beta, jsonObject.gamma);
+        return new WebInspector.OverridesSupport.DeviceOrientation(jsonObject.alpha, jsonObject.beta, jsonObject.gamma);
     }
-    return new WebInspector.UserAgentSupport.DeviceOrientation(0, 0, 0);
+    return new WebInspector.OverridesSupport.DeviceOrientation(0, 0, 0);
 }
 
 /**
- * @return {?WebInspector.UserAgentSupport.DeviceOrientation}
+ * @return {?WebInspector.OverridesSupport.DeviceOrientation}
  */
-WebInspector.UserAgentSupport.DeviceOrientation.parseUserInput = function(alphaString, betaString, gammaString)
+WebInspector.OverridesSupport.DeviceOrientation.parseUserInput = function(alphaString, betaString, gammaString)
 {
     function isUserInputValid(value)
     {
@@ -300,66 +310,53 @@ WebInspector.UserAgentSupport.DeviceOrientation.parseUserInput = function(alphaS
     var beta = isBetaValid ? parseFloat(betaString) : -1;
     var gamma = isGammaValid ? parseFloat(gammaString) : -1;
 
-    return new WebInspector.UserAgentSupport.DeviceOrientation(alpha, beta, gamma);
+    return new WebInspector.OverridesSupport.DeviceOrientation(alpha, beta, gamma);
 }
 
-WebInspector.UserAgentSupport.DeviceOrientation.clearDeviceOrientationOverride = function()
+WebInspector.OverridesSupport.DeviceOrientation.clearDeviceOrientationOverride = function()
 {
     PageAgent.clearDeviceOrientationOverride();
 }
 
-WebInspector.UserAgentSupport.prototype = {
-    toggleUserAgentOverride: function(enabled)
+WebInspector.OverridesSupport.prototype = {
+    setOverridesActive: function(enabled)
     {
-        if (enabled === this._userAgentOverrideEnabled)
+        if (this._overridesActive === enabled)
             return;
-        this._userAgentOverrideEnabled = enabled;
+        this._overridesActive = enabled;
+
+        this._updateAllOverrides();
+    },
+
+    _updateAllOverrides: function()
+    {
         this._userAgentChanged();
-    },
-
-    toggleDeviceMetricsOverride: function(enabled)
-    {
-        if (enabled === this._deviceMetricsOverrideEnabled)
-            return;
-        this._deviceMetricsOverrideEnabled = enabled;
         this._deviceMetricsChanged();
-    },
-
-    toggleGeolocationPositionOverride: function(enabled)
-    {
-        if (enabled === this._geolocationPositionOverrideEnabled)
-            return;
-        this._geolocationPositionOverrideEnabled = enabled;
-        this._geolocationPositionChanged();
-    },
-
-    toggleDeviceOrientationOverride: function(enabled)
-    {
-        if (enabled === this._deviceOrientationOverrideEnabled)
-            return;
-        this._deviceOrientationOverrideEnabled = enabled;
         this._deviceOrientationChanged();
+        this._geolocationPositionChanged();
+        this._emulateTouchEventsChanged();
+        this._cssMediaChanged();
     },
 
     _userAgentChanged: function()
     {
-        NetworkAgent.setUserAgentOverride(this._userAgentOverrideEnabled ? WebInspector.settings.userAgent.get() : "");
+        NetworkAgent.setUserAgentOverride(this._overridesActive && WebInspector.settings.overrideUserAgent.get() ? WebInspector.settings.userAgent.get() : "");
     },
 
     _deviceMetricsChanged: function()
     {
-        var metrics = WebInspector.UserAgentSupport.DeviceMetrics.parseSetting(this._deviceMetricsOverrideEnabled ? WebInspector.settings.deviceMetrics.get() : "");
+        var metrics = WebInspector.OverridesSupport.DeviceMetrics.parseSetting(this._overridesActive && WebInspector.settings.overrideDeviceMetrics.get() ? WebInspector.settings.deviceMetrics.get() : "");
         if (metrics.isValid())
             PageAgent.setDeviceMetricsOverride(metrics.width, metrics.height, metrics.fontScaleFactor, WebInspector.settings.deviceFitWindow.get());
     },
 
     _geolocationPositionChanged: function()
     {
-        if (!this._geolocationPositionOverrideEnabled) {
+        if (!this._overridesActive || !WebInspector.settings.overrideGeolocation.get()) {
             PageAgent.clearGeolocationOverride();
             return;
         }
-        var geolocation = WebInspector.UserAgentSupport.GeolocationPosition.parseSetting(WebInspector.settings.geolocationOverride.get());
+        var geolocation = WebInspector.OverridesSupport.GeolocationPosition.parseSetting(WebInspector.settings.geolocationOverride.get());
         if (geolocation.error)
             PageAgent.setGeolocationOverride();
         else
@@ -368,17 +365,28 @@ WebInspector.UserAgentSupport.prototype = {
 
     _deviceOrientationChanged: function()
     {
-        if (!this._deviceOrientationOverrideEnabled) {
+        if (!this._overridesActive || !WebInspector.settings.overrideDeviceOrientation.get()) {
             PageAgent.clearDeviceOrientationOverride();
             return;
         }
-        var deviceOrientation = WebInspector.UserAgentSupport.DeviceOrientation.parseSetting(WebInspector.settings.deviceOrientationOverride.get());
+        var deviceOrientation = WebInspector.OverridesSupport.DeviceOrientation.parseSetting(WebInspector.settings.deviceOrientationOverride.get());
         PageAgent.setDeviceOrientationOverride(deviceOrientation.alpha, deviceOrientation.beta, deviceOrientation.gamma);
+    },
+
+    _emulateTouchEventsChanged: function()
+    {
+        WebInspector.domAgent.emulateTouchEventObjects(this._overridesActive && WebInspector.settings.emulateTouchEvents.get());
+    },
+
+    _cssMediaChanged: function()
+    {
+        PageAgent.setEmulatedMedia(this._overridesActive && WebInspector.settings.overrideCSSMedia.get() ? WebInspector.settings.emulatedCSSMedia.get() : "");
+        WebInspector.cssModel.mediaQueryResultChanged();
     }
 }
 
 
 /**
- * @type {WebInspector.UserAgentSupport} 
+ * @type {WebInspector.OverridesSupport}
  */
-WebInspector.userAgentSupport;
+WebInspector.overridesSupport;

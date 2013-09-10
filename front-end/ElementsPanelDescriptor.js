@@ -44,10 +44,11 @@ WebInspector.ElementsPanelDescriptor.prototype = {
      */
     appendApplicableItems: function(event, contextMenu, target)
     {
-        if (!(target instanceof WebInspector.RemoteObject))
-            return;
-        var remoteObject = /** @type {WebInspector.RemoteObject} */ (target);
-        if (remoteObject.subtype !== "node")
+        if (target instanceof WebInspector.RemoteObject) {
+            var remoteObject = /** @type {WebInspector.RemoteObject} */ (target);
+            if (remoteObject.subtype !== "node")
+                return;
+        } else if (!(target instanceof WebInspector.DOMNode))
             return;
         this.panel().appendApplicableItems(event, contextMenu, target);
     },

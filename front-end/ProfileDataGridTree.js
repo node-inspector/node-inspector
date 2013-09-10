@@ -45,7 +45,6 @@ WebInspector.ProfileDataGridNode = function(profileNode, owningTree, hasChildren
     this.selfTime = profileNode.selfTime;
     this.totalTime = profileNode.totalTime;
     this.functionName = profileNode.functionName;
-    this.numberOfCalls = profileNode.numberOfCalls;
     this.url = profileNode.url;
 }
 
@@ -60,7 +59,6 @@ WebInspector.ProfileDataGridNode.prototype = {
         var data = {};
 
         data["function"] = this.functionName;
-        data["calls"] = this.numberOfCalls;
 
         if (this.tree.profileView.showSelfTimeAsPercent.get())
             data["self"] = WebInspector.UIString("%.2f%", this.selfPercent);
@@ -71,11 +69,6 @@ WebInspector.ProfileDataGridNode.prototype = {
             data["total"] = WebInspector.UIString("%.2f%", this.totalPercent);
         else
             data["total"] = formatMilliseconds(this.totalTime);
-
-        if (this.tree.profileView.showAverageTimeAsPercent.get())
-            data["average"] = WebInspector.UIString("%.2f%", this.averagePercent);
-        else
-            data["average"] = formatMilliseconds(this.averageTime);
 
         return data;
     },
@@ -92,10 +85,6 @@ WebInspector.ProfileDataGridNode.prototype = {
         if (columnIdentifier === "self" && this._searchMatchedSelfColumn)
             cell.addStyleClass("highlight");
         else if (columnIdentifier === "total" && this._searchMatchedTotalColumn)
-            cell.addStyleClass("highlight");
-        else if (columnIdentifier === "average" && this._searchMatchedAverageColumn)
-            cell.addStyleClass("highlight");
-        else if (columnIdentifier === "calls" && this._searchMatchedCallsColumn)
             cell.addStyleClass("highlight");
 
         if (columnIdentifier !== "function")
@@ -205,16 +194,6 @@ WebInspector.ProfileDataGridNode.prototype = {
         return this.childrenByCallUID[node.callUID];
     },
 
-    get averageTime()
-    {
-        return this.selfTime / Math.max(1, this.numberOfCalls);
-    },
-
-    get averagePercent()
-    {
-        return this.averageTime / this.tree.totalTime * 100.0;
-    },
-
     get selfPercent()
     {
         return this.selfTime / this.tree.totalTime * 100.0;
@@ -255,7 +234,6 @@ WebInspector.ProfileDataGridNode.prototype = {
 
         this._savedSelfTime = this.selfTime;
         this._savedTotalTime = this.totalTime;
-        this._savedNumberOfCalls = this.numberOfCalls;
 
         this._savedChildren = this.children.slice();
     },
@@ -269,7 +247,6 @@ WebInspector.ProfileDataGridNode.prototype = {
 
         this.selfTime = this._savedSelfTime;
         this.totalTime = this._savedTotalTime;
-        this.numberOfCalls = this._savedNumberOfCalls;
 
         this.removeChildren();
 
@@ -286,10 +263,8 @@ WebInspector.ProfileDataGridNode.prototype = {
     {
         this.selfTime += child.selfTime;
 
-        if (!shouldAbsorb) {
+        if (!shouldAbsorb)
             this.totalTime += child.totalTime;
-            this.numberOfCalls += child.numberOfCalls;
-        }
 
         var children = this.children.slice();
 

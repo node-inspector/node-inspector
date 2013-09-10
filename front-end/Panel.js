@@ -28,6 +28,7 @@
 
 /**
  * @extends {WebInspector.View}
+ * @implements {WebInspector.Searchable}
  * @constructor
  */
 WebInspector.Panel = function(name)
@@ -46,6 +47,8 @@ WebInspector.Panel = function(name)
 
 // Should by in sync with style declarations.
 WebInspector.Panel.counterRightMargin = 25;
+
+WebInspector.Panel._minimalSearchQuerySize = 3;
 
 WebInspector.Panel.prototype = {
     get name()
@@ -80,12 +83,12 @@ WebInspector.Panel.prototype = {
 
     willHide: function()
     {
-        if (this._statusBarItemContainer && this._statusBarItemContainer.parentNode)
-            this._statusBarItemContainer.parentNode.removeChild(this._statusBarItemContainer);
+        if (this._statusBarItemContainer)
+            this._statusBarItemContainer.remove();
         delete this._statusBarItemContainer;
 
-        if (this._statusBarTextElement && this._statusBarTextElement.parentNode)
-            this._statusBarTextElement.parentNode.removeChild(this._statusBarTextElement);
+        if (this._statusBarTextElement)
+            this._statusBarTextElement.remove();
         delete this._statusBarTextElement;
     },
 
@@ -106,11 +109,20 @@ WebInspector.Panel.prototype = {
 
     /**
      * @param {string} query
+     * @param {boolean} shouldJump
      */
-    performSearch: function(query)
+    performSearch: function(query, shouldJump)
     {
         // Call searchCanceled since it will reset everything we need before doing a new search.
         this.searchCanceled();
+    },
+
+    /**
+     * @return {number}
+     */
+    minimalSearchQuerySize: function()
+    {
+        return WebInspector.Panel._minimalSearchQuerySize;
     },
 
     jumpToNextSearchResult: function()
@@ -156,6 +168,21 @@ WebInspector.Panel.prototype = {
      * @param {string} query
      */
     performFilter: function(query)
+    {
+    },
+
+    /**
+     * @return {boolean}
+     */
+    canSetFooterElement: function()
+    {
+        return false;
+    },
+
+    /**
+     * @param {?Element} element
+     */
+    setFooterElement: function(element)
     {
     },
 
@@ -300,22 +327,6 @@ WebInspector.PanelDescriptor.prototype = {
     title: function()
     {
         return this._title;
-    },
-
-    /**
-     * @return {string}
-     */
-    iconURL: function()
-    {
-        return this._iconURL;
-    },
-
-    /**
-     * @param {string} iconURL
-     */
-    setIconURL: function(iconURL)
-    {
-        this._iconURL = iconURL;
     },
 
     /**

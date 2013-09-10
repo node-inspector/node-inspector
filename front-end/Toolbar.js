@@ -262,15 +262,10 @@ WebInspector.Toolbar.prototype = {
         }
         WebInspector.inspectorView.addEventListener(WebInspector.InspectorView.Events.PanelSelected, panelSelected);
 
-        var iconElement = toolbarItem.createChild("div", "toolbar-icon");
         toolbarItem.createChild("div", "toolbar-label").textContent = panelDescriptor.title();
         if (this._isToolbarCustomizable() && !this._isDefaultPanel(panelDescriptor.name()) && !noCloseButton) {
             var closeButton = toolbarItem.createChild("div", "close-button");
             closeButton.addEventListener("click", onToolbarItemCloseButtonClicked.bind(this), false);
-        }
-        if (panelDescriptor.iconURL()) {
-            iconElement.addStyleClass("custom-toolbar-icon");
-            iconElement.style.backgroundImage = "url(" + panelDescriptor.iconURL() + ")";
         }
         panelSelected();
         return toolbarItem;
@@ -473,7 +468,7 @@ WebInspector.ToolbarDropdown.prototype = {
         if (!this.visible)
             return;
         this._arrow.removeStyleClass("dropdown-visible");
-        this.element.parentNode.removeChild(this.element);
+        this.element.remove();
         this._contentElement.removeChildren();
     },
 
