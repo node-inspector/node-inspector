@@ -66,6 +66,20 @@ InspectorFrontendHost.close = function(url, content, forceSaveAs) {
   delete this._fileBuffers[url];
 };
 
+// Let DevTools know we can save the content of modified files,
+// so that a warning icon is not displayed in the file tab header.
+// See UISourceCode.hasUnsavedCommittedChanges to understand why.
+WebInspector.extensionServer._onSubscribe(
+  {
+    type:WebInspector.extensionAPI.Events.ResourceContentCommitted
+  },
+  {
+    postMessage: function(msg) {
+      // no-op
+    }
+  }
+);
+
 // Front-end intercepts Cmd+R, Ctrl+R and F5 keys and reloads the debugged
 // page instead of the front-end page.  We want to disable this behaviour.
 WebInspector._orig_documentKeyDown = WebInspector.documentKeyDown;
@@ -91,19 +105,6 @@ WebInspector.ResourceTreeModel.prototype._createResourceFromFramePayload =
 
     return orig_createResourceFromFramePayload(frame, url, type, mimeType);
   };
-
-var _orig_loadXHR = loadXHR;
-var loadXHR = function patchedLoadXHR(url, async, callback) {
-  var match = url.match(/^file:\/\/(.*)$/);
-  if (match) {
-    var encodedPath = match[1]
-      .split('/')
-      .map(encodeURIComponent)
-      .join('/');
-    url = '/file-resource/' + encodedPath;
-  }
-  return _orig_loadXHR(url, async, callback);
-}
 
 //
 // Open the main application file on startup
