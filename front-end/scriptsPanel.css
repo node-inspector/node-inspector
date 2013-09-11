@@ -100,6 +100,10 @@
     -webkit-mask-position: -96px -72px;
 }
 
+.scripts-long-resume .glyph {
+    -webkit-mask-position: -64px -48px;
+}
+
 .scripts-toggle-breakpoints.toggled-on .glyph {
     -webkit-mask-position: -32px 0;
 }
@@ -115,66 +119,16 @@
     right: 8px;
 }
 
-#scripts-debug-sidebar-resizer-widget {
-    position: absolute;
-    top: 0;
-    height: 23px;
-    right: 0;
-    width: 16px;
-    cursor: ew-resize;
-    background-image: url(Images/statusbarResizerHorizontal.png);
-    background-repeat: no-repeat;
-    background-position: center;
-    z-index: 13;
-}
-
-.scripts-navigator-resizer-widget {
-    position: absolute;
-    top: 0;
-    right: 0;
-    height: 24px;
-    width: 16px;
-    cursor: ew-resize;
-    background-image: url(Images/statusbarResizerHorizontal.png);
-    background-repeat: no-repeat;
-    background-position: center;
-}
-
 .status-bar-item.scripts-navigator-show-hide-button,
-.scripts-debugger-show-hide-button {
+.status-bar-item.scripts-debugger-show-hide-button {
     opacity: 0.7;
 }
 
-.status-bar-item.scripts-navigator-show-hide-button.toggled-hidden .glyph {
-    -webkit-mask-position: -167px -76px;
-}
-
-.status-bar-item.scripts-navigator-show-hide-button.toggled-pinned .glyph {
-    -webkit-mask-position: -199px -76px;
-}
-
-.status-bar-item.scripts-navigator-show-hide-button.toggled-overlay .glyph {
-    -webkit-mask-position: -231px -76px;
-}
-
 button.status-bar-item.scripts-navigator-show-hide-button {
-    position: absolute;
-    top: 0;
     left: 0;
-    background-image: none;
-    height: 16px;
-    width: 16px;
-    margin: 4px 2px 2px 2px;
-    border: none;
 }
 
-button.status-bar-item.scripts-navigator-show-hide-button:active {
-    top: 1px;
-    left: 1px;
-}
-
-button.status-bar-item.scripts-navigator-show-hide-button.toggled-overlay
-{
+button.status-bar-item.scripts-navigator-show-hide-button.toggled-overlay {
     left: auto;
     right: 15px;
 }
@@ -202,11 +156,11 @@ button.status-bar-item.scripts-navigator-show-hide-button.toggled-overlay
 }
 
 .dedicated-worker-item {
-    margin: 5px 0px 5px 1px;
+    margin: 5px 0 5px 1px;
 }
 
 #shared-workers-list {
-    margin: 5px 0px 5px 20px;
+    margin: 5px 0 5px 20px;
     font-style:italic;
 }
 
@@ -244,13 +198,7 @@ button.status-bar-item.scripts-navigator-show-hide-button.toggled-overlay
 }
 
 button.status-bar-item.scripts-debugger-show-hide-button {
-    position: absolute;
-    top: 0;
-    background-image: none;
-    height: 16px;
-    width: 16px;
-    margin: 4px 2px 2px 2px;
-    border: none;
+    right: 15px;
 }
 
 .split-view-horizontal button.status-bar-item.scripts-debugger-show-hide-button,
@@ -258,35 +206,12 @@ button.status-bar-item.scripts-debugger-show-hide-button {
     display: none;
 }
 
-button.status-bar-item.scripts-debugger-show-hide-button:active {
-    top: 1px;
+button.status-bar-item.scripts-debugger-show-hide-button.toggled-left {
+    right: 0;
 }
 
-button.status-bar-item.scripts-debugger-show-hide-button.toggled-shown {
-    right: 16px;
-}
-
-button.status-bar-item.scripts-debugger-show-hide-button.toggled-shown:active {
-    right: 15px;
-}
-
-.status-bar-item.scripts-debugger-show-hide-button.toggled-shown > .glyph {
-    -webkit-mask-position: -168px -76px;
-}
-
-button.status-bar-item.scripts-debugger-show-hide-button.toggled-hidden {
-    right: 1px;
-}
-
-button.status-bar-item.scripts-debugger-show-hide-button.toggled-hidden:active {
-    right: 0px;
-}
-
-.status-bar-item.scripts-debugger-show-hide-button.toggled-hidden > .glyph {
-    -webkit-mask-position: -296px -76px;
-}
-
-div.sidebar-pane-stack#scripts-debug-sidebar-contents, #scripts-sidebar-stack-pane {
+div.sidebar-pane-stack#scripts-debug-sidebar-contents,
+#scripts-sidebar-stack-pane {
     top: 23px;
     overflow: auto;
 }
@@ -313,9 +238,28 @@ a.worker-item:hover {
     background-color: rgba(255, 255, 194, 0.5);
 }
 
+.source-frame-unsaved-committed-changes {
+    background-color: rgba(255, 225, 205, 0.40);
+}
+
 .tabbed-pane-placeholder {
     font-size: 14px;
     text-align: center;
     margin-top: 20px;
     text-shadow: rgba(255, 255, 255, 0.75) 0 1px 0;
+}
+
+.tabbed-pane-header-tab-icon {
+    width: 13px;
+    height: 10px;
+    margin-top: 3px;
+    float: left;
+    display: block;
+    margin-right: 1px;
+}
+
+.editor-container-unsaved-committed-changes-icon {
+    background-image: url(Images/statusbarButtonGlyphs.png);
+    background-size: 320px 120px;
+    background-position: -202px -107px;
 }

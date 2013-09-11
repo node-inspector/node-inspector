@@ -266,7 +266,7 @@ WebInspector.RuntimeModel.prototype = {
             var includeCommandLineAPI = (!dotNotation && !bracketNotation);
             if (includeCommandLineAPI) {
                 const commandLineAPI = ["dir", "dirxml", "keys", "values", "profile", "profileEnd", "monitorEvents", "unmonitorEvents", "inspect", "copy", "clear",
-                    "getEventListeners", "table", "$", "$$", "$x"];
+                    "getEventListeners", "debug", "undebug", "monitor", "unmonitor", "table", "$", "$$", "$x"];
                 for (var i = 0; i < commandLineAPI.length; ++i)
                     propertyNames[commandLineAPI[i]] = true;
             }
@@ -359,8 +359,8 @@ WebInspector.ExecutionContext = function(id, name, isPageContext)
 }
 
 /**
- * @param {*} a
- * @param {*} b
+ * @param {!WebInspector.ExecutionContext} a
+ * @param {!WebInspector.ExecutionContext} b
  * @return {number}
  */
 WebInspector.ExecutionContext.comparator = function(a, b)
@@ -398,7 +398,7 @@ WebInspector.FrameExecutionContextList.prototype =
     },
 
     /**
-     * @param {WebInspector.ExecutionContext} context
+     * @param {!WebInspector.ExecutionContext} context
      */
     _addExecutionContext: function(context)
     {

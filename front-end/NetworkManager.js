@@ -70,8 +70,14 @@ WebInspector.NetworkManager._MIMETypes = {
     "image/x-icon":                {"image": true},
     "image/x-xbitmap":             {"image": true},
     "font/ttf":                    {"font": true},
+    "font/otf":                    {"font": true},
+    "font/woff":                   {"font": true},
+    "font/woff2":                  {"font": true},
+    "font/truetype":               {"font": true},
     "font/opentype":               {"font": true},
+    "application/octet-stream":    {"font": true, "image": true},
     "application/font-woff":       {"font": true},
+    "application/x-font-woff":     {"font": true},
     "application/x-font-type1":    {"font": true},
     "application/x-font-ttf":      {"font": true},
     "application/x-truetype-font": {"font": true},
@@ -186,6 +192,7 @@ WebInspector.NetworkDispatcher.prototype = {
                 WebInspector.ConsoleMessage.MessageType.Log,
                 "",
                 0,
+                0,
                 1,
                 [],
                 null,
@@ -224,17 +231,6 @@ WebInspector.NetworkDispatcher.prototype = {
     },
 
     /**
-     * @param {WebInspector.NetworkRequest} networkRequest
-     * @param {?NetworkAgent.CachedResource} cachedResource
-     */
-    _updateNetworkRequestWithCachedResource: function(networkRequest, cachedResource)
-    {
-        networkRequest.type = WebInspector.resourceTypes[cachedResource.type];
-        networkRequest.resourceSize = cachedResource.bodySize;
-        this._updateNetworkRequestWithResponse(networkRequest, cachedResource.response);
-    },
-
-    /**
      * @param {NetworkAgent.Response} response
      * @return {boolean}
      */
@@ -247,7 +243,7 @@ WebInspector.NetworkDispatcher.prototype = {
 
     /**
      * @param {NetworkAgent.RequestId} requestId
-     * @param {NetworkAgent.FrameId} frameId
+     * @param {PageAgent.FrameId} frameId
      * @param {NetworkAgent.LoaderId} loaderId
      * @param {string} documentURL
      * @param {NetworkAgent.Request} request
@@ -287,7 +283,7 @@ WebInspector.NetworkDispatcher.prototype = {
 
     /**
      * @param {NetworkAgent.RequestId} requestId
-     * @param {NetworkAgent.FrameId} frameId
+     * @param {PageAgent.FrameId} frameId
      * @param {NetworkAgent.LoaderId} loaderId
      * @param {NetworkAgent.Timestamp} time
      * @param {PageAgent.ResourceType} resourceType
@@ -367,26 +363,6 @@ WebInspector.NetworkDispatcher.prototype = {
         networkRequest.failed = true;
         networkRequest.canceled = canceled;
         networkRequest.localizedFailDescription = localizedDescription;
-        this._finishNetworkRequest(networkRequest, time);
-    },
-
-    /**
-     * @param {NetworkAgent.RequestId} requestId
-     * @param {NetworkAgent.FrameId} frameId
-     * @param {NetworkAgent.LoaderId} loaderId
-     * @param {string} documentURL
-     * @param {NetworkAgent.Timestamp} time
-     * @param {NetworkAgent.Initiator} initiator
-     * @param {NetworkAgent.CachedResource} cachedResource
-     */
-    requestServedFromMemoryCache: function(requestId, frameId, loaderId, documentURL, time, initiator, cachedResource)
-    {
-        var networkRequest = this._createNetworkRequest(requestId, frameId, loaderId, cachedResource.url, documentURL, initiator);
-        this._updateNetworkRequestWithCachedResource(networkRequest, cachedResource);
-        networkRequest.cached = true;
-        networkRequest.requestMethod = "GET";
-        this._startNetworkRequest(networkRequest);
-        networkRequest.startTime = networkRequest.responseReceivedTime = time;
         this._finishNetworkRequest(networkRequest, time);
     },
 

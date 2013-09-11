@@ -167,51 +167,47 @@ WebInspector.RemoteObject.prototype = {
      */
     getOwnProperties: function(callback)
     {
-        this.doGetProperties(true, callback);
+        this.doGetProperties(true, false, callback);
     },
 
     /**
-     * @param {function(Array.<WebInspector.RemoteObjectProperty>, Array.<WebInspector.RemoteObjectProperty>=)} callback
+     * @param {boolean} accessorPropertiesOnly
+     * @param {function(?Array.<WebInspector.RemoteObjectProperty>, ?Array.<WebInspector.RemoteObjectProperty>)} callback
      */
-    getAllProperties: function(callback)
+    getAllProperties: function(accessorPropertiesOnly, callback)
     {
-        this.doGetProperties(false, callback);
+        this.doGetProperties(false, accessorPropertiesOnly, callback);
     },
 
     /**
      * @param {boolean} ownProperties
-     * @param {function(Array.<WebInspector.RemoteObjectProperty>, Array.<WebInspector.RemoteObjectProperty>=)} callback
+     * @param {boolean} accessorPropertiesOnly
+     * @param {?function(Array.<WebInspector.RemoteObjectProperty>, ?Array.<WebInspector.RemoteObjectProperty>)} callback
      */
-    doGetProperties: function(ownProperties, callback)
+    doGetProperties: function(ownProperties, accessorPropertiesOnly, callback)
     {
         if (!this._objectId) {
-            callback([]);
+            callback([], null);
             return;
         }
 
         /**
          * @param {?Protocol.Error} error
-         * @param {Array.<RuntimeAgent.PropertyDescriptor>} properties
+         * @param {Array.<RuntimeAgent.PropertyDescriptor>=} properties
          * @param {Array.<RuntimeAgent.InternalPropertyDescriptor>=} internalProperties
          */
         function remoteObjectBinder(error, properties, internalProperties)
         {
             if (error) {
-                callback(null);
+                callback(null, null);
                 return;
             }
             var result = [];
             for (var i = 0; properties && i < properties.length; ++i) {
                 var property = properties[i];
-                if (property.get || property.set) {
-                    if (property.get)
-                        result.push(new WebInspector.RemoteObjectProperty("get " + property.name, WebInspector.RemoteObject.fromPayload(property.get), property));
-                    if (property.set)
-                        result.push(new WebInspector.RemoteObjectProperty("set " + property.name, WebInspector.RemoteObject.fromPayload(property.set), property));
-                } else
-                    result.push(new WebInspector.RemoteObjectProperty(property.name, WebInspector.RemoteObject.fromPayload(property.value), property));
+                result.push(new WebInspector.RemoteObjectProperty(property.name, null, property));
             }
-            var internalPropertiesResult;
+            var internalPropertiesResult = null;
             if (internalProperties) {
                 internalPropertiesResult = [];
                 for (var i = 0; i < internalProperties.length; i++) {
@@ -221,7 +217,7 @@ WebInspector.RemoteObject.prototype = {
             }
             callback(result, internalPropertiesResult);
         }
-        RuntimeAgent.getProperties(this._objectId, ownProperties, remoteObjectBinder);
+        RuntimeAgent.getProperties(this._objectId, ownProperties, accessorPropertiesOnly, remoteObjectBinder);
     },
 
     /**
@@ -252,8 +248,8 @@ WebInspector.RemoteObject.prototype = {
 
             this.doSetObjectPropertyValue(result, name, callback);
 
-            if (result._objectId)
-                RuntimeAgent.releaseObject(result._objectId);
+            if (result.objectId)
+                RuntimeAgent.releaseObject(result.objectId);
         }
     },
 
@@ -264,8 +260,10 @@ WebInspector.RemoteObject.prototype = {
      */
     doSetObjectPropertyValue: function(result, name, callback)
     {
-        // Note that it is not that simple with accessor properties. The proto object may contain the property,
-        // however not the proto object must be 'this', but the main object.
+        // This assignment may be for a regular (data) property, and for an acccessor property (with getter/setter).
+        // Note the sensitive matter about accessor property: the property may be physically defined in some proto object,
+        // but logically it is bound to the object in question. JavaScript passes this object to getters/setters, not the object
+        // where property was defined; so do we.
         var setPropertyValueFunction = "function(a, b) { this[a] = b; }";
 
         // Special case for NaN, Infinity and -Infinity
@@ -374,7 +372,75 @@ WebInspector.RemoteObject.prototype = {
             return 0;
         return parseInt(matches[1], 10);
     }
-}
+};
+
+
+/**
+ * @param {WebInspector.RemoteObject} object
+ * @param {boolean} flattenProtoChain
+ * @param {function(?Array.<WebInspector.RemoteObjectProperty>, ?Array.<WebInspector.RemoteObjectProperty>)} callback
+ */
+WebInspector.RemoteObject.loadFromObject = function(object, flattenProtoChain, callback)
+{
+    if (flattenProtoChain)
+       object.getAllProperties(false, callback);
+    else
+        WebInspector.RemoteObject.loadFromObjectPerProto(object, callback);
+};
+
+/**
+ * @param {WebInspector.RemoteObject} object
+ * @param {function(?Array.<WebInspector.RemoteObjectProperty>, ?Array.<WebInspector.RemoteObjectProperty>)} callback
+ */
+WebInspector.RemoteObject.loadFromObjectPerProto = function(object, callback)
+{
+    // Combines 2 asynch calls. Doesn't rely on call-back orders (some calls may be loop-back).
+    var savedOwnProperties;
+    var savedAccessorProperties;
+    var savedInternalProperties;
+    var resultCounter = 2;
+
+    function processCallback()
+    {
+        if (--resultCounter)
+            return;
+        if (savedOwnProperties && savedAccessorProperties) {
+            var combinedList = savedAccessorProperties.slice(0);
+            for (var i = 0; i < savedOwnProperties.length; i++) {
+                var property = savedOwnProperties[i];
+                if (!property.isAccessorProperty())
+                    combinedList.push(property);
+            }
+            return callback(combinedList, savedInternalProperties ? savedInternalProperties : null);
+        } else {
+            callback(null, null);
+        }
+    }
+
+    /**
+     * @param {Array.<WebInspector.RemoteObjectProperty>} properties
+     * @param {Array.<WebInspector.RemoteObjectProperty>=} internalProperties
+     */
+    function allAccessorPropertiesCallback(properties, internalProperties)
+    {
+        savedAccessorProperties = properties;
+        processCallback();
+    }
+
+    /**
+     * @param {Array.<WebInspector.RemoteObjectProperty>} properties
+     * @param {Array.<WebInspector.RemoteObjectProperty>=} internalProperties
+     */
+    function ownPropertiesCallback(properties, internalProperties)
+    {
+        savedOwnProperties = properties;
+        savedInternalProperties = internalProperties;
+        processCallback();
+    }
+
+    object.getAllProperties(true, allAccessorPropertiesCallback);
+    object.getOwnProperties(ownPropertiesCallback);
+};
 
 
 /**
@@ -411,11 +477,16 @@ WebInspector.ScopeRemoteObject.fromPayload = function(payload, scopeRef)
 WebInspector.ScopeRemoteObject.prototype = {
     /**
      * @param {boolean} ownProperties
+     * @param {boolean} accessorPropertiesOnly
      * @param {function(Array.<WebInspector.RemoteObjectProperty>, Array.<WebInspector.RemoteObjectProperty>=)} callback
      * @override
      */
-    doGetProperties: function(ownProperties, callback)
+    doGetProperties: function(ownProperties, accessorPropertiesOnly, callback)
     {
+        if (accessorPropertiesOnly) {
+            callback([], []);
+            return;
+        }
         if (this._savedScopeProperties) {
             // No need to reload scope variables, as the remote object never
             // changes its properties. If variable is updated, the properties
@@ -435,7 +506,7 @@ WebInspector.ScopeRemoteObject.prototype = {
             callback(properties, internalProperties);
         }
 
-        WebInspector.RemoteObject.prototype.doGetProperties.call(this, ownProperties, wrappedCallback.bind(this));
+        WebInspector.RemoteObject.prototype.doGetProperties.call(this, ownProperties, accessorPropertiesOnly, wrappedCallback.bind(this));
     },
 
     /**
@@ -501,18 +572,38 @@ WebInspector.ScopeRef = function(number, callFrameId, functionId)
 /**
  * @constructor
  * @param {string} name
- * @param {WebInspector.RemoteObject} value
- * @param {Object=} descriptor
+ * @param {?WebInspector.RemoteObject} value
+ * @param {RuntimeAgent.PropertyDescriptor=} descriptor
  */
 WebInspector.RemoteObjectProperty = function(name, value, descriptor)
 {
     this.name = name;
-    this.value = value;
     this.enumerable = descriptor ? !!descriptor.enumerable : true;
     this.writable = descriptor ? !!descriptor.writable : true;
-    if (descriptor && descriptor.wasThrown)
-        this.wasThrown = true;
+
+    if (value === null && descriptor) {
+        if (descriptor.value)
+            this.value = WebInspector.RemoteObject.fromPayload(descriptor.value)
+        if (descriptor.get && descriptor.get.type !== "undefined")
+            this.getter = WebInspector.RemoteObject.fromPayload(descriptor.get);
+        if (descriptor.set && descriptor.set.type !== "undefined")
+            this.setter = WebInspector.RemoteObject.fromPayload(descriptor.set);
+    } else {
+         this.value = value;
+    }
+
+    if (descriptor) {
+        this.isOwn = descriptor.isOwn;
+        this.wasThrown = !!descriptor.wasThrown;
+    }
 }
+
+WebInspector.RemoteObjectProperty.prototype = {
+    isAccessorProperty: function()
+    {
+        return this.getter || this.setter;
+    }
+};
 
 /**
  * @param {string} name
@@ -658,11 +749,15 @@ WebInspector.LocalJSONObject.prototype = {
     },
 
     /**
+     * @param {boolean} accessorPropertiesOnly
      * @param {function(Array.<WebInspector.RemoteObjectProperty>)} callback
      */
-    getAllProperties: function(callback)
+    getAllProperties: function(accessorPropertiesOnly, callback)
     {
-        callback(this._children());
+        if (accessorPropertiesOnly)
+            callback([]);
+        else
+            callback(this._children());
     },
 
     /**

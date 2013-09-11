@@ -96,8 +96,6 @@ WebInspector.ResourceSourceFrame.prototype = {
     populateTextAreaContextMenu: function(contextMenu, lineNumber)
     {
         contextMenu.appendApplicableItems(this._resource);
-        if (this._resource.request)
-            contextMenu.appendApplicableItems(this._resource.request);
     },
 
     __proto__: WebInspector.SourceFrame.prototype

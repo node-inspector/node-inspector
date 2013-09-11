@@ -38,13 +38,11 @@ WebInspector.NavigatorOverlayController = function(parentSidebarView, navigatorV
     this._navigatorView = navigatorView;
     this._editorView = editorView;
 
-    this._navigatorSidebarResizeWidgetElement = document.createElement("div");
-    this._navigatorSidebarResizeWidgetElement.addStyleClass("scripts-navigator-resizer-widget");
+    this._navigatorSidebarResizeWidgetElement = this._navigatorView.element.createChild("div", "resizer-widget");
     this._parentSidebarView.installResizer(this._navigatorSidebarResizeWidgetElement);
-    this._navigatorView.element.appendChild(this._navigatorSidebarResizeWidgetElement);
 
-    this._navigatorShowHideButton = new WebInspector.StatusBarButton(WebInspector.UIString("Hide navigator"), "scripts-navigator-show-hide-button", 3);
-    this._navigatorShowHideButton.state = "pinned";
+    this._navigatorShowHideButton = new WebInspector.StatusBarButton(WebInspector.UIString("Hide navigator"), "left-sidebar-show-hide-button scripts-navigator-show-hide-button", 3);
+    this._navigatorShowHideButton.state = "left";
     this._navigatorShowHideButton.addEventListener("click", this._toggleNavigator, this);
     this._editorView.element.appendChild(this._navigatorShowHideButton.element);
 
@@ -69,7 +67,7 @@ WebInspector.NavigatorOverlayController.prototype = {
     {
         if (this._navigatorShowHideButton.state === "overlay")
             this._pinNavigator();
-        else if (this._navigatorShowHideButton.state === "hidden")
+        else if (this._navigatorShowHideButton.state === "right")
             this.showNavigatorOverlay();
         else
             this._hidePinnedNavigator();
@@ -77,7 +75,7 @@ WebInspector.NavigatorOverlayController.prototype = {
 
     _hidePinnedNavigator: function()
     {
-        this._navigatorShowHideButton.state = "hidden";
+        this._navigatorShowHideButton.state = "right";
         this._navigatorShowHideButton.title = WebInspector.UIString("Show navigator");
         this._parentSidebarView.element.appendChild(this._navigatorShowHideButton.element);
 
@@ -94,7 +92,7 @@ WebInspector.NavigatorOverlayController.prototype = {
 
     _pinNavigator: function()
     {
-        this._navigatorShowHideButton.state = "pinned";
+        this._navigatorShowHideButton.state = "left";
         this._navigatorShowHideButton.title = WebInspector.UIString("Hide navigator");
 
         this._editorView.element.removeStyleClass("navigator-hidden");
@@ -119,8 +117,9 @@ WebInspector.NavigatorOverlayController.prototype = {
         this._sidebarOverlay = new WebInspector.SidebarOverlay(this._navigatorView, "scriptsPanelNavigatorOverlayWidth", Preferences.minScriptsSidebarWidth);
         this._boundKeyDown = this._keyDown.bind(this);
         this._sidebarOverlay.element.addEventListener("keydown", this._boundKeyDown, false);
+
         var navigatorOverlayResizeWidgetElement = document.createElement("div");
-        navigatorOverlayResizeWidgetElement.addStyleClass("scripts-navigator-resizer-widget");
+        navigatorOverlayResizeWidgetElement.addStyleClass("resizer-widget");
         this._sidebarOverlay.resizerWidgetElement = navigatorOverlayResizeWidgetElement;
 
         this._navigatorView.element.appendChild(this._navigatorShowHideButton.element);
@@ -147,7 +146,7 @@ WebInspector.NavigatorOverlayController.prototype = {
         if (this._navigatorShowHideButton.state !== "overlay")
             return;
 
-        this._navigatorShowHideButton.state = "hidden";
+        this._navigatorShowHideButton.state = "right";
         this._navigatorShowHideButton.title = WebInspector.UIString("Show navigator");
         this._parentSidebarView.element.appendChild(this._navigatorShowHideButton.element);
 
@@ -170,11 +169,11 @@ WebInspector.NavigatorOverlayController.prototype = {
     
     isNavigatorPinned: function()
     {
-        return this._navigatorShowHideButton.state === "pinned";
+        return this._navigatorShowHideButton.state === "left";
     },
     
     isNavigatorHidden: function()
     {
-        return this._navigatorShowHideButton.state === "hidden";
+        return this._navigatorShowHideButton.state === "right";
     }
 }

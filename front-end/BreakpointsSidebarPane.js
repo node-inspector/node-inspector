@@ -502,10 +502,11 @@ WebInspector.EventListenerBreakpointsSidebarPane = function()
     this._createCategory(WebInspector.UIString("DOM Mutation"), true, ["DOMActivate", "DOMFocusIn", "DOMFocusOut", "DOMAttrModified", "DOMCharacterDataModified", "DOMNodeInserted", "DOMNodeInsertedIntoDocument", "DOMNodeRemoved", "DOMNodeRemovedFromDocument", "DOMSubtreeModified", "DOMContentLoaded"]);
     this._createCategory(WebInspector.UIString("Device"), true, ["deviceorientation", "devicemotion"]);
     this._createCategory(WebInspector.UIString("Keyboard"), true, ["keydown", "keyup", "keypress", "input"]);
-    this._createCategory(WebInspector.UIString("Load"), true, ["load", "unload", "abort", "error"]);
+    this._createCategory(WebInspector.UIString("Load"), true, ["load", "unload", "abort", "error", "hashchange"]);
     this._createCategory(WebInspector.UIString("Mouse"), true, ["click", "dblclick", "mousedown", "mouseup", "mouseover", "mousemove", "mouseout", "mousewheel"]);
     this._createCategory(WebInspector.UIString("Timer"), false, ["setTimer", "clearTimer", "timerFired"]);
     this._createCategory(WebInspector.UIString("Touch"), true, ["touchstart", "touchmove", "touchend", "touchcancel"]);
+    this._createCategory(WebInspector.UIString("WebGL"), false, ["webglErrorFired", "webglWarningFired"]);
 
     this._restoreBreakpoints();
 }
@@ -513,7 +514,12 @@ WebInspector.EventListenerBreakpointsSidebarPane = function()
 WebInspector.EventListenerBreakpointsSidebarPane.categotyListener = "listener:";
 WebInspector.EventListenerBreakpointsSidebarPane.categotyInstrumentation = "instrumentation:";
 
-WebInspector.EventListenerBreakpointsSidebarPane.eventNameForUI = function(eventName)
+/**
+ * @param {string} eventName
+ * @param {Object=} auxData
+ * @return {string}
+ */
+WebInspector.EventListenerBreakpointsSidebarPane.eventNameForUI = function(eventName, auxData)
 {
     if (!WebInspector.EventListenerBreakpointsSidebarPane._eventNamesForUI) {
         WebInspector.EventListenerBreakpointsSidebarPane._eventNamesForUI = {
@@ -522,8 +528,18 @@ WebInspector.EventListenerBreakpointsSidebarPane.eventNameForUI = function(event
             "instrumentation:timerFired": WebInspector.UIString("Timer Fired"),
             "instrumentation:requestAnimationFrame": WebInspector.UIString("Request Animation Frame"),
             "instrumentation:cancelAnimationFrame": WebInspector.UIString("Cancel Animation Frame"),
-            "instrumentation:animationFrameFired": WebInspector.UIString("Animation Frame Fired")
+            "instrumentation:animationFrameFired": WebInspector.UIString("Animation Frame Fired"),
+            "instrumentation:webglErrorFired": WebInspector.UIString("WebGL Error Fired"),
+            "instrumentation:webglWarningFired": WebInspector.UIString("WebGL Warning Fired")
         };
+    }
+    if (auxData) {
+        if (eventName === "instrumentation:webglErrorFired" && auxData["webglErrorName"]) {
+            var errorName = auxData["webglErrorName"];
+            // If there is a hex code of the error, display only this.
+            errorName = errorName.replace(/^.*(0x[0-9a-f]+).*$/i, "$1");
+            return WebInspector.UIString("WebGL Error Fired (%s)", errorName);
+        }
     }
     return WebInspector.EventListenerBreakpointsSidebarPane._eventNamesForUI[eventName] || eventName.substring(eventName.indexOf(":") + 1);
 }
@@ -552,7 +568,7 @@ WebInspector.EventListenerBreakpointsSidebarPane.prototype = {
             hitMarker.className = "breakpoint-hit-marker";
             breakpointItem.element.listItemElement.appendChild(hitMarker);
             breakpointItem.element.listItemElement.addStyleClass("source-code");
-            breakpointItem.element.selectable = true;
+            breakpointItem.element.selectable = false;
 
             breakpointItem.checkbox = this._createCheckbox(breakpointItem.element);
             breakpointItem.checkbox.addEventListener("click", this._breakpointCheckboxClicked.bind(this, eventName), true);

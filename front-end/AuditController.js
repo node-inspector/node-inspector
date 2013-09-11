@@ -36,7 +36,7 @@
 WebInspector.AuditController = function(auditsPanel)
 {
     this._auditsPanel = auditsPanel;
-    WebInspector.resourceTreeModel.addEventListener(WebInspector.ResourceTreeModel.EventTypes.OnLoad, this._didMainResourceLoad, this);
+    WebInspector.resourceTreeModel.addEventListener(WebInspector.ResourceTreeModel.EventTypes.Load, this._didMainResourceLoad, this);
 }
 
 WebInspector.AuditController.prototype = {

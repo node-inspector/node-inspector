@@ -153,10 +153,11 @@ WebInspector.DOMBreakpointsSidebarPane.prototype = {
     {
         var node = event.data.node;
         this._removeBreakpointsForNode(event.data.node);
-        if (!node.children)
+        var children = node.children();
+        if (!children)
             return;
-        for (var i = 0; i < node.children.length; ++i)
-            this._removeBreakpointsForNode(node.children[i]);
+        for (var i = 0; i < children.length; ++i)
+            this._removeBreakpointsForNode(children[i]);
         this._saveBreakpoints();
     },
 
@@ -300,9 +301,13 @@ WebInspector.DOMBreakpointsSidebarPane.prototype = {
     {
         var pathToBreakpoints = {};
 
+        /**
+         * @param {string} path
+         * @param {?DOMAgent.NodeId} nodeId
+         */
         function didPushNodeByPathToFrontend(path, nodeId)
         {
-            var node = WebInspector.domAgent.nodeForId(nodeId);
+            var node = nodeId ? WebInspector.domAgent.nodeForId(nodeId) : null;
             if (!node)
                 return;
 
@@ -362,7 +367,7 @@ WebInspector.DOMBreakpointsSidebarPane.Proxy = function(pane, panel)
     this._wrappedPane = pane;
     this._panel = panel;
 
-    this.bodyElement.removeSelf();
+    this.bodyElement.remove();
     this.bodyElement = this._wrappedPane.bodyElement;
 }
 
@@ -374,10 +379,9 @@ WebInspector.DOMBreakpointsSidebarPane.Proxy.prototype = {
 
     onContentReady: function()
     {
-        if (!this._panel.isShowing())
-            return;
+        if (this._panel.isShowing())
+            this._reattachBody();
 
-        this._reattachBody();
         WebInspector.SidebarPane.prototype.onContentReady.call(this);
     },
 

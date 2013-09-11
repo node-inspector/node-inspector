@@ -30,9 +30,14 @@
 
 /**
  * @interface
+ * @extends {WebInspector.EventTarget}
  */
 WebInspector.Progress = function()
 {
+}
+
+WebInspector.Progress.Events = {
+    Canceled: "Canceled"
 }
 
 WebInspector.Progress.prototype = {
@@ -62,12 +67,20 @@ WebInspector.Progress.prototype = {
     /**
      * @return {boolean}
      */
-    isCanceled: function() { return false; }
+    isCanceled: function() { return false; },
+
+    /**
+     * @param {string} eventType
+     * @param {function(WebInspector.Event)} listener
+     * @param {Object=} thisObject
+     */
+    addEventListener: function(eventType, listener, thisObject) { }
 }
 
 /**
  * @constructor
  * @param {WebInspector.Progress} parent
+ * @extends {WebInspector.Object}
  */
 WebInspector.CompositeProgress = function(parent)
 {
@@ -76,6 +89,7 @@ WebInspector.CompositeProgress = function(parent)
     this._childrenDone = 0;
     this._parent.setTotalWork(1);
     this._parent.setWorked(0);
+    parent.addEventListener(WebInspector.Progress.Events.Canceled, this._parentCanceled.bind(this));
 }
 
 WebInspector.CompositeProgress.prototype = {
@@ -83,6 +97,14 @@ WebInspector.CompositeProgress.prototype = {
     {
         if (++this._childrenDone === this._children.length)
             this._parent.done();
+    },
+
+    _parentCanceled: function()
+    {
+        this.dispatchEventToListeners(WebInspector.Progress.Events.Canceled);
+        for (var i = 0; i < this._children.length; ++i) {
+            this._children[i].dispatchEventToListeners(WebInspector.Progress.Events.Canceled);
+        }
     },
 
     /**
@@ -107,12 +129,15 @@ WebInspector.CompositeProgress.prototype = {
             totalWeights += child._weight;
         }
         this._parent.setWorked(done / totalWeights);
-    }
+    },
+
+    __proto__: WebInspector.Object.prototype
 }
 
 /**
  * @constructor
  * @implements {WebInspector.Progress}
+ * @extends {WebInspector.Object}
  * @param {WebInspector.CompositeProgress} composite
  * @param {number=} weight
  */
@@ -173,5 +198,7 @@ WebInspector.SubProgress.prototype = {
     worked: function(worked)
     {
         this.setWorked(this._worked + (worked || 1));
-    }
+    },
+
+    __proto__: WebInspector.Object.prototype
 }

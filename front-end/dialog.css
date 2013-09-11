@@ -5,18 +5,19 @@
     border-radius: 10px;
     border: 1px solid gray;
 
-    -webkit-box-shadow: rgb(40,40,40) 0px 0px 50px;
+    box-shadow: rgb(40,40,40) 0 0 50px;
     
     display: -webkit-flex;
     -webkit-flex-direction: column;
     
     background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#E9E9E9), to(#CFCFCF));
-    font-size: 11px;
-    font-family: 'Lucida Grande', sans-serif;
 }
 
 .dialog-contents {
     width: 100%;
+}
+
+.go-to-line-dialog {
     font-size: 11px;
     font-family: 'Lucida Grande', sans-serif;
 }
@@ -31,7 +32,7 @@
     border: 1px solid rgb(165, 165, 165);
     background-color: rgb(237, 237, 237);
     background-image: -webkit-gradient(linear, left top, left bottom, from(rgb(252, 252, 252)), to(rgb(223, 223, 223)));
-    -webkit-border-radius: 12px;
+    border-radius: 12px;
     -webkit-appearance: none;
 
     padding: 3px 20px;
@@ -42,3 +43,4 @@
     background-color: rgb(215, 215, 215);
     background-image: -webkit-gradient(linear, left top, left bottom, from(rgb(194, 194, 194)), to(rgb(239, 239, 239)));
 }
+

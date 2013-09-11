@@ -78,14 +78,15 @@
 .crumbs .crumb.selected {
     -webkit-border-image: url(Images/segmentSelected.png) 0 12 0 2;
     color: white;
-    text-shadow: rgba(255, 255, 255, 0.5) 0 0px 0;
+    text-shadow: rgba(255, 255, 255, 0.5) 0 0 0;
 }
 
 .crumbs .crumb.selected:hover {
     -webkit-border-image: url(Images/segmentSelected.png) 0 12 0 2;
 }
 
-.crumbs .crumb.selected.end, .crumbs .crumb.selected.end:hover {
+.crumbs .crumb.selected.end,
+.crumbs .crumb.selected.end:hover {
     -webkit-border-image: url(Images/segmentSelectedEnd.png) 0 2 0 2;
 }
 

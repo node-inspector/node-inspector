@@ -57,7 +57,7 @@
 
 #elements-content .CodeMirror {
     /* Consistent with the .editing class in inspector.css */
-    -webkit-box-shadow: rgba(0, 0, 0, .5) 3px 3px 4px;
+    box-shadow: rgba(0, 0, 0, .5) 3px 3px 4px;
     outline: 1px solid rgb(66%, 66%, 66%) !important;
     background-color: white;
 }
@@ -175,8 +175,8 @@
     padding: 2px 2px 4px 4px;
     min-height: 18px;
     white-space: nowrap;
-    -webkit-background-origin: padding;
-    -webkit-background-clip: padding;
+    background-origin: padding;
+    background-clip: padding;
     -webkit-user-select: text;
 }
 
@@ -189,7 +189,7 @@
 }
 
 .styles-section .properties li.not-parsed-ok {
-    margin-left: 0px;
+    margin-left: 0;
 }
 
 .styles-section.computed-style .properties li.not-parsed-ok {
@@ -197,8 +197,10 @@
 }
 
 .styles-section .properties li.not-parsed-ok .exclamation-mark {
+    display: inline-block;
     position: relative;
     width: 12px;
+    height: 10px;
     margin: 0 6px 0 0;
     top: 1px;
     left: -36px; /* outdent to compensate for the top-level property indent */
@@ -209,8 +211,8 @@
 
 .styles-section .header {
     white-space: nowrap;
-    -webkit-background-origin: padding;
-    -webkit-background-clip: padding;
+    background-origin: padding;
+    background-clip: padding;
 }
 
 .styles-section .header .title {
@@ -218,7 +220,8 @@
     white-space: normal;
 }
 
-.styles-section .header .title .media, .styles-section .header .title .media .subtitle {
+.styles-section .header .title .media,
+.styles-section .header .title .media .subtitle {
     color: rgb(128, 128, 128);
     overflow: hidden;
 }
@@ -353,7 +356,7 @@
 .styles-section.matched-styles .properties li.parent .expand-element {
     background-image: url(Images/statusbarButtonGlyphs2x.png);
 }
-}
+} /* media */
 
 .styles-section.matched-styles .properties li.parent .expand-element {
     background-position: -4px -96px;
@@ -393,11 +396,15 @@
     margin-left: 16px;
 }
 
-.styles-section .properties .overloaded,
+.styles-section .properties .overloaded:not(.has-ignorable-error),
 .styles-section .properties .inactive,
 .styles-section .properties .disabled,
-.styles-section .properties .not-parsed-ok {
+.styles-section .properties .not-parsed-ok:not(.has-ignorable-error) {
     text-decoration: line-through;
+}
+
+.styles-section .properties .has-ignorable-error .webkit-css-property {
+    color: inherit;
 }
 
 .styles-section.computed-style .properties .disabled {
@@ -405,14 +412,21 @@
     opacity: 0.5;
 }
 
-.styles-section .properties .implicit, .styles-section .properties .inherited {
+.styles-section .properties .implicit,
+.styles-section .properties .inherited {
     opacity: 0.5;
+}
+
+.styles-section .properties .has-ignorable-error {
+    color: gray;
 }
 
 .styles-element-state-pane {
     background-color: rgb(240, 240, 240);
     overflow: hidden;
-    margin-top: -38px;
+    margin-top: -56px;
+    padding-top: 18px;
+    height: 56px;
     -webkit-transition: margin-top 0.1s ease-in-out;
     padding-left: 2px;
 }
@@ -472,8 +486,8 @@
     min-height: 16px;
     opacity: 1.0;
     white-space: nowrap;
-    -webkit-background-origin: padding;
-    -webkit-background-clip: padding;
+    background-origin: padding;
+    background-clip: padding;
 }
 
 .event-bars .event-bar .header .title {
@@ -503,7 +517,7 @@
 .event-bars .event-bar .header::before {
     background-image: url(Images/statusbarButtonGlyphs2x.png);
 }
-}
+} /* media */
 
 .event-bars .event-bar .header::before {
     background-position: -4px -96px;
@@ -527,7 +541,6 @@
     -webkit-user-drag: auto;
 }
 
-
 .sidebar-pane.composite {
     overflow: hidden;
     position: absolute;
@@ -546,10 +559,40 @@
     -webkit-justify-content: center;
 }
 
+.sidebar-pane.composite .computed-style {
+    border-bottom: 1px solid rgb(64%, 64%, 64%);
+}
+
 .sidebar-pane.composite .metrics-and-computed .sidebar-pane-toolbar {
     margin-top: 4px;
     margin-bottom: -4px;
     position: relative;
+}
+
+.sidebar-pane.composite .platform-fonts {
+    padding: 1ex;
+    -webkit-user-select: text;
+}
+
+.sidebar-pane.composite .platform-fonts .stats-section {
+    margin-bottom: 5px;
+}
+
+.sidebar-pane.composite .platform-fonts .css-font-value {
+    margin-left: 1ex;
+}
+
+.sidebar-pane.composite .platform-fonts .font-stats-item {
+    padding-left: 1em;
+}
+
+.sidebar-pane.composite .platform-fonts .font-stats-item .delimeter {
+    margin: 0 1ex 0 1ex;
+}
+
+.sidebar-pane.composite .metrics-and-styles .metrics {
+    border-top: 1px solid rgb(64%, 64%, 64%);
+    border-bottom: none;
 }
 
 .sidebar-pane.composite .sidebar-pane-toolbar > .sidebar-pane-subtitle {
@@ -570,16 +613,16 @@
     background-repeat: no-repeat;
     margin: 1px 0 0 0;
     padding: 0;
-    -webkit-border-radius: 0;
+    border-radius: 0;
     -webkit-appearance: none;
 }
 
 .panel.elements .sidebar-pane-toolbar > select:hover {
-    background-position: -23px 0px;
+    background-position: -23px 0;
 }
 
 .panel.elements .sidebar-pane-toolbar > select:active {
-    background-position: -46px 0px;
+    background-position: -46px 0;
 }
 
 .panel.elements .sidebar-pane-toolbar > select.select-settings {
@@ -589,6 +632,14 @@
 .panel.elements .sidebar-pane-toolbar > select.select-filter {
     background-image: url(Images/paneFilterButtons.png);
 }
-.panel.elements .sidebar-pane-toolbar > select > option, .panel.elements .sidebar-pane-toolbar > select > hr {
+.panel.elements .sidebar-pane-toolbar > select > option,
+.panel.elements .sidebar-pane-toolbar > select > hr {
     color: black;
+}
+
+.styles-section:not(.read-only) .properties .webkit-css-property.styles-panel-hovered,
+.styles-section:not(.read-only) .properties .value .styles-panel-hovered,
+.styles-section:not(.read-only) .properties .value.styles-panel-hovered {
+    text-decoration: underline;
+    cursor: default;
 }

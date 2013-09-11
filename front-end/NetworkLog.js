@@ -37,7 +37,7 @@ WebInspector.NetworkLog = function()
     this._requestForId = {};
     WebInspector.networkManager.addEventListener(WebInspector.NetworkManager.EventTypes.RequestStarted, this._onRequestStarted, this);
     WebInspector.resourceTreeModel.addEventListener(WebInspector.ResourceTreeModel.EventTypes.MainFrameNavigated, this._onMainFrameNavigated, this);
-    WebInspector.resourceTreeModel.addEventListener(WebInspector.ResourceTreeModel.EventTypes.OnLoad, this._onLoad, this);
+    WebInspector.resourceTreeModel.addEventListener(WebInspector.ResourceTreeModel.EventTypes.Load, this._onLoad, this);
     WebInspector.resourceTreeModel.addEventListener(WebInspector.ResourceTreeModel.EventTypes.DOMContentLoaded, this._onDOMContentLoaded, this);
 }
 
@@ -81,12 +81,14 @@ WebInspector.NetworkLog.prototype = {
         // Preserve requests from the new session.
         this._currentPageLoad = null;
         var oldRequests = this._requests.splice(0, this._requests.length);
+        this._requestForId = {};
         for (var i = 0; i < oldRequests.length; ++i) {
             var request = oldRequests[i];
             if (request.loaderId === mainFrame.loaderId) {
                 if (!this._currentPageLoad)
                     this._currentPageLoad = new WebInspector.PageLoad(request);
                 this._requests.push(request);
+                this._requestForId[request.requestId] = request;
                 request.__page = this._currentPageLoad;
             }
         }

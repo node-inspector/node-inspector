@@ -85,9 +85,8 @@ WebInspector.WorkersSidebarPane.prototype = {
 
     _workerRemoved: function(event)
     {
-        var workerItem = this._idToWorkerItem[event.data];
+        this._idToWorkerItem[event.data].remove();
         delete this._idToWorkerItem[event.data];
-        workerItem.parentElement.removeChild(workerItem);
     },
 
     _workersCleared: function(event)

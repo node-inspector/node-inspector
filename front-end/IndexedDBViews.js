@@ -384,7 +384,7 @@ WebInspector.IDBDataView.prototype = {
 /**
  * @constructor
  * @extends {WebInspector.DataGridNode}
- * @param {*} data
+ * @param {!Object.<string, *>} data
  */
 WebInspector.IDBDataGridNode = function(data)
 {

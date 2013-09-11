@@ -306,30 +306,6 @@ TestSuite.prototype.testContentScriptIsPresent = function()
 
 
 /**
- * Tests renderer process memory size obtained and passed to inspector
- * successfully.
- */
-TestSuite.prototype.testRendererProcessNativeMemorySize = function()
-{
-    var test = this;
-    var KB = 1024;
-    var MB = KB * KB;
-
-    function step1(error, memoryBlock)
-    {
-        test.assertTrue(!error, "An error has occurred: " + error);
-        test.assertTrue(memoryBlock.size > 1 * MB && memoryBlock.size < 1500 * MB, "Unfeasible process size: " + memoryBlock.size + " bytes.");
-
-        test.releaseControl();
-    }
-
-    MemoryAgent.getProcessMemoryDistribution(false, step1);
-
-    this.takeControl();
-};
-
-
-/**
  * Tests that scripts are not duplicaed on Scripts tab switch.
  */
 TestSuite.prototype.testNoScriptDuplicatesOnPanelSwitch = function()
@@ -538,12 +514,13 @@ TestSuite.prototype.testConsoleOnNavigateBack = function()
         WebInspector.console.addEventListener(WebInspector.ConsoleModel.Events.MessageAdded, firstConsoleMessageReceived, this);
 
     function firstConsoleMessageReceived() {
+        WebInspector.console.removeEventListener(WebInspector.ConsoleModel.Events.MessageAdded, firstConsoleMessageReceived, this);
         this.evaluateInConsole_("clickLink();", didClickLink.bind(this));
     }
 
     function didClickLink() {
         // Check that there are no new messages(command is not a message).
-        this.assertEquals(1, WebInspector.console.messages.length);
+        this.assertEquals(3, WebInspector.console.messages.length);
         this.assertEquals(1, WebInspector.console.messages[0].totalRepeatCount);
         this.evaluateInConsole_("history.back();", didNavigateBack.bind(this));
     }
@@ -555,7 +532,7 @@ TestSuite.prototype.testConsoleOnNavigateBack = function()
     }
 
     function didCompleteNavigation() {
-        this.assertEquals(1, WebInspector.console.messages.length);
+        this.assertEquals(7, WebInspector.console.messages.length);
         this.assertEquals(1, WebInspector.console.messages[0].totalRepeatCount);
         this.releaseControl();
     }
@@ -852,8 +829,9 @@ TestSuite.prototype.evaluateInConsole_ = function(code, callback)
     WebInspector.consoleView.prompt.text = code;
     WebInspector.consoleView.promptElement.dispatchEvent(TestSuite.createKeyEvent("Enter"));
 
-    this.addSniffer(WebInspector.ConsoleView.prototype, "_appendConsoleMessage",
-        function(commandResult) {
+    this.addSniffer(WebInspector.ConsoleView.prototype, "_showConsoleMessage",
+        function(messageIndex) {
+            var commandResult = WebInspector.console.messages[messageIndex];
             callback(commandResult.toMessageElement().textContent);
         });
 };

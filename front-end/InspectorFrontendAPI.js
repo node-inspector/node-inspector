@@ -84,6 +84,30 @@ var InspectorFrontendAPI = {
         WebInspector.isolatedFileSystemDispatcher.fileSystemAdded(errorMessage, fileSystem);
     },
 
+    indexingTotalWorkCalculated: function(requestId, fileSystemPath, totalWork)
+    {
+        var projectDelegate = WebInspector.fileSystemWorkspaceProvider.delegate(fileSystemPath);
+        projectDelegate.indexingTotalWorkCalculated(requestId, totalWork);
+    },
+
+    indexingWorked: function(requestId, fileSystemPath, worked)
+    {
+        var projectDelegate = WebInspector.fileSystemWorkspaceProvider.delegate(fileSystemPath);
+        projectDelegate.indexingWorked(requestId, worked);
+    },
+
+    indexingDone: function(requestId, fileSystemPath)
+    {
+        var projectDelegate = WebInspector.fileSystemWorkspaceProvider.delegate(fileSystemPath);
+        projectDelegate.indexingDone(requestId);
+    },
+
+    searchCompleted: function(requestId, fileSystemPath, files)
+    {
+        var projectDelegate = WebInspector.fileSystemWorkspaceProvider.delegate(fileSystemPath);
+        projectDelegate.searchCompleted(requestId, files);
+    },
+
     savedURL: function(url)
     {
         WebInspector.fileManager.savedURL(url);

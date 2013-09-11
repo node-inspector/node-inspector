@@ -98,7 +98,24 @@ WebInspector.TextUtils = {
     isBraceChar: function(char)
     {
         return WebInspector.TextUtils.isOpeningBraceChar(char) || WebInspector.TextUtils.isClosingBraceChar(char);
-    }
+    },
+
+    textToWords: function(text)
+    {
+        var words = [];
+        var startWord = -1;
+        for(var i = 0; i < text.length; ++i) {
+            if (!WebInspector.TextUtils.isWordChar(text.charAt(i))) {
+                if (startWord !== -1)
+                    words.push(text.substring(startWord, i));
+                startWord = -1;
+            } else if (startWord === -1)
+                startWord = i;
+        }
+        if (startWord !== -1)
+            words.push(text.substring(startWord));
+        return words;
+    },
 }
 
 WebInspector.TextUtils._SpaceCharRegex = /\s/;

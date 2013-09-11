@@ -249,6 +249,19 @@ WebInspector.CSSNamedFlowCollectionsView.prototype = {
     },
 
     /**
+     * @param {WebInspector.Event} event
+     */
+    _regionOversetChanged: function(event)
+    {
+        // FIXME: We only have support for Named Flows in the main document.
+        if (event.data.documentNodeId !== this._document.id)
+            return;
+
+        var flow = /** @type {WebInspector.NamedFlow} */ (event.data);
+        this._updateNamedFlow(flow);
+    },
+
+    /**
      * @param {DOMAgent.NodeId} documentNodeId
      * @param {string} flowName
      */
@@ -352,6 +365,7 @@ WebInspector.CSSNamedFlowCollectionsView.prototype = {
         WebInspector.cssModel.addEventListener(WebInspector.CSSStyleModel.Events.NamedFlowCreated, this._namedFlowCreated, this);
         WebInspector.cssModel.addEventListener(WebInspector.CSSStyleModel.Events.NamedFlowRemoved, this._namedFlowRemoved, this);
         WebInspector.cssModel.addEventListener(WebInspector.CSSStyleModel.Events.RegionLayoutUpdated, this._regionLayoutUpdated, this);
+        WebInspector.cssModel.addEventListener(WebInspector.CSSStyleModel.Events.RegionOversetChanged, this._regionOversetChanged, this);
 
         WebInspector.panel("elements").treeOutline.addEventListener(WebInspector.ElementsTreeOutline.Events.SelectedNodeChanged, this._selectedNodeChanged, this);
 
@@ -366,6 +380,7 @@ WebInspector.CSSNamedFlowCollectionsView.prototype = {
         WebInspector.cssModel.removeEventListener(WebInspector.CSSStyleModel.Events.NamedFlowCreated, this._namedFlowCreated, this);
         WebInspector.cssModel.removeEventListener(WebInspector.CSSStyleModel.Events.NamedFlowRemoved, this._namedFlowRemoved, this);
         WebInspector.cssModel.removeEventListener(WebInspector.CSSStyleModel.Events.RegionLayoutUpdated, this._regionLayoutUpdated, this);
+        WebInspector.cssModel.removeEventListener(WebInspector.CSSStyleModel.Events.RegionOversetChanged, this._regionOversetChanged, this);
 
         WebInspector.panel("elements").treeOutline.removeEventListener(WebInspector.ElementsTreeOutline.Events.SelectedNodeChanged, this._selectedNodeChanged, this);
 

@@ -42,25 +42,29 @@ WebInspector.Drawer = function()
     this._floatingStatusBarContainer = document.getElementById("floating-status-bar-container");
     WebInspector.installDragHandle(this._floatingStatusBarContainer, this._startStatusBarDragging.bind(this), this._statusBarDragging.bind(this), this._endStatusBarDragging.bind(this), "row-resize");
 
-    this._drawerContentsElement = document.createElement("div");
+    this._drawerBodyElement = this.element.createChild("div");
+    this._drawerBodyElement.id = "drawer-body";
+
+    this._drawerContentsElement = this._drawerBodyElement.createChild("div");
     this._drawerContentsElement.id = "drawer-contents";
-    this._drawerContentsElement.className = "drawer-contents";
-    this.element.appendChild(this._drawerContentsElement);
+
+    this._footerElementContainer = this._drawerBodyElement.createChild("div", "status-bar hidden");
+    this._footerElementContainer.id = "drawer-footer";
+
     this._viewStatusBar = document.createElement("div");
-    this._viewStatusBar.addEventListener("webkitTransitionEnd", this.immediatelyFinishAnimation.bind(this), false);
     this._viewStatusBar.style.opacity = 0;
     this._bottomStatusBar = document.getElementById("bottom-status-bar-container");
 
     var drawerIsOverlay = WebInspector.experimentsSettings.drawerOverlay.isEnabled();
-    this._elementToAdjust = drawerIsOverlay ?  this._floatingStatusBarContainer : this._mainElement;
+    this._elementToAdjust = drawerIsOverlay ? this._floatingStatusBarContainer : this._mainElement;
 
     document.body.enableStyleClass("drawer-overlay", drawerIsOverlay);
 }
 
 WebInspector.Drawer.AnimationType = {
-        Immediately: 0,
-        Normal: 1,
-        Slow: 2
+    Immediately: 0,
+    Normal: 1,
+    Slow: 2
 }
 
 WebInspector.Drawer.prototype = {
@@ -74,8 +78,14 @@ WebInspector.Drawer.prototype = {
         return Number.constrain(height, Preferences.minConsoleHeight, window.innerHeight - this._mainElement.totalOffsetTop() - Preferences.minConsoleHeight);
     },
 
+    isHiding: function()
+    {
+        return this._isHiding;
+    },
+
     show: function(view, animationType)
     {
+        WebInspector.searchController.cancelSearch();
         this.immediatelyFinishAnimation();
 
         var drawerWasVisible = this.visible;
@@ -101,46 +111,40 @@ WebInspector.Drawer.prototype = {
 
         if (drawerWasVisible)
             return;
-        
+
         var height = this._constrainHeight(this._savedHeight || this.element.offsetHeight);
+        var animations = [
+            {element: this.element, end: {height: height}},
+            {element: this._floatingStatusBarContainer, start: {"padding-left": this._bottomStatusBar.offsetLeft}, end: {"padding-left": 0}},
+            {element: this._viewStatusBar, start: {opacity: 0}, end: {opacity: 1}},
+            {element: this._elementToAdjust, start: {bottom: 0}, end: {bottom: height}}
+        ];
 
-        this._floatingStatusBarContainer.style.paddingLeft = this._bottomStatusBar.offsetLeft + "px";
-
-        function animationFinished()
+        function animationCallback(finished)
         {
-            WebInspector.inspectorView.currentPanel().doResize();
+            if (WebInspector.inspectorView.currentPanel())
+                WebInspector.inspectorView.currentPanel().doResize();
+            if (!finished)
+                return;
             if (this._view && this._view.afterShow)
                 this._view.afterShow();
+            delete this._currentAnimation;
         }
 
-        this._animationFinished = animationFinished.bind(this);
+        this._currentAnimation = WebInspector.animateStyle(animations, this._animationDuration(animationType), animationCallback.bind(this));
 
-        // Assert that transition will be done and we receive transitionEnd event
-        console.assert(this._viewStatusBar.style.opacity === "0");
-
-        function adjustStyles()
-        {
-            this._animationStyles(animationType).forEach(document.body.addStyleClass, document.body);
-
-            this.element.style.height = height + "px";
-            this._elementToAdjust.style.bottom = height + "px";
-            this._floatingStatusBarContainer.style.paddingLeft = 0;
-            this._viewStatusBar.style.opacity = 1;
-        }
-
-        if (animationType === WebInspector.Drawer.AnimationType.Immediately) {
-            adjustStyles.call(this);
-            this.immediatelyFinishAnimation();
-        } else
-            setTimeout(adjustStyles.bind(this), 0);
+        if (animationType === WebInspector.Drawer.AnimationType.Immediately)
+            this._currentAnimation.forceComplete();
     },
 
     hide: function(animationType)
     {
+        WebInspector.searchController.cancelSearch();
         this.immediatelyFinishAnimation();
         if (!this.visible)
             return;
 
+        this._isHiding = true;
         this._savedHeight = this.element.offsetHeight;
 
         WebInspector.restoreFocusFromElement(this.element);
@@ -151,37 +155,34 @@ WebInspector.Drawer.prototype = {
         WebInspector.inspectorView.currentPanel().statusBarResized();
         document.body.addStyleClass("drawer-visible");
 
-        function animationFinished()
+        var animations = [
+            {element: this.element, end: {height: 0}},
+            {element: this._floatingStatusBarContainer, start: {"padding-left": 0}, end: {"padding-left": this._bottomStatusBar.offsetLeft} },
+            {element: this._viewStatusBar, start: {opacity: 1}, end: {opacity: 0}},
+            {element: this._elementToAdjust, end: {bottom: 0}}
+        ];
+
+        function animationCallback(finished)
         {
-            WebInspector.inspectorView.currentPanel().doResize();
+            if (WebInspector.inspectorView.currentPanel())
+                WebInspector.inspectorView.currentPanel().doResize();
+            if (!finished)
+                return;
             this._view.detach();
             delete this._view;
             this._bottomStatusBar.removeChildren();
             this._bottomStatusBar.appendChild(document.getElementById("panel-status-bar"));
             this._drawerContentsElement.removeChildren();
             document.body.removeStyleClass("drawer-visible");
-        }
-
-        this._animationFinished = animationFinished.bind(this);
-
-        // Assert that transition will be done and we receive transitionEnd event
-        console.assert(this._viewStatusBar.style.opacity === "1");
-
-        function adjustStyles()
-        {
-            this._animationStyles(animationType).forEach(document.body.addStyleClass, document.body);
-
-            this.element.style.height = 0;
+            delete this._currentAnimation;
             this._elementToAdjust.style.bottom = 0;
-            this._floatingStatusBarContainer.style.paddingLeft = this._bottomStatusBar.offsetLeft + "px";
-            this._viewStatusBar.style.opacity = 0;
+            delete this._isHiding;
         }
 
-        if (animationType === WebInspector.Drawer.AnimationType.Immediately) {
-            adjustStyles.call(this);
-            this.immediatelyFinishAnimation();
-        } else
-            setTimeout(adjustStyles.bind(this), 0);
+        this._currentAnimation = WebInspector.animateStyle(animations, this._animationDuration(animationType), animationCallback.bind(this));
+
+        if (animationType === WebInspector.Drawer.AnimationType.Immediately)
+            this._currentAnimation.forceComplete();
     },
 
     resize: function()
@@ -198,23 +199,19 @@ WebInspector.Drawer.prototype = {
 
     immediatelyFinishAnimation: function()
     {
-        document.body.removeStyleClass("animate");
-        document.body.removeStyleClass("animate-slow");
-        if (this._animationFinished) {
-            this._animationFinished();
-            delete this._animationFinished;
-        }
+        if (this._currentAnimation)
+            this._currentAnimation.forceComplete();
     },
 
-    _animationStyles: function(animationType)
+    _animationDuration: function(animationType)
     {
         switch (animationType) {
         case WebInspector.Drawer.AnimationType.Slow:
-            return ["animate", "animate-slow"];
+            return 2000;
         case WebInspector.Drawer.AnimationType.Normal:
-            return ["animate"];
+            return 100;
         default:
-            return [];
+            return 0;
         }
     },
 
@@ -251,6 +248,34 @@ WebInspector.Drawer.prototype = {
         delete this._statusBarDragOffset;
 
         event.consume();
+    },
+
+    /**
+     * @param {Element} element
+     */
+    setFooterElement: function(element)
+    {
+        if (element) {
+            this._footerElementContainer.removeStyleClass("hidden");
+            this._footerElementContainer.appendChild(element);
+            this._drawerContentsElement.style.bottom = this._footerElementContainer.offsetHeight + "px";
+        } else {
+            this._footerElementContainer.addStyleClass("hidden");
+            this._footerElementContainer.removeChildren();
+            this._drawerContentsElement.style.bottom = 0;
+        }
+        this._view.doResize();
+    },
+
+    /**
+     * @returns {WebInspector.Searchable}
+     */
+    getSearchProvider: function()
+    {
+        if (this._view && this._view.performSearch)
+            return this._view;
+
+        return null;
     }
 }
 

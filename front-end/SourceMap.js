@@ -52,26 +52,48 @@ WebInspector.SourceMap = function(sourceMappingURL, payload)
     this._parseMappingPayload(payload);
 }
 
+WebInspector.SourceMap._sourceMapRequestHeaderName = "X-Source-Map-Request-From";
+WebInspector.SourceMap._sourceMapRequestHeaderValue = "inspector";
+
+WebInspector.SourceMap.hasSourceMapRequestHeader = function(request)
+{
+    return request && request.requestHeaderValue(WebInspector.SourceMap._sourceMapRequestHeaderName) === WebInspector.SourceMap._sourceMapRequestHeaderValue;
+}
+
 /**
  * @param {string} sourceMapURL
  * @param {string} compiledURL
- * @return {WebInspector.SourceMap}
+ * @param {function(WebInspector.SourceMap)} callback
  */
-WebInspector.SourceMap.load = function(sourceMapURL, compiledURL)
+WebInspector.SourceMap.load = function(sourceMapURL, compiledURL, callback)
 {
-    try {
-        // FIXME: make sendRequest async.
-        var response = InspectorFrontendHost.loadResourceSynchronously(sourceMapURL);
-        if (!response)
-            return null;
-        if (response.slice(0, 3) === ")]}")
-            response = response.substring(response.indexOf('\n'));
-        var payload = /** @type {SourceMapV3} */ (JSON.parse(response));
-        var baseURL = sourceMapURL.startsWith("data:") ? compiledURL : sourceMapURL;
-        return new WebInspector.SourceMap(baseURL, payload);
-    } catch(e) {
-        console.error(e.message);
-        return null;
+    var headers = {};
+    headers[WebInspector.SourceMap._sourceMapRequestHeaderName] = WebInspector.SourceMap._sourceMapRequestHeaderValue;
+    NetworkAgent.loadResourceForFrontend(WebInspector.resourceTreeModel.mainFrame.id, sourceMapURL, headers, contentLoaded.bind(this));
+
+    /**
+     * @param {?Protocol.Error} error
+     * @param {number} statusCode
+     * @param {NetworkAgent.Headers} headers
+     * @param {string} content
+     */
+    function contentLoaded(error, statusCode, headers, content)
+    {
+        if (error || !content || statusCode >= 400) {
+            callback(null);
+            return;
+        }
+
+        if (content.slice(0, 3) === ")]}")
+            content = content.substring(content.indexOf('\n'));
+        try {
+            var payload = /** @type {SourceMapV3} */ (JSON.parse(content));
+            var baseURL = sourceMapURL.startsWith("data:") ? compiledURL : sourceMapURL;
+            callback(new WebInspector.SourceMap(baseURL, payload));
+        } catch(e) {
+            console.error(e.message);
+            callback(null);
+        }
     }
 }
 
@@ -91,6 +113,22 @@ WebInspector.SourceMap.prototype = {
     sourceContent: function(sourceURL)
     {
         return this._sourceContentByURL[sourceURL];
+    },
+
+    /**
+     * @param {string} sourceURL
+     * @param {WebInspector.ResourceType} contentType
+     * @return {WebInspector.ContentProvider}
+     */
+    sourceContentProvider: function(sourceURL, contentType)
+    {
+        var lastIndexOfDot = sourceURL.lastIndexOf(".");
+        var extension = lastIndexOfDot !== -1 ? sourceURL.substr(lastIndexOfDot + 1) : "";
+        var mimeType = WebInspector.ResourceType.mimeTypesForExtensions[extension.toLowerCase()];
+        var sourceContent = this.sourceContent(sourceURL);
+        if (sourceContent)
+            return new WebInspector.StaticContentProvider(contentType, sourceContent, mimeType);
+        return new WebInspector.CompilerSourceMappingContentProvider(sourceURL, contentType, mimeType);
     },
 
     /**

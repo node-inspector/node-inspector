@@ -162,8 +162,9 @@ WebInspector.DataGrid.Align = {
 }
 
 /**
- * @param {Array.<string>} columnNames
- * @param {Array.<string>} values
+ * @param {!Array.<string>} columnNames
+ * @param {!Array.<string>} values
+ * @return {WebInspector.DataGrid}
  */
 WebInspector.DataGrid.createSortableDataGrid = function(columnNames, values)
 {
@@ -201,8 +202,12 @@ WebInspector.DataGrid.createSortableDataGrid = function(columnNames, values)
         var columnIsNumeric = true;
 
         for (var i = 0; i < nodes.length; i++) {
-            if (isNaN(Number(nodes[i].data[sortColumnIdentifier])))
+            var value = nodes[i].data[sortColumnIdentifier];
+            value = value instanceof Node ? Number(value.textContent) : Number(value);
+            if (isNaN(value)) {
                 columnIsNumeric = false;
+                break;
+            }
         }
 
         function comparator(dataGridNode1, dataGridNode2)
@@ -753,7 +758,7 @@ WebInspector.DataGrid.prototype = {
 
         var emptyData = {};
         for (var column in this.columns)
-            emptyData[column] = '';
+            emptyData[column] = null;
         this.creationNode = new WebInspector.CreationDataGridNode(emptyData, hasChildren);
         this.rootNode().appendChild(this.creationNode);
     },
@@ -912,7 +917,7 @@ WebInspector.DataGrid.prototype = {
     _clickInHeaderCell: function(event)
     {
         var cell = event.target.enclosingNodeOrSelfWithNodeName("th");
-        if (!cell || !cell.columnIdentifier || !cell.hasStyleClass("sortable"))
+        if (!cell || (typeof cell.columnIdentifier === "undefined") || !cell.hasStyleClass("sortable"))
             return;
 
         var sortOrder = WebInspector.DataGrid.Order.Ascending;
@@ -1119,7 +1124,7 @@ WebInspector.DataGrid.ResizeMethod = {
 /**
  * @constructor
  * @extends {WebInspector.Object}
- * @param {*=} data
+ * @param {Object.<string, *>=} data
  * @param {boolean=} hasChildren
  */
 WebInspector.DataGridNode = function(data, hasChildren)
@@ -1127,9 +1132,11 @@ WebInspector.DataGridNode = function(data, hasChildren)
     this._expanded = false;
     this._selected = false;
     this._shouldRefreshChildren = true;
+    /** @type {!Object.<string, *>} */
     this._data = data || {};
+    /** @type {boolean} */
     this.hasChildren = hasChildren || false;
-    /** @type {!Array.<WebInspector.DataGridNode>} */
+    /** @type {!Array.<!WebInspector.DataGridNode>} */
     this.children = [];
     this.dataGrid = null;
     this.parent = null;
@@ -1295,6 +1302,9 @@ WebInspector.DataGridNode.prototype = {
         return this._expanded;
     },
 
+    /**
+     * @param {boolean} x
+     */
     set expanded(x)
     {
         if (x)
@@ -1470,6 +1480,9 @@ WebInspector.DataGridNode.prototype = {
         this.hasChildren = false;
     },
 
+    /**
+     * @param {number} myIndex
+     */
     _recalculateSiblings: function(myIndex)
     {
         if (!this.parent)
@@ -1732,8 +1745,8 @@ WebInspector.DataGridNode.prototype = {
 
         this._attached = false;
 
-        if (this._element && this._element.parentNode)
-            this._element.parentNode.removeChild(this._element);
+        if (this._element)
+            this._element.remove();
 
         for (var i = 0; i < this.children.length; ++i)
             this.children[i]._detach();

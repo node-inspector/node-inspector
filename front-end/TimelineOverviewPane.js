@@ -114,16 +114,21 @@ WebInspector.TimelineOverviewPane.prototype = {
     {
         if (this._currentMode === newMode)
             return;
+        var windowTimes;
+        if (this._overviewControl)
+            windowTimes = this._overviewControl.windowTimes(this.windowLeft(), this.windowRight());
         this._innerSetMode(newMode);
         this.dispatchEventToListeners(WebInspector.TimelineOverviewPane.Events.ModeChanged, this._currentMode);
+        if (windowTimes && windowTimes.startTime >= 0)
+            this.setWindowTimes(windowTimes.startTime, windowTimes.endTime);
         this._update();
     },
 
     _innerSetMode: function(newMode)
     {
+        var windowTimes;
         if (this._overviewControl)
             this._overviewControl.detach();
-
         this._currentMode = newMode;
         this._overviewControl = this._createOverviewControl();
         this._overviewControl.show(this._overviewGrid.element);
@@ -233,6 +238,7 @@ WebInspector.TimelineOverviewPane.prototype = {
         this._windowEndTime = Infinity;
         this._overviewCalculator.reset();
         this._overviewGrid.reset();
+        this._overviewGrid.setResizeEnabled(false);
         this._eventDividers = [];
         this._overviewGrid.updateDividers(this._overviewCalculator);
         this._overviewControl.reset();
@@ -270,24 +276,22 @@ WebInspector.TimelineOverviewPane.prototype = {
     },
 
     /**
-     * @param {Number} left
-     * @param {Number} right
+     * @param {Number} startTime
+     * @param {Number} endTime
      */
-    setWindowTimes: function(left, right)
+    setWindowTimes: function(startTime, endTime)
     {
-        this._windowStartTime = left;
-        this._windowEndTime = right;
+        this._windowStartTime = startTime;
+        this._windowEndTime = endTime;
         this._updateWindow();
     },
 
     _updateWindow: function()
     {
-        var offset = this._model.minimumRecordTime();
-        var timeSpan = this._model.maximumRecordTime() - offset;
-        var left = this._windowStartTime ? (this._windowStartTime - offset) / timeSpan : 0;
-        var right = this._windowEndTime < Infinity ? (this._windowEndTime - offset) / timeSpan : 1;
+        var windowBoundaries = this._overviewControl.windowBoundaries(this._windowStartTime, this._windowEndTime);
         this._ignoreWindowChangedEvent = true;
-        this._overviewGrid.setWindow(left, right);
+        this._overviewGrid.setWindow(windowBoundaries.left, windowBoundaries.right);
+        this._overviewGrid.setResizeEnabled(this._model.records.length);
         this._ignoreWindowChangedEvent = false;
     },
 
@@ -411,11 +415,26 @@ WebInspector.TimelineOverviewBase.prototype = {
     windowTimes: function(windowLeft, windowRight)
     {
         var absoluteMin = this._model.minimumRecordTime();
-        var absoluteMax = this._model.maximumRecordTime();
+        var timeSpan = this._model.maximumRecordTime() - absoluteMin;
         return {
-            startTime: absoluteMin + (absoluteMax - absoluteMin) * windowLeft,
-            endTime: absoluteMin + (absoluteMax - absoluteMin) * windowRight
+            startTime: absoluteMin + timeSpan * windowLeft,
+            endTime: absoluteMin + timeSpan * windowRight
         };
+    },
+
+    /**
+     * @param {number} startTime
+     * @param {number} endTime
+     */
+    windowBoundaries: function(startTime, endTime)
+    {
+        var absoluteMin = this._model.minimumRecordTime();
+        var timeSpan = this._model.maximumRecordTime() - absoluteMin;
+        var haveRecords = absoluteMin >= 0;
+        return {
+            left: haveRecords && startTime ? Math.min((startTime - absoluteMin) / timeSpan, 1) : 0,
+            right: haveRecords && endTime < Infinity ? (endTime - absoluteMin) / timeSpan : 1
+        }
     },
 
     _resetCanvas: function()
@@ -444,17 +463,17 @@ WebInspector.TimelineMemoryOverview = function(model)
 WebInspector.TimelineMemoryOverview.prototype = {
     update: function()
     {
+        this._resetCanvas();
+
         var records = this._model.records;
         if (!records.length)
             return;
-
-        this._resetCanvas();
 
         const lowerOffset = 3;
         var maxUsedHeapSize = 0;
         var minUsedHeapSize = 100000000000;
         var minTime = this._model.minimumRecordTime();
-        var maxTime = this._model.maximumRecordTime();;
+        var maxTime = this._model.maximumRecordTime();
         WebInspector.TimelinePresentationModel.forAllRecords(records, function(r) {
             maxUsedHeapSize = Math.max(maxUsedHeapSize, r.usedHeapSize || maxUsedHeapSize);
             minUsedHeapSize = Math.min(minUsedHeapSize, r.usedHeapSize || minUsedHeapSize);
@@ -464,7 +483,7 @@ WebInspector.TimelineMemoryOverview.prototype = {
         var width = this._canvas.width;
         var height = this._canvas.height - lowerOffset;
         var xFactor = width / (maxTime - minTime);
-        var yFactor = height / (maxUsedHeapSize - minUsedHeapSize);
+        var yFactor = height / Math.max(maxUsedHeapSize - minUsedHeapSize, 1);
 
         var histogram = new Array(width);
         WebInspector.TimelinePresentationModel.forAllRecords(records, function(r) {
@@ -475,47 +494,39 @@ WebInspector.TimelineMemoryOverview.prototype = {
             histogram[x] = Math.max(histogram[x] || 0, y);
         });
 
+        height++; // +1 so that the border always fit into the canvas area.
+
+        var y = 0;
+        var isFirstPoint = true;
         var ctx = this._context;
-        this._clear(ctx);
-
-        // +1 so that the border always fit into the canvas area.
-        height = height + 1;
-
         ctx.beginPath();
-        var initialY = 0;
-        for (var k = 0; k < histogram.length; k++) {
-            if (histogram[k]) {
-                initialY = histogram[k];
-                break;
-            }
-        }
-        ctx.moveTo(0, height - initialY);
-
+        ctx.moveTo(0, this._canvas.height);
         for (var x = 0; x < histogram.length; x++) {
-             if (!histogram[x])
-                 continue;
-             ctx.lineTo(x, height - histogram[x]);
+            if (typeof histogram[x] === "undefined")
+                continue;
+            if (isFirstPoint) {
+                isFirstPoint = false;
+                y = histogram[x];
+                ctx.lineTo(0, height - y);
+            }
+            ctx.lineTo(x, height - y);
+            y = histogram[x];
+            ctx.lineTo(x, height - y);
         }
+        ctx.lineTo(width, height - y);
+        ctx.lineTo(width, this._canvas.height);
+        ctx.lineTo(0, this._canvas.height);
+        ctx.closePath();
 
         ctx.lineWidth = 0.5;
         ctx.strokeStyle = "rgba(20,0,0,0.8)";
         ctx.stroke();
 
         ctx.fillStyle = "rgba(214,225,254, 0.8);";
-        ctx.lineTo(width, this._canvas.height);
-        ctx.lineTo(0, this._canvas.height);
-        ctx.lineTo(0, height - initialY);
         ctx.fill();
-        ctx.closePath();
 
         this._maxHeapSizeLabel.textContent = Number.bytesToString(maxUsedHeapSize);
         this._minHeapSizeLabel.textContent = Number.bytesToString(minUsedHeapSize);
-    },
-
-    _clear: function(ctx)
-    {
-        ctx.fillStyle = "rgba(255,255,255,0.8)";
-        ctx.fillRect(0, 0, this._canvas.width, this._canvas.height);
     },
 
     __proto__: WebInspector.TimelineOverviewBase.prototype
@@ -654,6 +665,7 @@ WebInspector.TimelineFrameOverview.prototype = {
     reset: function()
     {
         this._recordsPerBar = 1;
+        /** @type {!Array.<{startTime:number, endTime:number}>} */
         this._barTimes = [];
         this._frames = [];
     },
@@ -766,40 +778,40 @@ WebInspector.TimelineFrameOverview.prototype = {
 
         this._context.save();
         this._context.beginPath();
-        this._context.font = 9 * window.devicePixelRatio + "px monospace";
+        this._context.font = (10 * window.devicePixelRatio) + "px " + window.getComputedStyle(this.element, null).getPropertyValue("font-family");
         this._context.textAlign = "right";
-        this._context.textBaseline = "top";
+        this._context.textBaseline = "alphabetic";
 
-        const labelPadding = 2 * window.devicePixelRatio;
+        const labelPadding = 4 * window.devicePixelRatio;
+        const baselineHeight = 3 * window.devicePixelRatio;
         var lineHeight = 12 * window.devicePixelRatio;
         var labelTopMargin = 0;
+        var labelOffsetY = 0; // Labels are going to be under their grid lines.
 
         for (var i = 0; i < fpsMarks.length; ++i) {
             var fps = fpsMarks[i];
             // Draw lines one pixel above they need to be, so 60pfs line does not cross most of the frames tops.
             var y = this._canvas.height - Math.floor(1.0 / fps * scale) - 0.5;
-            var label = fps + " FPS ";
-            var labelWidth = this._context.measureText(label).width;
+            var label = WebInspector.UIString("%d\u2009fps", fps);
+            var labelWidth = this._context.measureText(label).width + 2 * labelPadding;
             var labelX = this._canvas.width;
-            var labelY;
 
-            if (labelTopMargin < y - lineHeight)
-                labelY = y - lineHeight;
-            else if (y + lineHeight < this._canvas.height)
-                labelY = y;
-            else
+            if (!i && labelTopMargin < y - lineHeight)
+                labelOffsetY = -lineHeight; // Labels are going to be over their grid lines.
+            var labelY = y + labelOffsetY;
+            if (labelY < labelTopMargin || labelY + lineHeight > this._canvas.height)
                 break; // No space for the label, so no line as well.
 
             this._context.moveTo(0, y);
             this._context.lineTo(this._canvas.width, y);
 
-            this._context.fillStyle = "rgba(255, 255, 255, 0.75)";
-            this._context.fillRect(labelX - labelWidth - labelPadding, labelY, labelWidth + 2 * labelPadding, lineHeight);
-            this._context.fillStyle = "rgb(0, 0, 0)";
-            this._context.fillText(label, labelX, labelY);
+            this._context.fillStyle = "rgba(255, 255, 255, 0.5)";
+            this._context.fillRect(labelX - labelWidth, labelY, labelWidth, lineHeight);
+            this._context.fillStyle = "black";
+            this._context.fillText(label, labelX - labelPadding, labelY + lineHeight - baselineHeight);
             labelTopMargin = labelY + lineHeight;
         }
-        this._context.strokeStyle = "rgb(0, 0, 0, 0.3)";
+        this._context.strokeStyle = "rgba(128, 128, 128, 0.5)";
         this._context.stroke();
         this._context.restore();
     },
@@ -848,19 +860,83 @@ WebInspector.TimelineFrameOverview.prototype = {
         this._context.stroke();
     },
 
+    /**
+     * @param {number} windowLeft
+     * @param {number} windowRight
+     */
     windowTimes: function(windowLeft, windowRight)
     {
-        var windowSpan = this.element.clientWidth;
+        if (!this._barTimes.length)
+            return WebInspector.TimelineOverviewBase.prototype.windowTimes.call(this, windowLeft, windowRight);
+        var windowSpan = this._canvas.width;
         var leftOffset = windowLeft * windowSpan - this._outerPadding + this._actualPadding;
         var rightOffset = windowRight * windowSpan - this._outerPadding;
-        var bars = this.element.children;
         var firstBar = Math.floor(Math.max(leftOffset, 0) / this._actualOuterBarWidth);
         var lastBar = Math.min(Math.floor(rightOffset / this._actualOuterBarWidth), this._barTimes.length - 1);
+        if (firstBar >= this._barTimes.length)
+            return {startTime: Infinity, endTime: Infinity};
+
         const snapToRightTolerancePixels = 3;
         return {
-            startTime: firstBar >= this._barTimes.length ? Infinity : this._barTimes[firstBar].startTime,
-            endTime: rightOffset + snapToRightTolerancePixels > windowSpan ? Infinity : this._barTimes[lastBar].endTime
+            startTime: this._barTimes[firstBar].startTime,
+            endTime: (rightOffset + snapToRightTolerancePixels > windowSpan) || (lastBar >= this._barTimes.length) ? Infinity : this._barTimes[lastBar].endTime
         }
+    },
+
+    /**
+     * @param {number} startTime
+     * @param {number} endTime
+     */
+    windowBoundaries: function(startTime, endTime)
+    {
+        /**
+         * @param {number} time
+         * @param {{startTime:number, endTime:number}} barTime
+         * @return {number}
+         */
+        function barStartComparator(time, barTime)
+        {
+            return time - barTime.startTime;
+        }
+        /**
+         * @param {number} time
+         * @param {{startTime:number, endTime:number}} barTime
+         * @return {number}
+         */
+        function barEndComparator(time, barTime)
+        {
+            // We need a frame where time is in [barTime.startTime, barTime.endTime), so exclude exact matches against endTime.
+            if (time === barTime.endTime)
+                return 1;
+            return time - barTime.endTime;
+        }
+        return {
+            left: this._windowBoundaryFromTime(startTime, barEndComparator),
+            right: this._windowBoundaryFromTime(endTime, barStartComparator)
+        }
+    },
+
+    /**
+     * @param {number} time
+     * @param {function(number, {startTime:number, endTime:number}):number} comparator
+     */
+    _windowBoundaryFromTime: function(time, comparator)
+    {
+        if (time === Infinity)
+            return 1;
+        var index = this._firstBarAfter(time, comparator);
+        if (!index)
+            return 0;
+        return (this._barNumberToScreenPosition(index) - this._actualPadding / 2) / this._canvas.width;
+    },
+
+    /**
+     * @param {number} time
+     * @param {function(number, {startTime:number, endTime:number}):number} comparator
+     */
+    _firstBarAfter: function(time, comparator)
+    {
+        return insertionIndexForObjectInListSortedByFunction(time, this._barTimes, comparator);
     },
 
     __proto__: WebInspector.TimelineOverviewBase.prototype

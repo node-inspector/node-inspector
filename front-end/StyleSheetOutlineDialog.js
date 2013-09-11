@@ -28,7 +28,7 @@
 
 /**
  * @constructor
- * @implements {WebInspector.SelectionDialogContentProvider}
+ * @extends {WebInspector.SelectionDialogContentProvider}
  * @param {WebInspector.View} view
  * @param {WebInspector.UISourceCode} uiSourceCode
  */
@@ -39,6 +39,7 @@ WebInspector.StyleSheetOutlineDialog = function(view, uiSourceCode)
     this._rules = [];
     this._view = view;
     this._uiSourceCode = uiSourceCode;
+    this._requestItems();
 }
 
 /**
@@ -56,30 +57,11 @@ WebInspector.StyleSheetOutlineDialog.show = function(view, uiSourceCode)
 
 WebInspector.StyleSheetOutlineDialog.prototype = {
     /**
-     * @param {number} itemIndex
-     * @return {string}
+     * @return {number}
      */
-    itemTitleAt: function(itemIndex)
+    itemCount: function()
     {
-        return this._rules[itemIndex].selectorText;
-    },
-
-    /*
-     * @param {number} itemIndex
-     * @return {string}
-     */
-    itemSuffixAt: function(itemIndex)
-    {
-        return "";
-    },
-
-    /*
-     * @param {number} itemIndex
-     * @return {string}
-     */
-    itemSubtitleAt: function(itemIndex)
-    {
-        return ":" + (this._rules[itemIndex].sourceLine + 1);
+        return this._rules.length;
     },
 
     /**
@@ -92,25 +74,37 @@ WebInspector.StyleSheetOutlineDialog.prototype = {
     },
 
     /**
+     * @param {number} itemIndex
+     * @param {string} query
      * @return {number}
      */
-    itemsCount: function()
+    itemScoreAt: function(itemIndex, query)
     {
-        return this._rules.length;
+        var rule = this._rules[itemIndex];
+        return -rule.rawLocation.lineNumber;
     },
 
     /**
-     * @param {function(number, number)} callback
+     * @param {number} itemIndex
+     * @param {string} query
+     * @param {Element} titleElement
+     * @param {Element} subtitleElement
      */
-    requestItems: function(callback)
+    renderItem: function(itemIndex, query, titleElement, subtitleElement)
+    {
+        var rule = this._rules[itemIndex];
+        titleElement.textContent = rule.selectorText;
+        this.highlightRanges(titleElement, query);
+        subtitleElement.textContent = ":" + (rule.rawLocation.lineNumber + 1);
+    },
+
+    _requestItems: function()
     {
         function didGetAllStyleSheets(error, infos)
         {
-            if (error) {
-                callback(0, 0);
+            if (error)
                 return;
-            }
-  
+
             for (var i = 0; i < infos.length; ++i) {
                 var info = infos[i];
                 if (info.sourceURL === this._uiSourceCode.url) {
@@ -118,7 +112,6 @@ WebInspector.StyleSheetOutlineDialog.prototype = {
                     return;
                 }
             }
-            callback(0, 0);
         }
 
         CSSAgent.getAllStyleSheets(didGetAllStyleSheets.bind(this));
@@ -128,13 +121,11 @@ WebInspector.StyleSheetOutlineDialog.prototype = {
          */
         function didGetStyleSheet(styleSheet)
         {
-            if (!styleSheet) {
-                callback(0, 0);
+            if (!styleSheet)
                 return;
-            }
 
             this._rules = styleSheet.rules;
-            callback(0, 1);
+            this.refresh();
         }
     },
 
@@ -144,22 +135,12 @@ WebInspector.StyleSheetOutlineDialog.prototype = {
      */
     selectItem: function(itemIndex, promptValue)
     {
-        var lineNumber = this._rules[itemIndex].sourceLine;
+        var rule = this._rules[itemIndex];
+        var lineNumber = rule.rawLocation.lineNumber;
         if (!isNaN(lineNumber) && lineNumber >= 0)
-            this._view.highlightLine(lineNumber);
+            this._view.highlightPosition(lineNumber, rule.rawLocation.columnNumber);
         this._view.focus();
     },
 
-    /**
-     * @param {string} query
-     * @return {string}
-     */
-    rewriteQuery: function(query)
-    {
-        return query;
-    },
-
-    dispose: function()
-    {
-    }
+    __proto__: WebInspector.SelectionDialogContentProvider.prototype
 }

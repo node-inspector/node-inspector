@@ -96,9 +96,6 @@ WebInspector.HandlerRegistry.prototype = {
      */
     appendApplicableItems: function(event, contextMenu, target)
     {
-        if (event.hasBeenHandledByHandlerRegistry)
-            return;
-        event.hasBeenHandledByHandlerRegistry = true;
         this._appendContentProviderItems(contextMenu, target);
         this._appendHrefItems(contextMenu, target);
     },
@@ -133,6 +130,10 @@ WebInspector.HandlerRegistry.prototype = {
             contentType !== WebInspector.resourceTypes.Script)
             return;
 
+        /**
+         * @param {boolean} forceSaveAs
+         * @param {?string} content
+         */
         function doSave(forceSaveAs, content)
         {
             var url = contentProvider.contentURL();
@@ -140,15 +141,15 @@ WebInspector.HandlerRegistry.prototype = {
             WebInspector.fileManager.close(url);
         }
 
+        /**
+         * @param {boolean} forceSaveAs
+         */
         function save(forceSaveAs)
         {
             if (contentProvider instanceof WebInspector.UISourceCode) {
                 var uiSourceCode = /** @type {WebInspector.UISourceCode} */ (contentProvider);
-                if (uiSourceCode.isDirty()) {
-                    doSave(forceSaveAs, uiSourceCode.workingCopy());
-                    uiSourceCode.commitWorkingCopy(function() { });
-                    return;
-                }
+                uiSourceCode.saveToFileSystem(forceSaveAs);
+                return;
             }
             contentProvider.requestContent(doSave.bind(this, forceSaveAs));
         }

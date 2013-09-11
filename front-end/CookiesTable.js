@@ -242,16 +242,20 @@ WebInspector.CookiesTable.prototype = {
         var data = {};
         data.name = cookie.name();
         data.value = cookie.value();
-        data.domain = cookie.domain() || "";
-        data.path = cookie.path() || "";
-        if (cookie.type() === WebInspector.Cookie.Type.Request)
-            data.expires = "";
-        else if (cookie.maxAge())
-            data.expires = Number.secondsToString(parseInt(cookie.maxAge(), 10));
-        else if (cookie.expires())
-            data.expires = new Date(cookie.expires()).toGMTString();
-        else
-            data.expires = WebInspector.UIString("Session");
+        if (cookie.type() === WebInspector.Cookie.Type.Request) {
+            data.domain = WebInspector.UIString("N/A");
+            data.path = WebInspector.UIString("N/A");
+            data.expires = WebInspector.UIString("N/A");
+        } else {
+            data.domain = cookie.domain() || "";
+            data.path = cookie.path() || "";
+            if (cookie.maxAge())
+                data.expires = Number.secondsToString(parseInt(cookie.maxAge(), 10));
+            else if (cookie.expires())
+                data.expires = new Date(cookie.expires()).toGMTString();
+            else
+                data.expires = WebInspector.UIString("Session");
+        }
         data.size = cookie.size();
         const checkmark = "\u2713";
         data.httpOnly = (cookie.httpOnly() ? checkmark : "");

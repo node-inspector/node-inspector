@@ -37,14 +37,17 @@
 WebInspector.CompilerScriptMapping = function(workspace, networkWorkspaceProvider)
 {
     this._workspace = workspace;
-    this._workspace.addEventListener(WebInspector.UISourceCodeProvider.Events.UISourceCodeAdded, this._uiSourceCodeAddedToWorkspace, this);
+    this._workspace.addEventListener(WebInspector.Workspace.Events.UISourceCodeAdded, this._uiSourceCodeAddedToWorkspace, this);
     this._networkWorkspaceProvider = networkWorkspaceProvider;
-    /** @type {Object.<string, WebInspector.SourceMap>} */
+    /** @type {!Object.<string, WebInspector.SourceMap>} */
     this._sourceMapForSourceMapURL = {};
-    /** @type {Object.<string, WebInspector.SourceMap>} */
+    /** @type {!Object.<string, Array.<function(?WebInspector.SourceMap)>>} */
+    this._pendingSourceMapLoadingCallbacks = {};
+    /** @type {!Object.<string, WebInspector.SourceMap>} */
     this._sourceMapForScriptId = {};
+    /** @type {!Map.<WebInspector.SourceMap, WebInspector.Script>} */
     this._scriptForSourceMap = new Map();
-    /** @type {Object.<string, WebInspector.SourceMap>} */
+    /** @type {!Object.<string, WebInspector.SourceMap>} */
     this._sourceMapForURL = {};
     WebInspector.debuggerModel.addEventListener(WebInspector.DebuggerModel.Events.GlobalObjectCleared, this._debuggerReset, this);
 }
@@ -58,6 +61,8 @@ WebInspector.CompilerScriptMapping.prototype = {
     {
         var debuggerModelLocation = /** @type {WebInspector.DebuggerModel.Location} */ (rawLocation);
         var sourceMap = this._sourceMapForScriptId[debuggerModelLocation.scriptId];
+        if (!sourceMap)
+            return null;
         var lineNumber = debuggerModelLocation.lineNumber;
         var columnNumber = debuggerModelLocation.columnNumber || 0;
         var entry = sourceMap.findEntry(lineNumber, columnNumber);
@@ -84,7 +89,7 @@ WebInspector.CompilerScriptMapping.prototype = {
         if (!sourceMap)
             return null;
         var entry = sourceMap.findEntryReversed(uiSourceCode.url, lineNumber);
-        return WebInspector.debuggerModel.createRawLocation(this._scriptForSourceMap.get(sourceMap), entry[0], entry[1]);
+        return WebInspector.debuggerModel.createRawLocation(this._scriptForSourceMap.get(sourceMap) || null, entry[0], entry[1]);
     },
 
     /**
@@ -100,41 +105,44 @@ WebInspector.CompilerScriptMapping.prototype = {
      */
     addScript: function(script)
     {
-        var sourceMap = this.loadSourceMapForScript(script);
-        if (!sourceMap)
-            return;
-
-        if (this._scriptForSourceMap.get(sourceMap)) {
-            this._sourceMapForScriptId[script.scriptId] = sourceMap;
-            script.pushSourceMapping(this);
-            return;
-        }
-
-        this._sourceMapForScriptId[script.scriptId] = sourceMap;
-        this._scriptForSourceMap.put(sourceMap, script);
-
-        var sourceURLs = sourceMap.sources();
-        for (var i = 0; i < sourceURLs.length; ++i) {
-            var sourceURL = sourceURLs[i];
-            if (this._sourceMapForURL[sourceURL])
-                continue;
-            this._sourceMapForURL[sourceURL] = sourceMap;
-            if (!this._workspace.hasMappingForURL(sourceURL) && !this._workspace.uiSourceCodeForURL(sourceURL)) {
-                var sourceContent = sourceMap.sourceContent(sourceURL);
-                var contentProvider;
-                if (sourceContent)
-                    contentProvider = new WebInspector.StaticContentProvider(WebInspector.resourceTypes.Script, sourceContent);
-                else
-                    contentProvider = new WebInspector.CompilerSourceMappingContentProvider(sourceURL);
-                this._networkWorkspaceProvider.addFileForURL(sourceURL, contentProvider, true);
-            }
-            var uiSourceCode = this._workspace.uiSourceCodeForURL(sourceURL);
-            if (uiSourceCode) {
-                this._bindUISourceCode(uiSourceCode);
-                uiSourceCode.isContentScript = script.isContentScript;
-            }
-        }
         script.pushSourceMapping(this);
+        this.loadSourceMapForScript(script, sourceMapLoaded.bind(this));
+
+        /**
+         * @param {?WebInspector.SourceMap} sourceMap
+         */
+        function sourceMapLoaded(sourceMap)
+        {
+            if (!sourceMap)
+                return;
+
+            if (this._scriptForSourceMap.get(sourceMap)) {
+                this._sourceMapForScriptId[script.scriptId] = sourceMap;
+                script.updateLocations();
+                return;
+            }
+
+            this._sourceMapForScriptId[script.scriptId] = sourceMap;
+            this._scriptForSourceMap.put(sourceMap, script);
+
+            var sourceURLs = sourceMap.sources();
+            for (var i = 0; i < sourceURLs.length; ++i) {
+                var sourceURL = sourceURLs[i];
+                if (this._sourceMapForURL[sourceURL])
+                    continue;
+                this._sourceMapForURL[sourceURL] = sourceMap;
+                if (!this._workspace.hasMappingForURL(sourceURL) && !this._workspace.uiSourceCodeForURL(sourceURL)) {
+                    var contentProvider = sourceMap.sourceContentProvider(sourceURL, WebInspector.resourceTypes.Script);
+                    this._networkWorkspaceProvider.addFileForURL(sourceURL, contentProvider, true);
+                }
+                var uiSourceCode = this._workspace.uiSourceCodeForURL(sourceURL);
+                if (uiSourceCode) {
+                    this._bindUISourceCode(uiSourceCode);
+                    uiSourceCode.isContentScript = script.isContentScript;
+                }
+            }
+            script.updateLocations();
+        }
     },
 
     /**
@@ -158,34 +166,64 @@ WebInspector.CompilerScriptMapping.prototype = {
 
     /**
      * @param {WebInspector.Script} script
-     * @return {?WebInspector.SourceMap}
+     * @param {function(?WebInspector.SourceMap)} callback
      */
-    loadSourceMapForScript: function(script)
+    loadSourceMapForScript: function(script, callback)
     {
         // script.sourceURL can be a random string, but is generally an absolute path -> complete it to inspected page url for
         // relative links.
-        if (!script.sourceMapURL)
-            return null;
+        if (!script.sourceMapURL) {
+            callback(null);
+            return;
+        }
         var scriptURL = WebInspector.ParsedURL.completeURL(WebInspector.inspectedPageURL, script.sourceURL);
-        if (!scriptURL)
-            return null;
+        if (!scriptURL) {
+            callback(null);
+            return;
+        }
         var sourceMapURL = WebInspector.ParsedURL.completeURL(scriptURL, script.sourceMapURL);
-        if (!sourceMapURL)
-            return null;
-        var sourceMap = this._sourceMapForSourceMapURL[sourceMapURL];
-        if (sourceMap)
-            return sourceMap;
+        if (!sourceMapURL) {
+            callback(null);
+            return;
+        }
 
-        sourceMap = WebInspector.SourceMap.load(sourceMapURL, scriptURL);
-        if (!sourceMap)
-            return null;
-        this._sourceMapForSourceMapURL[sourceMapURL] = sourceMap;
-        return sourceMap;
+        var sourceMap = this._sourceMapForSourceMapURL[sourceMapURL];
+        if (sourceMap) {
+            callback(sourceMap);
+            return;
+        }
+
+        var pendingCallbacks = this._pendingSourceMapLoadingCallbacks[sourceMapURL];
+        if (pendingCallbacks) {
+            pendingCallbacks.push(callback);
+            return;
+        }
+
+        pendingCallbacks = [callback];
+        this._pendingSourceMapLoadingCallbacks[sourceMapURL] = pendingCallbacks;
+
+        WebInspector.SourceMap.load(sourceMapURL, scriptURL, sourceMapLoaded.bind(this));
+
+        /**
+         * @param {?WebInspector.SourceMap} sourceMap
+         */
+        function sourceMapLoaded(sourceMap)
+        {
+            var callbacks = this._pendingSourceMapLoadingCallbacks[sourceMapURL];
+            delete this._pendingSourceMapLoadingCallbacks[sourceMapURL];
+            if (!callbacks)
+                return;
+            if (sourceMap)
+                this._sourceMapForSourceMapURL[sourceMapURL] = sourceMap;
+            for (var i = 0; i < callbacks.length; ++i)
+                callbacks[i](sourceMap);
+        }
     },
 
     _debuggerReset: function()
     {
         this._sourceMapForSourceMapURL = {};
+        this._pendingSourceMapLoadingCallbacks = {};
         this._sourceMapForScriptId = {};
         this._scriptForSourceMap = new Map();
         this._sourceMapForURL = {};

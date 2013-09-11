@@ -48,6 +48,15 @@ WebInspector.HeapSnapshotWorkerDispatcher.prototype = {
         return result;
     },
 
+    /**
+     * @param{string} name
+     * @param{*} data
+     */
+    sendEvent: function(name, data)
+    {
+        this._postMessage({eventName: name, data: data});
+    },
+
     dispatchMessage: function(event)
     {
         var data = event.data;
@@ -56,7 +65,7 @@ WebInspector.HeapSnapshotWorkerDispatcher.prototype = {
             switch (data.disposition) {
                 case "create": {
                     var constructorFunction = this._findFunction(data.methodName);
-                    this._objects[data.objectId] = new constructorFunction();
+                    this._objects[data.objectId] = new constructorFunction(this);
                     break;
                 }
                 case "dispose": {

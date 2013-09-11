@@ -33,7 +33,7 @@
  * @param {?WebInspector.NetworkRequest} request
  * @param {string} url
  * @param {string} documentURL
- * @param {NetworkAgent.FrameId} frameId
+ * @param {PageAgent.FrameId} frameId
  * @param {NetworkAgent.LoaderId} loaderId
  * @param {WebInspector.ResourceType} type
  * @param {string} mimeType
@@ -99,7 +99,7 @@ WebInspector.Resource.prototype = {
     },
 
     /**
-     * @return {NetworkAgent.FrameId}
+     * @return {PageAgent.FrameId}
      */
     get frameId()
     {
@@ -263,6 +263,27 @@ WebInspector.Resource.prototype = {
             callback(searchMatches || []);
         }
 
+        if (this.type === WebInspector.resourceTypes.Document) {
+            /**
+             * @param {?string} content
+             * @param {boolean} contentEncoded
+             * @param {string} mimeType
+             */
+            function documentContentLoaded(content, contentEncoded, mimeType)
+            {
+                if (content === null) {
+                    callback([]);
+                    return;
+                }
+
+                var result = WebInspector.ContentProvider.performSearchInContent(content, query, caseSensitive, isRegex);
+                callback(result);
+            }
+
+            this.requestContent(documentContentLoaded);
+            return;
+        }
+
         if (this.frameId)
             PageAgent.searchInResource(this.frameId, this.url, query, caseSensitive, isRegex, callbackWrapper);
         else
@@ -300,10 +321,24 @@ WebInspector.Resource.prototype = {
         this._contentRequested = true;
 
         /**
+         * @param {?Protocol.Error} error
          * @param {?string} content
          * @param {boolean} contentEncoded
          */
-        function contentLoaded(content, contentEncoded)
+        function contentLoaded(error, content, contentEncoded)
+        {
+            if (error || content === null) {
+                loadFallbackContent.call(this, error);
+                return;
+            }
+            replyWithContent.call(this, content, contentEncoded);
+        }
+
+        /**
+         * @param {?string} content
+         * @param {boolean} contentEncoded
+         */
+        function replyWithContent(content, contentEncoded)
         {
             this._content = content;
             this._contentEncoded = contentEncoded;
@@ -321,11 +356,46 @@ WebInspector.Resource.prototype = {
          */
         function resourceContentLoaded(error, content, contentEncoded)
         {
-            if (error)
-                console.error("Resource content request failed: " + error);
-            contentLoaded.call(this, error ? null : content, contentEncoded);
+            contentLoaded.call(this, error, content, contentEncoded);
         }
         
+        /**
+         * @param {?Protocol.Error} error
+         */
+        function loadFallbackContent(error)
+        {
+            var scripts = WebInspector.debuggerModel.scriptsForSourceURL(this.url);
+            if (!scripts.length) {
+                console.error("Resource content request failed: " + error);
+                replyWithContent.call(this, null, false);
+                return;
+            }
+
+            var contentProvider;
+            if (this.type === WebInspector.resourceTypes.Document)
+                contentProvider = new WebInspector.ConcatenatedScriptsContentProvider(scripts);
+            else if (this.type === WebInspector.resourceTypes.Script)
+                contentProvider = scripts[0];
+
+            if (!contentProvider) {
+                console.error("Resource content request failed: " + error);
+                replyWithContent.call(this, null, false);
+                return;
+            }
+
+            contentProvider.requestContent(fallbackContentLoaded.bind(this));
+        }
+
+        /**
+         * @param {?string} content
+         * @param {boolean} contentEncoded
+         * @param {string} mimeType
+         */
+        function fallbackContentLoaded(content, contentEncoded, mimeType)
+        {
+            replyWithContent.call(this, content, contentEncoded);
+        }
+
         if (this.request) {
             /**
              * @param {?string} content
@@ -334,7 +404,7 @@ WebInspector.Resource.prototype = {
              */
             function requestContentLoaded(content, contentEncoded, mimeType)
             {
-                contentLoaded.call(this, content, contentEncoded);
+                contentLoaded.call(this, null, content, contentEncoded);
             }
             
             this.request.requestContent(requestContentLoaded.bind(this));

@@ -39,15 +39,16 @@
  * @param {string=} type
  * @param {string=} url
  * @param {number=} line
+ * @param {number=} column
  * @param {number=} repeatCount
  * @param {Array.<RuntimeAgent.RemoteObject>=} parameters
  * @param {ConsoleAgent.StackTrace=} stackTrace
  * @param {NetworkAgent.RequestId=} requestId
  * @param {boolean=} isOutdated
  */
-WebInspector.ConsoleMessageImpl = function(source, level, message, linkifier, type, url, line, repeatCount, parameters, stackTrace, requestId, isOutdated)
+WebInspector.ConsoleMessageImpl = function(source, level, message, linkifier, type, url, line, column, repeatCount, parameters, stackTrace, requestId, isOutdated)
 {
-    WebInspector.ConsoleMessage.call(this, source, level, url, line, repeatCount);
+    WebInspector.ConsoleMessage.call(this, source, level, url, line, column, repeatCount);
 
     this._linkifier = linkifier;
     this.type = type || WebInspector.ConsoleMessage.MessageType.Log;
@@ -56,7 +57,9 @@ WebInspector.ConsoleMessageImpl = function(source, level, message, linkifier, ty
     this._stackTrace = stackTrace;
     this._request = requestId ? WebInspector.networkLog.requestForId(requestId) : null;
     this._isOutdated = isOutdated;
+    /** @type {!Array.<!WebInspector.DataGrid>} */
     this._dataGrids = [];
+    /** @type {!Map.<!WebInspector.DataGrid, Element>} */
     this._dataGridParents = new Map();
 
     this._customFormatters = {
@@ -68,11 +71,16 @@ WebInspector.ConsoleMessageImpl = function(source, level, message, linkifier, ty
 }
 
 WebInspector.ConsoleMessageImpl.prototype = {
+    request: function()
+    {
+        return this._request;
+    },
+
     wasShown: function()
     {
         for (var i = 0; this._dataGrids && i < this._dataGrids.length; ++i) {
             var dataGrid = this._dataGrids[i];
-            var parentElement = this._dataGridParents.get(dataGrid);
+            var parentElement = this._dataGridParents.get(dataGrid) || null;
             dataGrid.show(parentElement);
         }
     },
@@ -94,7 +102,7 @@ WebInspector.ConsoleMessageImpl.prototype = {
         if (this.source === WebInspector.ConsoleMessage.MessageSource.ConsoleAPI) {
             switch (this.type) {
                 case WebInspector.ConsoleMessage.MessageType.Trace:
-                    this._messageElement = document.createTextNode("console.trace()");
+                    this._messageElement = this._format(this._parameters || ["console.trace()"]);
                     break;
                 case WebInspector.ConsoleMessage.MessageType.Clear:
                     this._messageElement = document.createTextNode(WebInspector.UIString("Console was cleared"));
@@ -144,12 +152,12 @@ WebInspector.ConsoleMessageImpl.prototype = {
                     else
                         this._messageElement.appendChild(document.createTextNode(" " + this._request.statusCode + " (" + this._request.statusText + ")"));
                 } else {
-                    var fragment = WebInspector.linkifyStringAsFragmentWithCustomLinkifier(this._messageText, WebInspector.linkifyRequestAsNode.bind(null, this._request, ""));
+                    var fragment = WebInspector.linkifyStringAsFragmentWithCustomLinkifier(this._messageText, WebInspector.linkifyRequestAsNode.bind(null, this._request));
                     this._messageElement.appendChild(fragment);
                 }
             } else {
                 if (this.url) {
-                    var isExternal = !WebInspector.resourceForURL(this.url);
+                    var isExternal = !WebInspector.resourceForURL(this.url) && !WebInspector.workspace.uiSourceCodeForURL(this.url);
                     this._anchorElement = WebInspector.linkifyURLAsNode(this.url, this.url, "console-message-url", isExternal);
                 }
                 this._messageElement = this._format([this._messageText]);
@@ -160,10 +168,10 @@ WebInspector.ConsoleMessageImpl.prototype = {
         }
 
         if (this.source !== WebInspector.ConsoleMessage.MessageSource.Network || this._request) {
-            if (this._stackTrace && this._stackTrace.length && this._stackTrace[0].url) {
+            if (this._stackTrace && this._stackTrace.length && this._stackTrace[0].scriptId) {
                 this._anchorElement = this._linkifyCallFrame(this._stackTrace[0]);
             } else if (this.url && this.url !== "undefined") {
-                this._anchorElement = this._linkifyLocation(this.url, this.line, 0);
+                this._anchorElement = this._linkifyLocation(this.url, this.line, this.column);
             }
         }
 
@@ -194,6 +202,9 @@ WebInspector.ConsoleMessageImpl.prototype = {
         this._message = this._messageElement.textContent;
     },
 
+    /**
+     * @return {string}
+     */
     get message()
     {
         // force message formatting
@@ -201,6 +212,9 @@ WebInspector.ConsoleMessageImpl.prototype = {
         return this._message;
     },
 
+    /**
+     * @return {Element}
+     */
     get formattedMessage()
     {
         if (!this._formattedMessage)
@@ -216,6 +230,12 @@ WebInspector.ConsoleMessageImpl.prototype = {
         return this._request;
     },
 
+    /**
+     * @param {string} url
+     * @param {number} lineNumber
+     * @param {number} columnNumber
+     * @return {Element}
+     */
     _linkifyLocation: function(url, lineNumber, columnNumber)
     {
         // FIXME(62725): stack trace line/column numbers are one-based.
@@ -224,11 +244,22 @@ WebInspector.ConsoleMessageImpl.prototype = {
         return this._linkifier.linkifyLocation(url, lineNumber, columnNumber, "console-message-url");
     },
 
+    /**
+     * @param {!ConsoleAgent.CallFrame} callFrame
+     * @return {Element}
+     */
     _linkifyCallFrame: function(callFrame)
     {
-        return this._linkifyLocation(callFrame.url, callFrame.lineNumber, callFrame.columnNumber);
+        // FIXME(62725): stack trace line/column numbers are one-based.
+        var lineNumber = callFrame.lineNumber ? callFrame.lineNumber - 1 : 0;
+        var columnNumber = callFrame.columnNumber ? callFrame.columnNumber - 1 : 0;
+        var rawLocation = new WebInspector.DebuggerModel.Location(callFrame.scriptId, lineNumber, columnNumber);
+        return this._linkifier.linkifyRawLocation(rawLocation, "console-message-url");
     },
 
+    /**
+     * @return {boolean}
+     */
     isErrorOrWarning: function()
     {
         return (this.level === WebInspector.ConsoleMessage.MessageLevel.Warning || this.level === WebInspector.ConsoleMessage.MessageLevel.Error);
@@ -275,7 +306,7 @@ WebInspector.ConsoleMessageImpl.prototype = {
         for (var i = 0; i < parameters.length; ++i) {
             // Inline strings when formatting.
             if (shouldFormatMessage && parameters[i].type === "string")
-                formattedResult.appendChild(document.createTextNode(parameters[i].description));
+                formattedResult.appendChild(WebInspector.linkifyStringAsFragment(parameters[i].description));
             else
                 formattedResult.appendChild(this._formatParameter(parameters[i], false, true));
             if (i < parameters.length - 1)
@@ -425,7 +456,7 @@ WebInspector.ConsoleMessageImpl.prototype = {
                 this._formatParameterAsObject(object, elem, false);
                 return;
             }
-            var treeOutline = new WebInspector.ElementsTreeOutline(false, false, true);
+            var treeOutline = new WebInspector.ElementsTreeOutline(false, false);
             treeOutline.setVisible(true);
             treeOutline.rootDOMNode = WebInspector.domAgent.nodeForId(nodeId);
             treeOutline.element.addStyleClass("outline-disclosure");
@@ -486,11 +517,18 @@ WebInspector.ConsoleMessageImpl.prototype = {
 
             var rowValue = {};
             const maxColumnsToRender = 20;
-            for (var j = 0; j < rowPreview.properties.length && columnNames.length < maxColumnsToRender; ++j) {
+            for (var j = 0; j < rowPreview.properties.length; ++j) {
                 var cellProperty = rowPreview.properties[j];
-                if (columnNames.indexOf(cellProperty.name) === -1)
+                var columnRendered = columnNames.indexOf(cellProperty.name) != -1;
+                if (!columnRendered) {
+                    if (columnNames.length === maxColumnsToRender)
+                        continue;
+                    columnRendered = true;
                     columnNames.push(cellProperty.name);
-                rowValue[cellProperty.name] = this._renderPropertyPreview(cellProperty);
+                }
+
+                if (columnRendered)
+                    rowValue[cellProperty.name] = this._renderPropertyPreview(cellProperty);
             }
             rows.push([rowProperty.name, rowValue]);
         }
@@ -712,7 +750,8 @@ WebInspector.ConsoleMessageImpl.prototype = {
 
     matchesRegex: function(regexObject)
     {
-        return regexObject.test(this._message) || (this._anchorElement && regexObject.test(this._anchorElement.textContent));
+        regexObject.lastIndex = 0;
+        return regexObject.test(this.message) || (this._anchorElement && regexObject.test(this._anchorElement.textContent));
     },
 
     toMessageElement: function()
@@ -764,9 +803,11 @@ WebInspector.ConsoleMessageImpl.prototype = {
             messageTextElement.appendChild(document.createTextNode(functionName));
             content.appendChild(messageTextElement);
 
-            if (frame.url) {
+            if (frame.scriptId) {
                 content.appendChild(document.createTextNode(" "));
                 var urlElement = this._linkifyCallFrame(frame);
+                if (!urlElement)
+                    continue;
                 content.appendChild(urlElement);
             }
 
@@ -930,7 +971,7 @@ WebInspector.ConsoleMessageImpl.prototype = {
      */
     clone: function()
     {
-        return WebInspector.ConsoleMessage.create(this.source, this.level, this._messageText, this.type, this.url, this.line, this.repeatCount, this._parameters, this._stackTrace, this._request ? this._request.requestId : undefined, this._isOutdated);
+        return WebInspector.ConsoleMessage.create(this.source, this.level, this._messageText, this.type, this.url, this.line, this.column, this.repeatCount, this._parameters, this._stackTrace, this._request ? this._request.requestId : undefined, this._isOutdated);
     },
 
     __proto__: WebInspector.ConsoleMessage.prototype

@@ -47,6 +47,7 @@ ol.breakpoint-list {
     -webkit-padding-start: 0;
     list-style: none;
     margin: 0;
+    padding-bottom: 3px;
 }
 
 .breakpoints-list-deactivated {
@@ -78,7 +79,7 @@ ol.breakpoint-list {
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
-    margin: 2px 0 0px 20px;
+    margin: 2px 0 0 20px;
 }
 
 .sidebar-pane .breakpoint-hit {
@@ -88,10 +89,10 @@ ol.breakpoint-list {
 li.breakpoint-hit .breakpoint-hit-marker {
     background-color: rgb(255, 255, 194);
     height: 18px;
-    left: 0px;
+    left: 0;
     margin-top: -16px;
     position: absolute;
-    right: 0px;
+    right: 0;
     z-index: -1;
 }
 

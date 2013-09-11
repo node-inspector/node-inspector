@@ -37,8 +37,10 @@
 WebInspector.ContentProviderBasedProjectDelegate = function(type)
 {
     this._type = type;
-    /** @type {Object.<string, WebInspector.ContentProvider>} */
+    /** @type {!Object.<string, !WebInspector.ContentProvider>} */
     this._contentProviders = {};
+    /** @type {Object.<string, boolean>} */
+    this._isContentScriptMap = {};
 }
 
 WebInspector.ContentProviderBasedProjectDelegate.prototype = {
@@ -69,12 +71,21 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     },
 
     /**
-     * @param {Array.<string>} path
+     * @param {string} path
+     * @param {function(?Date, ?number)} callback
+     */
+    requestMetadata: function(path, callback)
+    {
+        callback(null, null);
+    },
+
+    /**
+     * @param {string} path
      * @param {function(?string,boolean,string)} callback
      */
     requestFileContent: function(path, callback)
     {
-        var contentProvider = this._contentProviders[path.join("/")];
+        var contentProvider = this._contentProviders[path];
         contentProvider.requestContent(callback);
     },
 
@@ -87,7 +98,7 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     },
 
     /**
-     * @param {Array.<string>} path
+     * @param {string} path
      * @param {string} newContent
      * @param {function(?string)} callback
      */
@@ -97,7 +108,94 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     },
 
     /**
-     * @param {Array.<string>} path
+     * @return {boolean}
+     */
+    canRename: function()
+    {
+        return false;
+    },
+
+    /**
+     * @param {string} path
+     * @param {string} newName
+     * @param {function(boolean, string=)} callback
+     */
+    rename: function(path, newName, callback)
+    {
+        this.performRename(path, newName, innerCallback.bind(this));
+
+        /**
+         * @param {boolean} success
+         * @param {string=} newName
+         */
+        function innerCallback(success, newName)
+        {
+            if (success)
+                this._updateName(path, newName);
+            callback(success, newName);
+        }
+    },
+
+    /**
+     * @param {string} path
+     */
+    refresh: function(path)
+    {
+    },
+
+    /**
+     * @param {string} path
+     */
+    excludeFolder: function(path)
+    {
+    },
+
+    /**
+     * @param {string} path
+     * @param {?string} name
+     * @param {function(?string)} callback
+     */
+    createFile: function(path, name, callback)
+    {
+    },
+
+    /**
+     * @param {string} path
+     */
+    deleteFile: function(path)
+    {
+    },
+
+    remove: function()
+    {
+    },
+
+    /**
+     * @param {string} path
+     * @param {string} newName
+     * @param {function(boolean, string=)} callback
+     */
+    performRename: function(path, newName, callback)
+    {
+        callback(false);
+    },
+
+    /**
+     * @param {string} path
+     * @param {string} newName
+     */
+    _updateName: function(path, newName)
+    {
+        var oldPath = path;
+        var copyOfPath = path.split("/");
+        copyOfPath[copyOfPath.length - 1] = newName;
+        var newPath = copyOfPath.join("/");
+        this._contentProviders[newPath] = this._contentProviders[oldPath];
+        delete this._contentProviders[oldPath];
+    },
+
+    /**
+     * @param {string} path
      * @param {string} query
      * @param {boolean} caseSensitive
      * @param {boolean} isRegex
@@ -105,32 +203,97 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
      */
     searchInFileContent: function(path, query, caseSensitive, isRegex, callback)
     {
-        var contentProvider = this._contentProviders[path.join("/")];
+        var contentProvider = this._contentProviders[path];
         contentProvider.searchInContent(query, caseSensitive, isRegex, callback);
     },
 
     /**
-     * @param {Array.<string>} path
+     * @param {string} query
+     * @param {boolean} caseSensitive
+     * @param {boolean} isRegex
+     * @param {WebInspector.Progress} progress
+     * @param {function(StringMap)} callback
+     */
+    searchInContent: function(query, caseSensitive, isRegex, progress, callback)
+    {
+        var result = new StringMap();
+
+        var paths = Object.keys(this._contentProviders);
+        var totalCount = paths.length;
+        if (totalCount === 0) {
+            // searchInContent should call back later.
+            setTimeout(doneCallback, 0);
+            return;
+        }
+
+        function filterOutContentScripts(path)
+        {
+            return !this._isContentScriptMap[path];
+        }
+
+        if (!WebInspector.settings.searchInContentScripts.get())
+            paths = paths.filter(filterOutContentScripts.bind(this));
+
+        var barrier = new CallbackBarrier();
+        progress.setTotalWork(paths.length);
+        for (var i = 0; i < paths.length; ++i)
+            this._contentProviders[paths[i]].searchInContent(query, caseSensitive, isRegex, barrier.createCallback(contentCallback.bind(this, i)));
+        barrier.callWhenDone(doneCallback);
+
+        function contentCallback(i, searchMatches)
+        {
+            result.put(paths[i], searchMatches);
+            progress.worked(1);
+        }
+
+        function doneCallback()
+        {
+            callback(result);
+            progress.done();
+        }
+    },
+
+    /**
+     * @param {WebInspector.Progress} progress
+     * @param {function()} callback
+     */
+    indexContent: function(progress, callback)
+    {
+        setTimeout(innerCallback, 0);
+
+        function innerCallback()
+        {
+            progress.done();
+            callback();
+        }
+    },
+
+    /**
+     * @param {string} parentPath
+     * @param {string} name
      * @param {string} url
      * @param {WebInspector.ContentProvider} contentProvider
      * @param {boolean} isEditable
      * @param {boolean=} isContentScript
-     * @return {Array.<string>}
+     * @return {string}
      */
-    addContentProvider: function(path, url, contentProvider, isEditable, isContentScript)
+    addContentProvider: function(parentPath, name, url, contentProvider, isEditable, isContentScript)
     {
-        var fileDescriptor = new WebInspector.FileDescriptor(path, url, url, contentProvider.contentType(), isEditable, isContentScript);
-        this._contentProviders[path.join("/")] = contentProvider;
+        var path = parentPath ? parentPath + "/" + name : name;
+        var fileDescriptor = new WebInspector.FileDescriptor(parentPath, name, url, url, contentProvider.contentType(), isEditable, isContentScript);
+        this._contentProviders[path] = contentProvider;
+        this._isContentScriptMap[path] = isContentScript || false;
         this.dispatchEventToListeners(WebInspector.ProjectDelegate.Events.FileAdded, fileDescriptor);
         return path;
     },
 
     /**
-     * @param {Array.<string>} path
+     * @param {string} path
      */
     removeFile: function(path)
     {
-        delete this._contentProviders[path.join("/")];
+        delete this._contentProviders[path];
+        delete this._isContentScriptMap[path];
         this.dispatchEventToListeners(WebInspector.ProjectDelegate.Events.FileRemoved, path);
     },
 
@@ -145,6 +308,7 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     reset: function()
     {
         this._contentProviders = {};
+        this._isContentScriptMap = {};
         this.dispatchEventToListeners(WebInspector.ProjectDelegate.Events.Reset, null);
     },
     

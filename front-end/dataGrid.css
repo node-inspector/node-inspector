@@ -31,7 +31,7 @@
 }
 
 .data-grid.inline {
-    border-right: none;
+    border-left: none;
 }
 
 .data-grid.inline .data-container {
@@ -47,7 +47,7 @@
     text-align: left;
     background-image: url(Images/glossyHeader.png);
     background-repeat: repeat-x;
-    border-right: 1px solid rgb(179, 179, 179);
+    border-left: 1px solid rgb(179, 179, 179);
     border-bottom: 1px solid rgb(179, 179, 179);
     height: 15px;
     font-weight: normal;
@@ -60,9 +60,9 @@
 .data-grid td.corner,
 .data-grid col.corner {
     width: 14px;
-    padding-right: 0px;
-    padding-left: 0px;
-    border-right: 0 none transparent !important;
+    padding-right: 0;
+    padding-left: 0;
+    border-left: 0 none transparent !important;
 }
 
 .data-grid tr.filler {
@@ -84,7 +84,7 @@
     height: 100%;
     border-top: 0 none transparent;
     background-image: -webkit-gradient(linear, left top, left bottom, from(white), color-stop(0.5, white), color-stop(0.5, rgb(234, 243, 255)), to(rgb(234, 243, 255)));
-    -webkit-background-size: 1px 32px;
+    background-size: 1px 32px;
     table-layout: fixed;
 }
 
@@ -102,16 +102,17 @@
 
 .data-grid td {
     vertical-align: top;
-    height: 16px; /* Keep in sync with .data-grid table.data @ -webkit-background-size */
+    height: 16px; /* Keep in sync with .data-grid table.data @ background-size */
     line-height: 13px;
     padding: 1px 4px;
     white-space: nowrap;
     overflow: hidden;
-    border-right: 1px solid #aaa;
+    border-left: 1px solid #aaa;
     -webkit-user-select: text;
 }
 
-.data-grid td > div, .data-grid th > div {
+.data-grid td > div,
+.data-grid th > div {
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
@@ -136,8 +137,9 @@
 .data-grid th.sortable:active {
     background-image: url(Images/glossyHeaderPressed.png);
 }
-.data-grid th.sort-ascending, .data-grid th.sort-descending {
-    border-right: 1px solid rgb(107, 140, 196);
+.data-grid th.sort-ascending,
+.data-grid th.sort-descending {
+    border-left: 1px solid rgb(107, 140, 196);
     border-bottom: 1px solid rgb(107, 140, 196);
     background-image: url(Images/glossyHeaderSelected.png);
     background-repeat: repeat-x;
@@ -166,7 +168,7 @@
 .data-grid th.sort-descending > div::after {
     background-image: url(Images/statusbarButtonGlyphs2x.png);
 }
-}
+} /* media */
 
 .data-grid th.sort-ascending > div::after {
     background-position: -4px -108px;
@@ -181,9 +183,10 @@
     color: inherit;
 }
 
-body.inactive .data-grid th.sort-ascending, body.inactive .data-grid th.sort-descending {
+body.inactive .data-grid th.sort-ascending,
+body.inactive .data-grid th.sort-descending {
     background-image: url(Images/glossyHeader.png);
-    border-right: 1px solid rgb(179, 179, 179);
+    border-left: 1px solid rgb(179, 179, 179);
     border-bottom: 1px solid rgb(179, 179, 179);
 }
 
@@ -209,7 +212,7 @@ body.inactive .data-grid th.sort-ascending, body.inactive .data-grid th.sort-des
 .data-grid tr.parent td.disclosure::before {
     -webkit-mask-image: url(Images/statusbarButtonGlyphs2x.png);
 }
-}
+} /* media */
 
 .data-grid tr.expanded td.disclosure::before {
     -webkit-mask-position: -20px -96px;

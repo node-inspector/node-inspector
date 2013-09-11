@@ -67,10 +67,17 @@ WebInspector.ShortcutsScreen.prototype = {
 
         view.element.className = "settings-tab-container";
         view.element.createChild("header").createChild("h3").appendChild(document.createTextNode(WebInspector.UIString("Shortcuts")));
-        var container = view.element.createChild("div", "help-container-wrapper").createChild("div");
+        var scrollPane = view.element.createChild("div", "help-container-wrapper");
+        var container = scrollPane.createChild("div");
         container.className = "help-content help-container";
         for (var i = 0; i < orderedSections.length; ++i)
             orderedSections[i].renderSection(container);
+
+        var note = scrollPane.createChild("p", "help-footnote");
+        var noteLink = note.createChild("a");
+        noteLink.href = "https://developers.google.com/chrome-developer-tools/docs/shortcuts";
+        noteLink.target = "_blank";
+        noteLink.createTextChild(WebInspector.UIString("Full list of keyboard shortcuts and gestures"));
 
         return view;
     }
@@ -171,7 +178,7 @@ WebInspector.ShortcutsSection.prototype = {
     {
         var keyName = key.name;
         var plus = this._createSpan("help-combine-keys", "+");
-        return this._joinNodes(keyName.split(" + ").map(this._createSpan.bind(this, "help-key monospace")), plus);
+        return this._joinNodes(keyName.split(" + ").map(this._createSpan.bind(this, "help-key")), plus);
     },
 
     /**

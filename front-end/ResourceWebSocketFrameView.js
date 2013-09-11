@@ -27,15 +27,30 @@ WebInspector.ResourceWebSocketFrameView = function(resource)
     this.resource = resource;
     this.element.removeChildren();
 
-    var dataGrid = new WebInspector.DataGrid([
-        {id: "data", title: WebInspector.UIString("Data"), sortable: false},
-        {id: "length", title: WebInspector.UIString("Length"), sortable: false, alig: WebInspector.DataGrid.Align.Right, width: "50px"},
-        {id: "time", title: WebInspector.UIString("Time"), width: "70px"}
+    this._dataGrid = new WebInspector.DataGrid([
+        {id: "data", title: WebInspector.UIString("Data"), sortable: false, weight: 88},
+        {id: "length", title: WebInspector.UIString("Length"), sortable: false, alig: WebInspector.DataGrid.Align.Right, weight: 5},
+        {id: "time", title: WebInspector.UIString("Time"), weight: 7}
     ]);
 
-    var frames = this.resource.frames();
-    for (var i = 0; i < frames.length; i++) {
-        var payload = frames[i];
+    this.refresh();
+    this._dataGrid.setName("ResourceWebSocketFrameView");
+    this._dataGrid.show(this.element);
+}
+
+WebInspector.ResourceWebSocketFrameView.OpCodes = {
+    ContinuationFrame: 0,
+    TextFrame: 1,
+    BinaryFrame: 2,
+    ConnectionCloseFrame: 8,
+    PingFrame: 9,
+    PongFrame: 10
+};
+
+WebInspector.ResourceWebSocketFrameView.prototype = {
+    appendFrame: function (frame)
+    {
+        var payload = frame;
 
         var date = new Date(payload.time * 1000);
         var row = {
@@ -77,24 +92,26 @@ WebInspector.ResourceWebSocketFrameView = function(resource)
         }
 
         var node = new WebInspector.DataGridNode(row, false);
-        dataGrid.rootNode().appendChild(node);
+        this._dataGrid.rootNode().appendChild(node);
 
         if (rowClass)
             node.element.classList.add("resource-websocket-row-" + rowClass);
+    },
 
-    }
-    dataGrid.show(this.element);
-}
+    refresh: function ()
+    {
+        this._dataGrid.rootNode().removeChildren();
+        var frames = this.resource.frames();
+        for (var i = frames.length - 1; i >= 0; i--) {
+            this.appendFrame(frames[i]);
+        }
+    },
 
-WebInspector.ResourceWebSocketFrameView.OpCodes = {
-    ContinuationFrame: 0,
-    TextFrame: 1,
-    BinaryFrame: 2,
-    ConnectionCloseFrame: 8,
-    PingFrame: 9,
-    PongFrame: 10
-};
+    show: function (parentElement, insertBefore)
+    {
+        this.refresh();
+        WebInspector.View.prototype.show.call(this, parentElement, insertBefore);
+    },
 
-WebInspector.ResourceWebSocketFrameView.prototype = {
     __proto__: WebInspector.View.prototype
 }

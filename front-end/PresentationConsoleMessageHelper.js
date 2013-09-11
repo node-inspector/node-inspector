@@ -30,16 +30,16 @@
 
 /**
  * @constructor
- * @param {WebInspector.UISourceCodeProvider} uiSourceCodeProvider
+ * @param {WebInspector.Workspace} workspace
  */
-WebInspector.PresentationConsoleMessageHelper = function(uiSourceCodeProvider)
+WebInspector.PresentationConsoleMessageHelper = function(workspace)
 {
     /**
      * @type {Object.<string, Array.<WebInspector.ConsoleMessage>>}
      */
     this._pendingConsoleMessages = {};
     this._presentationConsoleMessages = [];
-    this._uiSourceCodeProvider = uiSourceCodeProvider;
+    this._workspace = workspace;
 
     WebInspector.console.addEventListener(WebInspector.ConsoleModel.Events.MessageAdded, this._consoleMessageAdded, this);
     WebInspector.console.addEventListener(WebInspector.ConsoleModel.Events.RepeatCountUpdated, this._consoleMessageAdded, this);
@@ -121,7 +121,7 @@ WebInspector.PresentationConsoleMessageHelper.prototype = {
         for (var i = 0; i < this._presentationConsoleMessages.length; ++i)
             this._presentationConsoleMessages[i].dispose();
         this._presentationConsoleMessages = [];
-        var uiSourceCodes = this._uiSourceCodeProvider.uiSourceCodes();
+        var uiSourceCodes = this._workspace.uiSourceCodes();
         for (var i = 0; i < uiSourceCodes.length; ++i)
             uiSourceCodes[i].consoleMessagesCleared();
     },

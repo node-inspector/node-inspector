@@ -116,17 +116,18 @@
 .panel-enabler-view button:not(.status-bar-item) {
     font-size: 13px;
     margin: 6px 0 0 0;
-    padding: 3px 20px;
+    padding: 2px 20px;
     height: 24px;
     color: rgb(6, 6, 6);
     border: 1px solid rgb(165, 165, 165);
     background-color: rgb(237, 237, 237);
     background-image: -webkit-gradient(linear, left top, left bottom, from(rgb(252, 252, 252)), to(rgb(223, 223, 223)));
-    -webkit-border-radius: 12px;
+    border-radius: 12px;
     -webkit-appearance: none;
 }
 
-body.inactive .panel-enabler-view button:not(.status-bar-item), .panel-enabler-view button:disabled:not(.status-bar-item) {
+body.inactive .panel-enabler-view button:not(.status-bar-item),
+.panel-enabler-view button:disabled:not(.status-bar-item) {
     color: rgb(130, 130, 130);
     border-color: rgb(212, 212, 212);
     background-color: rgb(239, 239, 239);
@@ -143,7 +144,7 @@ body.inactive .panel-enabler-view button:not(.status-bar-item), .panel-enabler-v
     width: 17px;
     border: 1px solid rgb(165, 165, 165);
     background-image: -webkit-gradient(linear, left top, left bottom, from(rgb(252, 252, 252)), to(rgb(223, 223, 223)));
-    -webkit-border-radius: 8px;
+    border-radius: 8px;
     -webkit-appearance: none;
     vertical-align: middle;
     margin: 0 5px 5px 0;

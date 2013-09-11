@@ -71,11 +71,11 @@ WebInspector.ExtensionPanel.prototype = {
 
     /**
      * @param {string} query
+     * @param {boolean} shouldJump
      */
-    performSearch: function(query)
+    performSearch: function(query, shouldJump)
     {
         WebInspector.extensionServer.notifySearchAction(this.name, WebInspector.extensionAPI.panels.SearchAction.PerformSearch, query);
-        WebInspector.Panel.prototype.performSearch.apply(this, arguments);
     },
 
     jumpToNextSearchResult: function()

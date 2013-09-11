@@ -25,7 +25,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -->
-<!DOCTYPE html>
+<!doctype html>
 <html>
 <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8">
@@ -62,7 +62,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <script type="text/javascript" src="Popover.js"></script>
     <script type="text/javascript" src="Placard.js"></script>
     <script type="text/javascript" src="TabbedPane.js"></script>
-    <script type="text/javascript" src="ViewportControl.js"></script> 
+    <script type="text/javascript" src="ViewportControl.js"></script>
     <script type="text/javascript" src="Drawer.js"></script>
     <script type="text/javascript" src="ConsoleModel.js"></script>
     <script type="text/javascript" src="ConsoleMessage.js"></script>
@@ -84,7 +84,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <script type="text/javascript" src="ResourceUtils.js"></script>
     <script type="text/javascript" src="ResourceType.js"></script>
     <script type="text/javascript" src="TimelineManager.js"></script>
-    <script type="text/javascript" src="UserAgentSupport.js"></script>
+    <script type="text/javascript" src="OverridesSupport.js"></script>
     <script type="text/javascript" src="Database.js"></script>
     <script type="text/javascript" src="DOMStorage.js"></script>
     <script type="text/javascript" src="DataGrid.js"></script>
@@ -108,8 +108,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <script type="text/javascript" src="Color.js"></script>
     <script type="text/javascript" src="CSSMetadata.js"></script>
     <script type="text/javascript" src="StatusBarButton.js"></script>
+    <script type="text/javascript" src="CompletionDictionary.js"></script>
     <script type="text/javascript" src="TextEditor.js"></script>
-    <script type="text/javascript" src="DefaultTextEditor.js"></script>
     <script type="text/javascript" src="SourceFrame.js"></script>
     <script type="text/javascript" src="ResourceView.js"></script>
     <script type="text/javascript" src="FontView.js"></script>
@@ -125,13 +125,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <script type="text/javascript" src="EmptyView.js"></script>
     <script type="text/javascript" src="ScriptFormatter.js"></script>
     <script type="text/javascript" src="DOMSyntaxHighlighter.js"></script>
-    <script type="text/javascript" src="TextEditorModel.js"></script>
-    <script type="text/javascript" src="TextEditorHighlighter.js"></script>
+    <script type="text/javascript" src="TextRange.js"></script>
     <script type="text/javascript" src="TextUtils.js"></script>
-    <script type="text/javascript" src="SourceTokenizer.js"></script>
-    <script type="text/javascript" src="SourceCSSTokenizer.js"></script>
-    <script type="text/javascript" src="SourceHTMLTokenizer.js"></script>
-    <script type="text/javascript" src="SourceJavaScriptTokenizer.js"></script>
     <script type="text/javascript" src="FileSystemModel.js"></script>
     <script type="text/javascript" src="FileUtils.js"></script>
     <script type="text/javascript" src="DebuggerModel.js"></script>
@@ -145,8 +140,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <script type="text/javascript" src="FileSystemMapping.js"></script>
     <script type="text/javascript" src="IsolatedFileSystem.js"></script>
     <script type="text/javascript" src="IsolatedFileSystemManager.js"></script>
-    <script type="text/javascript" src="FileMapping.js"></script>
     <script type="text/javascript" src="Workspace.js"></script>
+    <script type="text/javascript" src="WorkspaceController.js"></script>
     <script type="text/javascript" src="ContentProviderBasedProjectDelegate.js"></script>
     <script type="text/javascript" src="SimpleWorkspaceProvider.js"></script>
     <script type="text/javascript" src="BreakpointManager.js"></script>
@@ -155,6 +150,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <script type="text/javascript" src="ResourceScriptMapping.js"></script>
     <script type="text/javascript" src="CompilerScriptMapping.js"></script>
     <script type="text/javascript" src="LiveEditSupport.js"></script>
+    <script type="text/javascript" src="CSSStyleSheetMapping.js"></script>
     <script type="text/javascript" src="SASSSourceMapping.js"></script>
     <script type="text/javascript" src="DOMAgent.js"></script>
     <script type="text/javascript" src="TestController.js"></script>
@@ -162,6 +158,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <script type="text/javascript" src="GoToLineDialog.js"></script>
     <script type="text/javascript" src="SidebarOverlay.js"></script>
     <script type="text/javascript" src="SettingsScreen.js"></script>
+    <script type="text/javascript" src="EditFileSystemDialog.js"></script>
     <script type="text/javascript" src="ShortcutsScreen.js"></script>
     <script type="text/javascript" src="OverridesView.js"></script>
     <script type="text/javascript" src="HAREntry.js"></script>
@@ -184,32 +181,37 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <script type="text/javascript" src="ProfilesPanelDescriptor.js"></script>
     <script type="text/javascript" src="ScriptsPanelDescriptor.js"></script>
     <script type="text/javascript" src="TimelinePanelDescriptor.js"></script>
+    <script type="text/javascript" src="LayersPanelDescriptor.js"></script>
     <script type="text/javascript" src="DockController.js"></script>
+    <script type="text/javascript" src="TracingAgent.js"></script>
+    <script type="text/javascript" src="ScreencastView.js"></script>
     <script type="text/javascript" src="DevToolsExtensionAPI.js"></script>
     <script type="text/javascript" src="Tests.js"></script>
     <script type="text/javascript" src="/socket.io/socket.io.js"></script>
     <script type="text/javascript" src="node/Overrides.js"></script>
 </head>
 <body class="detached" id="-webkit-web-inspector">
-    <div id="toolbar">
-        <div class="toolbar-item close-left"><div class="close-button" id="close-button-left"></div></div>
-        <div id="toolbar-controls">
-            <div class="toolbar-item"><div id="toolbar-panels-menu" class="hidden">&hellip;</div></div>
-            <div class="toolbar-item"><div id="toolbar-dropdown-arrow" class="hidden">&raquo;</div></div>
-            <div class="toolbar-item close-right"><div class="close-button" id="close-button-right"></div></div>
-        </div>
-    </div>
-    <div id="main">
-        <div id="floating-status-bar-container" class="status-bar"><div id="floating-status-bar-resizer"></div></div>
-    </div>
-    <div id="drawer"></div>
-    <div id="main-status-bar" class="status-bar">
-        <div id="bottom-status-bar-container">
-            <div id="panel-status-bar">
-                <div id="drawer-view-anchor"></div>
+    <div id="root">
+        <div id="toolbar">
+            <div class="toolbar-item close-left"><div class="close-button" id="close-button-left"></div></div>
+            <div id="toolbar-controls">
+                <div class="toolbar-item"><div id="toolbar-panels-menu" class="hidden">&hellip;</div></div>
+                <div class="toolbar-item"><div id="toolbar-dropdown-arrow" class="hidden">&raquo;</div></div>
+                <div class="toolbar-item close-right"><div class="close-button" id="close-button-right"></div></div>
             </div>
         </div>
-        <div id="error-warning-count" class="hidden"></div>
+        <div id="main">
+            <div id="floating-status-bar-container" class="status-bar"><div id="floating-status-bar-resizer"></div></div>
+        </div>
+        <div id="drawer"></div>
+        <div id="main-status-bar" class="status-bar">
+            <div id="bottom-status-bar-container">
+                <div id="panel-status-bar">
+                    <div id="drawer-view-anchor"></div>
+                </div>
+            </div>
+            <div id="error-warning-count" class="hidden"></div>
+        </div>
     </div>
 </body>
 </html>

@@ -76,11 +76,8 @@
     border-top: 1px solid rgb(189, 189, 189);
     border-bottom: 1px solid rgb(189, 189, 189);
     line-height: 18px;
-    -webkit-background-origin: padding;
-    -webkit-background-clip: padding;
-}
-
-.sidebar-pane-title + .sidebar-pane-title, .pane:not(.visible) + .sidebar-pane-title, .sidebar-pane-title:first-of-type {
+    background-origin: padding;
+    background-clip: padding;
     margin-top: -1px;
 }
 
@@ -108,7 +105,7 @@
 .sidebar-pane-title::before {
     background-image: url(Images/statusbarButtonGlyphs2x.png);
 }
-}
+} /* media */
 
 .sidebar-pane-title::before {
     background-position: -4px -96px;
@@ -142,16 +139,17 @@
     background-repeat: no-repeat;
     margin: 1px 0 0 0;
     padding: 0;
-    -webkit-border-radius: 0;
+    border-radius: 0;
     -webkit-appearance: none;
 }
 
 .sidebar-pane-toolbar > .pane-title-button:hover {
-    background-position: -23px 0px;
+    background-position: -23px 0;
 }
 
-.sidebar-pane-toolbar > .pane-title-button:active, .sidebar-pane-toolbar > .pane-title-button.toggled {
-    background-position: -46px 0px;
+.sidebar-pane-toolbar > .pane-title-button:active,
+.sidebar-pane-toolbar > .pane-title-button.toggled {
+    background-position: -46px 0;
 }
 
 .sidebar-pane-toolbar > .pane-title-button.add {
@@ -175,8 +173,8 @@ body.platform-windows .sidebar-pane-subtitle {
     padding-top: 1px;
 }
 
-.sidebar-pane-subtitle input, .section > .header input[type=checkbox] {
-    font-size: inherit;
+.sidebar-pane-subtitle input,
+.section > .header input[type=checkbox] {
     height: 1em;
     width: 1em;
     margin-left: 0;

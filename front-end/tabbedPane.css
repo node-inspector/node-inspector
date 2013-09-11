@@ -100,7 +100,6 @@
 .tabbed-pane-header-tabs-drop-down-container {
     float: left;
     position: relative;
-    font-size: 16px;
     vertical-align: bottom;
     top: 1px;
     padding-left: 3px;
@@ -114,6 +113,8 @@
     position: relative;
     opacity: 0.7;
     color: rgb(30, 30, 30);
+    font-size: 133%;
+    padding: 0 3px;
 }
 
 .tabbed-pane-header-tabs-drop-down:hover {
@@ -126,12 +127,13 @@
 
 select.tabbed-pane-header-tabs-drop-down-select {
     position: absolute;
-    top: 0px;
-    right: 0px;
-    bottom: 0px;
-    left: 0px;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     opacity: 0;
     border: none;
     margin: 0;
+    font-size: 75%;
     -webkit-appearance: none;
 }

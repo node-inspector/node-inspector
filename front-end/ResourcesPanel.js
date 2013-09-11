@@ -88,13 +88,19 @@ WebInspector.ResourcesPanel = function(database)
     this.storageViewStatusBarItemsContainer = document.createElement("div");
     this.storageViewStatusBarItemsContainer.className = "status-bar-items";
 
+    /** @type {!Map.<!WebInspector.Database, !Object.<string, !WebInspector.DatabaseTableView>>} */
     this._databaseTableViews = new Map();
+    /** @type {!Map.<!WebInspector.Database, !WebInspector.DatabaseQueryView>} */
     this._databaseQueryViews = new Map();
+    /** @type {!Map.<!WebInspector.Database, !WebInspector.DatabaseTreeElement>} */
     this._databaseTreeElements = new Map();
+    /** @type {!Map.<!WebInspector.DOMStorage, !WebInspector.DOMStorageItemsView>} */
     this._domStorageViews = new Map();
+    /** @type {!Map.<!WebInspector.DOMStorage, !WebInspector.DOMStorageTreeElement>} */
     this._domStorageTreeElements = new Map();
+    /** @type {!Object.<string, !WebInspector.CookieItemsView>} */
     this._cookieViews = {};
-    this._origins = {};
+    /** @type {!Object.<string, boolean>} */
     this._domains = {};
 
     this.sidebarElement.addEventListener("mousemove", this._onmousemove.bind(this), false);
@@ -109,7 +115,7 @@ WebInspector.ResourcesPanel = function(database)
     if (WebInspector.resourceTreeModel.cachedResourcesLoaded())
         this._cachedResourcesLoaded();
 
-    WebInspector.resourceTreeModel.addEventListener(WebInspector.ResourceTreeModel.EventTypes.OnLoad, this._onLoadEventFired, this);
+    WebInspector.resourceTreeModel.addEventListener(WebInspector.ResourceTreeModel.EventTypes.Load, this._loadEventFired, this);
     WebInspector.resourceTreeModel.addEventListener(WebInspector.ResourceTreeModel.EventTypes.CachedResourcesLoaded, this._cachedResourcesLoaded, this);
     WebInspector.resourceTreeModel.addEventListener(WebInspector.ResourceTreeModel.EventTypes.WillLoadCachedResources, this._resetWithFrames, this);
 
@@ -140,7 +146,7 @@ WebInspector.ResourcesPanel.prototype = {
         }
     },
 
-    _onLoadEventFired: function()
+    _loadEventFired: function()
     {
         this._initDefaultSelection();
     },
@@ -174,7 +180,6 @@ WebInspector.ResourcesPanel.prototype = {
 
     _reset: function()
     {
-        this._origins = {};
         this._domains = {};
         var queryViews = this._databaseQueryViews.values();
         for (var i = 0; i < queryViews.length; ++i)
@@ -408,18 +413,20 @@ WebInspector.ResourcesPanel.prototype = {
     },
 
     /**
+     * @param {WebInspector.Resource} resource
      * @param {number=} line
+     * @param {number=} column
      */
-    showResource: function(resource, line)
+    showResource: function(resource, line, column)
     {
         var resourceTreeElement = this._findTreeElementForResource(resource);
         if (resourceTreeElement)
-            resourceTreeElement.revealAndSelect();
+            resourceTreeElement.revealAndSelect(true);
 
         if (typeof line === "number") {
             var view = this._resourceViewForResource(resource);
-            if (view.canHighlightLine())
-                view.highlightLine(line);
+            if (view.canHighlightPosition())
+                view.highlightPosition(line, column);
         }
         return true;
     },
@@ -448,6 +455,7 @@ WebInspector.ResourcesPanel.prototype = {
     },
 
     /**
+     * @param {WebInspector.Database} database
      * @param {string=} tableName
      */
     _showDatabase: function(database, tableName)
@@ -459,7 +467,7 @@ WebInspector.ResourcesPanel.prototype = {
         if (tableName) {
             var tableViews = this._databaseTableViews.get(database);
             if (!tableViews) {
-                tableViews = {};
+                tableViews = /** @type {!Object.<string, !WebInspector.DatabaseTableView>} */ ({});
                 this._databaseTableViews.put(database, tableViews);
             }
             view = tableViews[tableName];
@@ -487,6 +495,9 @@ WebInspector.ResourcesPanel.prototype = {
         this._innerShowView(view);
     },
 
+    /**
+     * @param {WebInspector.DOMStorage} domStorage
+     */
     _showDOMStorage: function(domStorage)
     {
         if (!domStorage)
@@ -495,13 +506,17 @@ WebInspector.ResourcesPanel.prototype = {
         var view;
         view = this._domStorageViews.get(domStorage);
         if (!view) {
-            view = new WebInspector.DOMStorageItemsView(domStorage, WebInspector.domStorageModel);
+            view = new WebInspector.DOMStorageItemsView(domStorage);
             this._domStorageViews.put(domStorage, view);
         }
 
         this._innerShowView(view);
     },
 
+    /**
+     * @param {!WebInspector.CookieTreeElement} treeElement
+     * @param {string} cookieDomain
+     */
     showCookies: function(treeElement, cookieDomain)
     {
         var view = this._cookieViews[cookieDomain];
@@ -692,42 +707,79 @@ WebInspector.ResourcesPanel.prototype = {
 
     /**
      * @param {string} query
+     * @param {boolean} shouldJump
      */
-    performSearch: function(query)
+    performSearch: function(query, shouldJump)
     {
         this._resetSearchResults();
         var regex = WebInspector.SourceFrame.createSearchRegex(query);
         var totalMatchesCount = 0;
 
-        function callback(error, result)
+        /**
+         * @param {WebInspector.Resource} resource
+         * @param {number} matchesCount
+         */
+        function addMatchesToResource(resource, matchesCount)
         {
-            if (!error) {
-                for (var i = 0; i < result.length; i++) {
-                    var searchResult = result[i];
-                    var frameTreeElement = this._treeElementForFrameId[searchResult.frameId];
-                    if (!frameTreeElement)
-                        continue;
-                    var resource = frameTreeElement.resourceByURL(searchResult.url);
+            this._findTreeElementForResource(resource).searchMatchesFound(matchesCount);
+            totalMatchesCount += matchesCount;
+        }
 
-                    // FIXME: When the same script is used in several frames and this script contains at least
-                    // one search result then some search results can not be matched with a resource on panel.
-                    // https://bugs.webkit.org/show_bug.cgi?id=66005
-                    if (!resource)
-                        continue;
+        /**
+         * @param {?Protocol.Error} error
+         * @param {Array.<PageAgent.SearchResult>} result
+         */
+        function searchInResourcesCallback(error, result)
+        {
+            if (error)
+                return;
 
-                    this._findTreeElementForResource(resource).searchMatchesFound(searchResult.matchesCount);
-                    totalMatchesCount += searchResult.matchesCount;
-                }
+            for (var i = 0; i < result.length; i++) {
+                var searchResult = result[i];
+                var frameTreeElement = this._treeElementForFrameId[searchResult.frameId];
+                if (!frameTreeElement)
+                    continue;
+                var resource = frameTreeElement.resourceByURL(searchResult.url);
+
+                // FIXME: When the same script is used in several frames and this script contains at least
+                // one search result then some search results can not be matched with a resource on panel.
+                // https://bugs.webkit.org/show_bug.cgi?id=66005
+                if (!resource)
+                    continue;
+
+                addMatchesToResource.call(this, resource, searchResult.matchesCount)
             }
+            if (!--callbacksLeft)
+                searchFinished.call(this);
+        }
 
+        /**
+         * @param {WebInspector.Resource} resource
+         * @param {Array.<WebInspector.ContentProvider.SearchMatch>} result
+         */
+        function searchInContentCallback(resource, result)
+        {
+            addMatchesToResource.call(this, resource, result.length);
+            if (!--callbacksLeft)
+                searchFinished.call(this);
+        }
+
+        function searchFinished()
+        {
             WebInspector.searchController.updateSearchMatchesCount(totalMatchesCount, this);
             this._searchController = new WebInspector.ResourcesSearchController(this.resourcesListTreeElement, totalMatchesCount);
 
-            if (this.sidebarTree.selectedTreeElement && this.sidebarTree.selectedTreeElement.searchMatchesCount)
+            if (shouldJump && this.sidebarTree.selectedTreeElement && this.sidebarTree.selectedTreeElement.searchMatchesCount)
                 this.jumpToNextSearchResult();
         }
 
-        PageAgent.searchInResources(regex.source, !regex.ignoreCase, true, callback.bind(this));
+        var frames = WebInspector.resourceTreeModel.frames();
+        var callbacksLeft = 1 + frames.length;
+        for (var i = 0; i < frames.length; ++i) {
+            var mainResource = frames[i].mainResource;
+            mainResource.searchInContent(regex.source, !regex.ignoreCase, true, searchInContentCallback.bind(this, mainResource));
+        }
+        PageAgent.searchInResources(regex.source, !regex.ignoreCase, true, searchInResourcesCallback.bind(this));
     },
 
     _ensureViewSearchPerformed: function(callback)
@@ -745,7 +797,7 @@ WebInspector.ResourcesPanel.prototype = {
                 // We give id to each search, so that we can skip callbacks for obsolete searches.
                 this._lastViewSearchId = this._lastViewSearchId ? this._lastViewSearchId + 1 : 0;
                 this._viewSearchInProgress = true;
-                this.visibleView.performSearch(this.currentQuery, viewSearchPerformedCallback.bind(this, this._lastViewSearchId));
+                this.visibleView.performSearch(this.currentQuery, false, viewSearchPerformedCallback.bind(this, this._lastViewSearchId));
             } else
                 callback();
         }
@@ -757,10 +809,8 @@ WebInspector.ResourcesPanel.prototype = {
         this._lastSearchResultTreeElement = searchResult.treeElement;
 
         // At first show view for treeElement.
-        if (searchResult.treeElement !== this.sidebarTree.selectedTreeElement) {
+        if (searchResult.treeElement !== this.sidebarTree.selectedTreeElement)
             this.showResource(searchResult.treeElement.representedObject);
-            WebInspector.searchController.showSearchField();
-        }
 
         function callback(searchId)
         {
@@ -1251,8 +1301,6 @@ WebInspector.FrameResourceTreeElement.prototype = {
     {
         var contextMenu = new WebInspector.ContextMenu(event);
         contextMenu.appendApplicableItems(this._resource);
-        if (this._resource.request)
-            contextMenu.appendApplicableItems(this._resource.request);
         contextMenu.show();
     },
 
@@ -1357,6 +1405,7 @@ WebInspector.FrameResourceTreeElement.prototype = {
 /**
  * @constructor
  * @extends {WebInspector.BaseStorageTreeElement}
+ * @param {WebInspector.Database} database
  */
 WebInspector.DatabaseTreeElement = function(storagePanel, database)
 {

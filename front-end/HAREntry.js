@@ -28,7 +28,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// See http://groups.google.com/group/http-archive-specification/web/har-1-2-spec
+// See http://www.softwareishard.com/blog/har-12-spec/
 // for HAR specification.
 
 // FIXME: Some fields are not yet supported due to back-end limitations.
@@ -57,6 +57,8 @@ WebInspector.HAREntry.prototype = {
             cache: { }, // Not supported yet.
             timings: this._buildTimings()
         };
+        if (this._request.connectionId)
+            entry.connection = String(this._request.connectionId);
         var page = WebInspector.networkLog.pageLoadForRequest(this._request);
         if (page)
             entry.pageref = "page_" + page.id;
@@ -124,33 +126,22 @@ WebInspector.HAREntry.prototype = {
     _buildTimings: function()
     {
         var waitForConnection = this._interval("connectStart", "connectEnd");
-        var blocked;
-        var connect;
-        var dns = this._interval("dnsStart", "dnsEnd");
-        var send = this._interval("sendStart", "sendEnd");
-        var ssl = this._interval("sslStart", "sslEnd");
+        var blocked = 0;
+        var connect = -1;
 
-        if (ssl !== -1 && send !== -1)
-            send -= ssl;
-
-        if (this._request.connectionReused) {
-            connect = -1;
+        if (this._request.connectionReused)
             blocked = waitForConnection;
-        } else {
-            blocked = 0;
+        else
             connect = waitForConnection;
-            if (dns !== -1)
-                connect -= dns;
-        }
 
         return {
             blocked: blocked,
-            dns: dns,
+            dns: this._interval("dnsStart", "dnsEnd"),
             connect: connect,
-            send: send,
+            send: this._interval("sendStart", "sendEnd"),
             wait: this._interval("sendEnd", "receiveHeadersEnd"),
             receive: WebInspector.HAREntry._toMilliseconds(this._request.receiveDuration),
-            ssl: ssl
+            ssl: this._interval("sslStart", "sslEnd")
         };
     },
 
@@ -241,7 +232,7 @@ WebInspector.HAREntry.prototype = {
     {
         if (this._request.cached || this._request.statusCode === 304)
             return 0;
-        return this._request.transferSize - this._request.responseHeadersSize
+        return this._request.transferSize - this._request.responseHeadersSize;
     },
 
     /**
@@ -249,9 +240,9 @@ WebInspector.HAREntry.prototype = {
      */
     get responseCompression()
     {
-        if (this._request.cached || this._request.statusCode === 304)
+        if (this._request.cached || this._request.statusCode === 304 || this._request.statusCode === 206)
             return;
-        return this._request.resourceSize - (this._request.transferSize - this._request.responseHeadersSize);
+        return this._request.resourceSize - this.responseBodySize;
     }
 }
 

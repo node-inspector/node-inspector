@@ -93,6 +93,35 @@ WebInspector.CSSMetadata.InheritedProperties = [
     "word-spacing", "zoom"
 ].keySet();
 
+// These non-standard Blink-specific properties augment the InheritedProperties.
+WebInspector.CSSMetadata.NonStandardInheritedProperties = [
+    "-webkit-font-smoothing"
+].keySet();
+
+/**
+ * @param {string} name
+ * @return {string}
+ */
+WebInspector.CSSMetadata.canonicalPropertyName = function(name)
+{
+    if (!name || name.length < 9 || name.charAt(0) !== "-")
+        return name.toLowerCase();
+    var match = name.match(/(?:-webkit-|-khtml-|-apple-)(.+)/);
+    if (!match)
+        return name.toLowerCase();
+    return match[1].toLowerCase();
+}
+
+/**
+ * @param {string} propertyName
+ * @return {boolean}
+ */
+WebInspector.CSSMetadata.isPropertyInherited = function(propertyName)
+{
+    return !!(WebInspector.CSSMetadata.InheritedProperties[WebInspector.CSSMetadata.canonicalPropertyName(propertyName)]
+            || WebInspector.CSSMetadata.NonStandardInheritedProperties[propertyName.toLowerCase()]);
+}
+
 WebInspector.CSSMetadata._colors = [
     "aqua", "black", "blue", "fuchsia", "gray", "green", "lime", "maroon", "navy", "olive", "orange", "purple", "red",
     "silver", "teal", "white", "yellow", "transparent", "currentcolor", "grey", "aliceblue", "antiquewhite",
@@ -117,8 +146,8 @@ WebInspector.CSSMetadata._colors = [
 WebInspector.CSSMetadata._colorAwareProperties = [
     "background", "background-color", "background-image", "border", "border-color", "border-top", "border-right", "border-bottom",
     "border-left", "border-top-color", "border-right-color", "border-bottom-color", "border-left-color", "box-shadow", "color",
-    "fill", "outline", "outline-color", "stroke", "text-line-through", "text-line-through-color", "text-overline", "text-overline-color",
-    "text-shadow", "text-underline", "text-underline-color", "-webkit-box-shadow", "-webkit-column-rule-color",
+    "fill", "outline", "outline-color", "stroke", "text-line-through-color", "text-overline-color",
+    "text-shadow", "text-underline-color", "-webkit-box-shadow", "-webkit-column-rule-color",
     "-webkit-text-decoration-color", "-webkit-text-emphasis", "-webkit-text-emphasis-color"
 ].keySet();
 
@@ -131,9 +160,6 @@ WebInspector.CSSMetadata._propertyDataMap = {
     ] },
     "background-repeat": { values: [
         "repeat", "repeat-x", "repeat-y", "no-repeat", "space", "round"
-    ] },
-    "text-underline": { values: [
-        "none", "dotted", "dashed", "solid", "double", "dot-dash", "dot-dot-dash", "wave"
     ] },
     "content": { values: [
         "list-item", "close-quote", "no-close-quote", "no-open-quote", "open-quote"
@@ -174,9 +200,6 @@ WebInspector.CSSMetadata._propertyDataMap = {
     "font-stretch": { values: [
         "normal", "wider", "narrower", "ultra-condensed", "extra-condensed", "condensed", "semi-condensed",
         "semi-expanded", "expanded", "extra-expanded", "ultra-expanded"
-    ] },
-    "-webkit-color-correction": { values: [
-        "default", "srgb"
     ] },
     "text-underline-style": { values: [
         "none", "dotted", "dashed", "solid", "double", "dot-dash", "dot-dot-dash", "wave"
@@ -303,10 +326,6 @@ WebInspector.CSSMetadata._propertyDataMap = {
     "speak": { values: [
         "none", "normal", "spell-out", "digits", "literal-punctuation", "no-punctuation"
     ] },
-    "text-line-through": { values: [
-        "none", "dotted", "dashed", "solid", "double", "dot-dash", "dot-dot-dash", "wave", "continuous",
-        "skip-white-space"
-    ] },
     "color-rendering": { values: [
         "auto", "optimizeSpeed", "optimizeQuality"
     ] },
@@ -345,7 +364,8 @@ WebInspector.CSSMetadata._propertyDataMap = {
     "display": { values: [
         "none", "inline", "block", "list-item", "run-in", "compact", "inline-block", "table", "inline-table",
         "table-row-group", "table-header-group", "table-footer-group", "table-row", "table-column-group",
-        "table-column", "table-cell", "table-caption", "-webkit-box", "-webkit-inline-box", "-wap-marquee"
+        "table-column", "table-cell", "table-caption", "-webkit-box", "-webkit-inline-box",
+        "-webkit-flex", "-webkit-inline-flex", "-webkit-grid", "-webkit-inline-grid", "-wap-marquee"
     ] },
     "-webkit-text-emphasis-position": { values: [
         "over", "under"

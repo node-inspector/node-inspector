@@ -55,6 +55,7 @@ WebInspector.TimelineModel.RecordType = {
     RecalculateStyles: "RecalculateStyles",
     InvalidateLayout: "InvalidateLayout",
     Layout: "Layout",
+    PaintSetup: "PaintSetup",
     Paint: "Paint",
     Rasterize: "Rasterize",
     ScrollLayer: "ScrollLayer",
@@ -148,15 +149,14 @@ WebInspector.TimelineModel.aggregateTimeByCategory = function(total, addend)
 WebInspector.TimelineModel.prototype = {
     /**
      * @param {boolean=} includeDomCounters
-     * @param {boolean=} includeNativeMemoryStatistics
      */
-    startRecord: function(includeDomCounters, includeNativeMemoryStatistics)
+    startRecord: function(includeDomCounters)
     {
         if (this._collectionEnabled)
             return;
         this.reset();
         var maxStackFrames = WebInspector.settings.timelineLimitStackFramesFlag.get() ? WebInspector.settings.timelineStackFramesToCapture.get() : 30;
-        WebInspector.timelineManager.start(maxStackFrames, includeDomCounters, includeNativeMemoryStatistics);
+        WebInspector.timelineManager.start(maxStackFrames, includeDomCounters);
         this._collectionEnabled = true;
     },
 

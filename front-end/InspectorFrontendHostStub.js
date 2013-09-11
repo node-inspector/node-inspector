@@ -36,7 +36,6 @@ if (!window.InspectorFrontendHost) {
  */
 WebInspector.InspectorFrontendHostStub = function()
 {
-    this._attachedWindowHeight = 0;
     this.isStub = true;
     this._fileBuffers = {};
     WebInspector.documentCopyEventFired = this.documentCopy.bind(this);
@@ -170,16 +169,20 @@ WebInspector.InspectorFrontendHostStub.prototype = {
 
         var blob = new Blob(content, { type: "application/octet-stream" });
         var objectUrl = window.URL.createObjectURL(blob);
-        window.location = objectUrl + "#" + fileNameSuffix;
+        window.location = objectUrl + "#/" + fileNameSuffix;
 
         function cleanup()
         {
             window.URL.revokeObjectURL(objectUrl);
         }
-        setTimeout(cleanup, 0);
+        setTimeout(cleanup, 3000);
     },
 
     sendMessageToBackend: function(message)
+    {
+    },
+
+    sendMessageToEmbedder: function(message)
     {
     },
 
@@ -220,6 +223,18 @@ WebInspector.InspectorFrontendHostStub.prototype = {
     isolatedFileSystem: function(fileSystemId, registeredName)
     {
         return null;
+    },
+
+    indexPath: function(requestId, fileSystemPath)
+    {
+    },
+
+    stopIndexing: function(requestId)
+    {
+    },
+
+    searchInPath: function(requestId, fileSystemPath, query)
+    {
     },
 
     setZoomFactor: function(zoom)

@@ -70,7 +70,7 @@ WebInspector.GoToLineDialog.install = function(panel, viewGetter)
 WebInspector.GoToLineDialog._show = function(viewGetter, event)
 {
     var sourceView = viewGetter();
-    if (!sourceView || !sourceView.canHighlightLine())
+    if (!sourceView || !sourceView.canHighlightPosition())
         return false;
     WebInspector.Dialog.show(sourceView.element, new WebInspector.GoToLineDialog(sourceView));
     return true;
@@ -83,8 +83,6 @@ WebInspector.GoToLineDialog.createShortcut = function()
 {
     var isMac = WebInspector.isMac();
     var shortcut;
-    if (isMac)
-        return WebInspector.KeyboardShortcut.makeDescriptor("l", WebInspector.KeyboardShortcut.Modifiers.Meta);
     return WebInspector.KeyboardShortcut.makeDescriptor("g", WebInspector.KeyboardShortcut.Modifiers.Ctrl);
 }
 
@@ -106,7 +104,7 @@ WebInspector.GoToLineDialog.prototype = {
         var value = this._input.value;
         var lineNumber = parseInt(value, 10) - 1;
         if (!isNaN(lineNumber) && lineNumber >= 0)
-            this._view.highlightLine(lineNumber);
+            this._view.highlightPosition(lineNumber);
     },
     
     onEnter: function()

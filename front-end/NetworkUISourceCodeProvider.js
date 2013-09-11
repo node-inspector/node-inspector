@@ -40,9 +40,9 @@ WebInspector.NetworkUISourceCodeProvider = function(networkWorkspaceProvider, wo
     WebInspector.resourceTreeModel.addEventListener(WebInspector.ResourceTreeModel.EventTypes.ResourceAdded, this._resourceAdded, this);
     WebInspector.resourceTreeModel.addEventListener(WebInspector.ResourceTreeModel.EventTypes.MainFrameNavigated, this._mainFrameNavigated, this);
     WebInspector.debuggerModel.addEventListener(WebInspector.DebuggerModel.Events.ParsedScriptSource, this._parsedScriptSource, this);
+    WebInspector.cssModel.addEventListener(WebInspector.CSSStyleModel.Events.StyleSheetAdded, this._styleSheetAdded, this);
 
     this._processedURLs = {};
-    this._lastDynamicAnonymousScriptIndexForURL = {};
 }
 
 WebInspector.NetworkUISourceCodeProvider.prototype = {
@@ -69,16 +69,6 @@ WebInspector.NetworkUISourceCodeProvider.prototype = {
         var script = /** @type {WebInspector.Script} */ (event.data);
         if (!script.sourceURL || script.isInlineScript() || script.isSnippet())
             return;
-        var isDynamicAnonymousScript;
-        // Only add uiSourceCodes for
-        // - content scripts;
-        // - scripts with explicit sourceURL comment;
-        // - dynamic scripts (script elements with src attribute) when inspector is opened after the script was loaded.
-        if (!script.hasSourceURL && !script.isContentScript) {
-            var requestURL = script.sourceURL.replace(/#.*/, "");
-            if (WebInspector.resourceForURL(requestURL) || WebInspector.networkLog.requestForURL(requestURL))
-                return;
-        }
         // Filter out embedder injected content scripts.
         if (script.isContentScript && !script.hasSourceURL) {
             var parsedURL = new WebInspector.ParsedURL(script.sourceURL);
@@ -86,6 +76,18 @@ WebInspector.NetworkUISourceCodeProvider.prototype = {
                 return;
         }
         this._addFile(script.sourceURL, script, script.isContentScript);
+    },
+
+    /**
+     * @param {WebInspector.Event} event
+     */
+    _styleSheetAdded: function(event)
+    {
+        var header = /** @type {WebInspector.CSSStyleSheetHeader} */ (event.data);
+        if ((!header.hasSourceURL || header.isInline) && header.origin !== "inspector")
+            return;
+
+        this._addFile(header.resourceURL(), header, false);
     },
 
     /**
@@ -120,15 +122,16 @@ WebInspector.NetworkUISourceCodeProvider.prototype = {
             return;
         if (this._processedURLs[url])
             return;
+        var mimeType = type.canonicalMimeType();
+        var overridingContentProvider = new WebInspector.ContentProviderOverridingMimeType(contentProvider, mimeType);
         this._processedURLs[url] = true;
         var isEditable = type !== WebInspector.resourceTypes.Document;
-        this._networkWorkspaceProvider.addFileForURL(url, contentProvider, isEditable, isContentScript);
+        this._networkWorkspaceProvider.addFileForURL(url, overridingContentProvider, isEditable, isContentScript);
     },
 
     _reset: function()
     {
         this._processedURLs = {};
-        this._lastDynamicAnonymousScriptIndexForURL = {};
         this._networkWorkspaceProvider.reset();
         this._populate();
     }
