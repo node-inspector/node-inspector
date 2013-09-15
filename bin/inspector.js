@@ -28,7 +28,7 @@ function onError(err) {
   if (err.code === 'EADDRINUSE') {
     console.error(
       'There is another process already listening at this address.\n' +
-      'Run `node-inspector --debug-port={port}` to use a different port.'
+      'Run `node-inspector --web-port={port}` to use a different port.'
     );
   }
 
