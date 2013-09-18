@@ -93,7 +93,30 @@ it a signal:
 
 		$ kill -s USR1 2345
 
-Great! Now you are ready to attach node-inspector
+Great! Now you are ready to attach node-inspector.
+
+#### Windows
+
+Windows does not support UNIX signals. To enable debugging, you can use
+an undocumented API function `process._debugProcess(pid)`:
+
+1. Get the PID of the node process using your favorite method, e.g.
+
+    ```sh
+    > tasklist /FI "IMAGENAME eq node.exe"
+
+    Image Name                     PID Session Name        Session#    Mem Usage
+    ========================= ======== ================ =========== ============
+    node.exe                      3084 Console                    1     11,964 K
+    ```
+
+2. Call the API:
+
+    ```sh
+    > node -e "process._debugProcess(3084)"
+    ```
+
+Great! Now you are ready to attach the inspector.
 
 ### Debugging
 
