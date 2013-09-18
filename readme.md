@@ -167,6 +167,15 @@ List of predefined options:
   > but your browser can be anywhere.
   > Just make sure port 8080 is accessible
 
+4. How to specify list of files to hide?
+
+  > Create a JSON-encoded array, don't forget to escape the quote characters
+  > when using a command-line option.
+  >
+  >     $ node-inspector --hidden='["node_modules/framework"]'
+  >
+  > Note that the array items are interpreted as regular expressions.
+
 ## Contributing Code
 
 Making Node Inspector the best debugger for node.js cannot be achieved without
