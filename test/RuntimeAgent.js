@@ -24,11 +24,13 @@ describe('RuntimeAgent', function() {
 
         agent.getProperties(
           {
-            objectId: MYFUNC_LOCAL_SCOPE_ID
+            objectId: MYFUNC_LOCAL_SCOPE_ID,
+            ownProperties: false,
+            accessorPropertiesOnly: false
           },
           function(error, result) {
             if (error)
-              done(error);
+              return done(error);
 
             expect(result.result.length, 'number of local variables')
               .to.equal(2);
@@ -65,11 +67,13 @@ describe('RuntimeAgent', function() {
       var agent = new RuntimeAgent(debuggerClient);
       agent.getProperties(
         {
-          objectId: inspectedObjectId
+          objectId: inspectedObjectId,
+          ownProperties: true,
+          accessorPropertiesOnly: false
         },
         function(error, result) {
           if (error)
-            done(error);
+            return done(error);
 
           var props = convertPropertyArrayToLookup(result.result);
 
@@ -88,6 +92,25 @@ describe('RuntimeAgent', function() {
           done();
         }
       );
+    });
+  });
+
+  it('returns empty result for unsupported getProperties() call', function(done) {
+    launcher.runInspectObject(function(debuggerClient, inspectedObjectId) {
+      var agent = new RuntimeAgent(debuggerClient);
+      agent.getProperties(
+        {
+          objectId: inspectedObjectId,
+          ownProperties: false,
+          accessorPropertiesOnly: true
+        },
+        function(error, result) {
+          if (error)
+            return done(error);
+
+          expect(result.result).to.be.empty;
+          done();
+        });
     });
   });
 
@@ -254,7 +277,9 @@ function verifyPropertyValue(runtimeAgent,
                              callback) {
   runtimeAgent.getProperties(
     {
-      objectId: objectId
+      objectId: objectId,
+      ownProperties: true,
+      accessorPropertiesOnly: false
     },
     function(err, result) {
       if (err) throw err;
