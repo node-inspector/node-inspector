@@ -17,5 +17,4 @@ describe('NetworkAgent', function() {
       );
     });
   });
-})
-
+});
