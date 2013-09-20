@@ -1,3 +1,30 @@
+2013-09-20, Version 0.5.0
+
+* Quick fix for properties displayed twice in UI (Miroslav Bajtos)
+
+* README: added FAQ entry for --hidden option (Miroslav Bajtos)
+
+* lib: fixed hiding of script files (Miroslav Bajtos)
+
+* lib: fix config handling (Miroslav Bajtos)
+
+* Updated AUTHORS. (Miroslav Bajtos)
+
+* Fixed wrong hint in error message if web port is used. (Adam Hořčica)
+
+* NetworkAgent: support data scheme URLs (Miroslav Bajtos)
+
+* package.json: upgraded to express 3.4 (Miroslav Bajtos)
+
+* lib,Overrides: support the updated front-end (Miroslav Bajtos)
+
+* front-end: patched inspector.html (Miroslav Bajtos)
+
+* front-end: upgraded to Blink branch 1625, r157454 (Miroslav Bajtos)
+
+* tools: implemented update-front-end.sh (Miroslav Bajtos)
+
+
 2013-09-05, Version 0.4.0
 
 * Emit 'listening' and 'error' events (Miroslav Bajtos)
