@@ -1,5 +1,6 @@
 var expect = require('chai').expect,
   launcher = require('./helpers/launcher.js'),
+  config = require('../config'),
   CallFramesProvider = require('../lib/CallFramesProvider').CallFramesProvider;
 
 describe('CallFramesProvider', function() {
@@ -7,7 +8,7 @@ describe('CallFramesProvider', function() {
 
   it('gets stack trace', function(done) {
     launcher.runOnBreakInFunction(function(debuggerClient) {
-      var provider = new CallFramesProvider(debuggerClient);
+      var provider = new CallFramesProvider(config, debuggerClient);
       provider.fetchCallFrames(function(error, callFrames) {
         if (error !== undefined && error !== null) {
           done(error);
@@ -53,6 +54,21 @@ describe('CallFramesProvider', function() {
           callFrames[1],
           'frame[1]');
 
+        done();
+      });
+    });
+  });
+
+  it('retrieves specified number of stack traces when configured', function(done) {
+    launcher.runOnBreakInFunction(function(debuggerClient) {
+      var provider = new CallFramesProvider({stackTraceLimit: 1}, debuggerClient);
+      provider.fetchCallFrames(function(error, callFrames) {
+        if (error !== undefined && error !== null) {
+          done(error);
+          return;
+        }
+
+        expect(callFrames).to.have.length(1);
         done();
       });
     });

@@ -164,14 +164,16 @@ so that sources earlier in this list override later ones.
 
 List of predefined options:
 ```
-         Option             Default                  Description
-    --help            |                 |   Print information about options
-    --web-port        |      8080       |   Port to host the inspector
-    --web-host        |    127.0.0.1    |   Host to listen on
-    --debug-port      |      5858       |   Port to connect to the debugging app
-    --save-live-edit  |      false      |   Save live edit changes to disk (update the edited files)
-    --hidden          |       []        |   Array of files to hide from the UI
-                      |                 |   Breakpoints in these files will be ignored
+         Option              Default                  Description
+    --help               |             | Print information about options
+    --web-port           |    8080     | Port to host the inspector
+    --web-host           |  127.0.0.1  | Host to listen on
+    --debug-port         |    5858     | Port to connect to the debugging app
+    --save-live-edit     |    false    | Save live edit changes to disk
+                         |             |   (update the edited files)
+    --hidden             |     []      | Array of files to hide from the UI
+                         |             |   (breakpoints in these files will be ignored)
+    --stack-trace-limit  |     50      | Number of stack frames to show on a breakpoint
 ```
 
 ## FAQ / WTF
