@@ -199,6 +199,11 @@ List of predefined options:
   >
   > Note that the array items are interpreted as regular expressions.
 
+5. UI doesn't load or doesn't work and refresh didn't help
+
+  > Make sure that you have adblock disabled as well as any other content
+  > blocking scripts and plugins.
+
 ## Contributing Code
 
 Making Node Inspector the best debugger for node.js cannot be achieved without
