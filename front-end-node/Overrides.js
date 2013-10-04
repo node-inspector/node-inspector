@@ -1,6 +1,6 @@
 // Wire up websocket to talk to backend
 WebInspector.loaded = function() {
-  WebInspector.socket = io.connect('http://' + window.location.host + '/');
+  WebInspector.socket = io.connect(window.location.protocol + "//" + window.location.host + '/');
   WebInspector.socket.on('message', onWebSocketMessage);
   WebInspector.socket.on('error', function(error) { console.error(error); });
   WebInspector.socket.on('connect', onWebSocketConnected);
