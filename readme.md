@@ -144,6 +144,7 @@ Node-inspector uses [rc](https://npmjs.org/package/rc)
 
 Places for configuration:
 * command line arguments (parsed by optimist)
+* [grunt-node-inspector](https://github.com/ChrisWren/grunt-node-inspector)
 * enviroment variables prefixed with ```node-inspector_```
 * if you passed an option ```--config file``` then from that file
 * a local ```.node-inspectorrc``` or the first found looking in ```./ ../ ../../
