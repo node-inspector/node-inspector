@@ -7,7 +7,8 @@ function startDebugger(scriptPath, done) {
   var testDir = path.dirname(__filename),
     debugPort = 61000,
     child,
-    debuggerClient;
+    debuggerClient,
+    ignoreErrors = false;
 
   if (scriptPath.indexOf(path.sep) == -1)
     scriptPath = path.join(testDir, '..', 'fixtures', scriptPath);
@@ -16,6 +17,7 @@ function startDebugger(scriptPath, done) {
   child.stderr.on('data', function(data) { process.stderr.write(data); });
 
   stopDebuggerCallbacks.push(function stopDebugger() {
+    ignoreErrors = true;
     debuggerClient.close();
     child.kill();
   });
@@ -28,7 +30,10 @@ function startDebugger(scriptPath, done) {
       done(child, debuggerClient);
     });
     debuggerClient.on('error', function(e) {
-      throw new Error('Debugger connection error: ' + e);
+      if (!ignoreErrors)
+        throw new Error('Debugger connection error: ' + e);
+      if (e.code != 'ECONNRESET')
+        console.warn('(warning) debugger connection error: ' + e);
     });
   }
 
