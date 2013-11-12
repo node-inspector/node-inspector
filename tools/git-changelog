@@ -1,8 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 
 FILE=""
 LIST=false
-TAG="n.n.n"
+TAG=$(node -e "console.log(require('./package.json').version)")
 
 while [ "$1" != "" ]; do
   case $1 in
