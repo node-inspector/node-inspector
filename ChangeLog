@@ -1,3 +1,22 @@
+2013-11-12, Version 0.6.0
+
+* gjslint: removed workaround for linter bug (Miroslav Bajtos)
+
+* Updated AUTHORS. (Miroslav Bajtos)
+
+* Added `stackTraceLimit` configuration, fixes #96. (ssafejava)
+
+* test: fixed launcher errors on windows (Miroslav Bajtos)
+
+* Remove dependence on HTTP for socket io connection to server (Matthew O'Riordan)
+
+* README: added WTF entry about adblock (Gary Katsevman)
+
+* README: howto signal SIGUSR1 on windows (Miroslav Bajtos)
+
+* lib,test: fixed lint issues (Miroslav Bajtos)
+
+
 2013-09-20, Version 0.5.0
 
 * Quick fix for properties displayed twice in UI (Miroslav Bajtos)
