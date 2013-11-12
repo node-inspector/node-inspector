@@ -3,6 +3,5 @@
   "webHost": null,
   "debugPort": 5858,
   "saveLiveEdit": false,
-  "hidden": [],
-  "stackTraceLimit": 50
+  "hidden": []
 }
