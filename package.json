@@ -26,7 +26,8 @@
     "async": "~0.2.8",
     "glob": "~3.2.1",
     "rc": "~0.3.0",
-    "strong-data-uri": "~0.1.0"
+    "strong-data-uri": "~0.1.0",
+    "debug": "~0.7.3"
   },
   "devDependencies": {
     "mocha": "latest",
