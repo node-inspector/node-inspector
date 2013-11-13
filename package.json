@@ -20,6 +20,7 @@
   "bin": {
     "node-inspector": "./bin/inspector.js"
   },
+  "main": "./bin/inspector.js",
   "dependencies": {
     "socket.io": "~0.9.14",
     "express": "~3.4",
