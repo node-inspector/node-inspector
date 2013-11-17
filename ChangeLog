@@ -1,3 +1,7 @@
+2013-11-17, Version 0.6.1
+
+* Added debug logging of communication (Miroslav Bajtos)
+
 2013-11-12, Version 0.6.0
 
 * gjslint: removed workaround for linter bug (Miroslav Bajtos)
