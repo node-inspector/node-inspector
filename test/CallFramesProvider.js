@@ -15,6 +15,9 @@ describe('CallFramesProvider', function() {
           return;
         }
 
+        // The order of script loading has changed in v0.11
+        var scriptId = /^v0\.10\./.test(process.version) ? '28': '32';
+
         expect(callFrames).to.have.length.least(2);
 
         function objectValueWithId(id, className) {
@@ -29,7 +32,7 @@ describe('CallFramesProvider', function() {
         assertFrame({
             callFrameId: '0',
             functionName: 'MyObj.myFunc',
-            location: {scriptId: '28', lineNumber: 7, columnNumber: 4},
+            location: {scriptId: scriptId, lineNumber: 7, columnNumber: 4},
             scopeChain: [
               { object: objectValueWithId('scope:0:0'), type: 'local' },
               { object: objectValueWithId('scope:0:1'), type: 'closure' },
@@ -43,7 +46,7 @@ describe('CallFramesProvider', function() {
         assertFrame({
             callFrameId: '1',
             functionName: 'globalFunc',
-            location: {scriptId: '28', lineNumber: 12, columnNumber: 6},
+            location: {scriptId: scriptId, lineNumber: 12, columnNumber: 6},
             scopeChain: [
               { object: objectValueWithId('scope:1:0'), type: 'local' },
               { object: objectValueWithId('scope:1:1'), type: 'closure' },
