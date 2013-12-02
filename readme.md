@@ -160,7 +160,17 @@ Places for configuration:
 All configuration sources that where found will be flattened into one object,
 so that sources earlier in this list override later ones.
 
-
+Use dashed option names in RC files. Sample config file:
+```js
+{
+  "web-port": 8088,
+  "web-host": null,
+  "debug-port": 5858,
+  "save-live-edit": true,
+  "hidden": [],
+  "stack-trace-limit": 50
+}
+```
 
 List of predefined options:
 ```
