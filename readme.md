@@ -160,7 +160,7 @@ Places for configuration:
 All configuration sources that where found will be flattened into one object,
 so that sources earlier in this list override later ones.
 
-
+command-line arguments and RC files use dashed names only.
 
 List of predefined options:
 ```
