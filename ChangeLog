@@ -1,6 +1,16 @@
+2013-12-04, Version 0.6.2
+
+* Updated AUTHORS. (Miroslav Bajtos)
+
+* docs: explain dashed name rc config conversion (cattail)
+
+* Removed false error messages on reload (Dave)
+
+
 2013-11-17, Version 0.6.1
 
 * Added debug logging of communication (Miroslav Bajtos)
+
 
 2013-11-12, Version 0.6.0
 
