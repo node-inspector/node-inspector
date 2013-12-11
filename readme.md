@@ -229,6 +229,7 @@ List of predefined options:
  // Remove all the breakpoints
  window.localStorage.removeItem('breakpoints')
  ```
+ When you are done cleaning up, hit refresh in the browser.
 
 ## Contributing Code
 
