@@ -216,6 +216,21 @@ List of predefined options:
   > Make sure that you have adblock disabled as well as any other content
   > blocking scripts and plugins.
 
+6. I got my Node Inspector instance in a bad state with some watch variables that were function calls (possibly into some special c-bindings) and restart of the application/debug session did not fix the problem. How can I (selectively) delete debug session metadata?
+
+ > Node Inspector stores debug session metadata in the HTML5 local storage. You can inspect the contents of local storage and remove any items as needed. In Google Chrome, you can execute any of the following in the JavaScript console:
+ ```js
+ // Remove all
+ window.localStorage.clear()
+ // Or, to list keys so you can selectively remove them with removeItem()
+ window.localStorage
+ // Remove all the watch expressions
+ window.localStorage.removeItem('watchExpressions')
+ // Remove all the breakpoints
+ window.localStorage.removeItem('breakpoints')
+ ```
+ When you are done cleaning up, hit refresh in the browser.
+
 ## Contributing Code
 
 Making Node Inspector the best debugger for node.js cannot be achieved without
