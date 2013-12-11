@@ -215,6 +215,10 @@ List of predefined options:
 
   > Make sure that you have adblock disabled as well as any other content
   > blocking scripts and plugins.
+  
+6. I got my inspector instance in a bad state with some watch variables that were function calls (possibly into some special c-bindings) and cannot seem to resolve by restarting my app/debug session. How can I (selectively) blow away debug metadata so I can start from a clean state?
+
+ > node-inspector stores all the metadata in the browser storage. You may wanna inspect and clean things up there. For chrome, you might wanna checkout the "LocalStorage Monitor" extension.
 
 ## Contributing Code
 
