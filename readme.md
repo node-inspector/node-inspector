@@ -183,7 +183,6 @@ List of predefined options:
     --save-live-edit     |    false    | Save live edit changes to disk
                          |             |   (update the edited files)
     --fast-load          |    false    | Faster load by disabling glob search for *.js
-                         |             | and source map detection
     --hidden             |     []      | Array of files to hide from the UI
                          |             |   (breakpoints in these files will be ignored)
     --stack-trace-limit  |     50      | Number of stack frames to show on a breakpoint
