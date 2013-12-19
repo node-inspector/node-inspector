@@ -182,7 +182,7 @@ List of predefined options:
     --debug-port         |    5858     | Port to connect to the debugging app
     --save-live-edit     |    false    | Save live edit changes to disk
                          |             |   (update the edited files)
-    --fast-load          |    false    | Faster load by disabling glob search for *.js
+    --no-preload         |    false    | Disables preloading *.js to speed up startup
     --hidden             |     []      | Array of files to hide from the UI
                          |             |   (breakpoints in these files will be ignored)
     --stack-trace-limit  |     50      | Number of stack frames to show on a breakpoint
@@ -235,7 +235,7 @@ List of predefined options:
 
  7. Node Inspector takes a long time to start up.
 
- > Try setting --fast-load to true.
+ > Try setting --no-preload to true. Disables searching disk for *.js at startup.
 
 ## Contributing Code
 
