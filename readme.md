@@ -167,7 +167,7 @@ Use dashed option names in RC files. Sample config file:
   "web-host": null,
   "debug-port": 5858,
   "save-live-edit": true,
-  "fast-load": true,
+  "no-preload": true,
   "hidden": [],
   "stack-trace-limit": 50
 }
