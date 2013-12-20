@@ -15,12 +15,12 @@ describe('ScriptFileStorage', function() {
   var storage;
   launcher.stopAllDebuggersAfterEachTest();
   beforeEach(function() {
-    storage = new ScriptFileStorage();
+    storage = new ScriptFileStorage({});
   });
 
   it('saves new content without node.js module wrapper', function(done) {
     runLiveEdit(function(debuggerClient, originalScript, runtimeScript) {
-      var storage = new ScriptFileStorage();
+      var storage = new ScriptFileStorage({});
       storage.save(TEMP_FILE, edited(runtimeScript), function(err) {
         if (err) throw err;
         var newScript = fs.readFileSync(TEMP_FILE, { encoding: 'utf-8' });
