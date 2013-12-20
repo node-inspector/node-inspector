@@ -15,12 +15,12 @@ describe('ScriptFileStorage', function() {
   var storage;
   launcher.stopAllDebuggersAfterEachTest();
   beforeEach(function() {
-    storage = new ScriptFileStorage({});
+    storage = new ScriptFileStorage();
   });
 
   it('saves new content without node.js module wrapper', function(done) {
     runLiveEdit(function(debuggerClient, originalScript, runtimeScript) {
-      var storage = new ScriptFileStorage({});
+      var storage = new ScriptFileStorage();
       storage.save(TEMP_FILE, edited(runtimeScript), function(err) {
         if (err) throw err;
         var newScript = fs.readFileSync(TEMP_FILE, { encoding: 'utf-8' });
@@ -140,7 +140,7 @@ describe('ScriptFileStorage', function() {
 
 
   it('disables preloading files', function(done) {
-    var expectedFiles = [];
+    givenTempFiles('app.js', 'mod.js');
     storage = new ScriptFileStorage({noPreload:true});
 
     storage.findAllApplicationScripts(
@@ -148,9 +148,7 @@ describe('ScriptFileStorage', function() {
       path.join(TEMP_DIR, 'app.js'),
       function(err, files) {
         if (err) throw err;
-        expect(files.map(relativeToTemp))
-          .to.have.members(expectedFiles.map(relativeToTemp));
-        expect(files).to.have.length(expectedFiles.length);
+        expect(files).to.have.length(0);
         done();
       }
     );
