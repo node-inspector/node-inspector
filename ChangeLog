@@ -1,3 +1,14 @@
+2013-12-26, Version 0.7.0-1
+
+* Improved formatting of Date objects in inspector (Sergey Krilov)
+
+* Added --no-preload to disable glob of all *.js (Dick Hardt)
+
+* Update readme with faq about browser storage and debug metadata (Karan Batra-Daitch)
+
+* Fixed CallFramesProvider test on Node v0.11. (Miroslav Bajtos)
+
+
 2013-12-04, Version 0.6.2
 
 * Updated AUTHORS. (Miroslav Bajtos)
