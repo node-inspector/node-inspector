@@ -167,6 +167,7 @@ Use dashed option names in RC files. Sample config file:
   "web-host": null,
   "debug-port": 5858,
   "save-live-edit": true,
+  "no-preload": true,
   "hidden": [],
   "stack-trace-limit": 50
 }
@@ -181,6 +182,7 @@ List of predefined options:
     --debug-port         |    5858     | Port to connect to the debugging app
     --save-live-edit     |    false    | Save live edit changes to disk
                          |             |   (update the edited files)
+    --no-preload         |    false    | Disables preloading *.js to speed up startup
     --hidden             |     []      | Array of files to hide from the UI
                          |             |   (breakpoints in these files will be ignored)
     --stack-trace-limit  |     50      | Number of stack frames to show on a breakpoint
@@ -230,6 +232,10 @@ List of predefined options:
  window.localStorage.removeItem('breakpoints')
  ```
  When you are done cleaning up, hit refresh in the browser.
+
+ 7. Node Inspector takes a long time to start up.
+
+ > Try setting --no-preload to true. Disables searching disk for *.js at startup.
 
 ## Contributing Code
 
