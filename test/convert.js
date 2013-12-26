@@ -139,5 +139,20 @@ describe('convert', function() {
 
       expect(convert.v8RefToInspectorObject(ref).description).to.equal('Buffer[3]');
     });
+
+    it('appends formatted date to Date description by calling toString on the date', function() {
+      var ref = {
+        handle: 0,
+        type: 'object',
+        className: 'Date',
+        text: '2013-12-21T15:51:57.635Z',
+        value: '2013-12-21T15:51:57.635Z'
+      };
+
+      // Ex: "Sat Dec 21 2013 10:51:57 GMT-0500 (EST)", but exact value may vary slightly by platform.
+      var datestr = new Date('2013-12-21T15:51:57.635Z').toString();
+
+      expect(convert.v8RefToInspectorObject(ref).description).to.equal('Date: ' + datestr);
+    });
   });
 });
