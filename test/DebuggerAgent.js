@@ -188,4 +188,38 @@ describe('DebuggerAgent', function() {
       done();
     });
   });
+
+  describe('canGetStringValuesLargerThan80Chars', function() {
+    before(setupDebugScenario);
+
+    it('returns large String values of 10000', function(done) {
+      var testExpression = "Array(10000).join('a');"
+      var expectedValue = Array(10000).join('a');
+
+      agent.evaluateOnCallFrame(
+        {
+          callFrameId: 0,
+          expression: testExpression
+        },
+        function(err, data) {
+          if (err) throw err;
+
+          expect(data.result.value)
+            .to.equal(expectedValue);
+
+          done();
+        }
+      );
+    });
+
+    var debuggerClient, agent;
+
+    function setupDebugScenario(done) {
+      launcher.runOnBreakInFunction(function(client) {
+        debuggerClient = client;
+        agent = new DebuggerAgent({}, null, debuggerClient, null, null);
+        done();
+      });
+    }
+  });
 });
