@@ -1,6 +1,7 @@
 var spawn = require('child_process').spawn,
   path = require('path'),
   DebuggerClient = require('../../lib/DebuggerClient').DebuggerClient,
+  config = require('../../lib/config'),
   stopDebuggerCallbacks = [];
 
 function startDebugger(scriptPath, done) {
@@ -23,7 +24,7 @@ function startDebugger(scriptPath, done) {
   });
 
   function setupDebuggerClient() {
-    debuggerClient = new DebuggerClient(debugPort);
+    debuggerClient = new DebuggerClient(debugPort, config);
     debuggerClient.connect();
     debuggerClient.on('connect', function() {
       injectTestHelpers(debuggerClient);
