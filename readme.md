@@ -186,6 +186,8 @@ List of predefined options:
     --hidden             |     []      | Array of files to hide from the UI
                          |             |   (breakpoints in these files will be ignored)
     --stack-trace-limit  |     50      | Number of stack frames to show on a breakpoint
+    --max-string-length  |     -1      | If string length exceed configured maximum,
+                         |             |   it will be trimmed (-1 - no maximum)
 ```
 
 ## FAQ / WTF
