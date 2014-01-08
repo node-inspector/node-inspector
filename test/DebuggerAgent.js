@@ -193,7 +193,7 @@ describe('DebuggerAgent', function() {
     before(setupDebugScenario);
 
     it('returns large String values of 10000', function(done) {
-      var testExpression = "Array(10000).join('a');"
+      var testExpression = "Array(10000).join('a');";
       var expectedValue = Array(10000).join('a');
 
       agent.evaluateOnCallFrame(
@@ -210,6 +210,27 @@ describe('DebuggerAgent', function() {
           done();
         }
       );
+    });
+
+    var debuggerClient, agent;
+
+    function setupDebugScenario(done) {
+      launcher.runOnBreakInFunction(function(client) {
+        debuggerClient = client;
+        agent = new DebuggerAgent({}, null, debuggerClient, null, null);
+        done();
+      });
+    }
+  });
+
+  describe('canResumeScriptExecutionWithoutError', function() {
+    before(setupDebugScenario);
+
+    it('resumes without error', function(done) {
+      expect(function () { agent.resume(); })
+        .to.not.throw();
+
+      done();
     });
 
     var debuggerClient, agent;
