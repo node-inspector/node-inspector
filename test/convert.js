@@ -151,8 +151,10 @@ describe('convert', function() {
 
       // Ex: "Sat Dec 21 2013 10:51:57 GMT-0500 (EST)", but exact value may vary slightly by platform.
       var datestr = new Date('2013-12-21T15:51:57.635Z').toString();
+      var converted = convert.v8RefToInspectorObject(ref);
 
-      expect(convert.v8RefToInspectorObject(ref).description).to.equal('Date: ' + datestr);
+      expect(converted.description).to.equal(datestr);
+      expect(converted.type).to.equal('date');
     });
   });
 });
