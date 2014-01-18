@@ -26,7 +26,7 @@ inspector.on('message', handleInspectorMessage);
 function handleInspectorMessage(msg) {
   switch(msg.event) {
     case 'SERVER.LISTENING':
-      console.log('Vising %s to start debugging.', msg.address.url);
+      console.log('Visit %s to start debugging.', msg.address.url);
       break;
     case 'SERVER.ERROR':
       console.log('Cannot start the server: %s.', msg.error.code);
