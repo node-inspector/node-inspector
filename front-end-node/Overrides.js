@@ -22,7 +22,11 @@ function onWebSocketMessage(message) {
 
   if (message === 'showConsole') {
     WebInspector.showConsole();
-  } else {
+  } 
+  else if (message === 'reloadInspector') {
+    location.reload();
+  } 
+  else {
     InspectorBackend.dispatch(message);
   }
 }
@@ -121,7 +125,6 @@ WebInspector.notifications.addEventListener(
   },
   null
 );
-
 
 function showMainAppFile() {
   var fileTabs = WebInspector.showPanel('scripts')._editorContainer._files;
