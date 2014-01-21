@@ -157,3 +157,11 @@ function getAllUiSourceCodes() {
 
   return uiSourceCodes;
 }
+
+var oldDetached = WebInspector.detached;
+WebInspector.detached = function () {
+  oldDetached.apply(this, arguments);
+  setTimeout(function () {
+    location.reload();
+  }, 100);
+};
