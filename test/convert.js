@@ -180,4 +180,27 @@ describe('convert', function() {
       expect(converted.description).to.equal(ref.description);
     });
   });
+  
+  describe('v8ResultToInspectorResult', function(){
+    it('convert regexp as object', function() {
+      var v8Result = {
+            handle: 0,
+            className: 'RegExp',
+            type: 'regexp',
+            text: '/\/[^a]abc/'
+          },
+          ref = {
+            type: 'regexp',
+            objectId: '0',
+            className: 'RegExp',
+            description: '/\/[^a]abc/'
+          },
+          converted = convert.v8ResultToInspectorResult(v8Result);
+      
+      expect(converted.type).to.equal(ref.type);
+      expect(converted.objectId).to.equal(ref.objectId);
+      expect(converted.className).to.equal(ref.className);
+      expect(converted.description).to.equal(ref.description);
+    });
+  });
 });
