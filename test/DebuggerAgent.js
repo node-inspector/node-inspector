@@ -227,10 +227,8 @@ describe('DebuggerAgent', function() {
     before(setupDebugScenario);
 
     it('does not throw an error', function(done) {
-      expect(function () { agent.resume(); })
+      expect(function () { agent.resume({}, done); })
         .to.not.throw();
-
-      done();
     });
 
     var debuggerClient, agent;
@@ -238,7 +236,15 @@ describe('DebuggerAgent', function() {
     function setupDebugScenario(done) {
       launcher.runOnBreakInFunction(function(client) {
         debuggerClient = client;
-        agent = new DebuggerAgent({}, null, debuggerClient, null, null);
+        var frontEndClientStub = {
+          sendEvent: function() {}
+        };
+        agent = new DebuggerAgent(
+          {},
+          frontEndClientStub,
+          debuggerClient,
+          null,  // BreakEventHandler
+          null); // ScripManager
         done();
       });
     }
