@@ -44,7 +44,7 @@ function startDebugger(scriptPath, done) {
 function runOnBreakInFunction(test) {
   stopAllDebuggers();
   startDebugger('BreakInFunction.js', function(childProcess, debuggerClient) {
-    debuggerClient.on('break', function() {
+    debuggerClient.once('break', function() {
       test(debuggerClient);
     });
     childProcess.stdin.write('go!\n');
@@ -55,7 +55,7 @@ function runOnBreakInFunction(test) {
 function runInspectObject(test) {
   stopAllDebuggers();
   startDebugger('InspectObject.js', function(childProcess, debuggerClient) {
-    debuggerClient.on('break', function() {
+    debuggerClient.once('break', function() {
       debuggerClient.fetchObjectId(
         debuggerClient,
         'inspectedObject',
