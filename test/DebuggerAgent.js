@@ -189,10 +189,10 @@ describe('DebuggerAgent', function() {
     });
   });
 
-  describe('canGetStringValuesLargerThan80Chars', function() {
+  describe('evaluateOnCallFrame', function() {
     before(setupDebugScenario);
 
-    it('returns large String values of 10000', function(done) {
+    it('truncates String values at 10,000 characters', function(done) {
       var testExpression = "Array(10000).join('a');";
       var expectedValue = Array(10000).join('a');
 
@@ -223,10 +223,10 @@ describe('DebuggerAgent', function() {
     }
   });
 
-  describe('canResumeScriptExecutionWithoutError', function() {
+  describe('resume()', function() {
     before(setupDebugScenario);
 
-    it('resumes without error', function(done) {
+    it('does not throw an error', function(done) {
       expect(function () { agent.resume(); })
         .to.not.throw();
 
