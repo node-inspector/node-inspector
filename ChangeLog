@@ -1,3 +1,24 @@
+2014-01-23, Version 0.7.0-2
+
+* Updated AUTHORS. (Miroslav Bajtoš)
+
+* Fixed display of RegExp objects. (3y3)
+
+* Fixed DebuggerClient.resume acting like stepInto (Miroslav Bajtoš)
+
+* Fixed timing-dependent unit-tests failures (Miroslav Bajtoš)
+
+* test: improved describe/it names (Miroslav Bajtoš)
+
+* Fixed misspelled word "Visit" in docs (Peter Lyons)
+
+* Fix Date display format. Issue #281 (3y3)
+
+* Fixed throw on DebuggerAgent.resume() (Lennon Pulda-Grealy)
+
+* Added large String support for debugger evaluation requests (Peter Flannery)
+
+
 2013-12-26, Version 0.7.0-1
 
 * Improved formatting of Date objects in inspector (Sergey Krilov)
