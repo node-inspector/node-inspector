@@ -1,6 +1,14 @@
 // Wire up websocket to talk to backend
 WebInspector.loaded = function() {
-  WebInspector.socket = io.connect(window.location.protocol + "//" + window.location.host + '/');
+  var resolveRelativePath = function(url) {
+    var a = document.createElement('a');
+    a.href = url;
+    return a.pathname;
+  }
+
+  var ioHost = window.location.protocol + "//" + window.location.host + '/';
+  var ioResource = resolveRelativePath('socket.io').substr(1);
+  WebInspector.socket = io.connect(ioHost, {resource: ioResource});
   WebInspector.socket.on('message', onWebSocketMessage);
   WebInspector.socket.on('error', function(error) { console.error(error); });
   WebInspector.socket.on('connect', onWebSocketConnected);
