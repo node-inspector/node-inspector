@@ -1,20 +1,27 @@
 // Wire up websocket to talk to backend
 WebInspector.loaded = function() {
-  var resolveRelativePath = function(url) {
-    var a = document.createElement('a');
-    a.href = url;
-    return a.pathname;
-  }
 
-  var ioHost = window.location.protocol + "//" + window.location.host + '/';
-  var ioResource = resolveRelativePath('socket.io').substr(1);
-  WebInspector.socket = io.connect(ioHost, {resource: ioResource});
-  WebInspector.socket.on('message', onWebSocketMessage);
-  WebInspector.socket.on('error', function(error) { console.error(error); });
-  WebInspector.socket.on('connect', onWebSocketConnected);
+  var webSocketUrl = function() {
+    var a = document.createElement('a');
+    // browser will resolve this relative path to an absolute one
+    a.href = 'ws';
+    a.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return a.href;
+  }();
+
+  WebInspector.socket = new WebSocket(webSocketUrl);
+
+  WebInspector.socket.onmessage = onWebSocketMessage;
+  WebInspector.socket.onerror = onWebSocketError;
+  WebInspector.socket.onopen = onWebSocketConnected;
 };
 
 var _inspectorInitialized = false;
+
+function onWebSocketError(error) {
+    console.error(error);
+}
+
 function onWebSocketConnected() {
   if (_inspectorInitialized) return;
   InspectorFrontendHost.sendMessageToBackend = WebInspector.socket.send.bind(WebInspector.socket);
@@ -25,7 +32,10 @@ function onWebSocketConnected() {
   _inspectorInitialized = true;
 }
 
-function onWebSocketMessage(message) {
+function onWebSocketMessage(response) {
+
+  var message = response.data;
+
   if (!message) return;
 
   if (message === 'showConsole') {

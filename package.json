@@ -21,13 +21,13 @@
     "node-inspector": "./bin/inspector.js"
   },
   "dependencies": {
-    "socket.io": "~0.9.14",
     "express": "~3.4",
     "async": "~0.2.8",
     "glob": "~3.2.1",
     "rc": "~0.3.0",
     "strong-data-uri": "~0.1.0",
-    "debug": "~0.7.3"
+    "debug": "~0.7.3",
+    "ws": "~0.4.31"
   },
   "devDependencies": {
     "mocha": "latest",
