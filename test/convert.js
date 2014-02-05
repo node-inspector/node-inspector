@@ -158,7 +158,7 @@ describe('convert', function() {
     });
   });
 
-  describe('v8ResultToInspectorResult', function(){
+  describe('v8ResultToInspectorResult', function() {
     it('convert regexp as object', function() {
       var v8Result = {
             handle: 0,

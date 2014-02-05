@@ -227,7 +227,7 @@ describe('DebuggerAgent', function() {
     before(setupDebugScenario);
 
     it('does not throw an error', function(done) {
-      expect(function () { agent.resume({}, done); })
+      expect(function() { agent.resume({}, done); })
         .to.not.throw();
     });
 

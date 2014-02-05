@@ -123,7 +123,7 @@ describe('ScriptFileStorage', function() {
   it('excludes files to hide', function(done) {
     var expectedFiles = givenTempFiles('app.js', 'mod.js').slice(0, 1);
     var isHiddenScriptFn = function(s) { return /mod.js/i.test(s); };
-    storage = new ScriptFileStorage({isScriptHidden:isHiddenScriptFn});
+    storage = new ScriptFileStorage({isScriptHidden: isHiddenScriptFn});
 
     storage.findAllApplicationScripts(
       TEMP_DIR,
@@ -141,7 +141,7 @@ describe('ScriptFileStorage', function() {
 
   it('disables preloading files', function(done) {
     givenTempFiles('app.js', 'mod.js');
-    storage = new ScriptFileStorage({noPreload:true});
+    storage = new ScriptFileStorage({noPreload: true});
 
     storage.findAllApplicationScripts(
       TEMP_DIR,
