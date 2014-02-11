@@ -179,5 +179,35 @@ describe('convert', function() {
       expect(converted.className).to.equal(ref.className);
       expect(converted.description).to.equal(ref.description);
     });
+
+    it('converts error as object', function() {
+      var v8Result = {
+        "handle": 6,
+        "type": "error",
+        "className": "Error",
+        "constructorFunction": {
+          "ref": 47
+        },
+        "protoObject": {
+          "ref": 48
+        },
+        "prototypeObject": {
+          "ref": 2
+        },
+        "properties": [
+          // stack, arguments, type, message
+        ],
+        "text": "Error: ENOENT, open 'missing-file'"
+      };
+
+      var converted = convert.v8ResultToInspectorResult(v8Result);
+
+      expect(converted).to.eql({
+        type: 'object',
+        objectId: '6',
+        className: 'Error',
+        description: v8Result.text
+      });
+    })
   });
 });
