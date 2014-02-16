@@ -67,18 +67,24 @@ This is beta-quality code, so use at your own risk.
 
 * With [npm](http://github.com/isaacs/npm)
 
-        $ npm install -g node-inspector
+  ```sh
+  $ npm install -g node-inspector
+  ```
 
 ### Enable debug mode
 
 To use node-inspector, enable debugging on the node you wish to debug.
 You can either start node with a debug flag like:
 
-    $ node --debug your/node/program.js
+```sh
+$ node --debug your/node/program.js
+```
 
 or, to pause your script on the first line:
 
-    $ node --debug-brk your/short/node/script.js
+```sh
+$ node --debug-brk your/short/node/script.js
+```
 
 Or you can enable debugging on a node that is already running by sending
 it a signal:
@@ -86,12 +92,16 @@ it a signal:
 1. Get the PID of the node process using your favorite method.
 `pgrep` or `ps -ef` are good
 
-		$ pgrep -l node
-		2345 node your/node/server.js
+    ```sh
+    $ pgrep -l node
+    2345 node your/node/server.js
+    ```
 
 2. Send it the USR1 signal
 
-		$ kill -s USR1 2345
+    ```sh
+    $ kill -s USR1 2345
+    ```
 
 Great! Now you are ready to attach node-inspector.
 
@@ -122,7 +132,9 @@ Great! Now you are ready to attach the inspector.
 
 1. start the inspector. I usually put it in the background
 
-		$ node-inspector &
+   ```sh
+   $ node-inspector &
+   ```
 
 2. open http://127.0.0.1:8080/debug?port=5858 in Chrome
 
