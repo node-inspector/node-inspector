@@ -18,7 +18,8 @@
     "node": ">=0.8.0"
   },
   "bin": {
-    "node-inspector": "./bin/inspector.js"
+    "node-inspector": "./bin/inspector.js",
+    "node-debug": "./bin/node-debug.js"
   },
   "dependencies": {
     "express": "~3.4",
@@ -27,7 +28,10 @@
     "rc": "~0.3.0",
     "strong-data-uri": "~0.1.0",
     "debug": "~0.7.3",
-    "ws": "~0.4.31"
+    "ws": "~0.4.31",
+    "opener": "~1.3.0",
+    "yargs": "~1.1.2",
+    "which": "~1.0.5"
   },
   "devDependencies": {
     "mocha": "latest",
