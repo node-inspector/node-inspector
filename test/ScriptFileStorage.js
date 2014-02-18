@@ -1,4 +1,4 @@
-var fs = require('fs'),
+var fs = require('fs-extra'),
   path = require('path'),
   expect = require('chai').expect,
   glob = require('glob'),
@@ -104,6 +104,55 @@ describe('ScriptFileStorage', function() {
     );
   });
 
+  it('lists only well-known subdirectories when package.json is missing', function (done) {
+    var expectedFiles = givenTempFiles(
+      'app.js',
+      'root.js',
+      'lib/helper.js',
+      'test/unit.js',
+      'node_modules/module/index.js'
+    );
+
+    givenTempFiles(
+      'extra/file.js'
+    );
+
+    storage.findAllApplicationScripts(
+      path.join(TEMP_DIR),
+      path.join(TEMP_DIR, 'app.js'),
+      function(err, files) {
+        if (err) throw err;
+        expect(files.map(relativeToTemp))
+          .to.have.members(expectedFiles.map(relativeToTemp));
+        done();
+      }
+    );
+  });
+
+  it('lists all subdirectories when package.json is present', function (done) {
+    var expectedFiles = givenTempFiles(
+      'app.js',
+      'root.js',
+      'lib/helper.js',
+      'test/unit.js',
+      'node_modules/module/index.js',
+      'extra/file.js'
+    );
+
+    givenTempFiles('package.json');
+
+    storage.findAllApplicationScripts(
+      path.join(TEMP_DIR),
+      path.join(TEMP_DIR, 'app.js'),
+      function(err, files) {
+        if (err) throw err;
+        expect(files.map(relativeToTemp))
+          .to.have.members(expectedFiles.map(relativeToTemp));
+        done();
+      }
+    );
+  });
+
   it('removes duplicate entries from files found', function(done) {
     var expectedFiles = givenTempFiles('app.js');
 
@@ -192,6 +241,7 @@ describe('ScriptFileStorage', function() {
       if (isDir(f)) {
         fs.mkdirSync(f);
       } else {
+        fs.mkdirpSync(path.dirname(f));
         fs.writeFileSync(f, '');
         files.push(f);
       }
