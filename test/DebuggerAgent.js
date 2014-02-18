@@ -90,7 +90,7 @@ describe('DebuggerAgent', function() {
         debuggerClient.fetchObjectId(agent, newValueExpression, function(valueId) {
           verifyVariableSetter(
             agent,
-            { handle: valueId },
+            { objectId: '' + valueId },
             expectedResultCb(valueId),
             done
           );
