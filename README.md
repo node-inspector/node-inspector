@@ -6,31 +6,80 @@
 
 
 ## Overview
-Node Inspector is a debugger interface for node.js using the
-Blink Developer Tools (former WebKit Web Inspector).
+
+Node Inspector is a debugger interface for Node.js applications that uses the
+Blink Developer Tools (formerly WebKit Web Inspector).
+
+### Table of Content
+
+ * [Quick Start](#quick-start)
+ * [Features](#features)
+ * [Known Issues](#known-issues)
+ * [Troubleshooting](#troubleshooting)
+ * [Advanced Usage](#advanced-usage)
+ * [Configuration](#configuration)
+ * [Contributing](#contributing)
+ * [Credits](#credits)
+
+## Quick Start
+
+#### Install
+
+```sh
+$ npm install -g node-inspector
+```
+
+#### Start
+
+```sh
+$ node-debug app.js
+```
+
+where ```app.js``` is the name of your main Node application JavaScript file.
+
+#### Debug
+
+The `node-debug` command will load Node Inspector in your default browser.
+
+> **NOTE:** Node Inspector works in Chrome and Opera only. You have to re-open
+the inspector page in one of those browsers if another browser
+is your default web browser (e.g. Safari or Internet Explorer).
+
+Node Inspector works almost exactly as the Chrome Developer Tools. Read the
+excellent
+[DevTools overview](http://code.google.com/chrome/devtools/docs/scripts.html)
+to get started.
+
+Other useful resources:
+ - Documentation specific to Node Inspector provided by StrongLoop:
+  [Running Node Inspector](http://docs.strongloop.com/display/DOC/Running+Node+Inspector)
+ - Miroslav's talk
+  [How to Debug Node Apps with Node Inspector](https://vimeo.com/77870960)
+ - Danny's [screencasts](http://www.youtube.com/view_play_list?p=A5216AC29A41EFA8)
+   (most likely outdated by now)
+ - [Getting Started from scratch](http://github.com/node-inspector/node-inspector/wiki/Getting-Started---from-scratch)
+   on wiki (most likely outdated by now)
 
 ## Features
 
-The Blink DevTools debugger is a great javascript debugger interface;
-it works just as well for node. Node Inspector supports almost all
-of the debugging features of DevTools.
+The Blink DevTools debugger is a powerful JavaScript debugger interface.
+Node Inspector supports almost all of the debugging features of DevTools, including:
 
 * Navigate in your source files
 * Set breakpoints (and specify trigger conditions)
-* Break on exceptions
 * Step over, step in, step out, resume (continue)
-* Continue to location
-* Disable/enable all breakpoints
 * Inspect scopes, variables, object properties
 * Hover your mouse over an expression in your source to display its value in
   a tooltip
 * Edit variables and object properties
-* (etc.)
+* Continue to location
+* Break on exceptions
+* Disable/enable all breakpoints
 
 ### Cool stuff
 * Node Inspector uses WebSockets, so no polling for breaks.
 * Remote debugging
-* [Live edit of running code](http://github.com/dannycoates/node-inspector/wiki/LiveEdit),
+* [Live edit of running code](http://github.com/node-inspector/node-inspector/wiki/LiveEdit),
   optionally persisting changes back to the file-system.
 * Set breakpoints in files that are not loaded into V8 yet - useful for
   debugging module loading/initialization.
@@ -40,41 +89,109 @@ of the debugging features of DevTools.
 
 ## Known Issues
 
-This is beta-quality code, so use at your own risk.
-
 * Be careful about viewing the contents of Buffer objects,
   each byte is displayed as an individual array element;
   for most Buffers this will take too long to render.
 * While not stopped at a breakpoint the console doesn't always
-  behave as you might expect. See issue #146.
+  behave as you might expect. See the
+  [issue #146](https://github.com/node-inspector/node-inspector/issues/146).
 * Profiler is not implemented yet. Have a look at
   [node-webkit-agent](https://github.com/c4milo/node-webkit-agent)
   in the meantime.
-* Break on uncaught exceptions does not work because of missing
-  [support in node](https://github.com/joyent/node/pull/5713).
+* Break on uncaught exceptions does not work in all Node versions,
+  you need at least v0.11.3 (see
+  [node#5713](https://github.com/joyent/node/pull/5713)).
 * Debugging multiple processes (e.g. cluster) is cumbersome.
+  Read the following blog post for instructions:
+  [Debugging Clustered Apps with Node-Inspector](http://strongloop.com/strongblog/whats-new-nodejs-v0-12-debugging-clusters/)
 
-## Getting Started
+## Troubleshooting
 
-### Requirements
+#### My script runs too fast to attach the debugger.
 
-* [node.js](http://github.com/ry/node)
-  - version 0.8 or later
-* [npm](http://github.com/isaacs/npm)
-* A Blink-based browser (i.e. Google Chrome)
+The debugged process must be started with `--debug-brk`, this way the script is paused on the first line.
 
-### Install
+Note: `node-debug` adds this option for you by default.
 
-* With [npm](http://github.com/isaacs/npm)
+#### I got the UI in a weird state.
 
-  ```sh
-  $ npm install -g node-inspector
-  ```
+When in doubt, refresh the page in browser
 
-### Enable debug mode
+#### Can I debug remotely?
 
-To use node-inspector, enable debugging on the node you wish to debug.
-You can either start node with a debug flag like:
+Yes. Node Inspector must be running on the same machine, but your browser can be anywhere.
+Just make sure port 8080 is accessible.
+
+#### How do I specify files to hide?
+
+Create a JSON-encoded array.  You must escape quote characters when using a command-line option.
+
+```sh
+$ node-inspector --hidden='["node_modules/framework"]'
+```
+
+Note that the array items are interpreted as regular expressions.
+
+#### UI doesn't load or doesn't work and refresh didn't help
+
+Make sure that you have adblock disabled as well as any other content blocking scripts and plugins.
+
+#### How can I (selectively) delete debug session metadata?
+
+You may want to delete debug session metadata if for example Node Inspector gets in a bad state with some
+watch variables that were function calls (possibly into some special c-bindings).  In such cases, even restarting
+the application/debug session may not fix the problem.
+
+Node Inspector stores debug session metadata in the HTML5 local storage.
+You can inspect the contents of local storage and remove any items as
+needed. In Google Chrome, you can execute any of the following in the JavaScript console:
+
+```js
+// Remove all
+window.localStorage.clear()
+// Or, to list keys so you can selectively remove them with removeItem()
+window.localStorage
+// Remove all the watch expressions
+window.localStorage.removeItem('watchExpressions')
+// Remove all the breakpoints
+window.localStorage.removeItem('breakpoints')
+```
+
+When you are done cleaning up, hit refresh in the browser.
+
+#### Node Inspector takes a long time to start up.
+
+Try setting --no-preload to true. This option disables searching disk for *.js at startup.
+
+#### How do I debug Mocha unit-tests?
+
+You have to start `_mocha` as the debugged process and make sure
+the execution pauses on the first line. This way you have enough
+time to set your breakpoints before the tests are run.
+
+```sh
+$ node-debug _mocha
+```
+
+## Advanced Use
+
+While running `node-debug` is a convenient way to start your debugging
+session, there may come time when you need to tweak the default setup.
+
+There are three steps needed to get you up and debugging:
+
+#### 1. Start the Node Inspector server
+
+```sh
+$ node-inspector
+```
+
+You can leave the server running in background, it's possible to debug
+multiple processes using the same server instance.
+
+#### 2. Enable debug mode in your Node process
+
+You can either start Node with a debug flag like:
 
 ```sh
 $ node --debug your/node/program.js
@@ -103,9 +220,7 @@ it a signal:
     $ kill -s USR1 2345
     ```
 
-Great! Now you are ready to attach node-inspector.
-
-#### Windows
+##### Windows
 
 Windows does not support UNIX signals. To enable debugging, you can use
 an undocumented API function `process._debugProcess(pid)`:
@@ -126,32 +241,28 @@ an undocumented API function `process._debugProcess(pid)`:
     > node -e "process._debugProcess(3084)"
     ```
 
-Great! Now you are ready to attach the inspector.
+#### 3. Load the debugger UI
 
-### Debugging
+Open http://127.0.0.1:8080/debug?port=5858 in the Chrome browser.
 
-1. start the inspector. I usually put it in the background
+## Configuration
 
-   ```sh
-   $ node-inspector &
-   ```
+### node-debug
 
-2. open http://127.0.0.1:8080/debug?port=5858 in Chrome
+Command line options:
 
-3. you should now see the javascript source from node. If you don't, click the scripts tab.
+```
+--debug-brk, -b         Break on the first line (`node --debug-brk`) [default: true]
+--web-port, -p, --port  Node Inspector port (`node-inspector --web-port={port}`)
+--debug-port, -d        Node/V8 debugger port (`node --debug={port}`)
+--cli, -c               CLI mode, do not open browser.
+--version, -v           Print Node Inspector's version.
+--help, -h              Show this help.
+```
 
-4. select a script and set some breakpoints (far left line numbers)
+### node-inspector
 
-5. then watch the [screencasts](http://www.youtube.com/view_play_list?p=A5216AC29A41EFA8)
-
-For more information on getting started see the [wiki](http://github.com/dannycoates/node-inspector/wiki/Getting-Started---from-scratch)
-
-node-inspector works almost exactly like the web inspector in
-Chrome. Here's a good [overview](http://code.google.com/chrome/devtools/docs/scripts.html) of the UI
-
-### Inspector options
-
-Node-inspector uses [rc](https://npmjs.org/package/rc)
+node-inspector uses [rc](https://npmjs.org/package/rc)
 [[github]](https://github.com/dominictarr/rc) module to collect options.
 
 Places for configuration:
@@ -187,67 +298,18 @@ Use dashed option names in RC files. Sample config file:
 
 List of predefined options:
 ```
-         Option              Default                  Description
-    --help               |             | Print information about options
-    --web-port           |    8080     | Port to host the inspector
-    --web-host           |  127.0.0.1  | Host to listen on
-    --debug-port         |    5858     | Port to connect to the debugging app
-    --save-live-edit     |    false    | Save live edit changes to disk
-                         |             |   (update the edited files)
-    --no-preload         |    false    | Disables preloading *.js to speed up startup
-    --hidden             |     []      | Array of files to hide from the UI
-                         |             |   (breakpoints in these files will be ignored)
-    --stack-trace-limit  |     50      | Number of stack frames to show on a breakpoint
+       Option            Default                  Description
+--help               |             | Print information about options
+--web-port           |    8080     | Port to host the inspector
+--web-host           |  127.0.0.1  | Host to listen on
+--debug-port         |    5858     | Port to connect to the debugging app
+--save-live-edit     |    false    | Save live edit changes to disk
+                     |             |   (update the edited files)
+--no-preload         |    false    | Disables preloading *.js to speed up startup
+--hidden             |     []      | Array of files to hide from the UI
+                     |             |   (breakpoints in these files will be ignored)
+--stack-trace-limit  |     50      | Number of stack frames to show on a breakpoint
 ```
-
-## FAQ / WTF
-
-1. My script runs too fast to attach the debugger.
-
-  > use `--debug-brk` to pause the script on the first line
-
-2. I got the ui in a weird state.
-
-  > when in doubt, refresh
-
-3. Can I debug remotely?
-
-  > Yes. node-inspector must be running on the same machine,
-  > but your browser can be anywhere.
-  > Just make sure port 8080 is accessible
-
-4. How to specify list of files to hide?
-
-  > Create a JSON-encoded array, don't forget to escape the quote characters
-  > when using a command-line option.
-  >
-  >     $ node-inspector --hidden='["node_modules/framework"]'
-  >
-  > Note that the array items are interpreted as regular expressions.
-
-5. UI doesn't load or doesn't work and refresh didn't help
-
-  > Make sure that you have adblock disabled as well as any other content
-  > blocking scripts and plugins.
-
-6. I got my Node Inspector instance in a bad state with some watch variables that were function calls (possibly into some special c-bindings) and restart of the application/debug session did not fix the problem. How can I (selectively) delete debug session metadata?
-
- > Node Inspector stores debug session metadata in the HTML5 local storage. You can inspect the contents of local storage and remove any items as needed. In Google Chrome, you can execute any of the following in the JavaScript console:
- ```js
- // Remove all
- window.localStorage.clear()
- // Or, to list keys so you can selectively remove them with removeItem()
- window.localStorage
- // Remove all the watch expressions
- window.localStorage.removeItem('watchExpressions')
- // Remove all the breakpoints
- window.localStorage.removeItem('breakpoints')
- ```
- When you are done cleaning up, hit refresh in the browser.
-
- 7. Node Inspector takes a long time to start up.
-
- > Try setting --no-preload to true. Disables searching disk for *.js at startup.
 
 ## Contributing Code
 
@@ -259,13 +321,15 @@ started.
 * [Developer's Guide](https://github.com/node-inspector/node-inspector/wiki/Developer%27s-Guide)
 * [Easy Picks](https://github.com/node-inspector/node-inspector/issues?direction=asc&labels=Easy+Pick&page=1&sort=updated&state=open)
 
-## Thanks
+## Credits
 
-[Danny Coates](https://github.com/dannycoates) for starting the project
-and maintaining it for several years.
+Maintainers
+ - [Danny Coates](https://github.com/dannycoates) - the original author
+   and a sole maintainer for several years.
+ - [Miroslav Bajtoš](https://github.com/bajtos) - the current maintainer,
+   sponsored by [StrongLoop](http://strongloop.com).
 
-[StrongLoop](http://strongloop.com) for upgrading to the Blink front-end
-and maintaining the project onwards.
-
-And of course all developers that contributed patches and features, as listed
-in the [AUTHORS](AUTHORS) file.
+Big thanks to
+ - The many contributors to the project, see [AUTHORS](AUTHORS).
+ - [StrongLoop](http://strongloop.com) for sponsoring Miroslav to maintain
+   and support Node Inspector.
