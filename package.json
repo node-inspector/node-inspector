@@ -35,7 +35,8 @@
   },
   "devDependencies": {
     "mocha": "latest",
-    "chai": "latest"
+    "chai": "latest",
+    "fs-extra": "~0.8.1"
   },
   "preferGlobal": true,
   "scripts": {
