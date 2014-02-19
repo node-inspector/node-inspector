@@ -13,19 +13,17 @@ var argvOptions = {
   'debug-brk': {
     alias: 'b',
     default: true,
-    description: 'Breaks on the first line by default,' +
-      ' use --no-debug-brk to disable (call node --debug-brk)'
+    description: 'Break on the first line (`node --debug-brk`)'
   },
   'web-port': {
     alias: ['p', 'port'],
     type: 'number',
-    description: 'The port where Node Inspector should listen on' +
-      ' (`node-inspector --web-port={port}`)'
+    description: 'Node Inspector port (`node-inspector --web-port={port}`)'
   },
   'debug-port': {
     alias: 'd',
     type: 'number',
-    description: 'The port for the Node/V8 debugger (`node --debug={port}`)'
+    description: 'Node/V8 debugger port (`node --debug={port}`)'
   },
   cli: {
     alias: 'c',
@@ -70,11 +68,13 @@ function main() {
   config = parseArgs(process.argv);
   if (config.options.help) {
     argvParser.showHelp(console.log);
-    console.log('The [script] argument is resolved relative to the current\n' +
-      'working directory. If no such file exists, then env.PATH is searched.\n');
-    console.log('When there is no script specified, the module in the current\n' +
-      'working directory is loaded in the REPL session as `m`. This allows you\n' +
-      'to call and debug arbitrary functions exported by the current module.\n');
+    console.log('The [script] argument is resolved relative to the current working\n' +
+      'directory. If no such file exists, then env.PATH is searched.\n');
+    console.log('The default mode is to break on the first line of the script, to run\n' +
+      'immediately on start use `--no-debug-brk` or press the Resume button.\n');
+    console.log('When there is no script specified, the module in the current working\n' +
+      'directory is loaded in the REPL session as `m`. This allows you to call\n' +
+      'and debug arbitrary functions exported by the current module.\n');
     process.exit();
   }
 
@@ -161,7 +161,7 @@ function createYargs() {
 }
 
 function getCmd() {
-  return process.env.CMD || process.argv[1];
+  return process.env.CMD || path.basename(process.argv[1]);
 }
 
 function extractPassThroughArgs(options, argvOptions) {
