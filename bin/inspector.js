@@ -7,6 +7,20 @@ var DebugServer = require('../lib/debug-server').DebugServer,
     packageJson = require('../package.json'),
     notifyParentProcess = getNotifyParentProcessFn();
 
+if (config.help || config.h) {
+  console.log('Usage:');
+  console.log('    node-inspector [options]');
+  console.log('\nOptions:');
+  console.log(config._describeOptions());
+  console.log();
+  process.exit();
+}
+
+if (config.version || config.v) {
+  console.log('v' + require('../package.json').version);
+  process.exit();
+}
+
 console.log('Node Inspector v%s', packageJson.version);
 
 var debugServer = new DebugServer();
