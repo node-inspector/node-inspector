@@ -1,3 +1,52 @@
+2014-02-20, Version 0.7.0
+
+* README restructuralization (Miroslav Bajtoš)
+
+* Rename readme.md to README.md (Miroslav Bajtoš)
+
+* Update AUTHORS (Miroslav Bajtoš)
+
+* Defer "scriptParsed" until "Page.getResourceTree" (Miroslav Bajtoš)
+
+* Lower the frequency of auto reloads (Miroslav Bajtoš)
+
+* Update .npmignore (Miroslav Bajtoš)
+
+* Clean up node-debug help message (Sam Roberts)
+
+* bin/inspector: Add -h -v --version options (Miroslav Bajtoš)
+
+* Speed up initial parsing of source-map URLs (Miroslav Bajtoš)
+
+* Cache results of ScriptFileStorage.listScripts. (Miroslav Bajtoš)
+
+* Ignore EACCESS errors when listing sources (Miroslav Bajtoš)
+
+* Tighten findAllApplicationScripts heuristics (Miroslav Bajtoš)
+
+* Implement node-debug. (Miroslav Bajtoš)
+
+* RuntimeAgent: implement releaseObject() as no-op (Miroslav Bajtoš)
+
+* Fix DebuggerAgent.setVariableValue to object (Miroslav Bajtoš)
+
+* Add WebSocketServer error handler. (Miroslav Bajtoš)
+
+* README: added shell code higlight (Ionică Bizău)
+
+* Fix conversion of Error objects (Miroslav Bajtoš)
+
+* Use WebSockets instead of socket.io. (Kenneth Auchenberg)
+
+* Small indentation fixes (3y3)
+
+* Help message format update (3y3)
+
+* Reload browser when detached from target (ChrisWren)
+
+* Make socket.io work with subfolder hosting. (Pritam Baral)
+
+
 2014-01-23, Version 0.7.0-2
 
 * Updated AUTHORS. (Miroslav Bajtoš)
