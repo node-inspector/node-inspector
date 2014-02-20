@@ -181,5 +181,5 @@ WebInspector.detached = function () {
   oldDetached.apply(this, arguments);
   setTimeout(function () {
     location.reload();
-  }, 100);
+  }, 400);
 };
