@@ -7,3 +7,5 @@ v8.log
 /tools
 node-inspector-*.tgz
 .npmignore
+.travis.yml
+MAINTAINERS.md
