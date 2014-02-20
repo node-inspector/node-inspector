@@ -13,12 +13,12 @@ while doing the next relase.
 
 1. Commit the changes to git and push them to the server
 
-        git commit ChangeLog -m 'ChangeLog: updated for version vX.Y.Z'
+        git commit ChangeLog -m 'ChangeLog: update for version vX.Y.Z'
         git push origin master
 
 1. Create and publish a git tag
 
-        git tag -a vX.Y.Z -m 'tagged version vX.Y.Z'
+        git tag -a vX.Y.Z -m 'vX.Y.Z'
         git push origin vX.Y.Z
 
 1. Publish the package
@@ -28,5 +28,5 @@ while doing the next relase.
 1. Bump up the module version in `package.json` to the next patch version
 
         # edit the module version in package.json, e.g. 0.3.0 -> 0.3.1
-        git commit package.json -m 'started work on vX.Y.Z'
+        git commit package.json -m 'start work on vX.Y.Z'
         git push origin master
