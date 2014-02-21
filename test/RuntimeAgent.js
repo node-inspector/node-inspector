@@ -65,6 +65,32 @@ describe('RuntimeAgent', function() {
     });
   });
 
+  it('filter null __proto__', function(done) {
+    /*'Object' objectId is 3. __proto__ of 'Object' is 'null'*/
+    launcher.runInspectObject(function(debuggerClient, inspectedObjectId) {
+      var agent = new RuntimeAgent(config, debuggerClient);
+      agent.getProperties(
+        {
+          objectId: 3,
+          ownProperties: true,
+          accessorPropertiesOnly: false
+        },
+        function(error, result) {
+          if (error)
+            return done(error);
+
+          var proto = result.result.filter(function(prop) {
+            return prop.name == '__proto__';
+          });
+
+          expect(proto.length == 0, 'null proto is filtered').to.be.true;
+
+          done();
+        }
+      );
+    });
+  });
+
   it('returns object properties with metadata', function(done) {
     launcher.runInspectObject(function(debuggerClient, inspectedObjectId) {
       var agent = new RuntimeAgent(config, debuggerClient);
@@ -104,7 +130,7 @@ describe('RuntimeAgent', function() {
     });
   });
 
-  it('returns empty result for unsupported getProperties() call', function(done) {
+  it('returns empty result for accessorPropertiesOnly:true', function(done) {
     launcher.runInspectObject(function(debuggerClient, inspectedObjectId) {
       var agent = new RuntimeAgent(config, debuggerClient);
       agent.getProperties(
@@ -118,6 +144,42 @@ describe('RuntimeAgent', function() {
             return done(error);
 
           expect(result.result).to.be.empty;
+          done();
+        });
+    });
+  });
+
+  it('returns __proto__ for ownProperties:true', function(done) {
+    launcher.runInspectObject(function(debuggerClient, inspectedObjectId) {
+      var agent = new RuntimeAgent(config, debuggerClient);
+      agent.getProperties(
+        {
+          objectId: inspectedObjectId,
+          ownProperties: true,
+          accessorPropertiesOnly: false
+        },
+        function(error, result) {
+          if (error)
+            return done(error);
+
+          var proto = result.result.filter(function(prop) {
+            return prop.name == '__proto__';
+          });
+          expect(proto.length == 1, 'proto exist and unique').to.be.true;
+          expect(proto[0], '__proto__ has valid structure').to.deep.equal({
+              name: '__proto__',
+              value: {
+                type: 'object',
+                objectId: '17',
+                className: 'Object',
+                description: 'InspectedClass'
+              },
+              writable: true,
+              configurable: true,
+              enumerable: false,
+              isOwn: true
+            });
+
           done();
         });
     });
