@@ -39,6 +39,7 @@ describe('RuntimeAgent', function() {
               name: 'msg',
               writable: true,
               enumerable: true,
+              configurable: true,
               value: {
                 type: 'string',
                 value: 'hello',
@@ -49,6 +50,7 @@ describe('RuntimeAgent', function() {
               name: 'meta',
               writable: true,
               enumerable: true,
+              configurable: true,
               value: {
                 type: 'object',
                 objectId: '7',
@@ -78,11 +80,17 @@ describe('RuntimeAgent', function() {
 
           var props = convertPropertyArrayToLookup(result.result);
 
+          expect(props['writableProp'].configurable, 'writableProp.configurable')
+            .to.be.true;
+
           expect(props['writableProp'].writable, 'writableProp.writable')
             .to.be.true;
 
           expect(props['writableProp'].enumerable, 'writableProp.enumerable')
             .to.be.true;
+
+          expect(props['readonlyProp'].configurable, 'readonlyProp.configurable')
+            .to.be.false;
 
           expect(props['readonlyProp'].writable, 'readonlyProp.writable')
             .to.be.false;
