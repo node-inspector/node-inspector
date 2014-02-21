@@ -158,6 +158,20 @@ describe('convert', function() {
     });
   });
 
+  it('Check "Invalid Date" object', function() {
+    var ref = {
+      handle: 0,
+      type: 'object',
+      className: 'Date'
+    };
+    
+    var converted = convert.v8RefToInspectorObject(ref);
+
+    expect(converted.description).to.equal('Invalid Date');
+    expect(converted.type).to.equal('object');
+    expect(converted.subtype).to.equal('date');
+  });
+
   describe('v8ResultToInspectorResult', function() {
     it('convert regexp as object', function() {
       var v8Result = {
