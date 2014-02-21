@@ -23,7 +23,7 @@ describe('DebuggerAgent', function() {
     toValueType(
       'null',
       { value: null },
-      { type: 'null', value: null, description: 'null' }
+      { type: 'null', subtype: 'null', value: null, description: 'null'}
     );
 
     toValueType(

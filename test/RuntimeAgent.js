@@ -35,6 +35,10 @@ describe('RuntimeAgent', function() {
 
             expect(result.result.length, 'number of local variables')
               .to.equal(2);
+            var proto = result.result.filter(function(prop) {
+              return prop.name == '__proto__';
+            });
+            expect(proto.length == 0, 'proto in scope object is filtered').to.be.true;
             expect(result.result[0], 'local var 1').to.deep.equal({
               name: 'msg',
               writable: true,
@@ -42,6 +46,7 @@ describe('RuntimeAgent', function() {
               configurable: true,
               value: {
                 type: 'string',
+                subtype: undefined,
                 value: 'hello',
                 description: 'hello'
               }
@@ -53,6 +58,7 @@ describe('RuntimeAgent', function() {
               configurable: true,
               value: {
                 type: 'object',
+                subtype: undefined,
                 objectId: '7',
                 className: 'Object',
                 description: 'Object'
@@ -170,6 +176,7 @@ describe('RuntimeAgent', function() {
               name: '__proto__',
               value: {
                 type: 'object',
+                subtype: undefined,
                 objectId: '17',
                 className: 'Object',
                 description: 'InspectedClass'
@@ -226,7 +233,7 @@ describe('RuntimeAgent', function() {
 
     toValueType(
       'null',
-      { type: 'null', value: null, description: 'null' }
+      { type: 'null', subtype: 'null', value: null, description: 'null'}
     );
 
     toValueType(
