@@ -10,15 +10,18 @@
 Node Inspector is a debugger interface for Node.js applications that uses the
 Blink Developer Tools (formerly WebKit Web Inspector).
 
+The project maintenance and support is sponsored by
+[StrongLoop](http://strongloop.com).
+
 ### Table of Content
 
  * [Quick Start](#quick-start)
  * [Features](#features)
  * [Known Issues](#known-issues)
  * [Troubleshooting](#troubleshooting)
- * [Advanced Usage](#advanced-usage)
+ * [Advanced Use](#advanced-use)
  * [Configuration](#configuration)
- * [Contributing](#contributing)
+ * [Contributing](#contributing-code)
  * [Credits](#credits)
 
 ## Quick Start
@@ -329,7 +332,4 @@ Maintainers
  - [Miroslav Bajtoš](https://github.com/bajtos) - the current maintainer,
    sponsored by [StrongLoop](http://strongloop.com).
 
-Big thanks to
- - The many contributors to the project, see [AUTHORS](AUTHORS).
- - [StrongLoop](http://strongloop.com) for sponsoring Miroslav to maintain
-   and support Node Inspector.
+Big thanks to the many contributors to the project, see [AUTHORS](AUTHORS).
