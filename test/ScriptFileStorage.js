@@ -30,12 +30,37 @@ describe('ScriptFileStorage', function() {
     });
   });
 
+  it('preserves shebang when saving new content', function(done) {
+    runLiveEdit(
+      function(content) { return '#!/usr/bin/node\n' + content; },
+      function(debuggerClient, originalScript, runtimeScript) {
+        var storage = new ScriptFileStorage();
+        storage.save(TEMP_FILE, edited(runtimeScript), function(err) {
+          if (err) throw err;
+          var newScript = fs.readFileSync(TEMP_FILE, { encoding: 'utf-8' });
+          expect(newScript).to.equal(edited(originalScript));
+          done();
+        });
+      }
+    );
+  });
+
   it('loads content with node.js module wrapper', function(done) {
     fs.writeFileSync(TEMP_FILE, '/* content */');
     storage.load(TEMP_FILE, function(err, content) {
       if (err) throw err;
       expect(content).to.match(
         /^\(function \(exports, require,.*\) \{ \/\* content \*\/\n\}\);$/);
+      done();
+    });
+  });
+
+  it('loads content without shebang', function(done) {
+    fs.writeFileSync(TEMP_FILE, '#!/usr/bin/env/node\n/* content */');
+    storage.load(TEMP_FILE, function(err, content) {
+      if (err) throw err;
+      expect(content).to.not.contain('#!');
+      expect(content).to.contain('/* content */');
       done();
     });
   });
@@ -217,8 +242,13 @@ describe('ScriptFileStorage', function() {
     return source.replace(';', '; /* edited */');
   }
 
-  function runLiveEdit(callback) {
-    var originalScript = createTempFileAsCopyOf('LiveEdit.js');
+  function runLiveEdit(transformSource, callback) {
+    if (!callback) {
+      callback = transformSource;
+      transformSource = null;
+    }
+
+    var originalScript = createTempFileAsCopyOf('LiveEdit.js', transformSource);
     launcher.startDebugger(TEMP_FILE, function(childProcess, debuggerClient) {
       getScriptSourceByName(debuggerClient, TEMP_FILE, function(source) {
         callback(debuggerClient, originalScript, source);
@@ -226,9 +256,10 @@ describe('ScriptFileStorage', function() {
     });
   }
 
-  function createTempFileAsCopyOf(fixture) {
+  function createTempFileAsCopyOf(fixture, transform) {
     var sourcePath = path.join(__dirname, 'fixtures', fixture);
     var content = fs.readFileSync(sourcePath, { encoding: 'utf-8' });
+    if (transform) content = transform(content);
     fs.writeFileSync(TEMP_FILE, content);
     return content;
   }
