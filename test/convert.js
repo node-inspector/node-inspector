@@ -154,8 +154,23 @@ describe('convert', function() {
       var converted = convert.v8RefToInspectorObject(ref);
 
       expect(converted.description).to.equal(datestr);
-      expect(converted.type).to.equal('date');
+      expect(converted.type).to.equal('object');
+      expect(converted.subtype).to.equal('date');
     });
+  });
+
+  it('Check "Invalid Date" object', function() {
+    var ref = {
+      handle: 0,
+      type: 'object',
+      className: 'Date'
+    };
+    
+    var converted = convert.v8RefToInspectorObject(ref);
+
+    expect(converted.description).to.equal('Invalid Date');
+    expect(converted.type).to.equal('object');
+    expect(converted.subtype).to.equal('date');
   });
 
   describe('v8ResultToInspectorResult', function() {
@@ -167,7 +182,8 @@ describe('convert', function() {
             text: '/\/[^a]abc/'
           },
           ref = {
-            type: 'regexp',
+            type: 'object',
+            subtype: 'regexp',
             objectId: '0',
             className: 'RegExp',
             description: '/\/[^a]abc/'
@@ -204,10 +220,11 @@ describe('convert', function() {
 
       expect(converted).to.eql({
         type: 'object',
+        subtype: undefined,
         objectId: '6',
         className: 'Error',
         description: v8Result.text
       });
-    })
+    });
   });
 });

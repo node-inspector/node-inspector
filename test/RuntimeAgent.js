@@ -35,12 +35,18 @@ describe('RuntimeAgent', function() {
 
             expect(result.result.length, 'number of local variables')
               .to.equal(2);
+            var proto = result.result.filter(function(prop) {
+              return prop.name == '__proto__';
+            });
+            expect(proto.length == 0, 'proto in scope object is filtered').to.be.true;
             expect(result.result[0], 'local var 1').to.deep.equal({
               name: 'msg',
               writable: true,
               enumerable: true,
+              configurable: true,
               value: {
                 type: 'string',
+                subtype: undefined,
                 value: 'hello',
                 description: 'hello'
               }
@@ -49,8 +55,10 @@ describe('RuntimeAgent', function() {
               name: 'meta',
               writable: true,
               enumerable: true,
+              configurable: true,
               value: {
                 type: 'object',
+                subtype: undefined,
                 objectId: '7',
                 className: 'Object',
                 description: 'Object'
@@ -60,6 +68,32 @@ describe('RuntimeAgent', function() {
             done();
           });
       });
+    });
+  });
+
+  it('filter null __proto__', function(done) {
+    /*'Object' objectId is 3. __proto__ of 'Object' is 'null'*/
+    launcher.runInspectObject(function(debuggerClient, inspectedObjectId) {
+      var agent = new RuntimeAgent(config, debuggerClient);
+      agent.getProperties(
+        {
+          objectId: 3,
+          ownProperties: true,
+          accessorPropertiesOnly: false
+        },
+        function(error, result) {
+          if (error)
+            return done(error);
+
+          var proto = result.result.filter(function(prop) {
+            return prop.name == '__proto__';
+          });
+
+          expect(proto.length == 0, 'null proto is filtered').to.be.true;
+
+          done();
+        }
+      );
     });
   });
 
@@ -78,11 +112,17 @@ describe('RuntimeAgent', function() {
 
           var props = convertPropertyArrayToLookup(result.result);
 
+          expect(props['writableProp'].configurable, 'writableProp.configurable')
+            .to.be.true;
+
           expect(props['writableProp'].writable, 'writableProp.writable')
             .to.be.true;
 
           expect(props['writableProp'].enumerable, 'writableProp.enumerable')
             .to.be.true;
+
+          expect(props['readonlyProp'].configurable, 'readonlyProp.configurable')
+            .to.be.false;
 
           expect(props['readonlyProp'].writable, 'readonlyProp.writable')
             .to.be.false;
@@ -96,7 +136,7 @@ describe('RuntimeAgent', function() {
     });
   });
 
-  it('returns empty result for unsupported getProperties() call', function(done) {
+  it('returns empty result for accessorPropertiesOnly:true', function(done) {
     launcher.runInspectObject(function(debuggerClient, inspectedObjectId) {
       var agent = new RuntimeAgent(config, debuggerClient);
       agent.getProperties(
@@ -110,6 +150,43 @@ describe('RuntimeAgent', function() {
             return done(error);
 
           expect(result.result).to.be.empty;
+          done();
+        });
+    });
+  });
+
+  it('returns __proto__ for ownProperties:true', function(done) {
+    launcher.runInspectObject(function(debuggerClient, inspectedObjectId) {
+      var agent = new RuntimeAgent(config, debuggerClient);
+      agent.getProperties(
+        {
+          objectId: inspectedObjectId,
+          ownProperties: true,
+          accessorPropertiesOnly: false
+        },
+        function(error, result) {
+          if (error)
+            return done(error);
+
+          var proto = result.result.filter(function(prop) {
+            return prop.name == '__proto__';
+          });
+          expect(proto.length == 1, 'proto exist and unique').to.be.true;
+          expect(proto[0], '__proto__ has valid structure').to.deep.equal({
+              name: '__proto__',
+              value: {
+                type: 'object',
+                subtype: undefined,
+                objectId: '17',
+                className: 'Object',
+                description: 'InspectedClass'
+              },
+              writable: true,
+              configurable: true,
+              enumerable: false,
+              isOwn: true
+            });
+
           done();
         });
     });
@@ -156,7 +233,7 @@ describe('RuntimeAgent', function() {
 
     toValueType(
       'null',
-      { type: 'null', value: null, description: 'null' }
+      { type: 'null', subtype: 'null', value: null, description: 'null'}
     );
 
     toValueType(
