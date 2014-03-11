@@ -1,3 +1,24 @@
+2014-03-11, Version 0.7.1
+
+* Added subtype property to RemoteObject (3y3)
+
+* Checked Invalid Date object (3y3)
+
+* Fixed wrong proto object link (3y3)
+
+* Checking configurable option (3y3)
+
+* Properties conversion isolated to function (3y3)
+
+* Handle shebang in ScriptFileStorage load/save (Miroslav Bajtoš)
+
+* Implement Debugger.setSkipAllPauses (Miroslav Bajtoš)
+
+* Fix links (Miroslav Bajtoš)
+
+* MAINTAINERS: use imperative sentence style (Miroslav Bajtoš)
+
+
 2014-02-20, Version 0.7.0
 
 * README restructuralization (Miroslav Bajtoš)
