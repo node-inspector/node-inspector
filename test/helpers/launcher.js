@@ -3,16 +3,23 @@ var spawn = require('child_process').spawn,
   DebuggerClient = require('../../lib/DebuggerClient').DebuggerClient,
   stopDebuggerCallbacks = [];
 
-function startDebugger(scriptPath, done) {
+function startDebugger(scriptPath, breakOnStart, done) {
+  if (done === undefined) {
+    done = breakOnStart;
+    breakOnStart = false;
+  }
+
   var testDir = path.dirname(__filename),
     debugPort = 61000,
+    debugOption,
     child,
     debuggerClient,
     ignoreErrors = false;
 
+  debugOption = '--debug' + (breakOnStart ? '-brk=' : '=');
   if (scriptPath.indexOf(path.sep) == -1)
     scriptPath = path.join(testDir, '..', 'fixtures', scriptPath);
-  child = spawn('node', ['--debug=' + debugPort, scriptPath]);
+  child = spawn('node', [debugOption + debugPort, scriptPath]);
 
   child.stderr.on('data', function(data) { process.stderr.write(data); });
 

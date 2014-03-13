@@ -7,7 +7,7 @@ describe('DebuggerClient', function() {
   after(launcher.stopAllDebuggers);
 
   describe('evaluteGlobal', function() {
-    var client;
+    var client, child;
     before(setupConnectedDebuggerClient);
 
     it('returns full value of a long string', function(done) {
@@ -29,10 +29,45 @@ describe('DebuggerClient', function() {
         'LiveEdit.js',
         function(childProcess, debuggerClient) {
           client = debuggerClient;
+          child = childProcess;
           done();
         }
       );
     }
   });
 
+  describe('isRunning', function() {
+    var debuggerClient, childProcess;
+
+    before(setupDebuggerClient);
+
+    it('is updated on connect in --debug-brk mode', function(done) {
+      expect(debuggerClient.isRunning, 'isRunning').to.be.false;
+      done();
+    });
+
+    it('is updated on break', function(done) {
+      debuggerClient.on('break', function() {
+        expect(debuggerClient.isRunning, 'isRunning').to.be.false;
+        done();
+      });
+
+      debuggerClient.request('continue', undefined, function() {
+        childProcess.stdin.write('pause\n');
+      });
+    });
+
+    function setupDebuggerClient(done) {
+      launcher.stopAllDebuggers();
+      launcher.startDebugger(
+        'LiveEdit.js',
+        true,
+        function(child, client) {
+          debuggerClient = client;
+          childProcess = child;
+          done();
+        }
+      );
+    }
+  });
 });
