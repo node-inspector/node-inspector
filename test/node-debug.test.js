@@ -28,7 +28,7 @@ describe('node-debug', function() {
         .to.eql(require.resolve('../bin/run-repl'));
     });
 
-    it('handles options', function () {
+    it('handles options', function() {
       var config = cli.parseArgs(argv('--no-debug-brk -p 10 -d 20 -c app.js'));
       expect(config.subproc).to.eql({
         script: 'app.js',
@@ -42,7 +42,7 @@ describe('node-debug', function() {
       });
     });
 
-    it('handles long options with =val and no script file', function () {
+    it('handles long options with =val and no script file', function() {
       var config = cli.parseArgs(argv('--debug-port=10'));
       expect(config.subproc.debugPort).to.equal(10);
     });
@@ -65,18 +65,18 @@ describe('node-debug', function() {
       expect(config.inspector.port, 'inspector.port').to.equal(10);
     });
 
-    it('supports node-inspector argument names', function () {
+    it('supports node-inspector argument names', function() {
       var config = cli.parseArgs(argv('--web-port=10 --debug-port=20 app.js'));
       expect(config.subproc.debugPort, 'subproc.debugPort').to.equal(20);
       expect(config.inspector.port, 'inspector.port').to.equal(10);
     });
 
-    it('forwards unknown options to node-inspector', function () {
+    it('forwards unknown options to node-inspector', function() {
       var config = cli.parseArgs(argv('--some-bool --some-string val app.js'));
       expect(config.inspector.args, 'inspector args')
         .to.eql(['--some-bool', '--some-string', 'val', '--web-port=8080']);
       expect(config.subproc.execArgs, 'subprocess args')
-        .to.not.include.members(['--some-bool','--some-string', 'val']);
+        .to.not.include.members(['--some-bool', '--some-string', 'val']);
     });
 
     function argv(cmdString) {

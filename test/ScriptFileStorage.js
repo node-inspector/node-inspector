@@ -129,7 +129,7 @@ describe('ScriptFileStorage', function() {
     );
   });
 
-  it('lists only well-known subdirectories when package.json is missing', function (done) {
+  it('lists only well-known subdirectories when package.json is missing', function(done) {
     var expectedFiles = givenTempFiles(
       'app.js',
       'root.js',
@@ -154,7 +154,7 @@ describe('ScriptFileStorage', function() {
     );
   });
 
-  it('lists all subdirectories when package.json is present', function (done) {
+  it('lists all subdirectories when package.json is present', function(done) {
     var expectedFiles = givenTempFiles(
       'app.js',
       'root.js',
