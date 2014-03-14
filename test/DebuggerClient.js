@@ -42,13 +42,13 @@ describe('DebuggerClient', function() {
     before(setupDebuggerClient);
 
     it('is updated on connect in --debug-brk mode', function(done) {
-      expect(debuggerClient.isRunning, 'isRunning').to.be.false;
+      expect(debuggerClient.isRunning, 'isRunning').to.equal(false);
       done();
     });
 
     it('is updated on break', function(done) {
       debuggerClient.on('break', function() {
-        expect(debuggerClient.isRunning, 'isRunning').to.be.false;
+        expect(debuggerClient.isRunning, 'isRunning').to.equal(false);
         done();
       });
 

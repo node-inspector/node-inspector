@@ -38,7 +38,7 @@ describe('RuntimeAgent', function() {
             var proto = result.result.filter(function(prop) {
               return prop.name == '__proto__';
             });
-            expect(proto.length == 0, 'proto in scope object is filtered').to.be.true;
+            expect(proto.length === 0, 'proto in scope object is filtered').to.equal(true);
             expect(result.result[0], 'local var 1').to.deep.equal({
               name: 'msg',
               writable: true,
@@ -89,7 +89,7 @@ describe('RuntimeAgent', function() {
             return prop.name == '__proto__';
           });
 
-          expect(proto.length == 0, 'null proto is filtered').to.be.true;
+          expect(proto.length === 0, 'null proto is filtered').to.equal(true);
 
           done();
         }
@@ -113,22 +113,22 @@ describe('RuntimeAgent', function() {
           var props = convertPropertyArrayToLookup(result.result);
 
           expect(props['writableProp'].configurable, 'writableProp.configurable')
-            .to.be.true;
+            .to.equal(true);
 
           expect(props['writableProp'].writable, 'writableProp.writable')
-            .to.be.true;
+            .to.equal(true);
 
           expect(props['writableProp'].enumerable, 'writableProp.enumerable')
-            .to.be.true;
+            .to.equal(true);
 
           expect(props['readonlyProp'].configurable, 'readonlyProp.configurable')
-            .to.be.false;
+            .to.equal(false);
 
           expect(props['readonlyProp'].writable, 'readonlyProp.writable')
-            .to.be.false;
+            .to.equal(false);
 
           expect(props['readonlyProp'].enumerable, 'readonlyProp.enumerable')
-            .to.be.false;
+            .to.equal(false);
 
           done();
         }
@@ -149,7 +149,7 @@ describe('RuntimeAgent', function() {
           if (error)
             return done(error);
 
-          expect(result.result).to.be.empty;
+          expect(result.result).to.have.length(0);
           done();
         });
     });
@@ -171,7 +171,7 @@ describe('RuntimeAgent', function() {
           var proto = result.result.filter(function(prop) {
             return prop.name == '__proto__';
           });
-          expect(proto.length == 1, 'proto exist and unique').to.be.true;
+          expect(proto.length == 1, 'proto exist and unique').to.equal(true);
           expect(proto[0], '__proto__ has valid structure').to.deep.equal({
               name: '__proto__',
               value: {
@@ -374,6 +374,7 @@ function verifyPropertyValue(runtimeAgent,
 
 // copied from front-end/RuntimeModel.js and replaced " with '
 function getCompletions(primitiveType) {
+  /*jshint -W053, proto:true */
   var object;
   if (primitiveType === 'string')
     object = new String('');

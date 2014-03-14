@@ -1,3 +1,7 @@
+/*jshint browser:true */
+/*global WebInspector:true, InspectorFrontendHost:true, InspectorBackend:true, importScript:true */
+/*global Preferences:true */
+
 // Wire up websocket to talk to backend
 WebInspector.loaded = function() {
 
@@ -19,7 +23,7 @@ WebInspector.loaded = function() {
 var _inspectorInitialized = false;
 
 function onWebSocketError(error) {
-    console.error(error);
+  console.error(error);
 }
 
 function onWebSocketConnected() {
@@ -61,7 +65,7 @@ WebInspector._panelDescriptors = function() {
 // Patch the expression used as an initial value for a new watch.
 // DevTools' value "\n" breaks the debugger protocol.
 importScript('WatchExpressionsSidebarPane.js');
-WebInspector.WatchExpressionsSection.NewWatchExpression = "''";
+WebInspector.WatchExpressionsSection.NewWatchExpression = '\'\'';
 
 Preferences.localizeUI = false;
 Preferences.applicationTitle = 'Node Inspector';
@@ -169,11 +173,15 @@ function getAllUiSourceCodes() {
   for (var i = 0; i < projects.length; ++i) {
     projectFiles = projects[i]
       .uiSourceCodes()
-      .filter(function(p) { return p.name(); });
+      .filter(nameIsNotEmpty);
     uiSourceCodes = uiSourceCodes.concat(projectFiles);
   }
 
   return uiSourceCodes;
+
+  function nameIsNotEmpty(p) {
+    return p.name();
+  }
 }
 
 var oldDetached = WebInspector.detached;

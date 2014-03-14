@@ -1,3 +1,4 @@
+/*jshint debug:true */
 function MyObj() {
 }
 
