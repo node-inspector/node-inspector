@@ -165,7 +165,7 @@ describe('convert', function() {
       type: 'object',
       className: 'Date'
     };
-    
+
     var converted = convert.v8RefToInspectorObject(ref);
 
     expect(converted.description).to.equal('Invalid Date');
@@ -198,22 +198,22 @@ describe('convert', function() {
 
     it('converts error as object', function() {
       var v8Result = {
-        "handle": 6,
-        "type": "error",
-        "className": "Error",
-        "constructorFunction": {
-          "ref": 47
+        'handle': 6,
+        'type': 'error',
+        'className': 'Error',
+        'constructorFunction': {
+          'ref': 47
         },
-        "protoObject": {
-          "ref": 48
+        'protoObject': {
+          'ref': 48
         },
-        "prototypeObject": {
-          "ref": 2
+        'prototypeObject': {
+          'ref': 2
         },
-        "properties": [
+        'properties': [
           // stack, arguments, type, message
         ],
-        "text": "Error: ENOENT, open 'missing-file'"
+        'text': "Error: ENOENT, open 'missing-file'"
       };
 
       var converted = convert.v8ResultToInspectorResult(v8Result);
