@@ -1,3 +1,4 @@
+/*jshint debug:true */
 function InspectedClass() {
   this.writableProp = 'wr';
   Object.defineProperty(this, 'readonlyProp', { value: 'ro' });

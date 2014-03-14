@@ -9,7 +9,7 @@ describe('ScriptManager', function() {
     var frontendClientStub = {
       sendEvent: function() { }
     };
-    var debuggerClientStub = new EventEmitter;
+    var debuggerClientStub = new EventEmitter();
     manager = new ScriptManager([], frontendClientStub, debuggerClientStub);
   });
 
@@ -21,7 +21,7 @@ describe('ScriptManager', function() {
     });
 
     it('returns undefined for unknown id', function() {
-      expect(manager.findScriptByID('unknown-id')).to.be.undefined;
+      expect(manager.findScriptByID('unknown-id')).to.equal(undefined);
     });
   });
 
@@ -29,7 +29,7 @@ describe('ScriptManager', function() {
     it('removes all stored scripts', function() {
       manager._sources['id'] = 'a-source';
       manager.reset();
-      expect(manager.findScriptByID('id')).to.be.undefined;
+      expect(manager.findScriptByID('id')).to.equal(undefined);
     });
   });
 });

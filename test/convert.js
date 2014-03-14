@@ -176,19 +176,19 @@ describe('convert', function() {
   describe('v8ResultToInspectorResult', function() {
     it('convert regexp as object', function() {
       var v8Result = {
-            handle: 0,
-            className: 'RegExp',
-            type: 'regexp',
-            text: '/\/[^a]abc/'
-          },
-          ref = {
-            type: 'object',
-            subtype: 'regexp',
-            objectId: '0',
-            className: 'RegExp',
-            description: '/\/[^a]abc/'
-          },
-          converted = convert.v8ResultToInspectorResult(v8Result);
+          handle: 0,
+          className: 'RegExp',
+          type: 'regexp',
+          text: '/\/[^a]abc/'
+        },
+        ref = {
+          type: 'object',
+          subtype: 'regexp',
+          objectId: '0',
+          className: 'RegExp',
+          description: '/\/[^a]abc/'
+        },
+        converted = convert.v8ResultToInspectorResult(v8Result);
 
       expect(converted.type).to.equal(ref.type);
       expect(converted.objectId).to.equal(ref.objectId);
@@ -213,7 +213,7 @@ describe('convert', function() {
         'properties': [
           // stack, arguments, type, message
         ],
-        'text': "Error: ENOENT, open 'missing-file'"
+        'text': 'Error: ENOENT, open \'missing-file\''
       };
 
       var converted = convert.v8ResultToInspectorResult(v8Result);

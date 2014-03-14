@@ -36,11 +36,12 @@
   "devDependencies": {
     "mocha": "latest",
     "chai": "latest",
+    "jshint": "^2.4.4",
     "fs-extra": "~0.8.1"
   },
   "preferGlobal": true,
   "scripts": {
-    "test": "mocha",
-    "lint": "./tools/gjslint.sh"
+    "pretest": "jshint .",
+    "test": "mocha"
   }
 }

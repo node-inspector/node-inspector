@@ -1,0 +1,20 @@
+{
+"node": true,
+"eqnull" : true,
+"indent": 2,
+"undef": true,
+"quotmark": "single",
+"maxlen": 105,
+"trailing": true,
+"newcap": true,
+"nonew": true,
+"sub": true,
+"globals": {
+  "describe": true,
+  "it": true,
+  "before": true,
+  "beforeEach": true,
+  "after": true,
+  "afterEach": true
+}
+}

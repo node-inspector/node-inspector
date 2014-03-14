@@ -21,18 +21,18 @@ describe('CallFramesProvider', function() {
         expect(callFrames).to.have.length.least(2);
 
         function objectValueWithId(id, className) {
-         return {
-           type: 'object',
-           objectId: id,
-           className: className || 'Object',
-           description: className || 'Object'
-         };
+          return {
+            type: 'object',
+            objectId: id,
+            className: className || 'Object',
+            description: className || 'Object'
+          };
         }
 
         assertFrame({
             callFrameId: '0',
             functionName: 'MyObj.myFunc',
-            location: {scriptId: scriptId, lineNumber: 7, columnNumber: 4},
+            location: {scriptId: scriptId, lineNumber: 8, columnNumber: 4},
             scopeChain: [
               { object: objectValueWithId('scope:0:0'), type: 'local' },
               { object: objectValueWithId('scope:0:1'), type: 'closure' },
@@ -46,7 +46,7 @@ describe('CallFramesProvider', function() {
         assertFrame({
             callFrameId: '1',
             functionName: 'globalFunc',
-            location: {scriptId: scriptId, lineNumber: 12, columnNumber: 6},
+            location: {scriptId: scriptId, lineNumber: 13, columnNumber: 6},
             scopeChain: [
               { object: objectValueWithId('scope:1:0'), type: 'local' },
               { object: objectValueWithId('scope:1:1'), type: 'closure' },
