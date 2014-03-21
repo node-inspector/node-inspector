@@ -1,3 +1,14 @@
+2014-03-21, Version 0.7.2
+
+* Fixed a race condition in the debug-server.js (Vasil Dininski)
+
+* Use jshint instead of gjslint (Miroslav Bajtoš)
+
+* fixjsstyle cleanup (3y3)
+
+* debugger isRunning state changes (3y3)
+
+
 2014-03-11, Version 0.7.1
 
 * Added subtype property to RemoteObject (3y3)
