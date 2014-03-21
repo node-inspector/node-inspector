@@ -9,6 +9,7 @@ WebInspector.loaded = function() {
     var a = document.createElement('a');
     // browser will resolve this relative path to an absolute one
     a.href = 'ws';
+    a.search = window.location.search;
     a.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     return a.href;
   }();
