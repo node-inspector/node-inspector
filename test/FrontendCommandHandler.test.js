@@ -5,6 +5,7 @@ var FrontendCommandHandler = require('../lib/FrontendCommandHandler.js').Fronten
 var FrontendClient = require('../lib/FrontendClient.js').FrontendClient;
 var ScriptFileStorage = require('../lib/ScriptFileStorage.js').ScriptFileStorage;
 var ScriptManager = require('../lib/ScriptManager.js').ScriptManager;
+var InjectorClient = require('../lib/InjectorClient.js').InjectorClient;
 var WebSocketMock = require('./helpers/wsmock');
 
 describe('FrontendCommandHandler', function() {
@@ -71,6 +72,7 @@ describe('FrontendCommandHandler', function() {
       isHidden: function() { return false; }
     };
 
+    var injectorClient = new InjectorClient({inject: false}, debuggerClient);
     var frontendClient = new FrontendClient(wsclient);
 
     var scriptManager = new ScriptManager(
@@ -85,6 +87,7 @@ describe('FrontendCommandHandler', function() {
       frontendClient,
       debuggerClient,
       breakEventHandlerMock,
-      scriptManager);
+      scriptManager,
+      injectorClient);
   }
 });

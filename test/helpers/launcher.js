@@ -76,6 +76,17 @@ function runInspectObject(test) {
   });
 }
 
+function runPeriodicConsoleLog(breakOnStart, test) {
+  stopAllDebuggers();
+  startDebugger(
+    'PeriodicConsoleLog.js',
+    breakOnStart,
+    function(childProcess, debuggerClient) {
+      test(childProcess, debuggerClient);
+    }
+  );
+}
+
 function stopAllDebuggers() {
   while (stopDebuggerCallbacks.length > 0)
     stopDebuggerCallbacks.shift()();
@@ -107,6 +118,7 @@ function injectTestHelpers(debuggerClient) {
 
 exports.startDebugger = startDebugger;
 exports.runOnBreakInFunction = runOnBreakInFunction;
+exports.runPeriodicConsoleLog = runPeriodicConsoleLog;
 exports.stopAllDebuggers = stopAllDebuggers;
 exports.stopAllDebuggersAfterEachTest = stopAllDebugersAfterEachTest;
 exports.runInspectObject = runInspectObject;
