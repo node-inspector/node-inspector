@@ -59,7 +59,7 @@ WebInspector._orig_panelDescriptors = WebInspector._panelDescriptors;
 WebInspector._panelDescriptors = function() {
   var panelDescriptors = this._orig_panelDescriptors();
   return panelDescriptors.filter(function(pd) {
-    return ['scripts', 'console'].indexOf(pd.name()) != -1;
+    return ['scripts', 'console', 'profiles'].indexOf(pd.name()) != -1;
   });
 };
 
