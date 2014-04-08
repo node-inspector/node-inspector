@@ -1,3 +1,12 @@
+2014-04-08, Version 0.7.3
+
+* ScriptFileStorage: fix fs.readFile usage on v0.8 (Miroslav Bajtoš)
+
+* Update dependencies (Miroslav Bajtoš)
+
+* Switch to core _debugger module. (3y3)
+
+
 2014-03-21, Version 0.7.2
 
 * Fixed a race condition in the debug-server.js (Vasil Dininski)
