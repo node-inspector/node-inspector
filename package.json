@@ -31,7 +31,8 @@
     "ws": "~0.4.31",
     "opener": "~1.3.0",
     "yargs": "~1.1.2",
-    "which": "~1.0.5"
+    "which": "~1.0.5",
+    "nodewebkit": "~0.8.5"
   },
   "devDependencies": {
     "mocha": "latest",

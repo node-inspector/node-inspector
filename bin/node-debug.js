@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 var fork = require('child_process').fork;
+var spawn = require('child_process').spawn;
 var fs = require('fs');
 var path = require('path');
 var util = require('util');
@@ -39,6 +40,12 @@ var argvOptions = {
     alias: 'h',
     type: 'boolean',
     description: 'Show this help.'
+  },
+  nw: {
+    type: 'boolean',
+    default: true,
+    description: 'Starts Node Inspector with help of Node Webkit.\n' +
+                  'You can set other path to Node Webkit (--nw=pathToNodeWebkit)'
   }
 };
 
@@ -267,7 +274,23 @@ function openBrowserAndPrintInfo() {
   );
 
   if (!config.options.cli) {
-    open(url);
+    if (config.options.nw) {
+      var nw = config.options.nw === true ?
+                './node_modules/nodewebkit/nodewebkit/nw.exe' :
+                config.options.nw;
+      if (!fs.existsSync(nw)) nw = path.join(__dirname, nw);
+      if (!fs.existsSync(nw)) throw new Error('Node Webkit executable not found.');
+      //TODO(3y3): There are more webkit options that will be useful in future.
+      //http://src.chromium.org/svn/trunk/src/content/public/common/content_switches.cc
+      //We need to pass this options from command line.
+      //See #328 Issue then starts work on it.
+      nw = spawn(nw, ['--url=' + url, '--no-toolbar']);
+      
+      process.on('exit', function() { nw.kill(); });
+      nw.on('exit', function() { process.exit(); });
+    } else {
+      open(url);
+    }
   }
 
   console.log('Node Inspector is now available from %s', url);
