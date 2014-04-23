@@ -308,7 +308,8 @@ List of predefined options:
 --debug-port         |    5858     | Port to connect to the debugging app
 --save-live-edit     |    false    | Save live edit changes to disk
                      |             |   (update the edited files)
---no-preload         |    false    | Disables preloading *.js to speed up startup
+--preload            |    true     | Preload *.js files. You can disable this option
+                     |             |    to speed up the startup.
 --hidden             |     []      | Array of files to hide from the UI
                      |             |   (breakpoints in these files will be ignored)
 --stack-trace-limit  |     50      | Number of stack frames to show on a breakpoint

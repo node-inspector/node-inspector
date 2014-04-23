@@ -215,7 +215,7 @@ describe('ScriptFileStorage', function() {
 
   it('disables preloading files', function(done) {
     givenTempFiles('app.js', 'mod.js');
-    storage = new ScriptFileStorage({noPreload: true});
+    storage = new ScriptFileStorage({preload: false});
 
     storage.findAllApplicationScripts(
       TEMP_DIR,
