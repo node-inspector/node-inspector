@@ -3,7 +3,8 @@ var fs = require('fs-extra'),
   expect = require('chai').expect,
   glob = require('glob'),
   launcher = require('./helpers/launcher.js'),
-  ScriptFileStorage = require('../lib/ScriptFileStorage.js').ScriptFileStorage;
+  ScriptFileStorage = require('../lib/ScriptFileStorage.js').ScriptFileStorage,
+  ScriptManager = require('../lib/ScriptManager.js').ScriptManager;
 
 var TEMP_FILE = path.join(__dirname, 'fixtures', 'temp.js');
 var TEMP_DIR = path.join(__dirname, 'work');
@@ -15,12 +16,12 @@ describe('ScriptFileStorage', function() {
   var storage;
   launcher.stopAllDebuggersAfterEachTest();
   beforeEach(function() {
-    storage = new ScriptFileStorage();
+    storage = createScriptFileStorage();
   });
 
   it('saves new content without node.js module wrapper', function(done) {
     runLiveEdit(function(debuggerClient, originalScript, runtimeScript) {
-      var storage = new ScriptFileStorage();
+      var storage = createScriptFileStorage();
       storage.save(TEMP_FILE, edited(runtimeScript), function(err) {
         if (err) throw err;
         var newScript = fs.readFileSync(TEMP_FILE, { encoding: 'utf-8' });
@@ -34,7 +35,7 @@ describe('ScriptFileStorage', function() {
     runLiveEdit(
       function(content) { return '#!/usr/bin/node\n' + content; },
       function(debuggerClient, originalScript, runtimeScript) {
-        var storage = new ScriptFileStorage();
+        var storage = createScriptFileStorage();
         storage.save(TEMP_FILE, edited(runtimeScript), function(err) {
           if (err) throw err;
           var newScript = fs.readFileSync(TEMP_FILE, { encoding: 'utf-8' });
@@ -196,9 +197,7 @@ describe('ScriptFileStorage', function() {
 
   it('excludes files to hide', function(done) {
     var expectedFiles = givenTempFiles('app.js', 'mod.js').slice(0, 1);
-    var isHiddenScriptFn = function(s) { return /mod.js/i.test(s); };
-    storage = new ScriptFileStorage({isScriptHidden: isHiddenScriptFn});
-
+    storage = createScriptFileStorage({hidden: [/mod.js/i]});
     storage.findAllApplicationScripts(
       TEMP_DIR,
       path.join(TEMP_DIR, 'app.js'),
@@ -215,7 +214,7 @@ describe('ScriptFileStorage', function() {
 
   it('disables preloading files', function(done) {
     givenTempFiles('app.js', 'mod.js');
-    storage = new ScriptFileStorage({preload: false});
+    storage = createScriptFileStorage({preload: false});
 
     storage.findAllApplicationScripts(
       TEMP_DIR,
@@ -280,6 +279,18 @@ describe('ScriptFileStorage', function() {
     return files;
   }
 });
+
+function createScriptFileStorage(config) {
+  var emptyEventEmitter = {
+    on: function(){}
+  };
+  var storage = new ScriptFileStorage(
+    config,
+    new ScriptManager(config, emptyEventEmitter, emptyEventEmitter)
+  );
+  
+  return storage;
+}
 
 function globPathToNative(p) {
   return p.split('/').join(path.sep);
