@@ -47,6 +47,11 @@ describe('node-debug', function() {
       expect(config.subproc.debugPort).to.equal(10);
     });
 
+    it('handles nodejs options', function() {
+      var config = cli.parseArgs(argv('--nodejs --harmony --nodejs --random_seed=2'));
+      expect(config.subproc.execArgs).to.include.members(['--harmony', '--random_seed=2']);
+    });
+
     it('ignores options of the debugged application', function() {
       var config = cli.parseArgs(argv('app.js -b -p 10 -d 20 -c carg rest'));
       expect(config.subproc).to.eql({

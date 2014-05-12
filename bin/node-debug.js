@@ -25,6 +25,11 @@ var argvOptions = {
     type: 'number',
     description: 'Node/V8 debugger port (`node --debug={port}`)'
   },
+  nodejs: {
+    type: 'string',
+    description: 'Pass NodeJS options to debugged process (`node --option={value}`)\n' +
+                  'Usage example:  node-debug --nodejs --harmony --nodejs --random_seed=2 app'
+  },
   cli: {
     alias: 'c',
     type: 'boolean',
@@ -106,6 +111,18 @@ function main() {
 
 function parseArgs(argv) {
   argv = argv.slice(2);
+
+  //Preparse --nodejs options
+  var nodejsArgs = [];
+  var nodejsIndex = argv.indexOf('--nodejs');
+  while (nodejsIndex !== -1) {
+    var nodejsArg = argv.splice(nodejsIndex, 2)[1];
+    if (nodejsArg !== undefined) {
+      nodejsArgs.push(nodejsArg);
+    }
+    nodejsIndex = argv.indexOf('--nodejs');
+  }
+
   var options = argvParser.parse(argv);
   var script = options._[0];
   var printScript = true;
@@ -125,7 +142,7 @@ function parseArgs(argv) {
   options = argvParser.parse(argv);
 
   var subprocPort = options['debug-port'] || 5858;
-  var subprocExecArgs = ['--debug=' + subprocPort];
+  var subprocExecArgs = ['--debug=' + subprocPort].concat(nodejsArgs);
 
   if (options['debug-brk']) {
     subprocExecArgs.push('--debug-brk');
