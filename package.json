@@ -22,15 +22,15 @@
     "node-debug": "./bin/node-debug.js"
   },
   "dependencies": {
-    "express": "~3.5",
-    "async": "~0.4",
+    "express": "~4.0",
+    "async": "~0.8",
     "glob": "~3.2.1",
     "rc": "~0.3.0",
     "strong-data-uri": "~0.1.0",
     "debug": "~0.8",
     "ws": "~0.4.31",
     "opener": "~1.3.0",
-    "yargs": "~1.1.2",
+    "yargs": "~1.2.1",
     "which": "~1.0.5"
   },
   "devDependencies": {

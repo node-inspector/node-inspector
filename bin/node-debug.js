@@ -182,6 +182,9 @@ function extractPassThroughArgs(options, argvOptions) {
   // Filter options not handled by node-debug
   Object.keys(options).forEach(function(key) {
     if (optionsToSkip[key]) return;
+    //Filter camelKey options created by yargs
+    if (/[A-Z]/.test(key)) return;
+    
     var value = options[key];
     if (value === undefined) return;
     if (value === true) {
