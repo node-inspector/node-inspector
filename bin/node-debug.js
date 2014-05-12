@@ -181,6 +181,7 @@ function extractPassThroughArgs(options, argvOptions) {
 
   // Filter options not handled by node-debug
   Object.keys(options).forEach(function(key) {
+    //Filter options handled by node-debug
     if (optionsToSkip[key]) return;
     //Filter camelKey options created by yargs
     if (/[A-Z]/.test(key)) return;
@@ -189,7 +190,7 @@ function extractPassThroughArgs(options, argvOptions) {
     if (value === undefined) return;
     if (value === true) {
       result.push('--' + key);
-    } else if (value === true) {
+    } else if (value === false) {
       result.push('--no-' + key);
     } else {
       result.push('--' + key);

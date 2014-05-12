@@ -72,11 +72,11 @@ describe('node-debug', function() {
     });
 
     it('forwards unknown options to node-inspector', function() {
-      var config = cli.parseArgs(argv('--some-bool --some-string val app.js'));
+      var config = cli.parseArgs(argv('--some-bool --no-some-other-bool --some-string val app.js'));
       expect(config.inspector.args, 'inspector args')
-        .to.eql(['--some-bool', '--some-string', 'val', '--web-port=8080']);
+        .to.eql(['--some-bool', '--no-some-other-bool', '--some-string', 'val', '--web-port=8080']);
       expect(config.subproc.execArgs, 'subprocess args')
-        .to.not.include.members(['--some-bool', '--some-string', 'val']);
+        .to.not.include.members(['--some-bool', '--no-some-other-bool', '--some-string', 'val']);
     });
 
     function argv(cmdString) {
