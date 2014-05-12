@@ -9,6 +9,8 @@ var yargs = require('yargs');
 var whichSync = require('which').sync;
 var inspector = require('..');
 
+var WIN_CMD_LINK_MATCHER = /node  "%~dp0\\(.*?)"/;
+
 var argvOptions = {
   'debug-brk': {
     alias: 'b',
@@ -264,6 +266,7 @@ function startDebuggedProcess(callback) {
   if (!fs.existsSync(script)) {
     try {
       script = whichSync(config.subproc.script);
+      script = checkWinCmdFiles(script);
     } catch (err) {
       return  callback(err);
     }
@@ -278,6 +281,16 @@ function startDebuggedProcess(callback) {
   );
   debuggedProcess.on('exit', function() { process.exit(); });
   callback();
+}
+
+function checkWinCmdFiles(script) {
+  if (process.platform == 'win32' && path.extname(script).toLowerCase() == '.cmd') {
+    var cmdContent = '' + fs.readFileSync(script);
+    var link = (WIN_CMD_LINK_MATCHER.exec(cmdContent) || [])[1];
+    
+    if (link) script = path.resolve(path.dirname(script), link);
+  }
+  return script;
 }
 
 function openBrowserAndPrintInfo() {
