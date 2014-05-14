@@ -16,7 +16,7 @@ describe('CallFramesProvider', function() {
         }
 
         // The order of script loading has changed in v0.11
-        var scriptId = /^v0\.10\./.test(process.version) ? '28' : '32';
+        var scriptId = /^v0\.10\./.test(process.version) ? '28' : '36';
 
         expect(callFrames).to.have.length.least(2);
 
