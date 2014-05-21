@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 
 var fork = require('child_process').fork;
+var spawn = require('child_process').spawn;
 var fs = require('fs');
+var readline = require('readline');
+var npm = require('npm');
 var path = require('path');
 var util = require('util');
 var open = require('opener');
@@ -39,6 +42,13 @@ var argvOptions = {
     alias: 'h',
     type: 'boolean',
     description: 'Show this help.'
+  },
+  'node-webkit': {
+    alias: 'nw',
+    type: 'boolean',
+    default: false,
+    description: 'Starts Node Inspector with help of Node Webkit.\n' +
+                  'You can set other path to Node Webkit (--nw=pathToNodeWebkit)'
   }
 };
 
@@ -267,10 +277,89 @@ function openBrowserAndPrintInfo() {
   );
 
   if (!config.options.cli) {
-    open(url);
-  }
+    if (config.options.nw) {
+      var nwExecutable = process.platform === 'win32' ? 'nodewebkit.cmd' : 'nodewebkit';
+      var defaultDir = path.resolve(__dirname, '..', 'node_modules', '.bin', nwExecutable);
+      var targetDir = config.options.nw === true ? defaultDir : config.options.nw;
+      
+      if (targetDir.indexOf('.') === 0) targetDir = path.resolve(__dirname, targetDir);
+      
+      if (!fs.existsSync(targetDir)) {
+        process.nextTick(function() {
+          openSolutionDialog(defaultDir, targetDir, url);
+        });
+        return;
+      }
 
-  console.log('Node Inspector is now available from %s', url);
-  if (config.printScript)
-    console.log('Debugging `%s`\n', config.subproc.script);
+      startNodeWebkit(targetDir, url);
+    } else {
+      open(url);
+      console.log('Node Inspector is now available from %s', url);
+      if (config.printScript)
+        console.log('Debugging `%s`\n', config.subproc.script);
+    }
+  }
+}
+
+function openSolutionDialog(defaultDir, targetDir, url) {
+  var dirType = config.options.nw === true ? 'default' : 'target';
+  var dialog = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+  
+  dialog.question(
+    'You try to start node-debug with help of Node Webkit, ' + 
+    'but Node Webkit executable not found in ' + dirType + ' directory.\n' +
+    '  (' + targetDir + ')\n' +
+    'Would you like:\n' +
+      '1. Install Node Webkit to default directory\n' +
+      '2. Start with help of default browser\n' +
+      '3. Exit\n',
+    function(answer) {
+      switch (answer) {
+        case '1': 
+          installNodeWebkit(function(error, result) {
+            if (error) {
+              console.error('Node Webkit installation error: ' + error.message);
+              process.exit();
+            }
+            startNodeWebkit(defaultDir, url);
+          });                
+          return;
+        case '2':
+          open(url);
+          return;
+        case '3':
+          process.exit();
+          return;
+      }
+    }
+  );
+}
+
+function installNodeWebkit(callback) {
+  npm.load(function (er, npm) {
+    npm.commands.install(['nodewebkit'], callback);
+  });
+}
+
+function startNodeWebkit(targetDir, url) {
+  //TODO(3y3): There are more webkit options that will be useful in future.
+  //http://src.chromium.org/svn/trunk/src/content/public/common/content_switches.cc
+  //We need to pass this options from command line.
+  //See #328 Issue then starts work on it.
+  var nw = spawn(targetDir, ['--url=' + url, '--no-toolbar']);
+  nw.on('exit', function() { process.exit(); })
+    .on('error', function(error) { 
+      console.log('Node Webkit error:' + error.message);
+      process.exit();
+    });
+  nw.stdout.on('data', function (data) {
+      console.log('' + data);
+  });
+  nw.stderr.on('data', function (data) {
+      console.error('' + data);
+  });
+  process.on('exit', function() { nw.kill(); });
 }
