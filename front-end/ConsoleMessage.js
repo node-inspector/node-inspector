@@ -71,11 +71,6 @@ WebInspector.ConsoleMessageImpl = function(source, level, message, linkifier, ty
 }
 
 WebInspector.ConsoleMessageImpl.prototype = {
-    request: function()
-    {
-        return this._request;
-    },
-
     wasShown: function()
     {
         for (var i = 0; this._dataGrids && i < this._dataGrids.length; ++i) {
