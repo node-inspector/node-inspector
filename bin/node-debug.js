@@ -9,6 +9,8 @@ var yargs = require('yargs');
 var whichSync = require('which').sync;
 var inspector = require('..');
 
+var WIN_CMD_LINK_MATCHER = /node  "%~dp0\\(.*?)"/;
+
 var argvOptions = {
   'debug-brk': {
     alias: 'b',
@@ -24,6 +26,11 @@ var argvOptions = {
     alias: 'd',
     type: 'number',
     description: 'Node/V8 debugger port (`node --debug={port}`)'
+  },
+  nodejs: {
+    type: 'string',
+    description: 'Pass NodeJS options to debugged process (`node --option={value}`)\n' +
+                  'Usage example:  node-debug --nodejs --harmony --nodejs --random_seed=2 app'
   },
   cli: {
     alias: 'c',
@@ -106,6 +113,18 @@ function main() {
 
 function parseArgs(argv) {
   argv = argv.slice(2);
+
+  //Preparse --nodejs options
+  var nodejsArgs = [];
+  var nodejsIndex = argv.indexOf('--nodejs');
+  while (nodejsIndex !== -1) {
+    var nodejsArg = argv.splice(nodejsIndex, 2)[1];
+    if (nodejsArg !== undefined) {
+      nodejsArgs.push(nodejsArg);
+    }
+    nodejsIndex = argv.indexOf('--nodejs');
+  }
+
   var options = argvParser.parse(argv);
   var script = options._[0];
   var printScript = true;
@@ -125,7 +144,7 @@ function parseArgs(argv) {
   options = argvParser.parse(argv);
 
   var subprocPort = options['debug-port'] || 5858;
-  var subprocExecArgs = ['--debug=' + subprocPort];
+  var subprocExecArgs = ['--debug=' + subprocPort].concat(nodejsArgs);
 
   if (options['debug-brk']) {
     subprocExecArgs.push('--debug-brk');
@@ -181,12 +200,16 @@ function extractPassThroughArgs(options, argvOptions) {
 
   // Filter options not handled by node-debug
   Object.keys(options).forEach(function(key) {
+    //Filter options handled by node-debug
     if (optionsToSkip[key]) return;
+    //Filter camelKey options created by yargs
+    if (/[A-Z]/.test(key)) return;
+    
     var value = options[key];
     if (value === undefined) return;
     if (value === true) {
       result.push('--' + key);
-    } else if (value === true) {
+    } else if (value === false) {
       result.push('--no-' + key);
     } else {
       result.push('--' + key);
@@ -243,6 +266,7 @@ function startDebuggedProcess(callback) {
   if (!fs.existsSync(script)) {
     try {
       script = whichSync(config.subproc.script);
+      script = checkWinCmdFiles(script);
     } catch (err) {
       return  callback(err);
     }
@@ -257,6 +281,16 @@ function startDebuggedProcess(callback) {
   );
   debuggedProcess.on('exit', function() { process.exit(); });
   callback();
+}
+
+function checkWinCmdFiles(script) {
+  if (process.platform == 'win32' && path.extname(script).toLowerCase() == '.cmd') {
+    var cmdContent = '' + fs.readFileSync(script);
+    var link = (WIN_CMD_LINK_MATCHER.exec(cmdContent) || [])[1];
+    
+    if (link) script = path.resolve(path.dirname(script), link);
+  }
+  return script;
 }
 
 function openBrowserAndPrintInfo() {

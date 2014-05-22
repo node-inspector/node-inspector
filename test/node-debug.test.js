@@ -47,6 +47,11 @@ describe('node-debug', function() {
       expect(config.subproc.debugPort).to.equal(10);
     });
 
+    it('handles nodejs options', function() {
+      var config = cli.parseArgs(argv('--nodejs --harmony --nodejs --random_seed=2'));
+      expect(config.subproc.execArgs).to.include.members(['--harmony', '--random_seed=2']);
+    });
+
     it('ignores options of the debugged application', function() {
       var config = cli.parseArgs(argv('app.js -b -p 10 -d 20 -c carg rest'));
       expect(config.subproc).to.eql({
@@ -72,11 +77,11 @@ describe('node-debug', function() {
     });
 
     it('forwards unknown options to node-inspector', function() {
-      var config = cli.parseArgs(argv('--some-bool --some-string val app.js'));
+      var config = cli.parseArgs(argv('--some-bool --no-some-other-bool --some-string val app.js'));
       expect(config.inspector.args, 'inspector args')
-        .to.eql(['--some-bool', '--some-string', 'val', '--web-port=8080']);
+        .to.eql(['--some-bool', '--no-some-other-bool', '--some-string', 'val', '--web-port=8080']);
       expect(config.subproc.execArgs, 'subprocess args')
-        .to.not.include.members(['--some-bool', '--some-string', 'val']);
+        .to.not.include.members(['--some-bool', '--no-some-other-bool', '--some-string', 'val']);
     });
 
     function argv(cmdString) {
