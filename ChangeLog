@@ -1,3 +1,18 @@
+2014-06-05, Version 0.7.4
+
+* Non-ascii string saving fix (junecoder)
+
+* front-end: fix for the Safari browser (ivan baktsheev)
+
+* node-debug: Detecting Windows CMD files (3y3)
+
+* node-debug: Passing NodeJS options to debugged process (3y3)
+
+* node-debug: Fixed passing inspector's 'no-' arg in node-debug (3y3)
+
+* Fix conversion of config options (3y3)
+
+
 2014-04-08, Version 0.7.3
 
 * ScriptFileStorage: fix fs.readFile usage on v0.8 (Miroslav Bajtoš)
