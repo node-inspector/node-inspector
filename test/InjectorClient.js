@@ -30,23 +30,12 @@ describe('InjectorClient', function() {
       expect(pausedByInjector, 'invocation text equal to PAUSE_CHECK').to.equal(true);
     });
 
-    it('breaks the connection flow with connected=false', function(done) {
-      injectorClient.once('connect', function(connected) {
-        expect(connected, 'connection command discarded').to.equal(false);
+    it('breaks the injection flow with injected=false', function(done) {
+      injectorClient.once('inject', function(injected) {
+        expect(injected, 'injection command discarded').to.equal(false);
         done();
       });
-      injectorClient.connect();
-    });
-
-    it('caches injections as stringified functions', function() {
-      var injection = function(require, injector) {},
-          injToString = injection.toString();
-      injectorClient.inject(injection);
-
-      var cached = injectorClient._needsToInject;
-
-      expect(cached, 'injections cache length').to.have.length(1);
-      expect(cached, 'injection in cache').to.include(injToString);
+      injectorClient.inject();
     });
   });
 
@@ -67,156 +56,43 @@ describe('InjectorClient', function() {
     }
 
     it('is ready to inject', function() {
-      expect(injectorClient.needsConnect, 'connection allowed').to.equal(true);
-    });
-    
-    it('inject server', function(done) {
-      injectorClient._injectServer(function(error, result) {
-        expect(error, 'injectet without errors').to.equal(null);
-        expect(result.value, 'port is a valid number').to.be.within(0, 65535);
-        serverPort = result.value;
-        done();
-      }, 1);
+      expect(injectorClient.needsInject, 'injection is needed').to.equal(true);
     });
 
-    it('connects to server', function(done) {
-      injectorClient._connect(null, {value: serverPort});
-      injectorClient.once('connect', function(connected) {
-        expect(connected, 'is connected').to.equal(true);
+    it('inject server', function(done) {
+      injectorClient.once('inject', function(injected) {
+        expect(injected).to.equal(true);
+        if (injected) done();
+      });
+      injectorClient.once('error', function(error) {
+        done(error);
+      });
+      injectorClient.inject();
+    });
+
+    it('does not need to inject if already injected', function() {
+      expect(injectorClient.needsInject, 'injection is not needed').to.equal(false);
+    });
+
+    it('notify that is already injected', function(done) {
+      injectorClient.once('inject', function(injected) {
+        expect(injected, 'is already injected').to.equal(true);
         done();
       });
-    });
-    
-    it('does not need to connect if connected', function() {
-      expect(injectorClient.needsConnect, 'connection not allowed').to.equal(false);
-    });
-    
-    it('discards connection command if connected', function(done) {
-      injectorClient.once('connect', function(connected) {
-        expect(connected, 'connection command discarded').to.equal(false);
-        done();
-      });
-      injectorClient.connect();
+      injectorClient.inject();
     });
 
     it('would close on "close" debuggerClient', function(done) {
-      injectorClient.on('close', done.bind(undefined, null));
+      injectorClient.once('close', function() {
+        expect(injectorClient._injected).to.equal(false);
+        expect(injectorClient._appPausedByInjector).to.equal(false);
+        done();
+      });
       debuggerClient.close();
     });
-    
+
     it('is ready to inject after close', function() {
-      expect(injectorClient.needsConnect, 'connection allowed').to.equal(true);
-    });
-  });
-
-  describe('works with events.', function() {
-    before(setupInjector);
-    var injectorClient, debuggerClient;
-
-    function setupInjector(done) {
-      launcher.runPeriodicConsoleLog(false, function(childProcess, client) {
-        debuggerClient = client;
-        injectorClient = new InjectorClient({}, debuggerClient);
-        injectorClient.inject(function(require, injector) {
-          injector.on(
-            'Agent.clientEvent',
-            function(message) {
-              injector.sendEvent('Agent.serverEvent', message.body);
-            }
-          );
-        });
-        injectorClient._pause();
-        debuggerClient.once('break', function(obj) {
-          injectorClient._appPausedByInjector = injectorClient.containsInjectorMark(obj.invocationText);
-          done();
-        });
-      });
-    }
-
-    it('Register events', function() {
-      var events = ['Agent.serverEvent', 'Agent.serverEventOther'];
-      injectorClient.registerInjectorEvents.apply(injectorClient, events);
-
-      var cached = injectorClient._eventNames;
-
-      expect(cached, 'events cache length').to.have.length(2);
-      expect(cached, 'cache contains event').to.have.members(events);
-    });
-
-    it('Cache messages if not connected', function() {
-      injectorClient.sendEvent('Agent.clientEvent', 'test1');
-      injectorClient.sendEvent('Agent.clientEvent', 'test2');
-
-      var cached = injectorClient._messagesCache;
-
-      expect(cached, 'messages cache length').to.have.length(2);
-    });
-
-    it('Receive events', function(done) {
-      var result = [];
-      injectorClient.on('Agent.serverEvent', function(message) {
-        result.push(message);
-        if (result.length == 2) {
-          expect(result, 'events has true ordered').to.deep.equal(['test1', 'test2']);
-          done();
-        }
-      });
-      injectorClient.connect();
-    });
-
-    it('Clear messages cache after connection', function() {
-      expect(injectorClient._messagesCache).to.have.length(0);
-    });
-  });
-  
-  describe('works with requests.', function() {
-    before(setupInjector);
-    var injectorClient, debuggerClient;
-
-    function setupInjector(done) {
-      launcher.runPeriodicConsoleLog(false, function(childProcess, client) {
-        debuggerClient = client;
-        injectorClient = new InjectorClient({}, debuggerClient);
-        injectorClient.inject(function(require, injector) {
-          injector.commands['Agent.clientRequest'] = function(request, response) {
-            response.body = request.arguments;
-          };
-          injector.commands['Agent.clientBadRequest'] = function(request, response) {
-            response.body = {result: true};
-            throw new Error('Bad request was thrown');
-          };
-        });
-        injectorClient._pause();
-        debuggerClient.once('break', function(obj) {
-          injectorClient._appPausedByInjector = injectorClient.containsInjectorMark(obj.invocationText);
-          done();
-        });
-      });
-    }
-    
-    it('Cache messages when not connected', function() {
-      injectorClient.request('Agent.clientRequest');
-      injectorClient.sendEvent('Agent.clientBadRequest');
-
-      var cached = injectorClient._messagesCache;
-
-      expect(cached, 'messages cache length').to.have.length(2);
-    });
-    
-    it('Receive responces when connected', function(done) {
-      var doneCounter = 0;
-      injectorClient.connect();
-      
-      injectorClient.request('Agent.clientRequest', {param: 1}, function(error, response){
-        expect(error, 'no errors').to.equal(null);
-        expect(response.param, 'param was passed').to.equal(1);
-        if (++doneCounter == 2) done();
-      });
-      injectorClient.request('Agent.clientBadRequest', {}, function(error, response) {
-        expect(error, 'error was thrown').to.equal('Bad request was thrown');
-        expect(response, 'response is empty').to.equal(undefined);
-        if (++doneCounter == 2) done();
-      });
+      expect(injectorClient.needsInject, 'injection is needed').to.equal(true);
     });
   });
 
@@ -228,33 +104,120 @@ describe('InjectorClient', function() {
       launcher.runPeriodicConsoleLog(true, function(childProcess, client) {
         debuggerClient = client;
         injectorClient = new InjectorClient({}, debuggerClient);
-        injectorClient.inject(function(require, injector) {
-          console.log = (function(fn) {
-            return function() {
-              injector.sendEvent('Console.messageAdded', arguments[0]);
-              fn.apply(console, arguments);
-            };
-          }(console.log));
-        });
-        injectorClient.registerInjectorEvents('Console.messageAdded');
         done();
       });
     }
 
     it('connects to server', function(done) {
-      injectorClient.once('connect', function(connected) {
-        expect(connected, 'is connected').to.equal(true);
+      injectorClient.once('inject', function(injected) {
+        expect(injected, 'is injected').to.equal(true);
         done();
       });
-      injectorClient.connect();
+      injectorClient.inject();
     });
+  });
 
-    it('does not lose the data', function(done) {
-      debuggerClient.request('continue');
-      injectorClient.once('Console.messageAdded', function(message) {
-        expect(message).to.equal(0);
+  describe('works with events.', function() {
+    before(setupInjector);
+    var injectorClient, debuggerClient;
+
+    function setupInjector(done) {
+      launcher.runPeriodicConsoleLog(true, function(childProcess, client) {
+        debuggerClient = client;
+        injectorClient = new InjectorClient({}, debuggerClient);
+        injectorClient.once('inject', function(injected) {
+          if (injected) done();
+        });
+        injectorClient.once('error', function(error) {
+          done(error);
+        });
+        injectorClient.inject();
+      });
+    }
+
+    it('Register event handle in app and emits it', function(done) {
+      var injection = function(require, debug, options) {
+        debug.register('console', function(request, response) {
+          debug.commandToEvent(request, response);
+        });
+
+        console.log = (function(fn) {
+          return function() {
+            var message = arguments[0];
+
+            debug.command('console', {
+              level: 'log',
+              message: options.message + message
+            });
+
+            return fn.apply(console, arguments);
+          };
+        })(console.log);
+
+        console.log('test');
+      };
+
+      debuggerClient.registerDebuggerEventHandlers('console');
+      debuggerClient.once('console', function(message) {
+        expect(message.level).to.equal('log');
+        expect(message.message).to.equal('testtest');
         done();
       });
+
+      injectorClient.injection(
+        injection,
+        { message: 'test' },
+        function(error, result) {
+          if (error) return done(error);
+        }
+      );
+    });
+  });
+
+  describe('works with commands.', function() {
+    before(setupInjector);
+    var injectorClient, debuggerClient;
+
+    function setupInjector(done) {
+      launcher.runPeriodicConsoleLog(true, function(childProcess, client) {
+        debuggerClient = client;
+        injectorClient = new InjectorClient({}, debuggerClient);
+        injectorClient.once('inject', function(injected) {
+          if (injected) done();
+        });
+        injectorClient.once('error', function(error) {
+          done(error);
+        });
+        injectorClient.inject();
+      });
+    }
+
+    it('Registers command in app and responds to it', function(done) {
+      var injection = function(require, debug, options) {
+        debug.register('testcommand', function(request, response) {
+          response.body = request.arguments;
+        });
+      };
+
+      injectorClient.injection(
+        injection,
+        {},
+        function(error, result) {
+          if (error) return done(error);
+
+          debuggerClient.request(
+            'testcommand',
+            {
+              param: 'test'
+            },
+            function(error, result) {
+              expect(error).to.equal(null);
+              expect(result).to.have.property('param', 'test');
+              done();
+            }
+          );
+        }
+      );
     });
   });
 });

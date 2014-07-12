@@ -31,7 +31,8 @@
     "ws": "~0.4.31",
     "opener": "~1.3.0",
     "yargs": "~1.2.1",
-    "which": "~1.0.5"
+    "which": "~1.0.5",
+    "v8-debug": "~0.1.0"
   },
   "devDependencies": {
     "mocha": "latest",
