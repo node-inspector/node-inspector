@@ -55,7 +55,7 @@ to get started.
 
 Other useful resources:
  - Documentation specific to Node Inspector provided by StrongLoop:
-  [Running Node Inspector](http://docs.strongloop.com/display/DOC/Running+Node+Inspector)
+  [Debugging with Node Inspector](http://docs.strongloop.com/display/SLC/Debugging+with+Node+Inspector)
  - Miroslav's talk
   [How to Debug Node Apps with Node Inspector](https://vimeo.com/77870960)
  - Danny's [screencasts](http://www.youtube.com/view_play_list?p=A5216AC29A41EFA8)
