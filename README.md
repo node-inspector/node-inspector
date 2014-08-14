@@ -1,7 +1,6 @@
 # Node Inspector
 
 [![Build Status](https://travis-ci.org/node-inspector/node-inspector.png?branch=master)](https://travis-ci.org/node-inspector/node-inspector)
-[![Dependency Status](https://gemnasium.com/node-inspector/node-inspector.png)](https://gemnasium.com/node-inspector/node-inspector)
 [![NPM version](https://badge.fury.io/js/node-inspector.png)](http://badge.fury.io/js/node-inspector)
 [![Bountysource](https://www.bountysource.com/badge/tracker?tracker_id=195817)](https://www.bountysource.com/trackers/195817-node-inspector?utm_source=195817&utm_medium=shield&utm_campaign=TRACKER_BADGE)
 
@@ -267,7 +266,7 @@ Command line options:
 ### node-inspector
 
 node-inspector uses [rc](https://npmjs.org/package/rc)
-[[github]](https://github.com/dominictarr/rc) module to collect options.
+module to collect options.
 
 Places for configuration:
 * command line arguments (parsed by optimist)
@@ -329,9 +328,11 @@ started.
 ## Credits
 
 Maintainers
+
  - [Danny Coates](https://github.com/dannycoates) - the original author
    and a sole maintainer for several years.
- - [Miroslav Bajtoš](https://github.com/bajtos) - the current maintainer,
+ - [Miroslav Bajtoš](https://github.com/bajtos) - a current maintainer,
    sponsored by [StrongLoop](http://strongloop.com).
+ - [3y3](https://github.com/3y3) - a current maintainer
 
 Big thanks to the many contributors to the project, see [AUTHORS](AUTHORS).
