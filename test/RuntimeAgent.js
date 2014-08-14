@@ -1,6 +1,5 @@
 var expect = require('chai').expect,
   launcher = require('./helpers/launcher.js'),
-  config = require('../config'),
   CallFramesProvider = require('../lib/CallFramesProvider').CallFramesProvider,
   RuntimeAgent = require('../lib/RuntimeAgent.js').RuntimeAgent;
 
@@ -13,8 +12,8 @@ describe('RuntimeAgent', function() {
     var MYFUNC_LOCAL_SCOPE_ID = 'scope:0:0';
 
     launcher.runOnBreakInFunction(function(debuggerClient) {
-      var callFramesProvider = new CallFramesProvider(config, debuggerClient),
-        agent = new RuntimeAgent(config, debuggerClient);
+      var callFramesProvider = new CallFramesProvider({}, debuggerClient),
+        agent = new RuntimeAgent({}, debuggerClient);
 
       // request call frames so that scope properties are initialized
       callFramesProvider.fetchCallFrames(function(cferror) {
@@ -74,7 +73,7 @@ describe('RuntimeAgent', function() {
   it('filter null __proto__', function(done) {
     /*'Object' objectId is 3. __proto__ of 'Object' is 'null'*/
     launcher.runInspectObject(function(debuggerClient, inspectedObjectId) {
-      var agent = new RuntimeAgent(config, debuggerClient);
+      var agent = new RuntimeAgent({}, debuggerClient);
       agent.getProperties(
         {
           objectId: 3,
@@ -99,7 +98,7 @@ describe('RuntimeAgent', function() {
 
   it('returns object properties with metadata', function(done) {
     launcher.runInspectObject(function(debuggerClient, inspectedObjectId) {
-      var agent = new RuntimeAgent(config, debuggerClient);
+      var agent = new RuntimeAgent({}, debuggerClient);
       agent.getProperties(
         {
           objectId: inspectedObjectId,
@@ -138,7 +137,7 @@ describe('RuntimeAgent', function() {
 
   it('returns empty result for accessorPropertiesOnly:true', function(done) {
     launcher.runInspectObject(function(debuggerClient, inspectedObjectId) {
-      var agent = new RuntimeAgent(config, debuggerClient);
+      var agent = new RuntimeAgent({}, debuggerClient);
       agent.getProperties(
         {
           objectId: inspectedObjectId,
@@ -157,7 +156,7 @@ describe('RuntimeAgent', function() {
 
   it('returns __proto__ for ownProperties:true', function(done) {
     launcher.runInspectObject(function(debuggerClient, inspectedObjectId) {
-      var agent = new RuntimeAgent(config, debuggerClient);
+      var agent = new RuntimeAgent({}, debuggerClient);
       agent.getProperties(
         {
           objectId: inspectedObjectId,
@@ -194,7 +193,7 @@ describe('RuntimeAgent', function() {
 
   it('calls function on an object to get completions', function(done) {
     launcher.runOnBreakInFunction(function(debuggerClient) {
-      var agent = new RuntimeAgent(config, debuggerClient);
+      var agent = new RuntimeAgent({}, debuggerClient);
 
       debuggerClient.fetchObjectId(agent, 'console', function(consoleObjectId) {
         agent.callFunctionOn(
@@ -275,7 +274,7 @@ describe('RuntimeAgent', function() {
       launcher.runInspectObject(function(client, objectId) {
         debuggerClient = client;
         inspectedObjectId = objectId;
-        agent = new RuntimeAgent(config, debuggerClient);
+        agent = new RuntimeAgent({}, debuggerClient);
         done();
       });
     }

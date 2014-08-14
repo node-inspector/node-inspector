@@ -280,8 +280,6 @@ Places for configuration:
 * ```$HOME/.config/node-inspector/config```
 * ```/etc/node-inspectorrc```
 * ```/etc/node-inspector/config```
-* options from ```config.json``` for backward compatibility
-* defaults described in Node Inspector`s [./lib/config.js](lib/config.js).
 
 All configuration sources that where found will be flattened into one object,
 so that sources earlier in this list override later ones.

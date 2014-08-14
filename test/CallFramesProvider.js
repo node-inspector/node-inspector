@@ -1,6 +1,5 @@
 var expect = require('chai').expect,
   launcher = require('./helpers/launcher.js'),
-  config = require('../config'),
   CallFramesProvider = require('../lib/CallFramesProvider').CallFramesProvider;
 
 describe('CallFramesProvider', function() {
@@ -8,7 +7,7 @@ describe('CallFramesProvider', function() {
 
   it('gets stack trace', function(done) {
     launcher.runOnBreakInFunction(function(debuggerClient) {
-      var provider = new CallFramesProvider(config, debuggerClient);
+      var provider = new CallFramesProvider({}, debuggerClient);
       provider.fetchCallFrames(function(error, callFrames) {
         if (error !== undefined && error !== null) {
           done(error);
