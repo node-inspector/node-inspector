@@ -21,7 +21,25 @@ function startDebugger(scriptPath, breakOnStart, done) {
     scriptPath = path.join(testDir, '..', 'fixtures', scriptPath);
   child = spawn('node', [debugOption + debugPort, scriptPath]);
 
-  child.stderr.on('data', function(data) { process.stderr.write(data); });
+  var startupTimer = setTimeout(function() {
+    throw new Error('Timeout while waiting for the child process to initialize the debugger.');
+  }, 1000);
+
+  child.stderr.on('data', function(data) {
+    // Wait for the child process to initialize the debugger before connecting
+    // Node v0.10 prints "debugger listening..."
+    // Node v0.11 prints "Debugger listening..."
+    if (/^[Dd]ebugger listening on port \d+$/m.test(data.toString())) {
+      clearTimeout(startupTimer);
+      // give the child process some time to finish the initialization code
+      // this is especially important when breakOnStart is true
+      setTimeout(setupDebuggerClient, 200);
+    } else {
+      // Forward any error messages from the child process
+      // to our stderr to make troubleshooting easier
+      process.stderr.write(data);
+    }
+  });
 
   stopDebuggerCallbacks.push(function stopDebugger() {
     ignoreErrors = true;
@@ -43,9 +61,6 @@ function startDebugger(scriptPath, breakOnStart, done) {
         console.warn('(warning) debugger connection error: ' + e);
     });
   }
-
-  // give the child process some time to start up the debugger
-  setTimeout(setupDebuggerClient, 200);
 }
 
 function runOnBreakInFunction(test) {
