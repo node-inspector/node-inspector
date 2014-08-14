@@ -199,3 +199,13 @@ WebInspector.SettingsController.prototype.orig_showSettingsScreen =
 WebInspector.SettingsController.prototype.showSettingsScreen = function() {
   this.orig_showSettingsScreen(WebInspector.SettingsScreen.Tabs.Shortcuts);
 };
+
+//Override some specific strings in UI
+var oldUIString = WebInspector.UIString;
+var stringOverrides = {
+  '(no domain)': '(core modules)'
+};
+WebInspector.UIString = function(string, vararg) {
+  string = stringOverrides[string] || string;
+  return oldUIString(string, Array.prototype.slice.call(arguments, 1));
+};
