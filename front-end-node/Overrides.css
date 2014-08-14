@@ -1,0 +1,4 @@
+//Remove unusable tabs in help window
+#tab-general, #general-tab-content { display: none; }
+#tab-overrides, #overrides-tab-content { display: none; }
+#tab-workspace, #workspace-tab-content { display: none; }

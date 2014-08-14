@@ -192,3 +192,10 @@ WebInspector.detached = function () {
     location.reload();
   }, 400);
 };
+
+//Remove unusable tabs in help window
+WebInspector.SettingsController.prototype.orig_showSettingsScreen = 
+  WebInspector.SettingsController.prototype.showSettingsScreen;
+WebInspector.SettingsController.prototype.showSettingsScreen = function() {
+  this.orig_showSettingsScreen(WebInspector.SettingsScreen.Tabs.Shortcuts);
+};
