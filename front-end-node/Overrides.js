@@ -209,3 +209,26 @@ WebInspector.UIString = function(string, vararg) {
   string = stringOverrides[string] || string;
   return oldUIString(string, Array.prototype.slice.call(arguments, 1));
 };
+
+// Hide chrome-specific elements
+var chromeSpecificsWasHidden = false;
+WebInspector.settings.lastActivePanel.addChangeListener(
+  function(event) {
+    var panelName = event.data;
+    if (panelName == 'scripts' && !chromeSpecificsWasHidden) {
+      var panes = WebInspector.panels.scripts.sidebarPanes;
+      [
+        panes.domBreakpoints.element,
+        panes.domBreakpoints.titleElement.parentNode,
+        panes.eventListenerBreakpoints.element,
+        panes.eventListenerBreakpoints.titleElement.parentNode,
+        panes.xhrBreakpoints.element,
+        panes.xhrBreakpoints.titleElement.parentNode
+      ].forEach(function(element) {
+        element.classList.add('hidden');
+      });
+      chromeSpecificsWasHidden = true;
+    }
+  },
+  null
+);
