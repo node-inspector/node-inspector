@@ -7,6 +7,9 @@ describe('InjectorClient', function() {
     var injectorClient, debuggerClient, breakedObject;
 
     function setupInjector(done) {
+      // increase the timeout for Travis CI
+      this.timeout(5000);
+
       launcher.runPeriodicConsoleLog(false, function(childProcess, client) {
         debuggerClient = client;
         injectorClient = new InjectorClient({inject: false}, debuggerClient);
@@ -44,6 +47,9 @@ describe('InjectorClient', function() {
     var injectorClient, debuggerClient, serverPort;
 
     function setupInjector(done) {
+      // increase the timeout for Travis CI
+      this.timeout(5000);
+
       launcher.runPeriodicConsoleLog(false, function(childProcess, client) {
         debuggerClient = client;
         injectorClient = new InjectorClient({}, debuggerClient);
