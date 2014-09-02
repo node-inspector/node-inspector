@@ -206,8 +206,9 @@ var stringOverrides = {
   '(no domain)': '(core modules)'
 };
 WebInspector.UIString = function(string, vararg) {
-  string = stringOverrides[string] || string;
-  return oldUIString(string, Array.prototype.slice.call(arguments, 1));
+  var args = Array.prototype.slice.call(arguments);
+  args[0] = stringOverrides[string] || string;
+  return oldUIString.apply(this, args);
 };
 
 // Hide chrome-specific elements
