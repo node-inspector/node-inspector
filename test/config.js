@@ -8,6 +8,11 @@ var cert_and_key_file = fs.realpathSync('./test/data/cert_and_key.txt');
 
 describe('Config', function() {
   describe('from argv', function(){
+<<<<<<< HEAD
+=======
+    var cert_and_key_text = 'styrylic-unclearable\nempyreumatical-symmedian\n';
+    var cert_and_key_file = 'data/cert_and_key.txt';
+>>>>>>> master
     it('handles --help', function() {
       var config = givenConfigFromArgs('--help');
       expect(config.help).to.equal(true);
