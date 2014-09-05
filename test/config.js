@@ -7,15 +7,7 @@ var CONFIGJS_PATH = require.resolve('../lib/config');
 describe('Config', function() {
   describe('from argv', function(){
     var cert_and_key_text = 'styrylic-unclearable\nempyreumatical-symmedian\n';
-    var cert_and_key_file = '/tmp/cert_and_key.txt';
-    before(function() {
-      fs.writeFileSync(cert_and_key_file, cert_and_key_text);
-    });
-
-    after(function() {
-      fs.unlinkSync(cert_and_key_file);
-    });
-
+    var cert_and_key_file = 'data/cert_and_key.txt';
     it('handles --help', function() {
       var config = givenConfigFromArgs('--help');
       expect(config.help).to.equal(true);
