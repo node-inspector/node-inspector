@@ -1,10 +1,20 @@
 var util = require('util'),
+    fs = require('fs'),
     expect = require('chai').expect;
 
 var CONFIGJS_PATH = require.resolve('../lib/config');
 
 describe('Config', function() {
   describe('from argv', function(){
+    var cert_and_key_text = 'styrylic-unclearable\nempyreumatical-symmedian\n';
+    var cert_and_key_file = '/tmp/cert_and_key.txt';
+    before(function() {
+      fs.writeFileSync(cert_and_key_file, cert_and_key_text);
+    });
+
+    after(function() {
+      fs.unlinkSync(cert_and_key_file);
+    });
 
     it('handles --help', function() {
       var config = givenConfigFromArgs('--help');
@@ -53,6 +63,16 @@ describe('Config', function() {
       expect(config.stackTraceLimit).to.equal(60);
     });
 
+    it('handles --server-key', function() {
+      var config = givenConfigFromArgs('--server-key=' + cert_and_key_file);
+      expect(config.serverKey.to.equal(cert_and_key_text));
+    });
+    
+    it('handles --server-cert', function() {
+      var config = givenConfigFromArgs('--server-cert=' + cert_and_key_file);
+      expect(config.serverCert.to.equal(cert_and_key_text));
+    });
+    
     function givenConfigFromArgs(argv) {
       var tempArgv = process.argv,
           config;
@@ -80,6 +100,8 @@ describe('Config', function() {
       expect(config.hidden, 'default hidden value is array').to.satisfy(util.isArray);
       expect(config.hidden.length, 'default hidden array is empty').to.equal(0);
       expect(config.stackTraceLimit, 'default stack-trace-limit value').to.equal(50);
+      expect(config.serverKey, 'default server-key value').to.equal(null);
+      expect(config.serverCert, 'default server-cert value').to.equal(null);
     });
   });
 });
