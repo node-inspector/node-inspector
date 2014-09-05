@@ -3,11 +3,11 @@ var util = require('util'),
     expect = require('chai').expect;
 
 var CONFIGJS_PATH = require.resolve('../lib/config');
+var cert_and_key_text = 'styrylic-unclearable\nempyreumatical-symmedian\n';
+var cert_and_key_file = fs.realpathSync('./test/data/cert_and_key.txt');
 
 describe('Config', function() {
   describe('from argv', function(){
-    var cert_and_key_text = 'styrylic-unclearable\nempyreumatical-symmedian\n';
-    var cert_and_key_file = 'data/cert_and_key.txt';
     it('handles --help', function() {
       var config = givenConfigFromArgs('--help');
       expect(config.help).to.equal(true);
