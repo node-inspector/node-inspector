@@ -2,7 +2,7 @@ var util = require('util'),
     path = require('path'),
     expect = require('chai').expect;
 
-var CONFIGJS_PATH = require.resolve('../lib/config');
+var Config = require('../lib/config');
 
 describe('Config', function() {
   describe('from argv', function(){
@@ -78,17 +78,14 @@ describe('Config', function() {
       var tempArgv = process.argv,
           config;
       process.argv = ['node', 'inspector.js'].concat(argv);
-      delete require.cache[CONFIGJS_PATH];
-      config = require(CONFIGJS_PATH);
-      delete require.cache[CONFIGJS_PATH];
+      config = new Config();
       process.argv = tempArgv;
       return config;
     }
   });
 
   describe('defaults', function(){
-    var config = require(CONFIGJS_PATH)._collectDefaults();
-    delete require.cache[CONFIGJS_PATH];
+    var config = Config._collectDefaults();
 
     it('have expected values', function(){
       expect(config.help, 'default help value').to.equal(false);

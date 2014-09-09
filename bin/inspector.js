@@ -3,21 +3,19 @@
 var DebugServer = require('../lib/debug-server').DebugServer,
     fs = require('fs'),
     path = require('path'),
-    config = require('../lib/config'),
+    Config = require('../lib/config'),
     packageJson = require('../package.json'),
     notifyParentProcess = getNotifyParentProcessFn();
 
-if (config.help || config.h) {
-  console.log('Usage:');
-  console.log('    node-inspector [options]');
-  console.log('\nOptions:');
-  console.log(config._describeOptions());
-  console.log();
+var config = new Config();
+
+if (config.help) {
+  //temporary disable help option handling
   process.exit();
 }
 
-if (config.version || config.v) {
-  console.log('v' + require('../package.json').version);
+if (config.version) {
+  //temporary disable version option handling
   process.exit();
 }
 
