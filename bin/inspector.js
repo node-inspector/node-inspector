@@ -32,7 +32,7 @@ debugServer.start(config);
 function onError(err) {
   console.error(
     'Cannot start the server at %s:%s. Error: %s.',
-    config.webHost || '0.0.0.0',
+    config.webHost,
     config.webPort,
     err.message || err
   );

@@ -91,7 +91,7 @@ describe('Config', function() {
       expect(config.help, 'default help value').to.equal(false);
       expect(config.version, 'default version value').to.equal(false);
       expect(config.webPort, 'default web-port value').to.equal(8080);
-      expect(config.webHost, 'default web-host value').to.equal(null);
+      expect(config.webHost, 'default web-host value').to.equal('0.0.0.0');
       expect(config.debugPort, 'default debug-port value').to.equal(5858);
       expect(config.saveLiveEdit, 'default save-live-edit value').to.equal(false);
       expect(config.preload, 'default preload value').to.equal(true);

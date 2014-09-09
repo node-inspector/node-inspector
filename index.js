@@ -12,7 +12,7 @@ exports.buildInspectorUrl = buildInspectorUrl;
 function buildInspectorUrl(inspectorHost, inspectorPort, debugPort, fileToShow, isHttps) {
   var parts = {
     protocol: isHttps ? 'https' : 'http',
-    hostname: inspectorHost || '127.0.0.1',
+    hostname: inspectorHost == '0.0.0.0' ? '127.0.0.1' : inspectorHost,
     port: inspectorPort,
     pathname: '/debug',
     search: '?port=' + debugPort
