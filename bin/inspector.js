@@ -7,7 +7,7 @@ var DebugServer = require('../lib/debug-server').DebugServer,
     packageJson = require('../package.json'),
     notifyParentProcess = getNotifyParentProcessFn();
 
-var config = new Config();
+var config = new Config(process.argv.slice(2));
 
 if (config.help) {
   //temporary disable help option handling
