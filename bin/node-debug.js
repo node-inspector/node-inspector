@@ -1,58 +1,19 @@
 #!/usr/bin/env node
 
+var Config = require('../lib/config');
 var fork = require('child_process').fork;
 var fs = require('fs');
 var path = require('path');
 var util = require('util');
 var open = require('opener');
-var yargs = require('yargs');
 var whichSync = require('which').sync;
 var inspector = require('..');
 
 var WIN_CMD_LINK_MATCHER = /node  "%~dp0\\(.*?)"/;
-
-var argvOptions = {
-  'debug-brk': {
-    alias: 'b',
-    default: true,
-    description: 'Break on the first line (`node --debug-brk`)'
-  },
-  'web-port': {
-    alias: ['p', 'port'],
-    type: 'number',
-    description: 'Node Inspector port (`node-inspector --web-port={port}`)'
-  },
-  'debug-port': {
-    alias: 'd',
-    type: 'number',
-    description: 'Node/V8 debugger port (`node --debug={port}`)'
-  },
-  nodejs: {
-    type: 'string',
-    description: 'Pass NodeJS options to debugged process (`node --option={value}`)\n' +
-                  'Usage example:  node-debug --nodejs --harmony --nodejs --random_seed=2 app'
-  },
-  cli: {
-    alias: 'c',
-    type: 'boolean',
-    description: 'CLI mode, do not open browser.'
-  },
-  version: {
-    alias: 'v',
-    type: 'boolean',
-    description: 'Print Node Inspector\'s version.'
-  },
-  help: {
-    alias: 'h',
-    type: 'boolean',
-    description: 'Show this help.'
-  }
-};
-
-var argvParser = createYargs();
+var NODE_DEBUG_MODE = true;
 
 module.exports = main;
-module.exports.parseArgs = parseArgs;
+module.exports.createConfig = createConfig;
 
 if (require.main == module)
   main();
@@ -72,21 +33,14 @@ var config;
  * or when an error occured.
  */
 function main() {
-  config = parseArgs(process.argv);
+  config = createConfig(process.argv.slice(2));
   if (config.options.help) {
-    argvParser.showHelp(console.log);
-    console.log('The [script] argument is resolved relative to the current working\n' +
-      'directory. If no such file exists, then env.PATH is searched.\n');
-    console.log('The default mode is to break on the first line of the script, to run\n' +
-      'immediately on start use `--no-debug-brk` or press the Resume button.\n');
-    console.log('When there is no script specified, the module in the current working\n' +
-      'directory is loaded in the REPL session as `m`. This allows you to call\n' +
-      'and debug arbitrary functions exported by the current module.\n');
+    //temporary disable help option handling
     process.exit();
   }
 
   if (config.options.version) {
-    console.log('v' + require('../package.json').version);
+    //temporary disable version option handling
     process.exit();
   }
 
@@ -111,21 +65,8 @@ function main() {
   });
 }
 
-function parseArgs(argv) {
-  argv = argv.slice(2);
-
-  //Preparse --nodejs options
-  var nodejsArgs = [];
-  var nodejsIndex = argv.indexOf('--nodejs');
-  while (nodejsIndex !== -1) {
-    var nodejsArg = argv.splice(nodejsIndex, 2)[1];
-    if (nodejsArg !== undefined) {
-      nodejsArgs.push(nodejsArg);
-    }
-    nodejsIndex = argv.indexOf('--nodejs');
-  }
-
-  var options = argvParser.parse(argv);
+function createConfig(argv) {
+  var options = new Config(argv, NODE_DEBUG_MODE);
   var script = options._[0];
   var printScript = true;
 
@@ -141,18 +82,13 @@ function parseArgs(argv) {
     process.env.CMD = process.env.CMD || process.argv[1];
   }
 
-  options = argvParser.parse(argv);
+  var inspectorArgs = Config.serializeOptions(
+    Config.filterDefaultValues(
+      Config.filterNodeDebugOptions(options)),
+    {_: true, $0: true });
 
-  var subprocPort = options['debug-port'] || 5858;
-  var subprocExecArgs = ['--debug=' + subprocPort].concat(nodejsArgs);
-
-  if (options['debug-brk']) {
-    subprocExecArgs.push('--debug-brk');
-  }
-
-  var inspectorPort = options['web-port'] || 8080;
-  var inspectorArgs = extractPassThroughArgs(options, argvOptions)
-    .concat(['--web-port=' + inspectorPort]);
+  var subprocDebugOption = (options.debugBrk ? '--debug-brk' : '--debug') + '=' + options.debugPort;
+  var subprocExecArgs = options.nodejs.concat(subprocDebugOption);
 
   return {
     printScript: printScript,
@@ -161,63 +97,17 @@ function parseArgs(argv) {
       script: script,
       args: subprocArgs,
       execArgs:  subprocExecArgs,
-      debugPort: subprocPort
+      debugPort: options.debugPort
     },
     inspector: {
-      port: inspectorPort,
+      port: options.webPort,
       args: inspectorArgs
     }
   };
 }
 
-function createYargs() {
-  var y = yargs
-    .options(argvOptions)
-    .usage('Usage:\n' +
-      '    $0 [node-inspector-options] [options] script [script-arguments]');
-  y.$0 = getCmd();
-  return y;
-}
-
 function getCmd() {
   return process.env.CMD || path.basename(process.argv[1]);
-}
-
-function extractPassThroughArgs(options, argvOptions) {
-  var result = [];
-  var optionsToSkip = { _: true, $0: true };
-
-  // Skip options handled by node-debug
-  Object.keys(argvOptions).forEach(function(key) {
-    optionsToSkip[key] = true;
-    var alias = argvOptions[key].alias;
-    if (Array.isArray(alias)) {
-      alias.forEach(function(opt) { optionsToSkip[opt] = true; });
-    } else if (alias) {
-      optionsToSkip[alias] = true;
-    }
-  });
-
-  // Filter options not handled by node-debug
-  Object.keys(options).forEach(function(key) {
-    //Filter options handled by node-debug
-    if (optionsToSkip[key]) return;
-    //Filter camelKey options created by yargs
-    if (/[A-Z]/.test(key)) return;
-    
-    var value = options[key];
-    if (value === undefined) return;
-    if (value === true) {
-      result.push('--' + key);
-    } else if (value === false) {
-      result.push('--no-' + key);
-    } else {
-      result.push('--' + key);
-      result.push(value);
-    }
-  });
-
-  return result;
 }
 
 function startInspector(callback) {
@@ -287,7 +177,7 @@ function checkWinCmdFiles(script) {
   if (process.platform == 'win32' && path.extname(script).toLowerCase() == '.cmd') {
     var cmdContent = '' + fs.readFileSync(script);
     var link = (WIN_CMD_LINK_MATCHER.exec(cmdContent) || [])[1];
-    
+
     if (link) script = path.resolve(path.dirname(script), link);
   }
   return script;

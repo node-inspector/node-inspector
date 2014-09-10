@@ -43,7 +43,7 @@ describe('Config', function() {
     });
 
     it('handles --hidden', function() {
-      var config = givenConfigFromArgs('--hidden=["abc"]');
+      var config = givenConfigFromArgs('--hidden="abc"');
       expect(config.hidden).to.satisfy(util.isArray);
       expect(config.hidden.length).to.equal(1);
       expect(config.hidden[0]).to.satisfy(util.isRegExp);
@@ -74,6 +74,21 @@ describe('Config', function() {
       expect(config.sslCert).to.equal('');
     });
 
+    it('handles --nodejs', function() {
+      var config = givenConfigFromArgs(['--nodejs', '--harmony']);
+      expect(config.nodejs).to.eql(['--harmony']);
+    });
+
+    it('handles --debug-brk', function() {
+      var config = givenConfigFromArgs('--debug-brk');
+      expect(config.debugBrk).to.equal(true);
+    });
+
+    it('handles --cli', function() {
+      var config = givenConfigFromArgs('--cli');
+      expect(config.cli).to.equal(true);
+    });
+
     function givenConfigFromArgs(argv) {
       return new Config([].concat(argv));
     }
@@ -93,6 +108,84 @@ describe('Config', function() {
       expect(config.hidden, 'default hidden value is array').to.satisfy(util.isArray);
       expect(config.hidden.length, 'default hidden array is empty').to.equal(0);
       expect(config.stackTraceLimit, 'default stack-trace-limit value').to.equal(50);
+      expect(config.nodejs, 'default nodejs value is array').to.satisfy(util.isArray);
+      expect(config.debugBrk, 'default debug-brk value').to.equal(false);
+      expect(config.nodejs.length, 'default nodejs array is empty').to.equal(0);
+      expect(config.cli, 'default cli value').to.equal(false);
+    });
+
+    it('have expected values in node-debug mode', function() {
+      var config = Config._collectDefaults(true);
+      expect(config.webHost, 'node-debug default web-host value').to.equal('127.0.0.1');
+      expect(config.debugBrk, 'node-debug default debug-brk value').to.equal(true);
+    });
+  });
+
+  describe('serializeOptions', function() {
+    var options = {
+      'a': 10,
+      'b': '20',
+      'c': true,
+      'd': false,
+      'e': undefined,
+      'f': null,
+      'g': ['h', 1],
+      'j': [],
+      'camelKeyOption': 'a',
+    };
+
+    it('without filtering', function() {
+      var serialisedOptions = Config.serializeOptions(options);
+
+      expect(serialisedOptions, 'true serialised number format').to.contain('-a=10');
+      expect(serialisedOptions, 'true serialised string format').to.contain('-b=20');
+      expect(serialisedOptions, 'true serialised boolean format [true]').to.contain('-c');
+      expect(serialisedOptions, 'true serialised boolean format [false]').to.contain('-d=false');
+      expect(serialisedOptions, 'filtered `undefined` value').to.not.contain('-e=undefined');
+      expect(serialisedOptions, 'not filtered `null` value').to.contain('-f=null');
+      expect(serialisedOptions, 'true serialised array format').to.contain('-g=h -g=1');
+      expect(serialisedOptions, 'filtered empty array').to.not.contain('-j');
+      expect(serialisedOptions, 'true serialised camelKey option').to.contain('--camel-key-option=a');
+    });
+
+    it('with filtering', function() {
+      var serialisedOptions = Config.serializeOptions(options, {a: true});
+
+      expect(serialisedOptions, 'true serialised number format').to.not.contain('-a=10');
+    });
+  });
+
+  describe('filterNodeDebugOptions', function() {
+    var option = {
+      'cli': true,
+      'webPort': 8081,
+      'debugPort': 5859,
+      'external': 1
+    };
+
+    it('works correctly', function() {
+      var filteredOptions = Config.filterNodeDebugOptions(option);
+
+      expect(filteredOptions, 'node-debug option filtered').to.not.have.property('cli');
+      expect(filteredOptions, 'inspector option not filtered').to.have.property('webPort');
+      expect(filteredOptions, 'general option not filtered').to.have.property('debugPort');
+      expect(filteredOptions, 'external option not filtered').to.have.property('external');
+    });
+  });
+
+  describe('filterDefaultValues', function() {
+    var option = {
+      'cli': true,
+      'webPort': 8081,
+      'external': 1
+    };
+
+    it('works correctly', function() {
+      var filteredOptions = Config.filterNodeDebugOptions(option);
+
+      expect(filteredOptions, 'option with default value filtered').to.not.have.property('cli');
+      expect(filteredOptions, 'option with custom value not filtered').to.have.property('webPort');
+      expect(filteredOptions, 'external option not filtered').to.have.property('external');
     });
   });
 });
