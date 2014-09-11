@@ -100,6 +100,7 @@ function createConfig(argv) {
       debugPort: options.debugPort
     },
     inspector: {
+      host: options.webHost,
       port: options.webPort,
       args: inspectorArgs
     }
@@ -128,7 +129,7 @@ function startInspector(callback) {
       return callback(
         null,
         {
-          address: 'localhost',
+          address: config.inspector.host,
           port: config.inspector.port
         }
       );
@@ -143,7 +144,8 @@ function startInspector(callback) {
 function formatNodeInspectorError(err) {
   var reason = err.message || err.code || err;
   if (err.code === 'EADDRINUSE') {
-    reason += '\nThere is another process already listening at 0.0.0.0:' +
+    reason += '\nThere is another process already listening at ' +
+      config.inspector.host + ':' +
       config.inspector.port + '.\n' +
       'Run `' + getCmd() + ' -p {port}` to use a different port.';
   }
@@ -185,7 +187,7 @@ function checkWinCmdFiles(script) {
 
 function openBrowserAndPrintInfo() {
   var url = inspector.buildInspectorUrl(
-    'localhost',
+    config.inspector.host,
     config.inspector.port,
     config.subproc.debugPort
   );

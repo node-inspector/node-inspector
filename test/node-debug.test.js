@@ -15,6 +15,7 @@ describe('node-debug', function() {
           debugPort: 5858
         },
         inspector: {
+          host: '127.0.0.1',
           port: 8080,
           args: ['--web-host=127.0.0.1']
         }
@@ -29,7 +30,7 @@ describe('node-debug', function() {
     });
 
     it('handles options', function() {
-      var config = cli.createConfig(argv('--no-debug-brk -p 10 -d 20 -c app.js'));
+      var config = cli.createConfig(argv('--web-host 127.0.0.2 --no-debug-brk -p 10 -d 20 -c app.js'));
       expect(config.subproc).to.eql({
         script: 'app.js',
         args: [],
@@ -37,8 +38,9 @@ describe('node-debug', function() {
         debugPort: 20
       });
       expect(config.inspector).to.eql({
+        host: '127.0.0.2',
         port: 10,
-        args: ['--web-port=10', '--web-host=127.0.0.1', '--debug-port=20']
+        args: ['--web-port=10', '--web-host=127.0.0.2', '--debug-port=20']
       });
     });
 
