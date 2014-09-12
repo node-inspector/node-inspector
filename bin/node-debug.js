@@ -34,13 +34,14 @@ var config;
  */
 function main() {
   config = createConfig(process.argv.slice(2));
+
   if (config.options.help) {
-    //temporary disable help option handling
+    config.options.showHelp(NODE_DEBUG_MODE);
     process.exit();
   }
 
   if (config.options.version) {
-    //temporary disable version option handling
+    config.options.showVersion();
     process.exit();
   }
 

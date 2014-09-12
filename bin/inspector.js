@@ -10,12 +10,12 @@ var DebugServer = require('../lib/debug-server').DebugServer,
 var config = new Config(process.argv.slice(2));
 
 if (config.help) {
-  //temporary disable help option handling
+  config.showHelp();
   process.exit();
 }
 
 if (config.version) {
-  //temporary disable version option handling
+  config.showVersion();
   process.exit();
 }
 
