@@ -1,4 +1,5 @@
 var util = require('util'),
+    path = require('path'),
     expect = require('chai').expect;
 
 var CONFIGJS_PATH = require.resolve('../lib/config');
@@ -51,6 +52,26 @@ describe('Config', function() {
     it('handles --stack-trace-limit', function() {
       var config = givenConfigFromArgs('--stack-trace-limit=60');
       expect(config.stackTraceLimit).to.equal(60);
+    });
+
+    it('handles --ssl-key defined', function() {
+      var config = givenConfigFromArgs('--ssl-key=test/fixtures/ssl_cert_and_key.txt');
+      expect(config.sslKey).to.equal(path.resolve(__dirname, './fixtures/ssl_cert_and_key.txt'));
+    });
+
+    it('handles --ssl-cert defined', function() {
+      var config = givenConfigFromArgs('--ssl-cert=test/fixtures/ssl_cert_and_key.txt');
+      expect(config.sslCert).to.equal(path.resolve(__dirname, './fixtures/ssl_cert_and_key.txt'));
+    });
+
+    it('handles --ssl-key not defined', function() {
+      var config = givenConfigFromArgs('');
+      expect(config.sslKey).to.equal('');
+    });
+
+    it('handles --ssl-cert not defined', function() {
+      var config = givenConfigFromArgs('');
+      expect(config.sslCert).to.equal('');
     });
 
     function givenConfigFromArgs(argv) {

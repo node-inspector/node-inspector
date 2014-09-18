@@ -293,7 +293,9 @@ Use dashed option names in RC files. Sample config file:
   "save-live-edit": true,
   "no-preload": true,
   "hidden": [],
-  "stack-trace-limit": 50
+  "stack-trace-limit": 50,
+  "ssl-key": "./ssl/key.pem",
+  "ssl-cert": "./ssl/cert.pem"
 }
 ```
 
@@ -311,6 +313,8 @@ List of predefined options:
 --hidden             |     []      | Array of files to hide from the UI
                      |             |   (breakpoints in these files will be ignored)
 --stack-trace-limit  |     50      | Number of stack frames to show on a breakpoint
+--ssl-key            |             | Path to file containing a valid SSL key.
+--ssl-cert           |             | Path to file containing a valid SSL certificate.
 ```
 
 ## Contributing Code
