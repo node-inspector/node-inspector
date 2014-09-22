@@ -250,26 +250,11 @@ Open http://127.0.0.1:8080/debug?port=5858 in the Chrome browser.
 
 ## Configuration
 
-### node-debug
-
-Command line options:
-
-```
---debug-brk, -b         Break on the first line (`node --debug-brk`) [default: true]
---web-port, -p, --port  Node Inspector port (`node-inspector --web-port={port}`)
---debug-port, -d        Node/V8 debugger port (`node --debug={port}`)
---cli, -c               CLI mode, do not open browser.
---version, -v           Print Node Inspector's version.
---help, -h              Show this help.
-```
-
-### node-inspector
-
-node-inspector uses [rc](https://npmjs.org/package/rc)
-module to collect options.
+Both `node-inspector` and `node-debug` use [rc](https://npmjs.org/package/rc) module 
+to manage configuration options.
 
 Places for configuration:
-* command line arguments (parsed by optimist)
+* command line arguments (parsed by [yargs](https://github.com/chevex/yargs))
 * enviroment variables prefixed with ```node-inspector_```
 * if you passed an option ```--config file``` then from that file
 * a local ```.node-inspectorrc``` or the first found looking in ```./ ../ ../../
@@ -284,6 +269,78 @@ Places for configuration:
 All configuration sources that where found will be flattened into one object,
 so that sources earlier in this list override later ones.
 
+### Options
+
+| Option | Alias | Default | Description |
+| :------------------ | :-: | :-----: | :-------- |
+| **general**
+| --help              | -h  |         | Display information about avaible options.<br/>Use `--help -l` to display full usage info.<br/>Use `--help <option>` to display quick help on `option`.
+| --version           | -v  |         | Display Node Inspector's version.
+| --debug-port        | -d  | 5858    | Node/V8 debugger port.<br/>(`node --debug={port}`)
+| --web-host          |     | 0.0.0.0 | Host to listen on for Node Inspector's web interface.<br/>`node-debug` listens on `127.0.0.1` by default.
+| --web-port          | -p  | 8080    | Port to listen on for Node Inspector's web interface.
+| **node-debug**
+| --debug-brk         | -b  | true    | Break on the first line.<br/>(`node --debug-brk`)
+| --nodejs            |     | []      | Pass NodeJS options to debugged process.<br/>(`node --option={value}`)
+| --script            |     | []      | Pass options to debugged process.<br/>(`node app --option={value}`)
+| --cli               | -c  | false   | CLI mode, do not open browser.
+| **node-inspector**
+| --save-live-edit    |     | false   | Save live edit changes to disk (update the edited files).
+| --preload           |     | true    | Preload *.js files. You can disable this option<br/>to speed up the startup.
+| --inject            |     | true    | Enable injection of debugger extensions into the debugged process.
+| --hidden            |     | []      | Array of files to hide from the UI,<br/>breakpoints in these files will be ignored.<br/>All paths are interpreted as regular expressions.
+| --stack-trace-limit |     | 50      | Number of stack frames to show on a breakpoint.
+| --ssl-key           |     |         | Path to file containing a valid SSL key.
+| --ssl-cert          |     |         | Path to file containing a valid SSL certificate.
+
+### Usage examples
+
+#### Command line
+##### Format
+```
+$ node-debug [general-options] [node-debug-options] [node-inspector-options] [script]
+```
+
+```
+$ node-inspector [general-options] [node-inspector-options]
+```
+##### Usage
+
+Display full usage info:
+```
+$ node-debug --help -l
+```
+Set debug port of debugging process to `5859`:
+```
+$ node-debug -p 5859 app
+```
+Pass `--web-host=127.0.0.2` to node-inspector. Start node-inspector to listen on `127.0.0.2`:
+```
+$ node-debug --web-host 127.0.0.2 app
+``` 
+Pass `--option=value` to debugging process:
+```
+$ node-debug app --option value
+```
+Start node-inspector to listen on HTTPS:
+```
+$ node-debug --ssl-key ./ssl/key.pem --ssl-cert ./ssl/cert.pem app
+```
+Ignore breakpoints in files stored in `node_modules` folder or ending in `.test.js`:
+```
+$ node-debug --hidden node_modules/ --hidden \.test\.js$ app
+```
+Add `--harmony` flag to the node process running the debugged script:
+```
+$ node-debug --nodejs --harmony app
+```
+Disable preloading of `.js` files:
+```
+$ node-debug --no-preload app
+```
+
+#### RC Configuration
+
 Use dashed option names in RC files. Sample config file:
 ```js
 {
@@ -291,30 +348,13 @@ Use dashed option names in RC files. Sample config file:
   "web-host": null,
   "debug-port": 5858,
   "save-live-edit": true,
-  "no-preload": true,
-  "hidden": [],
+  "preload": false,
+  "hidden": ["\.test\.js$", "node_modules/"],
+  "nodejs": ["--harmony"],
   "stack-trace-limit": 50,
   "ssl-key": "./ssl/key.pem",
   "ssl-cert": "./ssl/cert.pem"
 }
-```
-
-List of predefined options:
-```
-       Option            Default                  Description
---help               |             | Print information about options
---web-port           |    8080     | Port to host the inspector
---web-host           |  127.0.0.1  | Host to listen on
---debug-port         |    5858     | Port to connect to the debugging app
---save-live-edit     |    false    | Save live edit changes to disk
-                     |             |   (update the edited files)
---preload            |    true     | Preload *.js files. You can disable this option
-                     |             |    to speed up the startup.
---hidden             |     []      | Array of files to hide from the UI
-                     |             |   (breakpoints in these files will be ignored)
---stack-trace-limit  |     50      | Number of stack frames to show on a breakpoint
---ssl-key            |             | Path to file containing a valid SSL key.
---ssl-cert           |             | Path to file containing a valid SSL certificate.
 ```
 
 ## Contributing Code
