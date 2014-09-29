@@ -176,6 +176,23 @@ time to set your breakpoints before the tests are run.
 $ node-debug _mocha
 ```
 
+#### How do I debug Gulp tasks?
+
+If you are running on a Unix system you can simply run the following command.
+The `$(which ..)` statement gets replaced with the full path to the gulp-cli.
+
+```sh
+$ node-debug $(which gulp) task
+```
+
+If you are running on Windows, you have to get the full path of `gulp.js`
+to make an equivalent command:
+
+```sh
+> node-debug "C:\Users\user\AppData\Roaming\npm\node_modules\gulp\bin\gulp.js" task
+```
+*You can omit the `task` part to run the `default` task.*
+
 ## Advanced Use
 
 While running `node-debug` is a convenient way to start your debugging
