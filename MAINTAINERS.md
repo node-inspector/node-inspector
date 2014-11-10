@@ -1,32 +1,37 @@
-## Release steps
+## How to release a new version
 
-List of steps required to do a release.  This is a draft that will be refined
-while doing the next relase.
+If you are running on Unix (Mac OSX, Linux), you can run `tools/release.sh`
+that will run all steps for you:
+
+    $ tools/release.sh X.Y.Z
+
+### Manual steps
 
 1. Make sure all tests are passing:
 
-        npm test
+        $ npm test
 
-1. Update changelog
+1. Update the changelog
 
-        tools/git-changelog
+        $ tools/git-changelog X.Y.Z
 
-1. Commit the changes to git and push them to the server
+1. Update the version in package.json
 
-        git commit ChangeLog -m 'ChangeLog: update for version vX.Y.Z'
-        git push origin master
+        $ npm version --git-tag-version=false X.Y.Z
 
-1. Create and publish a git tag
+1. Commit the changes to git
 
-        git tag -a vX.Y.Z -m 'vX.Y.Z'
-        git push origin vX.Y.Z
+        $ git commit ChangeLog.md package.json -m X.Y.Z
+
+1. Create a git tag
+
+        $ git tag -a vX.Y.Z -m X.Y.Z
+
+1. Push all changes to the server
+
+        $ git push origin master vX.Y.Z
 
 1. Publish the package
 
         npm publish
 
-1. Bump up the module version in `package.json` to the next patch version
-
-        # edit the module version in package.json, e.g. 0.3.0 -> 0.3.1
-        git commit package.json -m 'start work on vX.Y.Z'
-        git push origin master

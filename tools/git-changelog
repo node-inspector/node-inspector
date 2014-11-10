@@ -21,15 +21,15 @@ while [ "$1" != "" ]; do
 done
 
 DATE=`date +'%Y-%m-%d'`
-HEAD="$DATE, Version $TAG\n\n"
+HEAD="## $DATE, Version $TAG\n\n"
 
 if $LIST; then
 	lasttag=$(git rev-list --tags --max-count=1 2>/dev/null)
 	version=$(git describe --tags --abbrev=0 $lasttag 2>/dev/null)
   if test -z "$version"; then
-	  git log --no-merges --pretty="format:* %s (%an)%n"
+	  git log --no-merges --pretty="format: * %s (%an)%n"
   else
-	  git log --no-merges --pretty="format:* %s (%an)%n" $version..
+	  git log --no-merges --pretty="format: * %s (%an)%n" $version..
   fi
   exit
 fi
