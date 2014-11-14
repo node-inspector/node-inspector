@@ -189,7 +189,7 @@ If you are running on Windows, you have to get the full path of `gulp.js`
 to make an equivalent command:
 
 ```sh
-> node-debug "C:\Users\user\AppData\Roaming\npm\node_modules\gulp\bin\gulp.js" task
+> node-debug %appdata%\npm\node_modules\gulp\bin\gulp.js task
 ```
 *You can omit the `task` part to run the `default` task.*
 
