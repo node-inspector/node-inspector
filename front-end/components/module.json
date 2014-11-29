@@ -1,0 +1,26 @@
+{
+    "dependencies": [
+        "bindings",
+        "platform",
+        "ui"
+    ],
+    "scripts": [
+        "CookiesTable.js",
+        "NativeBreakpointsSidebarPane.js",
+        "DOMBreakpointsSidebarPane.js",
+        "DOMPresentationUtils.js",
+        "DockController.js",
+        "Drawer.js",
+        "ExecutionContextSelector.js",
+        "HandlerRegistry.js",
+        "InspectElementModeController.js",
+        "InspectorView.js",
+        "ObjectPopoverHelper.js",
+        "ObjectPropertiesSection.js",
+        "ShortcutsScreen.js",
+        "TargetsComboBoxController.js"
+    ],
+    "stylesheets": [
+        "breakpointsList.css"
+    ]
+}

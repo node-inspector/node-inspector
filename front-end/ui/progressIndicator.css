@@ -1,0 +1,29 @@
+/*
+ * Copyright (c) 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.progress-indicator-shadow-stop-button {
+    background-color: rgb(216, 0, 0) !important;
+    border: 0;
+    width: 12px;
+    height: 12px;
+}
+
+.progress-indicator-shadow-container {
+    display: flex;
+    margin: 0 8px;
+    flex: 1 0 auto;
+    align-content: center;
+    justify-content: center;
+}
+
+.progress-indicator-shadow-container span {
+    padding: 6px;
+}
+
+.progress-indicator-shadow-container progress {
+    flex: auto;
+    margin: 0 4px;
+}

@@ -3,61 +3,112 @@ html {
 }
 
 body {
-    cursor: default;
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    height: 100%;
+    width: 100%;
+    position: relative;
     overflow: hidden;
+    margin: 0;
+}
+
+html /deep/ .component-root {
+    cursor: default;
     font-family: Lucida Grande, sans-serif;
     font-size: 12px;
-    margin: 0;
     tab-size: 4;
     -webkit-user-select: none;
     color: #222;
 }
 
-body.platform-linux {
-  color: rgb(48, 57, 66);
-  font-family: Ubuntu, Arial, sans-serif;
+html /deep/ .platform-linux {
+    color: rgb(48, 57, 66);
+    font-family: Ubuntu, Arial, sans-serif;
 }
 
-body.platform-mac {
-  color: rgb(48, 57, 66);
-  font-family: 'Lucida Grande', sans-serif;
+html /deep/ .platform-mac {
+    color: rgb(48, 57, 66);
+    font-family: 'Lucida Grande', sans-serif;
 }
 
-body.platform-windows {
-  font-family: 'Segoe UI', Tahoma, sans-serif;
+html /deep/ .platform-windows {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
 }
 
-body.dock-to-right:not(.undocked) {
-    border-left: 1px solid rgb(80, 80, 80);
+html /deep/ .platform-mac .monospace,
+html /deep/ .platform-mac .source-code {
+    font-size: 11px !important;
+    font-family: Menlo, monospace;
 }
 
-body.dock-to-right.inactive:not(.undocked) {
-    border-left: 1px solid rgb(64%, 64%, 64%);
+html /deep/ .platform-windows .monospace,
+html /deep/ .platform-windows .source-code {
+    font-size: 12px !important;
+    font-family: Consolas, Lucida Console, monospace;
 }
 
-* {
+html /deep/ .platform-linux .monospace,
+html /deep/ .platform-linux .source-code {
+    font-size: 11px !important;
+    font-family: dejavu sans mono, monospace;
+}
+
+body /deep/ .source-code {
+    font-family: monospace;
+    font-size: 11px !important;
+    white-space: pre-wrap;
+}
+
+body /deep/ * {
     box-sizing: border-box;
 }
 
-:focus {
+body /deep/ :focus {
     outline: none;
 }
 
-img {
+body /deep/ img {
     -webkit-user-drag: none;
 }
 
-iframe,
-a img {
+body /deep/ iframe,
+body /deep/ a img {
     border: none;
 }
 
-iframe.view {
+body /deep/ .fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+body /deep/ iframe.fill {
+    width: 100%;
+    height: 100%;
+}
+
+body /deep/ .view {
+    position: relative;
+    flex: auto;
+}
+
+body /deep/ .hbox {
+    display: flex;
+    flex-direction: row !important;
+    position: relative;
+}
+
+body /deep/ .vbox {
+    display: flex;
+    flex-direction: column !important;
+    position: relative;
+}
+
+body /deep/ .flex-auto {
+    flex: auto;
+}
+
+body /deep/ iframe.view {
     position: absolute;
     width: 100%;
     height: 100%;
@@ -67,187 +118,37 @@ iframe.view {
     bottom: 0;
 }
 
-.hidden {
+body /deep/ .hidden {
     display: none !important;
 }
 
-.monospace {
+body /deep/ .monospace {
     font-size: 10px !important;
     font-family: monospace;
 }
 
-.resources-dividers {
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 100%;
-    top: 0;
-    z-index: -100;
-}
-
-.resources-event-dividers {
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 100%;
-    top: 0;
-    z-index: 300;
-    pointer-events: none;
-}
-
-.resources-dividers-label-bar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    background-color: rgba(255, 255, 255, 0.8);
-    background-clip: padding-box;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.3);
-    height: 20px;
-    z-index: 200;
-    pointer-events: none;
-    overflow: hidden;
-}
-
-.resize-enabled .resources-dividers-label-bar {
-    cursor: move;
-}
-
-.resources-divider {
-    position: absolute;
-    width: 1px;
-    top: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.1);
-}
-
-.resources-event-divider-padding {
-    position: absolute;
-    width: 8px;
-    top: 0;
-    bottom: 0;
-    pointer-events: auto;
-}
-
-.resources-event-divider {
-    position: absolute;
-    width: 2px;
-    top: 0;
-    bottom: 0;
-    z-index: 300;
-}
-
-.resources-divider-label {
-    position: absolute;
-    top: 4px;
-    right: 3px;
-    font-size: 80%;
-    white-space: nowrap;
-    pointer-events: none;
-}
-
-.overview-grid-window-selector {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    background-color: rgba(125, 173, 217, 0.5);
-    z-index: 250;
-}
-
-.overview-grid-window {
-    background-color: white;
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    height: 20px;
-    z-index: 150;
-}
-
-.overview-grid-dividers-background {
-    left: 0%;
-    right: 0%;
-    top: 0;
-    height: 20px;
-    background-color: black;
-    position: absolute;
-}
-
-.overview-grid-window-rulers {
-    top: 0;
-    bottom: 0;
-    position: absolute;
-    opacity: 0.2;
-    border-right: 1px solid black;
-    border-left: 1px solid black;
-    z-index: 150;
-    pointer-events: none;
-}
-
-.overview-grid-window-resizer {
-    position: absolute;
-    top: 0;
-    height: 20px;
-    width: 5px;
-    margin-left: -2px;
-    margin-right: -3px;
-    background-color: rgb(153, 153, 153);
-    z-index: 500;
-    border-radius: 2px;
-    box-shadow: white 1px 0 0, white -1px 0 0, white 0 1px 0, white 0 -1px 0;
-}
-
-.resize-enabled .overview-grid-window-resizer {
-    cursor: ew-resize;
-}
-
-.overview-grid-window-resizer-right {
-    margin-left: -3px;
-    margin-right: -2px;
-}
-
-/* Network timing is shared between popover and network item view pane */
-
-.network-timing-row {
-    position: relative;
-    height: 16px;
-}
-
-.network-timing-bar {
-    position: absolute;
-    background-color: red;
-    border-left: 1px solid red;
-    opacity: 0.4;
-    top: 0;
-    bottom: 0;
-}
-
-.network-timing-bar-title {
-    position: absolute;
-    color: #222;
-    top: 1px;
-}
-
-.highlighted-search-result {
+body /deep/ .highlighted-search-result {
     border-radius: 1px;
     padding: 1px;
     margin: -1px;
     background-color: rgba(255, 255, 0, 0.8);
 }
 
-.sidebar-separator {
-    background-color: rgb(230, 230, 230);
-    padding: 0 5px;
-    border-top: 1px solid rgb(189, 189, 189);
-    border-bottom: 1px solid rgb(189, 189, 189);
-    color: rgb(50, 50, 50);
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    line-height: 16px;
+body /deep/ button,
+body /deep/ input,
+body /deep/ select {
+  font-family: inherit;
+  font-size: inherit;
 }
 
-.sidebar-label {
-    font-size: 11px;
+body /deep/ input[type="search"]:focus,
+body /deep/ input[type="text"]:focus {
+    outline: auto 5px -webkit-focus-ring-color;
 }
 
+body /deep/ input[type="checkbox"] {
+    height: 12px;
+    width: 12px;
+    margin: auto 3px;
+    flex-shrink: 0;
+}

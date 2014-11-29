@@ -1,0 +1,58 @@
+.filtered-item-list-dialog {
+    display: flex;
+    flex-direction: column;
+}
+
+.filtered-item-list-dialog > input[type=text] {
+    flex: 0 0 36px;
+    border: 0;
+    box-shadow: rgba(140, 140, 140, 0.5) 0px 4px 16px;
+    margin: 0 !important;
+    padding-left: 6px !important;
+    z-index: 1;
+}
+
+.filtered-item-list-dialog > div.container {
+    flex: auto;
+    overflow-y: auto;
+    margin-top: 4px;
+    background: white;
+}
+
+.filtered-item-list-dialog-item {
+    padding: 6px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    color: rgb(95, 95, 95);
+}
+
+.filtered-item-list-dialog-item.selected {
+    background-color: #eee;
+}
+
+.filtered-item-list-dialog-item span.highlight {
+    color: #222;
+    font-weight: bold;
+}
+
+.filtered-item-list-dialog-item .filtered-item-list-dialog-title {
+    flex: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.filtered-item-list-dialog-item .filtered-item-list-dialog-subtitle {
+    flex: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: rgb(155, 155, 155);
+}
+
+.filtered-item-list-dialog-item.one-row {
+    display: flex;
+}
+
+.filtered-item-list-dialog-item.two-rows {
+    border-bottom: 1px solid rgb(235, 235, 235);
+}

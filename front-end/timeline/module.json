@@ -1,0 +1,50 @@
+{
+    "extensions": [
+        {
+            "type": "@WebInspector.PanelFactory",
+            "name": "timeline",
+            "title": "Timeline",
+            "order": 3,
+            "className": "WebInspector.TimelinePanelFactory"
+        },
+        {
+            "type": "ui-setting",
+            "section": "Profiler",
+            "title": "Hide chrome frame in Layers view",
+            "settingName": "frameViewerHideChromeWindow",
+            "settingType": "checkbox"
+        }
+    ],
+    "dependencies": [
+        "components"
+    ],
+    "scripts": [
+        "CountersGraph.js",
+        "LayerDetailsView.js",
+        "LayerTreeOutline.js",
+        "Layers3DView.js",
+        "MemoryCountersGraph.js",
+        "TimelineModel.js",
+        "TimelineJSProfile.js",
+        "TimelineOverviewPane.js",
+        "TimelinePresentationModel.js",
+        "TimelineFrameModel.js",
+        "TimelineEventOverview.js",
+        "TimelineFrameOverview.js",
+        "TimelineMemoryOverview.js",
+        "TimelinePowerGraph.js",
+        "TimelinePowerOverview.js",
+        "TimelineFlameChart.js",
+        "TimelineUIUtils.js",
+        "TimelineView.js",
+        "TimelineLayersView.js",
+        "TimelinePaintProfilerView.js",
+        "TracingModel.js",
+        "TransformController.js",
+        "PaintProfilerView.js",
+        "TimelinePanel.js"
+    ],
+    "stylesheets": [
+        "timelinePanel.css"
+    ]
+}

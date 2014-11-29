@@ -34,8 +34,6 @@
 .sidebar-pane > .body {
     position: relative;
     display: none;
-    overflow-y: auto;
-    overflow-x: hidden;
 }
 
 .sidebar-pane > .body .info {
@@ -44,6 +42,11 @@
     font-size: 90%;
     padding: 6px;
     color: #888;
+}
+
+.sidebar-pane > .body .placard.dimmed {
+    opacity: 0.6;
+    font-style: italic;
 }
 
 .sidebar-pane > .body .placard + .info {
@@ -60,8 +63,8 @@
 }
 
 .sidebar-tabbed-pane .tabbed-pane-header {
-    background-image: -webkit-linear-gradient(rgb(243,243,243), rgb(235,235,235));
     border-bottom: 1px solid rgb(202, 202, 202);
+    background-color: #eee;
 }
 
 .sidebar-pane-stack > .sidebar-pane.visible:nth-last-of-type(1) {
@@ -70,15 +73,15 @@
 
 .sidebar-pane-title {
     position: relative;
-    background: rgb(230, 230, 230);
+    background-color: #eee;
     height: 20px;
     padding: 0 5px;
     border-top: 1px solid rgb(189, 189, 189);
     border-bottom: 1px solid rgb(189, 189, 189);
     line-height: 18px;
-    background-origin: padding;
-    background-clip: padding;
     margin-top: -1px;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .sidebar-pane-title:active {
@@ -89,7 +92,7 @@
 
 .sidebar-pane-title::before {
     background-image: url(Images/statusbarButtonGlyphs.png);
-    background-size: 320px 120px;
+    background-size: 320px 144px;
     opacity: 0.5;
     float: left;
     width: 11px;
@@ -103,7 +106,7 @@
 
 @media (-webkit-min-device-pixel-ratio: 1.5) {
 .sidebar-pane-title::before {
-    background-image: url(Images/statusbarButtonGlyphs2x.png);
+    background-image: url(Images/statusbarButtonGlyphs_2x.png);
 }
 } /* media */
 
@@ -129,11 +132,10 @@
     pointer-events: auto;
 }
 
-.sidebar-pane-toolbar > .pane-title-button {
+.sidebar-pane-toolbar > .pane-title-button,
+.sidebar-pane-toolbar > label {
     float: right;
-    width: 23px;
-    height: 17px;
-    color: transparent;
+    height: 16px;
     background-color: transparent;
     border: none;
     background-repeat: no-repeat;
@@ -141,6 +143,11 @@
     padding: 0;
     border-radius: 0;
     -webkit-appearance: none;
+}
+
+.sidebar-pane-toolbar > .pane-title-button {
+    width: 23px;
+    color: transparent;
 }
 
 .sidebar-pane-toolbar > .pane-title-button:hover {
@@ -154,6 +161,14 @@
 
 .sidebar-pane-toolbar > .pane-title-button.add {
     background-image: url(Images/paneAddButtons.png);
+    position: relative;
+}
+
+.sidebar-pane-toolbar > .pane-title-button.add .long-click-glyph {
+    background-color: rgba(135, 135, 135, 1);
+    -webkit-mask-image: url(Images/statusbarButtonGlyphs.png);
+    -webkit-mask-position: -298px -53px;
+    -webkit-mask-size: 320px 144px;
 }
 
 .sidebar-pane-toolbar > .pane-title-button.element-state {
@@ -164,16 +179,12 @@
     background-image: url(Images/paneRefreshButtons.png);
 }
 
-.sidebar-pane-subtitle {
-    position: absolute;
-    right: 0;
+.sidebar-pane-toolbar > label.scripts-callstack-async {
+    margin: auto;
+    margin-right: 5px;
+    display: flex;
 }
 
-body.platform-windows .sidebar-pane-subtitle {
-    padding-top: 1px;
-}
-
-.sidebar-pane-subtitle input,
 .section > .header input[type=checkbox] {
     height: 1em;
     width: 1em;
@@ -181,4 +192,31 @@ body.platform-windows .sidebar-pane-subtitle {
     margin-top: 0;
     margin-bottom: 0.25em;
     vertical-align: bottom;
+}
+
+.hidden-placards-message {
+    text-align: center;
+    font-style: italic;
+    padding: 4px;
+    color: #888;
+    background-color: #FFFFC2;
+}
+
+.sidebar-pane-button-new-rule {
+    background-image: url(Images/paneAddButtons.png);
+    background-position: 0 0;
+    position: absolute;
+    height: 16px;
+    width: 23px;
+    right: 10px;
+    bottom: 1px;
+    visibility: hidden;
+}
+
+.styles-section.matched-styles:not(.read-only):hover .sidebar-pane-button-new-rule {
+    visibility: visible;
+}
+
+.sidebar-pane-button-new-rule:hover {
+    background-position: -23px 0;
 }

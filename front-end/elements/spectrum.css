@@ -1,0 +1,112 @@
+/* https://github.com/bgrins/spectrum */
+:host {
+    width: 205px;
+    height: 220px;
+    -webkit-user-select: none;
+}
+
+.spectrum-color {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    width: 158px;
+    height: 158px;
+    outline: 1px solid #bbb;
+}
+
+.spectrum-display-value {
+    -webkit-user-select: text;
+    display: inline-block;
+    padding-left: 2px;
+}
+
+.spectrum-hue {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 28px;
+    height: 158px;
+    -webkit-box-reflect: right -28px;
+}
+
+.spectrum-range-container {
+    position: absolute;
+    bottom: 28px;
+    left: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.spectrum-text {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.spectrum-range-container * {
+    font-size: 11px;
+    vertical-align: middle;
+}
+
+.spectrum-range-container label {
+    display: inline-block;
+    padding-right: 4px;
+}
+
+.spectrum-dragger,
+.spectrum-slider {
+    -webkit-user-select: none;
+}
+
+.spectrum-sat {
+    background-image: linear-gradient(to right, white, rgba(204, 154, 129, 0));
+}
+
+.spectrum-val {
+    background-image: linear-gradient(to top, black, rgba(204, 154, 129, 0));
+}
+
+.spectrum-hue {
+    background: linear-gradient(to top, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+}
+
+.spectrum-dragger {
+    border-radius: 5px;
+    height: 5px;
+    width: 5px;
+    border: 1px solid white;
+    cursor: pointer;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: black;
+}
+
+.spectrum-slider {
+    position: absolute;
+    top: 0;
+    cursor: pointer;
+    border: 1px solid black;
+    height: 4px;
+    left: -1px;
+    right: -1px;
+}
+
+.swatch {
+    width: 20px;
+    height:20px;
+    margin: 0;
+}
+
+.swatch-inner {
+    width: 100%;
+    height: 100%;
+    display: inline-block;
+    border: 1px solid rgba(128, 128, 128, 0.6);
+}
+
+.swatch-inner:hover {
+    border: 1px solid rgba(64, 64, 64, 0.8);
+}

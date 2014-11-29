@@ -1,0 +1,55 @@
+/*
+ * Copyright 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.promises .data-grid {
+    border: none;
+    flex: 1 1;
+}
+
+.promises .data-grid .odd {
+    background-color: #eee;
+}
+
+.promises .data-grid .header-container {
+    height: 30px;
+}
+
+.promises .data-grid .data-container {
+    top: 30px;
+}
+
+.promises .data-grid table.data {
+    background: transparent;
+}
+
+.promises .data-grid th {
+    border-bottom: none;
+    border-left: 1px solid rgb(205, 205, 205);
+    background-color: white;
+}
+
+.promises .data-grid td {
+    line-height: 17px;
+    height: 24px;
+    vertical-align: middle;
+    border-bottom: 1px solid rgb(205, 205, 205);
+    border-left: 1px solid rgb(205, 205, 205);
+}
+
+.promises .status {
+    border-radius: 25px;
+    width: 54px;
+    text-align: center;
+    color: white;
+}
+
+.promises .status.rejected {
+    background-color: #f66;
+}
+
+.promises .status.resolved {
+    background-color: #696;
+}

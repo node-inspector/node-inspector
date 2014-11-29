@@ -1,0 +1,47 @@
+{
+    "extensions": [
+        {
+            "type": "@WebInspector.PanelFactory",
+            "name": "network",
+            "title": "Network",
+            "order": 1,
+            "className": "WebInspector.NetworkPanelFactory"
+        },
+        {
+            "type": "@WebInspector.ContextMenu.Provider",
+            "contextTypes": ["WebInspector.NetworkRequest", "WebInspector.Resource", "WebInspector.UISourceCode"],
+            "className": "WebInspector.NetworkPanel.ContextMenuProvider"
+        },
+        {
+            "type": "@WebInspector.Revealer",
+            "contextTypes": ["WebInspector.NetworkRequest"],
+            "className": "WebInspector.NetworkPanel.RequestRevealer"
+        }
+    ],
+    "dependencies": ["source_frame"],
+    "scripts": [
+        "FilterSuggestionBuilder.js",
+        "HARWriter.js",
+        "RequestView.js",
+        "NetworkDataGridNode.js",
+        "NetworkItemView.js",
+        "NetworkTimeCalculator.js",
+        "NetworkLogView.js",
+        "RequestCookiesView.js",
+        "RequestHeadersView.js",
+        "RequestHTMLView.js",
+        "RequestJSONView.js",
+        "RequestPreviewView.js",
+        "RequestResponseView.js",
+        "RequestTimingView.js",
+        "ResourceWebSocketFrameView.js",
+        "NetworkPanel.js"
+    ],
+    "stylesheets": [
+        "networkLogView.css",
+        "networkPanel.css",
+        "requestCookiesView.css",
+        "requestHeadersView.css",
+        "webSocketFrameView.css"
+    ]
+}

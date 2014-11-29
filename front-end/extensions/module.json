@@ -1,0 +1,13 @@
+{
+    "dependencies": [
+        "components"
+    ],
+    "scripts": [
+        "ExtensionAPI.js",
+        "ExtensionAuditCategory.js",
+        "ExtensionRegistryStub.js",
+        "ExtensionServer.js",
+        "ExtensionPanel.js",
+        "ExtensionView.js"
+    ]
+}

@@ -1,0 +1,124 @@
+/*
+ * Copyright (c) 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.search-bar {
+    flex: 0 0 23px;
+    background-color: #eee;
+    border-top: 1px solid #ccc;
+    display: flex;
+}
+
+.search-bar.replaceable {
+    flex: 0 0 44px;
+}
+
+.search-replace {
+    -webkit-appearance: none;
+    border: 0;
+    padding: 0 3px;
+    margin: 0;
+    flex: 1;
+}
+
+.search-replace:focus {
+    outline: none;
+}
+
+.toolbar-search {
+    border-spacing: 1px;
+}
+
+.toolbar-search td {
+    padding: 0 5px 0 0;
+}
+
+.toolbar-search td > span {
+    display: flex;
+    align-items: baseline;
+    line-height: 17px;
+}
+
+.toolbar-search-navigation-controls {
+    align-self: stretch;
+    background-image: linear-gradient(rgb(228, 228, 228), rgb(206, 206, 206));
+}
+
+.toolbar-search-navigation {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    background-repeat: no-repeat;
+    background-position: 4px 7px;
+    border-left: 1px solid rgb(170, 170, 170);
+    opacity: 0.3;
+}
+
+.toolbar-search-navigation.enabled {
+    opacity: 1.0;
+}
+
+.toolbar-search button.search-action-button {
+    border: 1px solid rgb(163, 163, 163);
+    border-radius: 8px;
+    margin: 0;
+    background-image: linear-gradient(rgb(241, 241, 241), rgb(220, 220, 220));
+    width: 100%;
+    height: 20px;
+}
+
+.toolbar-search button.search-action-button:active {
+    background-image: linear-gradient(rgb(185, 185, 185), rgb(156, 156, 156));
+}
+
+.toolbar-search-control {
+    display: -webkit-flex;
+    position: relative;
+    background-color: white;
+}
+
+.toolbar-replace-control,
+#search-input-field {
+    padding-top: 1px;
+    line-height: 17px;
+}
+
+.toolbar-search-control, .toolbar-replace-control {
+    border: 1px solid rgb(163, 163, 163);
+    height: 20px;
+    border-radius: 2px;
+    width: 253px;
+    margin-left: 1px;
+}
+
+.toolbar-search-navigation.enabled:active {
+    background-position: 4px 7px, 0 0;
+}
+
+.toolbar-search-navigation.toolbar-search-navigation-prev {
+    background-image: url(Images/searchPrev.png);
+    border-left: 1px solid rgb(163, 163, 163);
+}
+
+.toolbar-search-navigation.toolbar-search-navigation-prev.enabled:active {
+    background-image: url(Images/searchPrev.png), linear-gradient(rgb(168, 168, 168), rgb(116, 116, 116));
+}
+
+.toolbar-search-navigation.toolbar-search-navigation-next {
+    background-image: url(Images/searchNext.png);
+    border-left: 1px solid rgb(230, 230, 230);
+}
+
+.toolbar-search-navigation.toolbar-search-navigation-next.enabled:active {
+    background-image: url(Images/searchNext.png), linear-gradient(rgb(168, 168, 168), rgb(116, 116, 116));
+}
+
+.search-results-matches {
+    display: inline-block;
+    text-align: right;
+    font-size: 11px;
+    padding: 0 4px;
+    color: rgb(165, 165, 165);
+}

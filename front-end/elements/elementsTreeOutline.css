@@ -1,0 +1,303 @@
+/*
+ * Copyright (c) 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.outline-disclosure {
+    width: 100%;
+    display: inline-block;
+    line-height: normal;
+}
+
+.outline-disclosure li {
+    padding: 0 0 0 14px;
+    margin-top: 1px;
+    margin-left: -2px;
+    word-wrap: break-word;
+}
+
+.outline-disclosure li.parent {
+    margin-left: -13px;
+}
+
+.outline-disclosure li.parent::before {
+    float: left;
+    width: 10px;
+    box-sizing: border-box;
+}
+
+.outline-disclosure li.parent::before {
+    -webkit-user-select: none;
+    -webkit-mask-image: url(Images/statusbarButtonGlyphs.png);
+    -webkit-mask-size: 320px 144px;
+    content: "a";
+    color: transparent;
+    text-shadow: none;
+    margin-right: 1px;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+.outline-disclosure li.parent::before {
+    -webkit-mask-image: url(Images/statusbarButtonGlyphs_2x.png);
+}
+} /* media */
+
+.outline-disclosure li.parent::before {
+    -webkit-mask-position: -4px -96px;
+    background-color: rgb(110, 110, 110);
+}
+
+.outline-disclosure li .selection {
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 15px;
+    z-index: -1;
+}
+
+.outline-disclosure li.hovered:not(.selected) .selection {
+    display: block;
+    left: 3px;
+    right: 3px;
+    background-color: rgba(56, 121, 217, 0.1);
+    border-radius: 5px;
+}
+
+.outline-disclosure li.parent.expanded::before {
+    -webkit-mask-position: -20px -96px;
+}
+
+.outline-disclosure li.selected .selection {
+    display: block;
+    background-color: rgb(212, 212, 212);
+}
+
+.outline-disclosure ol {
+    list-style-type: none;
+    -webkit-padding-start: 12px;
+    margin: 0;
+}
+
+.outline-disclosure ol.children {
+    display: none;
+}
+
+.outline-disclosure ol.children.expanded {
+    display: block;
+}
+
+.outline-disclosure li .webkit-html-tag.close {
+    margin-left: -12px;
+}
+
+.outline-disclosure > ol {
+    position: relative;
+    margin: 0;
+    cursor: default;
+    min-width: 100%;
+    min-height: 100%;
+    -webkit-transform: translateZ(0);
+    padding-left: 2px;
+}
+
+.outline-disclosure ol:focus li.selected {
+    color: white;
+}
+
+.outline-disclosure ol:focus li.parent.selected::before {
+    background-color: white;
+}
+
+.outline-disclosure ol:focus li.selected * {
+    color: inherit;
+}
+
+.outline-disclosure ol:focus li.selected .selection {
+    background-color: rgb(56, 121, 217);
+}
+
+.elements-tree-outline li.shadow-root + ol {
+    margin-left: 5px;
+    padding-left: 5px;
+    border-left: 1px solid gray;
+    /* opacity: 0; */
+}
+
+.elements-tree-editor {
+    -webkit-user-select: text;
+    -webkit-user-modify: read-write-plaintext-only;
+}
+
+.outline-disclosure li.elements-drag-over .selection {
+    display: block;
+    margin-top: -2px;
+    border-top: 2px solid rgb(56, 121, 217);
+}
+
+.outline-disclosure li.in-clipboard .highlight {
+    outline: 1px dotted darkgrey;
+}
+
+.CodeMirror {
+    /* Consistent with the .editing class in inspector.css */
+    box-shadow: rgba(0, 0, 0, .5) 3px 3px 4px;
+    outline: 1px solid rgb(66%, 66%, 66%) !important;
+    background-color: white;
+}
+
+.CodeMirror-lines {
+    padding: 0;
+}
+
+.CodeMirror pre {
+    padding: 0;
+}
+
+button, input, select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.text-button {
+    background-image: linear-gradient(hsl(0, 0%, 93%), hsl(0, 0%, 93%) 38%, hsl(0, 0%, 87%));
+    border: 1px solid hsla(0, 0%, 0%, 0.25);
+    border-radius: 2px;
+    box-shadow: 0 1px 0 hsla(0, 0%, 0%, 0.08), inset 0 1px 2px hsla(0, 100%, 100%, 0.75);
+    color: hsl(0, 0%, 27%);
+    font-size: 12px;
+    margin: 0 1px 0 0;
+    text-shadow: 0 1px 0 hsl(0, 0%, 94%);
+    min-height: 2em;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.text-button:not(:disabled):hover {
+    background-image: linear-gradient(hsl(0, 0%, 94%), hsl(0, 0%, 94%) 38%, hsl(0, 0%, 88%));
+    border-color: hsla(0, 0%, 0%, 0.3);
+    box-shadow: 0 1px 0 hsla(0, 0%, 0%, 0.12), inset 0 1px 2px hsla(0, 100%, 100%, 0.95);
+    color: hsl(0, 0%, 0%);
+}
+
+body.inactive button.text-button, .text-button:disabled {
+    background-image: linear-gradient(#f1f1f1, #f1f1f1 38%, #e6e6e6);
+    border-color: rgba(80, 80, 80, 0.2);
+    box-shadow: 0 1px 0 rgba(80, 80, 80, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.75);
+    color: #aaa;
+}
+
+.editing {
+    -webkit-user-select: text;
+    box-shadow: rgba(0, 0, 0, .5) 3px 3px 4px;
+    outline: 1px solid rgb(66%, 66%, 66%) !important;
+    background-color: white;
+    -webkit-user-modify: read-write-plaintext-only;
+    text-overflow: clip !important;
+    padding-left: 2px;
+    margin-left: -2px;
+    padding-right: 2px;
+    margin-right: -2px;
+    margin-bottom: -1px;
+    padding-bottom: 1px;
+    opacity: 1.0 !important;
+}
+
+.editing,
+.editing * {
+    color: #222 !important;
+    text-decoration: none !important;
+}
+
+.editing br {
+    display: none;
+}
+
+.elements-gutter-decoration {
+    position: absolute;
+    left: 1px;
+    margin-top: 2px;
+    height: 8px;
+    width: 8px;
+    border-radius: 4px;
+    border: 1px solid orange;
+    background-color: orange;
+}
+
+.elements-gutter-decoration.elements-has-decorated-children {
+    opacity: 0.5;
+}
+
+.add-attribute {
+    margin-left: 1px;
+    margin-right: 1px;
+    white-space: nowrap;
+}
+
+.elements-tree-element-pick-node-1 {
+    border-radius: 3px;
+    padding: 1px 0 1px 0;
+    -webkit-animation: elements-tree-element-pick-node-animation-1 0.5s 1;
+}
+
+.elements-tree-element-pick-node-2 {
+    border-radius: 3px;
+    padding: 1px 0 1px 0;
+    -webkit-animation: elements-tree-element-pick-node-animation-2 0.5s 1;
+}
+
+@-webkit-keyframes elements-tree-element-pick-node-animation-1 {
+    from { background-color: rgb(255, 210, 126); }
+    to { background-color: inherit; }
+}
+
+@-webkit-keyframes elements-tree-element-pick-node-animation-2 {
+    from { background-color: rgb(255, 210, 126); }
+    to { background-color: inherit; }
+}
+
+.pick-node-mode {
+    cursor: pointer;
+}
+
+.webkit-html-attribute-value a {
+    cursor: default !important;
+}
+
+.elements-tree-nowrap, .elements-tree-nowrap .li {
+    white-space: pre !important;
+}
+
+.outline-disclosure .elements-tree-nowrap li {
+    word-wrap: normal;
+}
+
+/* DOM update highlight */
+@-webkit-keyframes dom-update-highlight-animation {
+    from {
+        background-color: rgb(158, 54, 153);
+        color: white;
+    }
+    80% {
+        background-color: rgb(245, 219, 244);
+        color: inherit;
+    }
+    to {
+        background-color: inherit;
+    }
+}
+
+.dom-update-highlight {
+    -webkit-animation: dom-update-highlight-animation 1.4s 1 cubic-bezier(0, 0, 0.2, 1);
+    border-radius: 2px;
+}
+
+.outline-disclosure.single-node li {
+    padding-left: 2px;
+}
+
+
+li.parent.shadow-root {
+    /* display: none; */
+}

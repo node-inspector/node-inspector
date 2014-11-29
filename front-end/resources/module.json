@@ -1,0 +1,33 @@
+{
+    "extensions": [
+        {
+            "type": "@WebInspector.PanelFactory",
+            "name": "resources",
+            "title": "Resources",
+            "order": 5,
+            "className": "WebInspector.ResourcesPanelFactory"
+        },
+        {
+            "type": "@WebInspector.Revealer",
+            "contextTypes": ["WebInspector.Resource"],
+            "className": "WebInspector.ResourcesPanel.ResourceRevealer"
+        }
+    ],
+    "dependencies": ["source_frame"],
+    "scripts": [
+        "ApplicationCacheItemsView.js",
+        "CookieItemsView.js",
+        "DOMStorageItemsView.js",
+        "DatabaseQueryView.js",
+        "DatabaseTableView.js",
+        "DirectoryContentView.js",
+        "IndexedDBViews.js",
+        "FileContentView.js",
+        "FileSystemView.js",
+        "ResourcesPanel.js"
+    ],
+    "stylesheets": [
+        "indexedDBViews.css",
+        "resourcesPanel.css"
+    ]
+}

@@ -1,0 +1,22 @@
+{
+    "extensions": [
+        {
+            "type": "@WebInspector.PanelFactory",
+            "name": "layers",
+            "title": "Layers",
+            "order": 7,
+            "className": "WebInspector.LayersPanelFactory"
+        },
+        {
+            "type": "@WebInspector.Revealer",
+            "contextTypes": ["WebInspector.DeferredLayerTree"],
+            "className": "WebInspector.LayersPanel.LayerTreeRevealer"
+        }
+    ],
+    "dependencies": ["timeline"],
+    "experiment": "layersPanel",
+    "scripts": [
+        "LayerPaintProfilerView.js",
+        "LayersPanel.js"
+    ]
+}

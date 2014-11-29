@@ -1,0 +1,62 @@
+{
+    "extensions": [
+        {
+            "type": "@WebInspector.PanelFactory",
+            "name": "profiles",
+            "title": "Profiles",
+            "order": 4,
+            "className": "WebInspector.ProfilesPanelFactory"
+        },
+        {
+            "type": "@WebInspector.ContextMenu.Provider",
+            "contextTypes": ["WebInspector.RemoteObject"],
+            "className": "WebInspector.ProfilesPanel.ContextMenuProvider"
+        },
+        {
+            "type": "ui-setting",
+            "section": "Profiler",
+            "title": "Show advanced heap snapshot properties",
+            "settingName": "showAdvancedHeapSnapshotProperties",
+            "settingType": "checkbox"
+        },
+        {
+            "type": "ui-setting",
+            "section": "Profiler",
+            "title": "Record heap allocation stack traces",
+            "settingName": "recordAllocationStacks",
+            "settingType": "checkbox"
+        },
+        {
+            "type": "ui-setting",
+            "section": "Profiler",
+            "title": "High resolution CPU profiling",
+            "settingName": "highResolutionCpuProfiling",
+            "settingType": "checkbox"
+        }
+    ],
+    "dependencies": [
+        "components"
+    ],
+    "scripts": [
+        "ProfilesPanel.js",
+        "CPUProfileDataGrid.js",
+        "CPUProfileBottomUpDataGrid.js",
+        "CPUProfileTopDownDataGrid.js",
+        "CPUProfileFlameChart.js",
+        "CPUProfileView.js",
+        "HeapSnapshotCommon.js",
+        "HeapSnapshotProxy.js",
+        "HeapSnapshotDataGrids.js",
+        "HeapSnapshotGridNodes.js",
+        "HeapSnapshotView.js",
+        "ProfileLauncherView.js",
+        "CanvasProfileView.js",
+        "CanvasReplayStateView.js",
+        "ProfileTypeRegistry.js"
+    ],
+    "stylesheets": [
+        "canvasProfiler.css",
+        "heapProfiler.css",
+        "profilesPanel.css"
+    ]
+}

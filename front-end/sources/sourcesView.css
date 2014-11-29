@@ -1,0 +1,163 @@
+/*
+ * Copyright (C) 2013 Google Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *     * Neither the name of Google Inc. nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#sources-panel-sources-view {
+    flex: auto;
+    position: relative;
+}
+
+#sources-editor-container-tabbed-pane {
+    flex: auto;
+}
+
+#sources-editor-container-tabbed-pane .tabbed-pane-header-tab {
+    border-bottom: 1px solid #BBB;
+}
+
+#sources-panel-sources-view .tabbed-pane-header {
+    background-color: #eee;
+}
+
+#sources-panel-sources-view .sources-status-bar {
+    display: flex;
+    position: relative;
+    flex: 0 0 20px;
+    background-color: #eee;
+    border-top: 1px solid rgb(196,196,196);
+    overflow: hidden;
+}
+
+#sources-panel-sources-view .sources-status-bar .status-bar {
+    margin-top: -2px;
+}
+
+.source-frame-debugger-script {
+    background-color: rgba(255, 255, 194, 0.5);
+}
+
+.source-frame-unsaved-committed-changes {
+    background-color: rgba(255, 225, 205, 0.40);
+}
+
+.editor-container-unsaved-committed-changes-icon {
+    background-image: url(Images/statusbarButtonGlyphs.png);
+    background-size: 320px 144px;
+    background-position: -202px -107px;
+}
+
+.source-frame-infobar {
+    border-bottom: 1px solid rgb(187, 187, 187);
+    display: flex;
+    flex-direction: column;
+    flex: 0 1 auto;
+    -webkit-user-select: text;
+}
+
+.source-frame-infobar-info {
+    background-color: rgb(255, 255, 255);
+}
+
+.source-frame-infobar-warning,
+.source-frame-infobar-error {
+    background-color: rgb(255, 255, 194);
+}
+
+.source-frame-infobar {
+    margin-top: 0;
+}
+
+.source-frame-infobar-animation {
+    -webkit-animation: source-frame-infobar-reveal 0.1s;
+}
+@-webkit-keyframes source-frame-infobar-reveal {
+    from { margin-top: -24px; }
+    to { margin-top: 0; }
+}
+
+.source-frame-infobar-icon {
+    background-image: url(Images/statusbarButtonGlyphs.png);
+    background-size: 320px 144px;
+    width: 11px;
+    height: 10px;
+    margin-right: 4px;
+    display: inline-block;
+    margin-top: 1px;
+    flex: none;
+}
+
+.source-frame-infobar-info .source-frame-infobar-icon {
+    background-position: -212px -107px;
+}
+
+.source-frame-infobar-warning .source-frame-infobar-icon {
+    background-position: -202px -107px;
+}
+
+.source-frame-infobar-error .source-frame-infobar-icon {
+    background-position: -202px -96px;
+}
+
+.source-frame-infobar-main-row {
+    display: flex;
+    min-height: 17px;
+    overflow: hidden;
+    margin: 5px 10px 0px;
+}
+
+.source-frame-infobar-details-container {
+    display: flex;
+    flex-direction: column;
+    padding: 5px 0;
+}
+
+.source-frame-infobar-details-row {
+    display: flex;
+    flex: none;
+    margin: 0px 10px;
+}
+
+.source-frame-infobar-row-message {
+    flex: 0 1 auto;
+    margin-bottom: 4px;
+}
+
+.source-frame-infobar-main-row .close-button {
+    flex: none;
+}
+
+.source-frame-infobar-toggle {
+    flex: 1 0 auto;
+    padding: 0 4px;
+    -webkit-user-select: none;
+}
+
+.source-frame-infobar-details-url {
+    flex: 0 1000 auto;
+}

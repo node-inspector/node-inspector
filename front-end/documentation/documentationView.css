@@ -1,0 +1,132 @@
+/*
+ * Copyright 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.documentation-code {
+    padding: 15px;
+    margin: 2em 0;
+    word-wrap: break-word;
+    position: relative;
+    background-color: #f7f7f7;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15), 0 0 3px rgba(0, 0, 0, 0.15);
+    overflow-x: auto;
+    font-size: 0.95em;
+    line-height: 1.8em;
+}
+
+.documentation-parameter-header {
+    margin-top: 10px;
+}
+
+.documentation-link {
+    margin-left: 5px;
+}
+
+.documentation-highlighted-text {
+    font-weight: bold;
+}
+
+.documentation-view .documentation-method-signature.monospace {
+    font-size: 14px !important;
+    margin-bottom: 20px;
+}
+
+.documentation-parameter-data-type-value {
+    color: rgb(102, 0, 102);
+    margin: 0 0.5em;
+}
+
+.documentation-section {
+    margin-bottom: 15px;
+}
+
+.documentation-table {
+    font-size: 13px;
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2em 0;
+    line-height: 1.5em;
+}
+
+.documentation-table-header {
+    padding: 1em 1.5em;
+    text-align: left;
+    vertical-align: top;
+    border: 1px solid #eee;
+    background: #fafafa;
+}
+
+.documentation-table-cell {
+    padding: 1em 1.5em;
+    text-align: left;
+    vertical-align: top;
+    border: 1px solid #eee;
+}
+
+.documentation-table-cell .documentation-paragraph:last-child {
+    margin-bottom: 0;
+}
+
+.documentation-table-row {
+    border-bottom: 1px solid #dbdbdb;
+}
+
+.documentation-description {
+    margin-left: 20px;
+}
+
+.documentation-code-tag {
+    font-weight: bold;
+}
+
+.documentation-page-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 0.53333em;
+}
+
+.documentation-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 0.53333em;
+    margin-top: 1em;
+}
+
+.documentation-paragraph {
+    margin-bottom: 0.7em;
+}
+
+.documentation-view {
+    -webkit-user-select: text;
+    padding: 10px;
+}
+
+.documentation-example-description-section {
+    margin-bottom: 20px;
+}
+
+.documentation-text {
+    line-height: 1.5;
+}
+
+.documentation-not-found {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    font-size: 24px;
+    font-weight: bold;
+    color: rgb(191, 191, 191);
+    flex-shrink: 0;
+    flex-grow: 2;
+}
+
+.documentation-empty-page {
+    display: flex;
+    flex-direction: column !important;
+}
+
+.documentation-empty-page-align {
+    flex-grow: 3;
+}

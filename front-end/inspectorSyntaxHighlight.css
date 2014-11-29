@@ -25,69 +25,98 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-.cm-js-keyword {color: rgb(170, 13, 145);}
-.cm-js-number {color: rgb(28, 0, 207);}
-.cm-js-comment {color: rgb(0, 116, 0);}
-.cm-js-string {color: rgb(196, 26, 22);}
-.cm-js-string-2 {color: rgb(196, 26, 22);}
+body /deep/ .cm-js-keyword {color: rgb(170, 13, 145);}
+body /deep/ .cm-js-number {color: rgb(28, 0, 207);}
+body /deep/ .cm-js-comment {color: rgb(0, 116, 0);}
+body /deep/ .cm-js-string {color: rgb(196, 26, 22);}
+body /deep/ .cm-js-string-2 {color: rgb(196, 26, 22);}
 
-.cm-css-keyword { color: rgb(7, 144, 154);}
-.cm-css-number {color: rgb(50, 0, 255);}
-.cm-css-comment {color: rgb(0, 116, 0);}
-.cm-css-def {color: rgb(200, 0, 0);}
-.cm-css-meta {color: rgb(200, 0, 0);}
-.cm-css-atom {color: rgb(7, 144, 154);}
-.cm-css-string {color: rgb(7, 144, 154);}
-.cm-css-string-2 {color: rgb(7, 144, 154);}
-.cm-css-link {color: rgb(7, 144, 154);}
-.cm-css-variable {color: rgb(200, 0, 0);}
-.cm-css-variable-2 {color: rgb(0, 0, 128);}
-.cm-css-property, .webkit-css-property {color: rgb(200, 0, 0);}
+body /deep/ .cm-css-keyword { color: rgb(7, 144, 154);}
+body /deep/ .cm-css-number {color: rgb(50, 0, 255);}
+body /deep/ .cm-css-comment {color: rgb(0, 116, 0);}
+body /deep/ .cm-css-def {color: rgb(200, 0, 0);}
+body /deep/ .cm-css-meta {color: rgb(200, 0, 0);}
+body /deep/ .cm-css-atom {color: rgb(7, 144, 154);}
+body /deep/ .cm-css-string {color: rgb(7, 144, 154);}
+body /deep/ .cm-css-string-2 {color: rgb(7, 144, 154);}
+body /deep/ .cm-css-link {color: rgb(7, 144, 154);}
+body /deep/ .cm-css-variable {color: rgb(200, 0, 0);}
+body /deep/ .cm-css-variable-2 {color: rgb(0, 0, 128);}
+body /deep/ .cm-css-property, .webkit-css-property {color: rgb(200, 0, 0);}
 
-.cm-xml-meta {color: rgb(192, 192, 192);}
-.cm-xml-comment {color: rgb(35, 110, 37);}
-.cm-xml-string {color: rgb(26, 26, 166);}
-.cm-xml-tag {color: rgb(136, 18, 128);}
-.cm-xml-attribute {color: rgb(153, 69, 0);}
-.cm-xml-link {color: #00e;}
+body /deep/ .cm-xml-meta {color: rgb(192, 192, 192);}
+body /deep/ .cm-xml-comment {color: rgb(35, 110, 37);}
+body /deep/ .cm-xml-string {color: rgb(26, 26, 166);}
+body /deep/ .cm-xml-tag {color: rgb(136, 18, 128);}
+body /deep/ .cm-xml-attribute {color: rgb(153, 69, 0);}
+body /deep/ .cm-xml-link {color: #00e;}
 
-.webkit-html-comment {
+body /deep/ .webkit-html-comment {
     /* Keep this in sync with view-source.css (.webkit-html-comment) */
     color: rgb(35, 110, 37);
 }
 
-.webkit-html-tag {
+body /deep/ .webkit-html-tag {
     /* Keep this in sync with view-source.css (.webkit-html-tag) */
     color: rgb(136, 18, 128);
 }
 
-.webkit-html-doctype {
+body /deep/ .webkit-html-pseudo-element {
+    /* This one is non-standard. */
+    color: brown;
+}
+
+body /deep/ .webkit-html-text-node {
+    unicode-bidi: -webkit-isolate;
+}
+
+body /deep/ .webkit-html-entity-value {
+    /* This one is non-standard. */
+    background-color: rgba(0, 0, 0, 0.15);
+    unicode-bidi: -webkit-isolate;
+}
+
+body /deep/ .webkit-html-doctype {
     /* Keep this in sync with view-source.css (.webkit-html-doctype) */
     color: rgb(192, 192, 192);
 }
 
-.webkit-html-attribute-name {
+body /deep/ .webkit-html-attribute-name {
     /* Keep this in sync with view-source.css (.webkit-html-attribute-name) */
     color: rgb(153, 69, 0);
+    unicode-bidi: -webkit-isolate;
 }
 
-.webkit-html-attribute-value {
+body /deep/ .webkit-html-attribute-value {
     /* Keep this in sync with view-source.css (.webkit-html-attribute-value) */
     color: rgb(26, 26, 166);
+    unicode-bidi: -webkit-isolate;
 }
 
-.webkit-html-external-link,
-.webkit-html-resource-link {
+body /deep/ .webkit-html-external-link,
+body /deep/ .webkit-html-resource-link {
     /* Keep this in sync with view-source.css (.webkit-html-external-link, .webkit-html-resource-link) */
     color: #00e;
 }
 
-.webkit-html-external-link {
+body /deep/ .webkit-html-resource-link {
+    /* Required for consistency with view-source.css, since anchors may not have href attributes */
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+body /deep/ .webkit-html-external-link {
     /* Keep this in sync with view-source.css (.webkit-html-external-link) */
     text-decoration: none;
 }
 
-.webkit-html-external-link:hover {
+body /deep/ .webkit-html-external-link:hover {
     /* Keep this in sync with view-source.css (.webkit-html-external-link:hover) */
     text-decoration: underline;
+}
+
+body /deep/ .webkit-html-end-of-file {
+    /* Keep this in sync with view-source.css (.webkit-html-end-of-file) */
+    color: rgb(255, 0, 0);
+    font-weight: bold;
 }

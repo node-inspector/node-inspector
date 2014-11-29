@@ -1,0 +1,288 @@
+.CodeMirror {
+  line-height: 1.2em !important;
+  background-color: transparent !important;
+}
+
+.CodeMirror-linewidget {
+  overflow: visible !important;
+}
+
+.CodeMirror .source-frame-eval-expression {
+  outline: 0px;
+  border: 1px solid rgb(163, 41, 34);
+  border-left-width: 0px;
+  border-right-width: 0px;
+}
+
+.CodeMirror .source-frame-eval-expression-end {
+  border-right-width: 1px;
+  margin-right: -1px;
+}
+
+.CodeMirror .source-frame-eval-expression-start {
+  border-left-width: 1px;
+  margin-left: -1px;
+}
+
+.CodeMirror-readonly .CodeMirror-cursor {
+    display: none;
+}
+
+.CodeMirror .CodeMirror-gutters {
+  border-right: 1px solid rgb(187, 187, 187);
+  background-color: #eee;
+}
+
+.CodeMirror .CodeMirror-linenumber {
+  color: rgb(128, 128, 128);
+}
+
+.CodeMirror-linenumber {
+  min-width: 22px !important;
+}
+
+.cm-highlight {
+  -webkit-animation: fadeout 2s 0s;
+}
+@-webkit-keyframes fadeout {
+    from {background-color: rgb(255, 255, 120); }
+    to { background-color: white; }
+}
+
+.cm-highlight.cm-execution-line {
+  -webkit-animation: fadeout-execution-line 1s 0s;
+}
+@-webkit-keyframes fadeout-execution-line {
+    from {background-color: rgb(121, 141, 254); }
+    to { background-color: rgb(171, 191, 254); }
+}
+
+.cm-breakpoint .CodeMirror-linenumber {
+  color: white;
+  border-width: 1px 4px 1px 1px !important;
+  -webkit-border-image: url(Images/breakpoint.png) 1 4 1 1;
+  margin: 0px 0px 0px 3px !important;
+  padding-right: 3px;
+  padding-left: 1px;
+  height: 11px;
+  line-height: 12px !important;
+}
+
+.cm-line-without-source-mapping {
+  background-color: #eee;
+}
+
+.cm-breakpoint.cm-breakpoint-conditional .CodeMirror-linenumber {
+  -webkit-border-image: url(Images/breakpointConditional.png) 1 4 1 1;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+.cm-breakpoint .CodeMirror-linenumber {
+  -webkit-border-image: url(Images/breakpoint_2x.png) 2 8 2 2;
+}
+.cm-breakpoint.cm-breakpoint-conditional .CodeMirror-linenumber {
+  -webkit-border-image: url(Images/breakpointConditional_2x.png) 2 8 2 2;
+}
+} /* media */
+
+.cm-breakpoint-disabled .CodeMirror-linenumber {
+  opacity: 0.5;
+}
+
+.breakpoints-deactivated .cm-breakpoint .CodeMirror-linenumber {
+    opacity: 0.5;
+}
+
+.breakpoints-deactivated .cm-breakpoint-disabled .CodeMirror-linenumber {
+    opacity: 0.3;
+}
+
+.CodeMirror-matchingbracket {
+  border-bottom: 1px solid black;
+  color: #222 !important;
+}
+
+.CodeMirror-nonmatchingbracket {
+  color: #222 !important;
+}
+
+.cm-whitespace::before {
+    position: absolute;
+    pointer-events: none;
+    color: rgb(175, 175, 175);
+}
+
+.cm-tab {
+    position: relative;
+}
+
+.cm-tab:before {
+    display: none;
+    content: ".";
+    color: transparent;
+    border-bottom: 1px solid rgb(175, 175, 175);
+    position: absolute;
+    width: 90%;
+    bottom: 50%;
+    left: 5%;
+}
+
+.show-whitespaces .CodeMirror .cm-tab:before {
+    display: block !important;
+}
+
+.cm-execution-line {
+    background-color: rgb(171, 191, 254);
+    outline: 1px solid rgb(64, 115, 244);
+}
+
+.cm-execution-line .CodeMirror-linenumber {
+    border-right: 1px solid rgb(64, 115, 244);
+}
+
+.cm-token-highlight {
+    position: relative;
+}
+
+.cm-token-highlight:before {
+    position: absolute;
+    border: 1px solid gray;
+    border-radius: 3px;
+    top: 0px;
+    bottom: -1px;
+    left: 0px;
+    right: 0px;
+    content: "";
+}
+
+.cm-line-with-selection .cm-column-with-selection:before {
+    border: none;
+}
+
+.cm-search-highlight {
+    position: relative;
+}
+
+.cm-search-highlight:before {
+    position: absolute;
+    border-top-style: solid;
+    border-bottom-style: solid;
+    border-top-color: gray;
+    border-bottom-color: gray;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    top: -1px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    content: "";
+}
+
+.cm-search-highlight-full:before {
+    border: 1px solid gray;
+    border-radius: 3px;
+}
+
+.cm-search-highlight-start:before {
+    border-left-width: 1px;
+    border-top-left-radius: 2px;
+    border-bottom-left-radius: 2px;
+    border-left-style: solid;
+    border-left-color: gray;
+}
+
+.cm-search-highlight-end:before {
+    border-right-width: 1px;
+    border-top-right-radius: 2px;
+    border-bottom-right-radius: 2px;
+    border-right-style: solid;
+    border-right-color: gray;
+}
+
+.cm-line-with-selection .cm-column-with-selection.cm-search-highlight-full:before {
+    border-radius: 1px;
+}
+
+.cm-line-with-selection .cm-column-with-selection.cm-search-highlight-start:before {
+    border-top-left-radius: 1px;
+    border-bottom-left-radius: 1px;
+}
+
+.cm-line-with-selection .cm-column-with-selection.cm-search-highlight-end:before {
+    border-top-right-radius: 1px;
+    border-bottom-right-radius: 1px;
+}
+
+.cm-line-with-selection .cm-column-with-selection.cm-search-highlight:before {
+    margin: -1px -1px -1px -1px;
+    background-color: rgb(241, 234, 0);
+    z-index: -1;
+}
+
+.CodeMirror .text-editor-line-decoration {
+  position: absolute;
+}
+
+.CodeMirror .text-editor-line-decoration-wave {
+  position: absolute;
+  top: -2px;
+  cursor: pointer;
+  height: 4px;
+}
+
+.text-editor-messages-description-container {
+  display: inline-block;
+}
+
+.text-editor-row-message:first-child {
+  border-top-width: 0px;
+}
+
+.text-editor-row-message {
+  border-top: 1px solid rgb(215, 215, 215);
+  line-height: 1.2;
+  white-space: nowrap;
+  display: flex;
+}
+
+.text-editor-row-message .bubble-repeat-count {
+  margin-right: 1ex;
+  margin-top: -1px;
+}
+
+.text-editor-row-message-icon {
+  margin-right: 1ex;
+  margin-top: 2px;
+}
+
+.CodeMirror .text-editor-line-decoration-icon {
+    position: absolute;
+    cursor: pointer;
+    right: -16px;
+    top: -9px;
+}
+
+.CodeMirror .text-editor-line-with-warning:not(.cm-execution-line) {
+    background-color: rgba(241, 230, 0, 0.1);
+}
+
+.CodeMirror .text-editor-line-with-error:not(.cm-execution-line) {
+    background-color: rgba(255, 0, 0, 0.05);
+}
+
+.CodeMirror .text-editor-line-decoration-wave {
+  background-image: url(Images/errorWave.png);
+  background-repeat: repeat-x;
+  background-size: contain;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+.CodeMirror .text-editor-line-decoration-wave {
+    background-image: url(Images/errorWave_2x.png);
+}
+} /* media */
+
+/** @see crbug.com/358161 */
+.CodeMirror .CodeMirror-vscrollbar, .CodeMirror .CodeMirror-hscrollbar {
+  transform: translateZ(0);
+}

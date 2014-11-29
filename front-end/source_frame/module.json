@@ -1,0 +1,82 @@
+{
+    "extensions": [
+        {
+            "type": "@WebInspector.InplaceEditor",
+            "className": "WebInspector.CodeMirrorUtils"
+        },
+        {
+            "type": "@WebInspector.TokenizerFactory",
+            "className": "WebInspector.CodeMirrorUtils.TokenizerFactory"
+        },
+        {
+            "type": "ui-setting",
+            "section": "Sources",
+            "title": "Default indentation:",
+            "settingName": "textEditorIndent",
+            "settingType": "select",
+            "options": [
+                ["2 spaces", "  "],
+                ["4 spaces", "    "],
+                ["8 spaces", "        "],
+                ["Tab character", "\t"]
+            ]
+        }
+    ],
+    "dependencies": [
+        "components"
+    ],
+    "scripts": [
+        "../cm/codemirror.js",
+        "../cm/css.js",
+        "../cm/javascript.js",
+        "../cm/xml.js",
+        "../cm/htmlmixed.js",
+
+        "../cm/matchbrackets.js",
+        "../cm/closebrackets.js",
+        "../cm/markselection.js",
+        "../cm/comment.js",
+        "../cm/overlay.js",
+
+        "../cm/htmlembedded.js",
+        "../cm/clike.js",
+        "../cm/coffeescript.js",
+        "../cm/php.js",
+        "../cm/python.js",
+        "../cm/shell.js",
+        "CodeMirrorUtils.js",
+        "CodeMirrorTextEditor.js",
+        "FontView.js",
+        "ImageView.js",
+        "SourceFrame.js",
+        "GoToLineDialog.js",
+        "ResourceSourceFrame.js"
+    ],
+    "skip_compilation": [
+        "../cm/codemirror.js",
+        "../cm/css.js",
+        "../cm/javascript.js",
+        "../cm/xml.js",
+        "../cm/htmlmixed.js",
+
+        "../cm/matchbrackets.js",
+        "../cm/closebrackets.js",
+        "../cm/markselection.js",
+        "../cm/comment.js",
+        "../cm/overlay.js",
+
+        "../cm/htmlembedded.js",
+        "../cm/clike.js",
+        "../cm/coffeescript.js",
+        "../cm/php.js",
+        "../cm/python.js",
+        "../cm/shell.js"
+    ],
+    "stylesheets": [
+        "../cm/codemirror.css",
+        "cmdevtools.css",
+        "fontView.css",
+        "imageView.css",
+        "resourceSourceFrame.css"
+    ]
+}

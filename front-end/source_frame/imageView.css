@@ -1,0 +1,63 @@
+/*
+ * Copyright (c) 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.image-view {
+    overflow: auto;
+}
+
+.image-view > * {
+    flex: none;
+}
+
+.image-view > .image {
+    padding: 20px 20px 10px 20px;
+    text-align: center;
+}
+
+.image-view > .info {
+    padding-bottom: 10px;
+    font-size: 11px;
+    -webkit-user-select: text;
+}
+
+.image-view img.resource-image-view {
+    max-width: 100%;
+    max-height: 1000px;
+    background-image: url(Images/checker.png);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5);
+    -webkit-user-select: text;
+    -webkit-user-drag: auto;
+}
+
+.image-view .title {
+    text-align: center;
+    font-size: 13px;
+}
+
+.image-view .infoList {
+    margin: 0;
+}
+
+.image-view .infoList dt {
+    font-weight: bold;
+    display: inline-block;
+    width: 50%;
+    text-align: right;
+    color: rgb(76, 76, 76);
+}
+
+.image-view .infoList dd {
+    display: inline-block;
+    padding-left: 8px;
+    width: 50%;
+    text-align: left;
+    margin: 0;
+}
+
+.image-view .infoList dd::after {
+    white-space: pre;
+    content: "\A";
+}

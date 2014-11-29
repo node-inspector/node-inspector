@@ -1,0 +1,231 @@
+{
+    "extensions": [
+        {
+            "type": "@WebInspector.PanelFactory",
+            "name": "sources",
+            "title": "Sources",
+            "order": 2,
+            "className": "WebInspector.SourcesPanelFactory"
+        },
+        {
+            "type": "drawer-view",
+            "name": "sources.search",
+            "title": "Search",
+            "order": "1",
+            "className": "WebInspector.AdvancedSearchView"
+        },
+        {
+            "type": "@WebInspector.ContextMenu.Provider",
+            "contextTypes": ["WebInspector.UISourceCode", "WebInspector.RemoteObject"],
+            "className": "WebInspector.SourcesPanel.ContextMenuProvider"
+        },
+        {
+            "type": "@WebInspector.ActionDelegate",
+            "actionId": "debugger.toggle-pause",
+            "className": "WebInspector.SourcesPanel.TogglePauseActionDelegate",
+            "contextTypes": ["WebInspector.SourcesPanel", "WebInspector.ShortcutRegistry.ForwardedShortcut"],
+            "bindings": [
+                {
+                    "platform": "windows,linux",
+                    "shortcut": "F8 Ctrl+\\"
+                },
+                {
+                    "platform": "mac",
+                    "shortcut": "F8 Meta+\\"
+                }
+            ]
+        },
+        {
+            "type": "@WebInspector.ActionDelegate",
+            "actionId": "sources.search.toggle",
+            "className": "WebInspector.AdvancedSearchView.ToggleDrawerViewActionDelegate",
+            "bindings": [
+                {
+                    "platform": "mac",
+                    "shortcut": "Meta+Alt+F"
+                },
+                {
+                    "platform": "windows,linux",
+                    "shortcut": "Ctrl+Shift+F"
+                }
+            ]
+        },
+        {
+            "type": "@WebInspector.Revealer",
+            "contextTypes": ["WebInspector.UILocation"],
+            "className": "WebInspector.SourcesPanel.UILocationRevealer"
+        },
+        {
+            "type": "@WebInspector.Revealer",
+            "contextTypes": ["WebInspector.UISourceCode"],
+            "className": "WebInspector.SourcesPanel.UISourceCodeRevealer"
+        },
+        {
+            "type": "@WebInspector.Revealer",
+            "contextTypes": ["WebInspector.DebuggerPausedDetails"],
+            "className": "WebInspector.SourcesPanel.DebuggerPausedDetailsRevealer"
+        },
+        {
+            "type": "@WebInspector.SourcesView.EditorAction",
+            "className": "WebInspector.InplaceFormatterEditorAction"
+        },
+        {
+            "type": "@WebInspector.SourcesView.EditorAction",
+            "className": "WebInspector.ScriptFormatterEditorAction"
+        },
+        {
+            "type": "navigator-view",
+            "name": "sources",
+            "title": "Sources",
+            "order": 1,
+            "className": "WebInspector.SourcesNavigatorView"
+        },
+        {
+            "type": "navigator-view",
+            "name": "contentScripts",
+            "title": "Content scripts",
+            "order": 2,
+            "className": "WebInspector.ContentScriptsNavigatorView"
+        },
+        {
+            "type": "navigator-view",
+            "name": "snippets",
+            "title": "Snippets",
+            "order": 3,
+            "className": "WebInspector.SnippetsNavigatorView"
+        },
+        {
+            "type": "@WebInspector.ActionDelegate",
+            "actionId": "sources.go-to-source",
+            "className": "WebInspector.SourcesPanel.ShowGoToSourceDialogActionDelegate",
+            "bindings": [
+                {
+                    "platform": "mac",
+                    "shortcut": "Meta+O Meta+P"
+                },
+                {
+                    "platform": "windows,linux",
+                    "shortcut": "Ctrl+O Ctrl+P"
+                }
+            ]
+        },
+        {
+            "type": "@WebInspector.ActionDelegate",
+            "actionId": "sources.switch-file",
+            "className": "WebInspector.SourcesView.SwitchFileActionDelegate",
+            "contextTypes": ["WebInspector.SourcesView"],
+            "bindings": [
+                {
+                    "shortcut": "Alt+O"
+                }
+            ]
+        },
+        {
+            "type": "ui-setting",
+            "settingName": "javaScriptDisabled",
+            "settingType": "custom",
+            "className": "WebInspector.SourcesPanel.DisableJavaScriptSettingDelegate"
+        },
+        {
+            "type": "ui-setting",
+            "section": "Sources",
+            "title": "Search in content scripts",
+            "settingName": "searchInContentScripts",
+            "settingType": "checkbox"
+        },
+        {
+            "type": "ui-setting",
+            "section": "Sources",
+            "title": "Enable JavaScript source maps",
+            "settingName": "jsSourceMapsEnabled",
+            "settingType": "checkbox"
+        },
+        {
+            "type": "ui-setting",
+            "section": "Sources",
+            "title": "Detect indentation",
+            "settingName": "textEditorAutoDetectIndent",
+            "settingType": "checkbox"
+        },
+        {
+            "type": "ui-setting",
+            "section": "Sources",
+            "title": "Autocompletion",
+            "settingName": "textEditorAutocompletion",
+            "settingType": "checkbox"
+        },
+        {
+            "type": "ui-setting",
+            "section": "Sources",
+            "title": "Bracket matching",
+            "settingName": "textEditorBracketMatching",
+            "settingType": "checkbox"
+        },
+        {
+            "type": "ui-setting",
+            "section": "Sources",
+            "title": "Show whitespace characters",
+            "settingName": "showWhitespacesInEditor",
+            "settingType": "checkbox"
+        },
+        {
+            "type": "ui-setting",
+            "section": "Sources",
+            "title": "Enable CSS source maps",
+            "settingName": "cssSourceMapsEnabled",
+            "settingType": "checkbox"
+        },
+        {
+            "type": "ui-setting",
+            "title": "Auto-reload generated CSS",
+            "parentSettingName": "cssSourceMapsEnabled",
+            "settingName": "cssReloadEnabled",
+            "settingType": "checkbox"
+        }
+    ],
+    "dependencies": [
+        "source_frame",
+        "extensions"
+    ],
+    "scripts": [
+        "jsdifflib.js",
+        "Placard.js",
+        "AddSourceMapURLDialog.js",
+        "BreakpointsSidebarPane.js",
+        "CallStackSidebarPane.js",
+        "SimpleHistoryManager.js",
+        "EditingLocationHistoryManager.js",
+        "FilePathScoreFunction.js",
+        "FilteredItemSelectionDialog.js",
+        "UISourceCodeFrame.js",
+        "JavaScriptSourceFrame.js",
+        "CSSSourceFrame.js",
+        "NavigatorView.js",
+        "RevisionHistoryView.js",
+        "ScopeChainSidebarPane.js",
+        "SourcesNavigator.js",
+        "StyleSheetOutlineDialog.js",
+        "TabbedEditorContainer.js",
+        "WatchExpressionsSidebarPane.js",
+        "ThreadsSidebarPane.js",
+        "ScriptFormatterEditorAction.js",
+        "InplaceFormatterEditorAction.js",
+        "ScriptFormatter.js",
+        "SourcesView.js",
+        "AdvancedSearchView.js",
+        "FileBasedSearchResultsPane.js",
+        "SourcesSearchScope.js",
+        "SourcesPanel.js",
+        "WorkspaceMappingTip.js"
+    ],
+    "skip_compilation": [
+        "jsdifflib.js"
+    ],
+    "stylesheets": [
+        "filteredItemSelectionDialog.css",
+        "navigatorView.css",
+        "revisionHistory.css",
+        "sourcesPanel.css",
+        "sourcesView.css"
+    ]
+}

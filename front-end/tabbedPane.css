@@ -28,24 +28,32 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
  
- .tabbed-pane {
-    -webkit-flex-direction: column;
-    display: -webkit-flex;
-    height: 100%;
+.tabbed-pane {
+    flex: auto;
+    overflow: hidden;
 }
 
 .tabbed-pane-content {
-    -webkit-flex: 1;
     position: relative;
     overflow: auto;
+    flex: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .tabbed-pane-content.has-no-tabs {
     background-color: lightgray;
 }
 
+.tabbed-pane-placeholder {
+    font-size: 14px;
+    text-align: center;
+    margin-top: 20px;
+    text-shadow: rgba(255, 255, 255, 0.75) 0 1px 0;
+}
+
 .tabbed-pane-header {
-    height: 23px;
+    flex: 0 0 23px;
     border-bottom: 1px solid rgb(163, 163, 163);
     overflow: hidden;
     width: 100%;
@@ -67,10 +75,10 @@
     border: 1px solid transparent;
     border-bottom: none;
     line-height: 15px;
-    
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
+    cursor: default;
 }
 
 .tabbed-pane-header-tab.measuring {
@@ -78,9 +86,13 @@
 }
 
 .tabbed-pane-header-tab.selected {
-    background-color: white;
     border: 1px solid rgb(163, 163, 163);
     border-bottom: none;
+}
+
+.tabbed-pane-header-tab.selected {
+    background: white;
+    border-top-color: #bbb;
 }
 
 .tabbed-pane-header-tab .close-button-gray {
@@ -97,12 +109,21 @@
     visibility: visible;
 }
 
+.tabbed-pane-header-tab-icon {
+    width: 11px;
+    height: 10px;
+    margin-top: 3px;
+    float: left;
+    display: block;
+    margin-right: 1px;
+}
+
 .tabbed-pane-header-tabs-drop-down-container {
     float: left;
     position: relative;
     vertical-align: bottom;
-    top: 1px;
     padding-left: 3px;
+    line-height: 20px;
 }
 
 .tabbed-pane-header-tabs-drop-down-container.measuring {
@@ -125,15 +146,13 @@
     opacity: 0.8;
 }
 
-select.tabbed-pane-header-tabs-drop-down-select {
+.tabbed-pane-header-tabs-drop-down > select.drop-down-menu {
     position: absolute;
     top: 0;
     right: 0;
     bottom: 0;
     left: 0;
     opacity: 0;
-    border: none;
-    margin: 0;
     font-size: 75%;
-    -webkit-appearance: none;
+    width: 20px;
 }

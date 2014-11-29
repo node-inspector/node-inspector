@@ -1,0 +1,72 @@
+{
+    "extensions": [
+        {
+            "type": "@WebInspector.PanelFactory",
+            "name": "console",
+            "title": "Console",
+            "order": 20,
+            "className": "WebInspector.ConsolePanelFactory"
+        },
+        {
+            "type": "drawer-view",
+            "name": "console",
+            "title": "Console",
+            "order": "0",
+            "className": "WebInspector.ConsolePanel.WrapperView"
+        },
+        {
+            "type": "@WebInspector.Revealer",
+            "contextTypes": ["WebInspector.Console"],
+            "className": "WebInspector.ConsolePanel.ConsoleRevealer"
+        },
+        {
+            "type": "@WebInspector.ActionDelegate",
+            "actionId": "console.show",
+            "className": "WebInspector.ConsoleView.ShowConsoleActionDelegate",
+            "bindings": [
+                {
+                    "shortcut": "Ctrl+`"
+                }
+            ]
+        },
+        {
+            "type": "ui-setting",
+            "section": "Console",
+            "title": "Hide network messages",
+            "settingName": "hideNetworkMessages",
+            "settingType": "checkbox"
+        },
+        {
+            "type": "ui-setting",
+            "section": "Console",
+            "title": "Log XMLHttpRequests",
+            "settingName": "monitoringXHREnabled",
+            "settingType": "checkbox"
+        },
+        {
+            "type": "ui-setting",
+            "section": "Console",
+            "title": "Preserve log upon navigation",
+            "settingName": "preserveConsoleLog",
+            "settingType": "checkbox"
+        },
+        {
+            "type": "ui-setting",
+            "section": "Console",
+            "title": "Show timestamps",
+            "settingName": "consoleTimestampsEnabled",
+            "settingType": "checkbox"
+        }
+    ],
+    "dependencies": [
+        "components"
+    ],
+    "scripts": [
+        "ConsoleViewMessage.js",
+        "ConsoleView.js",
+        "ConsolePanel.js"
+    ],
+    "stylesheets": [
+        "consoleView.css"
+    ]
+}

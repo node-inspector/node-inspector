@@ -1,0 +1,43 @@
+/*
+ * Copyright 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.crumbs {
+    display: inline-block;
+    pointer-events: auto;
+    cursor: default;
+    font-size: 11px;
+    line-height: 17px;
+}
+
+.crumbs .crumb {
+    display: inline-block;
+    padding: 0 7px;
+    height: 18px;
+    white-space: nowrap;
+}
+
+.crumbs .crumb.collapsed > * {
+    display: none;
+}
+
+.crumbs .crumb.collapsed::before {
+    content: "\2026";
+    font-weight: bold;
+}
+
+.crumbs .crumb.compact .extra {
+    display: none;
+}
+
+.crumbs .crumb.selected, .crumbs .crumb.selected:hover {
+    background-color: rgb(56, 121, 217);
+    color: white;
+    text-shadow: rgba(255, 255, 255, 0.5) 0 0 0;
+}
+
+.crumbs .crumb:hover {
+    background-color: rgb(216, 216, 216);
+}

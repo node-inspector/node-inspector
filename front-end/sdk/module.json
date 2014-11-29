@@ -1,0 +1,53 @@
+{
+    "dependencies": [
+        "common",
+        "host",
+        "platform"
+    ],
+    "scripts": [
+        "InspectorBackend.js",
+        "../InspectorBackendCommands.js",
+        "Target.js",
+        "AnimationModel.js",
+        "ApplicationCacheModel.js",
+        "BlackboxSupport.js",
+        "ConsoleModel.js",
+        "ContentProviders.js",
+        "CookieParser.js",
+        "CPUProfileDataModel.js",
+        "CPUProfilerModel.js",
+        "CSSMetadata.js",
+        "CSSParser.js",
+        "CSSStyleModel.js",
+        "DOMModel.js",
+        "DOMStorage.js",
+        "Database.js",
+        "DebuggerModel.js",
+        "FileSystemModel.js",
+        "HAREntry.js",
+        "IndexedDBModel.js",
+        "LayerTreeModel.js",
+        "NetworkLog.js",
+        "OverridesSupport.js",
+        "PowerProfiler.js",
+        "TracingManager.js",
+        "WorkerManager.js",
+        "WorkerTargetManager.js",
+        "RuntimeModel.js",
+        "Script.js",
+        "SnippetStorage.js",
+        "RemoteObject.js",
+        "Resource.js",
+        "ResourceTreeModel.js",
+        "SourceMap.js",
+        "NetworkManager.js",
+        "NetworkRequest.js",
+        "PaintProfiler.js",
+        "HeapProfilerModel.js",
+        "../SupportedCSSProperties.js"
+    ],
+    "skip_compilation": [
+        "../InspectorBackendCommands.js",
+        "../SupportedCSSProperties.js"
+    ]
+}

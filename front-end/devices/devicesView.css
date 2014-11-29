@@ -1,0 +1,53 @@
+/*
+ * Copyright (c) 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+.devices {
+    padding: 10px;
+}
+
+.devices-info {
+    flex: none;
+    padding-bottom: 10px;
+}
+
+.browser {
+    align-items: baseline;
+    display: flex;
+    padding: 1px;
+}
+
+.browser button {
+    white-space: nowrap;
+    flex: none;
+}
+
+.device-header {
+    align-items: baseline;
+    display: flex;
+    flex-flow: row wrap;
+    padding: 2px 0;
+}
+
+.device-name {
+    color: #222;
+    font-size: 120%;
+    font-weight: normal;
+}
+
+.device-serial {
+    color: #888;
+    font-size: 80%;
+    margin-left: 6px;
+    font-weight: normal;
+}
+
+.browser-name {
+    overflow: hidden;
+    padding-left: 20px;
+    padding-right: 10px;
+    flex: 0 1 250px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

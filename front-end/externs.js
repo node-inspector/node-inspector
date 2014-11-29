@@ -29,105 +29,70 @@
  */
 
 // WebKit Web Facing API
-var console = {}
-/** @param {...*} vararg */
-console.warn = function(vararg) {}
-/** @param {...*} vararg */
-console.assert = function(vararg) {}
-/** @param {...*} vararg */
-console.error = function(vararg) {}
-console.trace = function() {}
+
+/**
+ * @param {!Object} object
+ * @param {!Function} callback
+ */
+Object.observe = function(object, callback) {}
 
 /** @type {boolean} */
-Event.prototype.isMetaOrCtrlForTest = false;
-/** @param {...*} vararg */
-Event.prototype.initWebKitWheelEvent = function(vararg) {}
-Event.prototype.stopImmediatePropagation = function() {}
+Event.prototype.isMetaOrCtrlForTest;
 
 /**
- * @constructor
- * @extends {KeyboardEvent}
- * @param {string} eventType
- * @param {Object=} properties
+ * @type {number}
  */
-window.KeyboardEvent = function(eventType, properties) {}
-
-/** @param {Element} element */
-window.getComputedStyle = function(element) {}
-/** @param {*} message */
-function postMessage(message) {}
-
-/** @type {*} */
-window.testRunner = null;
+KeyboardEvent.DOM_KEY_LOCATION_NUMPAD;
 
 /**
- * @constructor
- */
-function WebKitMutation(callback)
-{
-    this.type = "";
-    /** @type {Node} */ this.target = null;
-    /** @type {Array.<Node>} */ this.addedNodes = [];
-    /** @type {Array.<Node>} */ this.removedNodes = [];
-}
-
-/**
- * @constructor
- * @param {function(Array.<WebKitMutation>)} callback
- */
-function WebKitMutationObserver(callback) {}
-/** 
- * @param {Node} container
- * @param {Object} options
- */
-WebKitMutationObserver.prototype.observe = function(container, options) {}
-WebKitMutationObserver.prototype.disconnect = function() {}
-
-/**
- * @param {string} eventName
- * @param {Function} listener
- * @param {boolean=} capturing
- */
-function addEventListener(eventName, listener, capturing) {}
-
-/**
- * @param {T} value
+ * @param {!T} value
  * @param {boolean=} onlyFirst
  * @this {Array.<T>}
  * @template T
  */
 Array.prototype.remove = function(value, onlyFirst) {}
 /**
+ * @param {!Array.<!T>} array
+ * @this {Array.<!T>}
+ * @template T
+ */
+Array.prototype.pushAll = function(array) {}
+/**
  * @return {!Object.<string, boolean>}
- * @this {Array.<*>}
+ * @this {Array.<T>}
+ * @template T
  */
 Array.prototype.keySet = function() {}
 /**
  * @param {number} index
- * @return {!Array.<T>}
+ * @return {!Array.<!T>}
  * @this {Array.<T>}
  * @template T
  */
 Array.prototype.rotate = function(index) {}
 /**
- * @param {T} object
- * @param {function(T,S):number=} comparator
+ * @this {Array.<number>}
+ */
+Array.prototype.sortNumbers = function() {}
+/**
+ * @param {!T} object
+ * @param {function(!T,!S):number=} comparator
  * @return {number}
  * @this {Array.<S>}
  * @template T,S
  */
 Array.prototype.lowerBound = function(object, comparator) {}
 /**
- * @param {T} object
- * @param {function(T,S):number=} comparator
+ * @param {!T} object
+ * @param {function(!T,!S):number=} comparator
  * @return {number}
  * @this {Array.<S>}
  * @template T,S
  */
 Array.prototype.upperBound = function(object, comparator) {}
 /**
- * @param {T} value
- * @param {function(T,S):number} comparator
+ * @param {!T} value
+ * @param {function(!T,!S):number} comparator
  * @return {number}
  * @this {Array.<S>}
  * @template T,S
@@ -137,11 +102,20 @@ Array.prototype.binaryIndexOf = function(value, comparator) {}
  * @param {function(number, number): number} comparator
  * @param {number} leftBound
  * @param {number} rightBound
- * @param {number} k
+ * @param {number} sortWindowLeft
+ * @param {number} sortWindowRight
  * @return {!Array.<number>}
  * @this {Array.<number>}
  */
-Array.prototype.sortRange = function(comparator, leftBound, rightBound, k) {}
+Array.prototype.sortRange = function(comparator, leftBound, rightBound, sortWindowLeft, sortWindowRight) {}
+
+/**
+ * @param {function(!T,!T): number=} comparator
+ * @return {!Array.<T>}
+ * @this {Array.<T>}
+ * @template T
+ */
+Array.prototype.stableSort = function(comparator) {}
 
 /**
  * @this {Array.<number>}
@@ -163,25 +137,36 @@ Array.prototype.qselect = function(k, comparator) {}
 
 /**
  * @param {string} field
- * @return {!Array.<T>}
- * @this {Array.<Object.<string,T>>}
+ * @return {!Array.<!T>}
+ * @this {Array.<!Object.<string,T>>}
  * @template T
  */
 Array.prototype.select = function(field) {}
 
 /**
- * @return {T|undefined}
+ * @return {!T|undefined}
  * @this {Array.<T>}
  * @template T
  */
 Array.prototype.peekLast = function() {}
 
-DOMApplicationCache.prototype.UNCACHED = 0;
-DOMApplicationCache.prototype.IDLE = 1;
-DOMApplicationCache.prototype.CHECKING = 2;
-DOMApplicationCache.prototype.DOWNLOADING = 3;
-DOMApplicationCache.prototype.UPDATEREADY = 4;
-DOMApplicationCache.prototype.OBSOLETE = 5;
+/**
+ * @param {!Array.<T>} array
+ * @param {function(T,T):number} comparator
+ * @return {!Array.<T>}
+ * @this {!Array.<T>}
+ * @template T
+ */
+Array.prototype.intersectOrdered = function(array, comparator) {}
+
+/**
+ * @param {!Array.<T>} array
+ * @param {function(T,T):number} comparator
+ * @return {!Array.<T>}
+ * @this {!Array.<T>}
+ * @template T
+ */
+Array.prototype.mergeOrdered = function(array, comparator) {}
 
 // File System API
 /**
@@ -194,125 +179,79 @@ function DOMFileSystem() {}
  */
 DOMFileSystem.prototype.root = null;
 
-/** @type {Node} */
-Range.prototype.startContainer;
+var DevToolsHost = {};
 
-// Inspector Backend
-var InspectorBackend = {}
-InspectorBackend.runAfterPendingDispatches = function(message) {}
+/** @typedef {{type:string, id:(number|undefined),
+              label:(string|undefined), enabled:(boolean|undefined), checked:(boolean|undefined),
+              subItems:(!Array.<!DevToolsHost.ContextMenuDescriptor>|undefined)}} */
+DevToolsHost.ContextMenuDescriptor;
 
-/** @interface */
-function InspectorFrontendHostAPI() {}
-InspectorFrontendHostAPI.prototype.platform = function() {}
-InspectorFrontendHostAPI.prototype.port = function() {}
-InspectorFrontendHostAPI.prototype.bringToFront = function() {}
-InspectorFrontendHostAPI.prototype.closeWindow = function() {}
-InspectorFrontendHostAPI.prototype.requestSetDockSide = function(dockSide) {}
-InspectorFrontendHostAPI.prototype.setAttachedWindowHeight = function(height) {}
-InspectorFrontendHostAPI.prototype.moveWindowBy = function(x, y) {}
-InspectorFrontendHostAPI.prototype.setInjectedScriptForOrigin = function(origin, script) {}
-InspectorFrontendHostAPI.prototype.loaded = function() {}
-InspectorFrontendHostAPI.prototype.localizedStringsURL = function() {}
-InspectorFrontendHostAPI.prototype.inspectedURLChanged = function(url) {}
-InspectorFrontendHostAPI.prototype.documentCopy = function(event) {}
-InspectorFrontendHostAPI.prototype.copyText = function(text) {}
-InspectorFrontendHostAPI.prototype.openInNewTab = function(url) {}
-InspectorFrontendHostAPI.prototype.canSave = function() {}
-InspectorFrontendHostAPI.prototype.save = function(url, content, forceSaveAs) {}
-InspectorFrontendHostAPI.prototype.close = function(url) {}
-InspectorFrontendHostAPI.prototype.append = function(url, content) {}
-InspectorFrontendHostAPI.prototype.sendMessageToBackend = function(message) {}
-InspectorFrontendHostAPI.prototype.sendMessageToEmbedder = function(message) {}
-InspectorFrontendHostAPI.prototype.recordActionTaken = function(actionCode) {}
-InspectorFrontendHostAPI.prototype.recordPanelShown = function(panelCode) {}
-InspectorFrontendHostAPI.prototype.recordSettingChanged = function(settingCode) {}
-InspectorFrontendHostAPI.prototype.loadResourceSynchronously = function(url) {}
-InspectorFrontendHostAPI.prototype.supportsFileSystems = function() {}
-InspectorFrontendHostAPI.prototype.requestFileSystems = function() {}
-InspectorFrontendHostAPI.prototype.addFileSystem = function() {}
-InspectorFrontendHostAPI.prototype.removeFileSystem = function(fileSystemPath) {}
-InspectorFrontendHostAPI.prototype.isolatedFileSystem = function(fileSystemId, registeredName) {}
-InspectorFrontendHostAPI.prototype.indexPath = function(requestId, fileSystemPath) {}
-InspectorFrontendHostAPI.prototype.stopIndexing = function(requestId) {}
-InspectorFrontendHostAPI.prototype.searchInPath = function(requestId, fileSystemPath, query) {}
-InspectorFrontendHostAPI.prototype.setZoomFactor = function(zoom) {}
-/** @type {InspectorFrontendHostAPI} */
-var InspectorFrontendHost;
+/**
+ * @return {number}
+ */
+DevToolsHost.zoomFactor = function() { }
 
-/** @constructor */
-function SourceMapV3()
-{
-    /** @type {number} */ this.version;
-    /** @type {string} */ this.file;
-    /** @type {Array.<string>} */ this.sources;
-    /** @type {Array.<SourceMapV3.Section>} */ this.sections;
-    /** @type {string} */ this.mappings;
-    /** @type {string} */ this.sourceRoot;
-}
+/**
+ * @param {string} origin
+ * @param {string} script
+ */
+DevToolsHost.setInjectedScriptForOrigin = function(origin, script) { }
 
-/** @constructor */
-SourceMapV3.Section = function()
-{
-    /** @type {SourceMapV3} */ this.map;
-    /** @type {SourceMapV3.Offset} */ this.offset;
-}
+/**
+ * @param {string} text
+ */
+DevToolsHost.copyText = function(text) { }
 
-/** @constructor */
-SourceMapV3.Offset = function()
-{
-    /** @type {number} */ this.line;
-    /** @type {number} */ this.column;
-}
+/**
+ * @return {string}
+ */
+DevToolsHost.platform = function() { }
+
+/**
+ * @param {number} x
+ * @param {number} y
+ * @param {!Array.<!DevToolsHost.ContextMenuDescriptor>} items
+ * @param {!Document} document
+ */
+DevToolsHost.showContextMenuAtPoint = function(x, y, items, document) { }
+
+/**
+ * @param {string} message
+ */
+DevToolsHost.sendMessageToBackend = function(message) { }
+
+/**
+ * @param {string} message
+ */
+DevToolsHost.sendMessageToEmbedder = function(message) { }
+
+/**
+ * @return {string}
+ */
+DevToolsHost.getSelectionBackgroundColor = function() { }
+
+/**
+ * @return {string}
+ */
+DevToolsHost.getSelectionForegroundColor = function() { }
+
+/**
+ * @return {boolean}
+ */
+DevToolsHost.isUnderTest = function() { }
+
+/**
+ * @return {boolean}
+ */
+DevToolsHost.isHostedMode = function() { }
 
 // FIXME: remove everything below.
+var FormatterWorker = {}
 var WebInspector = {}
 
-WebInspector.queryParamsObject = {}
-WebInspector.toggleSearchingForNode = function() {}
 WebInspector.panels = {};
 
-/**
- * @param {Element} element
- * @param {function()=} onclose
- */
-WebInspector.showViewInDrawer = function(element, view, onclose) {}
-
-WebInspector.closeViewInDrawer = function() {}
-
-/**
- * @param {string=} messageLevel
- * @param {boolean=} showConsole
- */
-WebInspector.log = function(message, messageLevel, showConsole) {}
-
-WebInspector.showErrorMessage = function(error) {}
-
-WebInspector.addMainEventListeners = function(doc) {}
-
-WebInspector.openResource = function(url, external) {}
-
-WebInspector.showConsole = function() {}
-
-/**
- * @param {string} expression
- * @param {boolean=} showResultOnly
- */
-WebInspector.evaluateInConsole = function(expression, showResultOnly) {}
-
-WebInspector.queryParamsObject = {}
-
-/**
- * @param {Element} element
- */
-WebInspector.showAnchorLocation = function(element) {}
-
-WebInspector.Events = {
-    InspectorLoaded: "InspectorLoaded",
-    InspectorClosing: "InspectorClosing"
-}
-
-/** @type {WebInspector.SettingsController} */
-WebInspector.settingsController;
+WebInspector.reload = function() { }
 
 /** Extensions API */
 
@@ -337,9 +276,6 @@ function Timeline() {}
 
 var extensionServer;
 
-/** @type {string} */
-Location.prototype.origin = "";
-
 /**
  * @constructor
  */
@@ -358,25 +294,11 @@ function ExtensionReloadOptions() {
     this.userAgent = "";
 }
 
-WebInspector.showPanel = function(panel)
-{
-}
-
-/**
- * @param {ExtensionDescriptor} extensionInfo
- * @return {string}
- */
-function buildPlatformExtensionAPI(extensionInfo) {}
-
-/**
- * @type {string} 
- */
-WebInspector.inspectedPageDomain;
-
-WebInspector.SourceJavaScriptTokenizer = {}
-WebInspector.SourceJavaScriptTokenizer.Keywords = {}
-
-var InspectorTest = {}
+var Adb = {};
+/** @typedef {{id: string, adbBrowserChromeVersion: string, compatibleVersion: boolean, adbBrowserName: string, source: string, adbBrowserVersion: string}} */
+Adb.Browser;
+/** @typedef {{id: string, adbModel: string, adbSerial: string, browsers: !Array.<!Adb.Browser>, adbPortStatus: !Array.<number>, adbConnected: boolean}} */
+Adb.Device;
 
 /* jsdifflib API */
 var difflib = {};
@@ -386,15 +308,27 @@ difflib.SequenceMatcher = function(baseText, newText) { }
 difflib.SequenceMatcher.prototype.get_opcodes = function() { return []; }
 
 /** @constructor */
-var CodeMirror = function() { }
+var Doc = function() { }
+Doc.prototype = {
+    /** @type {number} */
+    scrollLeft: 0,
+    /** @type {number} */
+    scrollTop: 0
+}
+
+/** @constructor */
+var CodeMirror = function(element, config) { }
 CodeMirror.on = function(obj, type, handler) { }
 CodeMirror.prototype = {
+    /** @type {!Doc} */
+    doc: null,
     addKeyMap: function(map) { },
     addLineClass: function(handle, where, cls) { },
+    /** @param {?Object=} options */
     addLineWidget: function(handle, node, options) { },
     /**
-     * @param {string|Object} spec
-     * @param {Object=} options
+     * @param {string|!Object} spec
+     * @param {!Object=} options
      */
     addOverlay: function(spec, options) { },
     addWidget: function(pos, node, scroll, vert, horiz) { },
@@ -402,16 +336,27 @@ CodeMirror.prototype = {
     clearGutter: function(gutterID) { },
     clearHistory: function() { },
     clipPos: function(pos) { },
+    /** @param {string=} mode */
     coordsChar: function(coords, mode) { },
+    /** @param {string=} mode */
     cursorCoords: function(start, mode) { },
     defaultCharWidth: function() { },
     defaultTextHeight: function() { },
     deleteH: function(dir, unit) { },
+    /**
+     * @param {*=} to
+     * @param {*=} op
+     */
     eachLine: function(from, to, op) { },
     execCommand: function(cmd) { },
     extendSelection: function(from, to) { },
     findMarksAt: function(pos) { },
-    findMatchingBracket: function() { },
+    /**
+     * @param {!CodeMirror.Pos} from
+     * @param {boolean=} strict
+     * @param {Object=} config
+     */
+    findMatchingBracket: function(from, strict, config) { },
     findPosH: function(from, amount, unit, visually) { },
     findPosV: function(from, amount, unit, goalColumn) { },
     firstLine: function() { },
@@ -425,21 +370,24 @@ CodeMirror.prototype = {
     getInputField: function(){ },
     getLine: function(line) { },
     /**
-     * @return {{wrapClass: string}}
+     * @return {!{wrapClass: string}}
      */
     getLineHandle: function(line) { },
     getLineNumber: function(line) { },
     getMode: function() { },
     getOption: function(option) { },
+    /** @param {*=} lineSep */
     getRange: function(from, to, lineSep) { },
     /**
-     * @return {{left: number, top: number, width: number, height: number, clientWidth: number, clientHeight: number}}
+     * @return {!{left: number, top: number, width: number, height: number, clientWidth: number, clientHeight: number}}
      */
     getScrollInfo: function() { },
     getScrollerElement: function() { },
     getSelection: function() { },
+    getSelections: function() { },
     getStateAfter: function(line) { },
     getTokenAt: function(pos) { },
+    /** @param {*=} lineSep */
     getValue: function(lineSep) { },
     getViewport: function() { },
     getWrapperElement: function() { },
@@ -459,6 +407,7 @@ CodeMirror.prototype = {
      */
     lineAtHeight: function(height, mode) { },
     linkedDoc: function(options) { },
+    listSelections: function() { },
     markClean: function() { },
     markText: function(from, to, options) { },
     moveH: function(dir, unit) { },
@@ -474,8 +423,18 @@ CodeMirror.prototype = {
     removeLineClass: function(handle, where, cls) { },
     removeLineWidget: function(widget) { },
     removeOverlay: function(spec) { },
+    /** @param {*=} origin */
     replaceRange: function(code, from, to, origin) { },
-    replaceSelection: function(code, collapse, origin) { },
+    /**
+     * @param {string} replacement
+     * @param {string=} select
+     */
+    replaceSelection: function(replacement, select) { },
+    /**
+     * @param {!Array.<string>} textPerSelection
+     */
+    replaceSelections: function(textPerSelection) { },
+    /** @param {*=} margin */
     scrollIntoView: function(pos, margin) { },
     scrollTo: function(x, y) { },
     setBookmark: function(pos, options) { },
@@ -486,6 +445,11 @@ CodeMirror.prototype = {
     setLine: function(line, text) { },
     setOption: function(option, value) { },
     setSelection: function(anchor, head) { },
+    /**
+     * @param {number=} primaryIndex
+     * @param {?Object=} config
+     */
+    setSelections: function(selections, primaryIndex, config) { },
     setSize: function(width, height) { },
     setValue: function(code) { },
     somethingSelected: function() { },
@@ -493,8 +457,9 @@ CodeMirror.prototype = {
     undo: function() { },
     unlinkDoc: function(other) { }
 }
-/** @type {number} */
-CodeMirror.prototype.lineCount;
+/** @type {!{cursorDiv: Element}} */
+CodeMirror.prototype.display;
+/** @type {!Object} */
 CodeMirror.Pass;
 CodeMirror.showHint = function(codeMirror, hintintFunction) { };
 CodeMirror.commands = {};
@@ -507,10 +472,17 @@ CodeMirror.startState = function(mode) { };
 
 /** @constructor */
 CodeMirror.Pos = function(line, ch) { }
-/** type {number} */
+/** @type {number} */
 CodeMirror.Pos.prototype.line;
-/** type {number} */
+/** @type {number} */
 CodeMirror.Pos.prototype.ch;
+
+/**
+ * @param {!CodeMirror.Pos} pos1
+ * @param {!CodeMirror.Pos} pos2
+ * @return {number}
+ */
+CodeMirror.cmpPos = function(pos1, pos2) { };
 
 /** @constructor */
 CodeMirror.StringStream = function(line)
@@ -528,7 +500,7 @@ CodeMirror.StringStream.prototype = {
     eol: function () { },
     indentation: function () { },
     /**
-     * @param {RegExp|string} pattern
+     * @param {!RegExp|string} pattern
      * @param {boolean=} consume
      * @param {boolean=} caseInsensitive
      */
@@ -540,18 +512,142 @@ CodeMirror.StringStream.prototype = {
     sol: function () { }
 }
 
-/** @type {Object.<string, Object.<string, string>>} */
+/** @type {Object.<string, !Object.<string, string>>} */
 CodeMirror.keyMap;
 
-WebInspector.suggestReload = function() { }
-WebInspector.reload = function() { }
-
-WebInspector.settings.continuousPainting = /** type {WebInspector.Setting} */ { }
-WebInspector.settings.showDebugBorders = /** type {WebInspector.Setting} */ { }
-WebInspector.settings.showScrollBottleneckRects = /** type {WebInspector.Setting} */ { }
-WebInspector.settings.forceCompositingMode = /** type {WebInspector.Setting} */ { }
-WebInspector.settings.showFPSCounter = /** type {WebInspector.Setting} */ { }
-WebInspector.settings.showPaintRects = /** type {WebInspector.Setting} */ { }
+/** @type {{scrollLeft: number, scrollTop: number}} */
+CodeMirror.doc;
 
 /** @type {boolean} */
 window.dispatchStandaloneTestRunnerMessages;
+
+// FIXME: Remove once ES6 is supported natively by JS compiler.
+
+/** @typedef {string} */
+var symbol;
+
+/**
+ * @param {string} description
+ * @return {symbol}
+ */
+function Symbol(description) {}
+
+/**
+ * @interface
+ * @extends $jscomp.Iterable.<T>
+ * @template T
+ */
+var Iterator = function() { }
+
+Iterator.prototype = {
+    /**
+     * @return {{done: boolean, value: (T|undefined)}}
+     */
+    next: function() { },
+
+    // FIXME: This should be removed once transpilation is not required for closure compiler ES6
+    $$iterator: function() { }
+}
+
+// FIXME: $jscomp.Iterable hack below should be removed once transpilation is not required for closure compiler ES6
+/**
+ * @constructor
+ * @implements $jscomp.Iterable.<!Array.<K|V>>
+ * @param {!Array.<!Array.<K|V>>|!Iterator.<!Array.<K|V>>=} iterable
+ * @template K, V
+ */
+var Map = function(iterable) { }
+
+Map.prototype = {
+    /**
+     * @param {K} key
+     * @param {V} value
+     */
+    set: function(key, value) { },
+
+    /**
+     * @param {K} key
+     * @return {boolean}
+     */
+    delete: function(key) { },
+
+    /**
+     * @return {!Iterator.<K>}
+     */
+    keys: function() { },
+
+    /**
+     * @return {!Iterator.<V>}
+     */
+    values: function() { },
+
+    /**
+     * @return {!Array.<!Array.<K|V>>}
+     */
+    entries: function() { },
+
+    /**
+     * @param {K} key
+     * @return {V}
+     */
+    get: function(key) { },
+
+    /**
+     * @param {K} key
+     * @return {boolean}
+     */
+    has: function(key) { },
+
+    clear: function() { },
+
+    /**
+     * @return {number}
+     */
+    get size() { },
+
+    // FIXME: This should be removed once transpilation is not required for closure compiler ES6
+    $$iterator: function() { }
+}
+
+// FIXME: $jscomp.Iterable hack below should be removed once transpilation is not required for closure compiler ES6
+/**
+ * @constructor
+ * @implements $jscomp.Iterable.<V>
+ * @param {!Array.<V>|!Iterator.<V>=} iterable
+ * @template V
+ */
+var Set = function(iterable) { }
+
+Set.prototype = {
+    /**
+     * @param {V} value
+     */
+    add: function(value) { },
+
+    /**
+     * @param {V} value
+     * @return {boolean}
+     */
+    delete: function(value) { },
+
+    /**
+     * @return {!Iterator.<V>}
+     */
+    values: function() { },
+
+    /**
+     * @param {V} value
+     * @return {boolean}
+     */
+    has: function(value) { },
+
+    clear: function() { },
+
+    /**
+     * @return {number}
+     */
+    get size() { },
+
+    // FIXME: This should be removed once transpilation is not required for closure compiler ES6
+    $$iterator: function() { }
+}

@@ -1,8 +1,13 @@
+.popover-container {
+    pointer-events: none;
+    overflow: hidden;
+}
+
 .popover {
     position: absolute;
     -webkit-border-image: url(Images/popoverBackground.png) 25 25 25 25;
     border-width: 25px;
-    z-index: 100;
+    z-index: 600;
     pointer-events: none;
 }
 
@@ -28,7 +33,7 @@
     width: 19px;
     height: 19px;
     margin-left: 15px;
-    margin-top: -25px;
+    margin-top: -24px;
     top: 0;
     left: 0;
 }
@@ -38,7 +43,7 @@
 }
 
 .popover.top-right-arrow .arrow {
-    right: 25px;
+    right: 24px;
     left: auto;
 }
 
@@ -46,7 +51,7 @@
     top: auto;
     bottom: 0;
     margin-top: 0;
-    margin-bottom: -25px;
+    margin-bottom: -24px;
     background-position: 0 -19px;
 }
 
@@ -56,71 +61,6 @@
     top: auto;
     bottom: 0;
     margin-top: 0;
-    margin-bottom: -25px;
+    margin-bottom: -24px;
     background-position: 0 -19px;
-}
-
-.popover.left-top-arrow .arrow {
-    top: 0;
-    margin-top: 15px;
-    margin-left: -25px;
-    background-position: 0 -38px;
-}
-
-.popover.left-bottom-arrow .arrow {
-    top: auto;
-    bottom: 0;
-    margin-bottom: 15px;
-    margin-left: -25px;
-    background-position: 0 -38px;
-}
-
-.popover.right-top-arrow .arrow {
-    right: 0;
-    left: auto;
-    top: 0;
-    margin-top: 15px;
-    margin-right: -25px;
-    background-position: 0 -57px;
-}
-
-.popover.right-bottom-arrow .arrow {
-    right: 0;
-    left: auto;
-    top: auto;
-    bottom: 0;
-    margin-bottom: 15px;
-    margin-right: -25px;
-    background-position: 0 -57px;
-}
-
-.popover-details {
-    -webkit-user-select: text;
-    vertical-align: top;
-}
-
-.popover-function-name {
-    text-align: right;
-}
-
-.popover-stacktrace-title {
-    padding-top: 4px;
-}
-
-.popover-details-row-title {
-    font-weight: bold;
-    text-align: right;
-    white-space: nowrap;
-}
-
-.popover-details-row-data {
-    white-space: nowrap;
-}
-
-.popover-details-title {
-    border-bottom: 1px solid #B8B8B8;
-    font-weight: bold;
-    padding-bottom: 5px;
-    padding-top: 0;
-    white-space: nowrap;
 }

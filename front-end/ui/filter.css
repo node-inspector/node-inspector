@@ -1,0 +1,156 @@
+/*
+ * Copyright (C) 2013 Google Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *     * Neither the name of Google Inc. nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+.filter-bar {
+    align-items: center;
+}
+
+.filter-text-filter {
+    display: flex;
+    margin-left: 1px;
+    margin-right: 2px;
+    flex: 0 1 120px;
+    min-width: 40px;
+}
+
+.filter-text-filter.supports-regex {
+    flex: 0 0 155px;
+}
+
+.filter-text-filter label {
+    margin: auto 0;
+}
+
+.filter-bitset-filter {
+    padding: 0 10px !important;
+    overflow: hidden;
+    display: flex !important;
+}
+
+.filter-bitset-filter li {
+    display: inline-block;
+    margin: auto 2px;
+    padding: 4px 6px 3px 6px;
+    background: transparent;
+    text-shadow: rgba(255, 255, 255, 0.5) 0 1px 0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.filter-bitset-filter-divider {
+    background-color: #ccc;
+    height: 16px;
+    width: 1px;
+    margin: auto 2px;
+    display: inline-block;
+}
+
+.filter-bitset-filter li.selected,
+.filter-bitset-filter li:hover,
+.filter-bitset-filter li:active {
+    color: white;
+    text-shadow: rgba(0, 0, 0, 0.4) 0 1px 0;
+}
+
+.filter-bitset-filter li:hover {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.filter-bitset-filter li.selected {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.filter-bitset-filter li:active {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.filter-combobox-filter {
+    margin-left: 5px;
+    margin-right: 2px;
+    flex: 0 0 auto;
+}
+
+.filter-checkbox-filter {
+    padding-left: 4px;
+    padding-right: 2px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    display: flex;
+}
+
+.filter-checkbox-filter > label {
+    display: flex;
+    margin: auto 0;
+}
+
+.filter-text-invalid {
+    background-color: rgb(255, 200, 200);
+}
+
+.filter-checkbox-filter .checkbox-filter-checkbox {
+    width: 10px;
+    height: 10px;
+    margin: auto 3px;
+    padding: 0;
+    border-radius: 2px;
+    border: solid 1px;
+    display: inline-block;
+    overflow: visible;
+    opacity: 0.8;
+    flex-shrink: 0;
+}
+
+
+.filter-checkbox-filter .checkbox-filter-checkbox-check {
+    -webkit-appearance: none;
+    width: 11px;
+    height: 11px;
+    margin-top: -2px;
+    margin-left: 1px;
+}
+
+.filter-checkbox-filter .checkbox-filter-checkbox-checked {
+    background-image: url(Images/statusbarButtonGlyphs.png);
+    background-size: 320px 144px;
+    background-position: -129px -110px;
+}
+
+.filter-input-field {
+    -webkit-appearance: none;
+    border: 1px solid rgb(163, 163, 163);
+    border-radius: 2px;
+    padding: 1px 3px 0;
+    margin: 0 0 0 1px;
+    width: 253px;
+    height: 20px;
+    line-height: 17px;
+    flex: 1;
+}

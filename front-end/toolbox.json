@@ -1,0 +1,11 @@
+[
+    {
+        "name": "platform",
+        "type": "autostart"
+    },
+    {
+        "name": "toolbox_bootstrap",
+        "type": "autostart"
+    }
+]
+

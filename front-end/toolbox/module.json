@@ -1,0 +1,16 @@
+{
+    "dependencies": [
+        "bindings",
+        "platform",
+        "ui"
+    ],
+    "scripts": [
+        "OverridesUI.js",
+        "InspectedPagePlaceholder.js",
+        "MediaQueryInspector.js",
+        "ResponsiveDesignView.js"
+    ],
+    "stylesheets": [
+        "responsiveDesignView.css"
+    ]
+}

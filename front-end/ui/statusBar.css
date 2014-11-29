@@ -1,0 +1,493 @@
+/*
+ * Copyright (c) 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.status-bar-shadow {
+    position: relative;
+    white-space: nowrap;
+    height: 24px;
+    overflow: hidden;
+    z-index: 12;
+    display: flex;
+    flex: none;
+    align-items: center;
+}
+
+.status-bar-shadow.vertical {
+    flex-direction: column;
+    height: auto;
+    width: 32px;
+}
+
+.status-bar-shadow.floating {
+    flex-direction: column;
+    height: auto;
+    background-color: white;
+    border: 1px solid #ccc;
+    margin-top: -1px;
+    width: 32px;
+}
+
+.status-bar-shadow > div {
+    display: inline-flex;
+    overflow: visible;
+}
+
+.status-bar-item {
+    position: relative;
+    display: flex;
+    border: 0 transparent none;
+    background-color: transparent;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    height: 24px;
+}
+
+.status-bar-text {
+    white-space: nowrap;
+    overflow: hidden;
+    margin-left: 6px;
+    -webkit-user-select: text;
+}
+
+#drawer-view-anchor {
+    display: inline-block;
+}
+
+.status-bar-item:active {
+    position: relative;
+    z-index: 200;
+}
+
+.status-bar-item:hover .status-bar-button-text {
+    opacity: 1;
+}
+
+.status-bar-item .status-bar-button-text {
+    font-weight: bold;
+    color: rgba(0, 0, 0, 0.75);
+    opacity: 0.8;
+}
+
+.long-click-glyph {
+    background-color: rgba(0, 0, 0, 0.75);
+    -webkit-mask-image: url(Images/statusbarButtonGlyphs.png);
+    -webkit-mask-position: -288px -48px;
+    -webkit-mask-size: 320px 144px;
+    z-index: 1;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+.long-click-glyph {
+    -webkit-mask-image: url(Images/statusbarButtonGlyphs_2x.png);
+}
+} /* media */
+
+.narrow button.status-bar-item {
+    width: 26px;
+}
+
+.narrow button.status-bar-item .glyph {
+    margin-left: -4px;
+}
+
+button.status-bar-item {
+    width: 32px;
+}
+
+button.status-bar-item.toggled-on .glyph {
+    background-color: rgb(66, 129, 235) !important;
+}
+
+button.status-bar-item:hover .glyph {
+    opacity: 1;
+}
+
+button.status-bar-item:active .glyph {
+    opacity: 0.8;
+}
+
+button.status-bar-item:disabled {
+    background-position: 0 0 !important;
+}
+
+button.status-bar-item:disabled .glyph {
+    opacity: 0.5 !important;
+}
+
+button.status-bar-item.extension {
+    background-image: none;
+}
+
+.status-bar-select-container {
+    display: inline-flex;
+    flex-shrink: 0;
+    margin-right: 6px;
+}
+
+.status-bar-select-arrow {
+    background-image: url(Images/statusbarButtonGlyphs.png);
+    background-size: 320px 144px;
+    opacity: 0.7;
+    width: 12px;
+    height: 12px;
+    background-position: -18px -96px;
+    display: inline-block;
+    pointer-events: none;
+    margin: auto 0;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+.status-bar-select-arrow {
+    background-image: url(Images/statusbarButtonGlyphs_2x.png);
+}
+} /* media */
+
+input.status-bar-item {
+    width: 200px;
+    height: 20px;
+    padding: 3px;
+    margin: 1px 3px;
+    background-color: white;
+    border: solid 1px rgb(216, 216, 216);
+}
+
+input.status-bar-item:focus,
+input.status-bar-item:hover {
+    border: solid 1px rgb(202, 202, 202);
+}
+
+select.status-bar-item {
+    min-width: 48px;
+    color: rgb(48, 48, 48);
+    text-shadow: rgba(255, 255, 255, 0.75) 0 1px 0;
+    -webkit-appearance: none;
+    border: 0;
+    border-radius: 0;
+    padding: 0 15px 0 5px;
+    margin-right: -10px;
+    position: relative;
+    line-height: 22px;
+}
+
+.status-bar-item.checkbox {
+    margin: auto 6px auto 0;
+    height: auto;
+    display: flex;
+}
+
+.status-bar-item > .glyph {
+    -webkit-mask-image: url(Images/statusbarButtonGlyphs.png);
+    -webkit-mask-size: 320px 144px;
+    background-color: rgba(0, 0, 0, 0.75);
+    opacity: 0.8;
+    flex: auto;
+    z-index: 1;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+.status-bar-item > .glyph {
+    -webkit-mask-image: url(Images/statusbarButtonGlyphs_2x.png);
+}
+} /* media */
+
+.alternate-status-bar-buttons-bar {
+    position: absolute;
+    width: 31px;
+    bottom: -3px;
+    background: white;
+}
+
+.status-bar-item.emulate-active {
+    background-color: rgb(163,163,163);
+}
+
+.status-bar-counter {
+    cursor: pointer;
+}
+
+.status-bar-counter:hover .status-bar-counter-item {
+    border-bottom: 1px solid rgb(96, 96, 96);
+    margin-bottom: -1px;
+}
+
+.status-bar-counter-item {
+    margin-left: 6px;
+}
+
+.status-bar-counter-item.status-bar-counter-item-first {
+    margin-left: 0;
+}
+
+.status-bar-counter-item > div {
+    margin-right: 2px;
+}
+
+.status-bar-divider {
+    margin-left: 7px;
+    border-right: 1px solid #CCC;
+}
+
+/* Predefined items */
+
+.dock-status-bar-item.toggled-undocked .glyph {
+    -webkit-mask-position: 0 -48px;
+}
+
+.dock-status-bar-item.toggled-bottom .glyph {
+    -webkit-mask-position: -32px -24px;
+}
+
+.dock-status-bar-item.toggled-right .glyph {
+    -webkit-mask-position: -256px -48px;
+}
+
+.dock-status-bar-item.toggled-left .glyph {
+    -webkit-mask-position: -32px -120px;
+}
+
+.settings-status-bar-item .glyph {
+    -webkit-mask-position: -160px -24px;
+}
+
+.node-search-status-bar-item .glyph {
+    -webkit-mask-position: -224px -24px;
+}
+
+.emulation-status-bar-item .glyph {
+    -webkit-mask-position: -160px 0px;
+}
+
+.emulation-status-bar-item.warning::after {
+    background-image: url(Images/statusbarButtonGlyphs.png);
+    background-size: 320px 144px;
+    width: 10px;
+    height: 10px;
+    content: "";
+    position: relative;
+    top: 4px;
+    left: 6px;
+    background-position: -202px -107px;
+    z-index: 1;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+.emulation-status-bar-item.warning::before {
+    background-image: url(Images/statusbarButtonGlyphs_2x.png);
+}
+} /* media */
+
+.delete-status-bar-item .glyph {
+    -webkit-mask-position: -128px 0;
+}
+
+.clear-status-bar-item .glyph {
+    -webkit-mask-position: -64px 0;
+}
+
+.refresh-status-bar-item .glyph {
+    -webkit-mask-position: 0 0;
+}
+
+.focus-status-bar-item .glyph {
+    -webkit-mask-position: -96px 0;
+}
+
+.console-status-bar-item .glyph {
+    -webkit-mask-position: -64px -24px;
+}
+
+.large-list-status-bar-item .glyph {
+    -webkit-mask-position: -224px 0;
+}
+
+
+.screencast-status-bar-item.toggled-left .glyph {
+    -webkit-mask-position: -256px -96px;
+}
+
+.screencast-status-bar-item.toggled-top .glyph {
+    -webkit-mask-position: -288px -96px;
+}
+
+.screencast-status-bar-item.toggled-disabled .glyph {
+    -webkit-mask-position: 0px -120px;
+}
+
+.record-status-bar-item .glyph {
+    -webkit-mask-position: -288px 0;
+}
+
+button.record-status-bar-item.toggled-on .glyph {
+    -webkit-mask-position: -288px -24px;
+    background-color: rgb(216, 0, 0) !important;
+}
+
+.last-step-status-bar-item .glyph {
+    -webkit-mask-position: 0 -72px;
+}
+
+.first-step-status-bar-item .glyph {
+    -webkit-mask-position: 0 -72px;
+    transform: rotate(180deg);
+    top: 0;
+    bottom: 0;
+}
+
+.step-in-status-bar-item .glyph {
+    -webkit-mask-position: -64px -72px;
+}
+
+.step-out-status-bar-item .glyph {
+    -webkit-mask-position: -96px -72px;
+}
+
+.step-over-status-bar-item .glyph {
+    -webkit-mask-position: -128px -72px;
+}
+
+.step-backwards-status-bar-item .glyph {
+    -webkit-mask-position: -128px -72px;
+    transform: scaleX(-1);
+}
+
+.play-status-bar-item .glyph {
+    -webkit-mask-position: -64px -48px;
+}
+
+.play-backwards-status-bar-item .glyph {
+    -webkit-mask-position: -64px -48px;
+    transform: scaleX(-1);
+}
+
+.pause-on-exceptions-status-bar-item .glyph {
+    -webkit-mask-position: -256px 0;
+}
+
+.pause-on-exceptions-status-bar-item.toggled-on .glyph {
+    background-color: rgb(66, 129, 235);
+}
+
+.pause-status-bar-item .glyph {
+    -webkit-mask-position: -32px -72px;
+}
+
+.pause-status-bar-item.toggled-on .glyph {
+    -webkit-mask-position: 0 -72px;
+}
+
+.breakpoint-status-bar-item.toggled-on .glyph {
+    -webkit-mask-position: -32px 0;
+}
+
+.breakpoint-status-bar-item .glyph {
+    -webkit-mask-position: 0 -24px;
+}
+
+.format-status-bar-item .glyph {
+    -webkit-mask-position: -256px -24px;
+}
+
+.format-status-bar-item.toggled .glyph {
+    background-color: rgb(66, 129, 235);
+}
+
+.garbage-collect-status-bar-item .glyph {
+    -webkit-mask-position: -128px -24px;
+}
+
+.histogram-status-bar-item .glyph {
+    -webkit-mask-position: -160px -48px;
+}
+
+.flame-chart-status-bar-item .glyph {
+    -webkit-mask-position: -192px -48px;
+}
+
+.filter-status-bar-item > .glyph {
+    -webkit-mask-position: -32px -48px;
+}
+
+.filter-status-bar-item.toggled-shown .glyph {
+    background-color: rgb(66, 129, 235);
+}
+
+.filter-status-bar-item.toggled-active .glyph {
+    background-color: rgb(216, 0, 0);
+}
+
+.waterfall-status-bar-item .glyph {
+    -webkit-mask-position: -128px -48px;
+}
+
+.pan-status-bar-item .glyph {
+    -webkit-mask-position: -98px -120px;
+}
+
+.center-status-bar-item .glyph {
+    -webkit-mask-position: -128px -120px;
+}
+
+.rotate-status-bar-item .glyph {
+    -webkit-mask-position: -160px -120px;
+}
+
+.error-icon-small,
+.warning-icon-small,
+.device-icon-small {
+    background-image: url(Images/statusbarButtonGlyphs.png);
+    background-size: 320px 144px;
+    width: 10px;
+    height: 10px;
+    display: inline-block;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+.error-icon-small,
+.warning-icon-small,
+.device-icon-small {
+    background-image: url(Images/statusbarButtonGlyphs_2x.png);
+}
+} /* media */
+
+.error-icon-small {
+    background-position: -213px -96px;
+}
+
+.warning-icon-small {
+    background-position: -202px -107px;
+}
+
+.device-icon-small {
+    background-position: -224px -107px;
+}
+
+.case-sensitive-search-status-bar-item.toggled-on .status-bar-button-text {
+    color: rgb(94, 146, 233);
+}
+
+.regex-search-status-bar-item.toggled-on {
+    color: rgb(66, 129, 235);
+}
+
+.regex-search-status-bar-item.toggled-on .status-bar-button-text {
+    color: rgb(94, 146, 233);
+}
+
+.playback-rate-button.toggled-on > .status-bar-button-text {
+    color: rgb(66, 129, 235);
+}
+
+button.playback-rate-button {
+    width: auto;
+    margin-right: 10px;
+}

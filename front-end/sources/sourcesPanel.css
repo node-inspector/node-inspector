@@ -1,0 +1,153 @@
+/*
+ * Copyright (C) 2006, 2007, 2008 Apple Inc.  All rights reserved.
+ * Copyright (C) 2009 Anthony Ricaud <rik@webkit.org>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1.  Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ * 2.  Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ * 3.  Neither the name of Apple Computer, Inc. ("Apple") nor the names of
+ *     its contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY APPLE AND ITS CONTRIBUTORS "AS IS" AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL APPLE OR ITS CONTRIBUTORS BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+.scripts-debug-toolbar {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    background-color: #eee;
+    border-bottom: 1px solid rgb(163, 163, 163);
+}
+
+.scripts-debug-toolbar /deep/ .status-bar-shadow {
+    margin-top: -1px;
+    height: 23px;
+}
+
+.scripts-debug-toolbar-drawer {
+    flex: 0 0 46px;
+    -webkit-transition: margin-top 0.1s ease-in-out;
+    margin-top: -23px;
+    line-height: 23px;
+    padding-top: 22px;
+    border-bottom: 1px solid rgb(202, 202, 202);
+    background-color: white;
+    overflow: hidden;
+}
+
+.scripts-debug-toolbar-drawer.expanded {
+    margin-top: 0;
+}
+
+.scripts-debug-toolbar-drawer > label {
+    display: flex;
+    padding-left: 3px;
+    border-top: 1px solid rgb(196,196,196);
+    height: 24px;
+}
+
+#scripts-editor-toolbar {
+    position: relative;
+    margin-top: -1px;
+    height: 24px;
+}
+
+#shared-workers-list {
+    margin: 5px 0 5px 20px;
+    font-style:italic;
+}
+
+#pause-workers-checkbox > input {
+    position: relative;
+    top: 2px;
+}
+
+.panel.sources #sources-editor-container-tabbed-pane .tabbed-pane-header-contents {
+    margin-left: 22px;
+    margin-right: 36px;
+}
+
+.panel.sources .split-view /deep/ button.scripts-debugger-show-hide-button.right-sidebar-show-hide-button.toggled-hide {
+    margin-right: 15px;
+}
+
+.dock-to-right .panel.sources .split-view #scripts-debug-sidebar-resizer-widget {
+    transform: rotate(90deg);
+    right: 17px;
+    bottom: 4px;
+    top: auto;
+    height: 10px;
+    width: 18px;
+}
+
+.panel.sources .split-view.hbox #scripts-debug-sidebar-resizer-widget {
+    bottom: 0;
+}
+
+.panel.sources /deep/ .scripts-debugger-show-hide-button {
+    display: block;
+}
+
+.panel.sources .navigator-tabbed-pane .tabbed-pane-header {
+    background-color: #eee;
+}
+
+.function-location-link {
+    float: right;
+    margin-left: 10px;
+}
+
+.function-popover-title {
+    border-bottom: 1px solid #AAA;
+    margin-bottom: 3px;
+    padding-bottom: 2px;
+}
+
+.function-popover-title .function-name {
+    font-weight: bold;
+}
+
+.panel.sources .sidebar-pane-stack {
+    overflow: auto;
+}
+
+#targets-toolbar {
+    background: rgb(236, 236, 236);
+    border-bottom: 1px solid rgb(189, 189, 189);
+    border-top: 1px solid rgb(189, 189, 189);
+    margin-right: 0px;
+    padding-right: 6px;
+    margin-top: -1px;
+}
+
+.panel.sources .drag-mask {
+    background-color: rgba(255,255,255,0.8);
+    z-index: 1000;
+}
+
+.panel.sources .drag-mask-inner {
+    font-size: 30px;
+    color: #999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px;
+    border: 4px dashed #ddd;
+    pointer-events: none;
+}

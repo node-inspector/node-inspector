@@ -1,0 +1,26 @@
+{
+    "dependencies": [
+        "platform"
+    ],
+    "scripts": [
+        "WorkerRuntime.js",
+        "WebInspector.js",
+        "Object.js",
+        "NotificationService.js",
+        "Color.js",
+        "Geometry.js",
+        "Console.js",
+        "ContentProvider.js",
+        "Lock.js",
+        "ParsedURL.js",
+        "Progress.js",
+        "ResourceType.js",
+        "Settings.js",
+        "StaticContentProvider.js",
+        "TextRange.js",
+        "TextUtils.js",
+        "Throttler.js",
+        "UIString.js",
+        "ModuleExtensionInterfaces.js"
+    ]
+}

@@ -1,0 +1,211 @@
+/*
+ * Copyright (C) 2009 Google Inc. All rights reserved.
+ * Copyright (C) 2010 Apple Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *     * Neither the name of Google Inc. nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+.heap-snapshot-sidebar-tree-item .icon {
+    content: url(Images/profileIcon.png);
+}
+
+.heap-snapshot-sidebar-tree-item.small .icon {
+    content: url(Images/profileSmallIcon.png);
+}
+
+.heap-snapshot-view {
+    overflow: hidden;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.heap-snapshot-view .data-grid {
+    border: none;
+}
+
+.heap-snapshot-view .data-grid tr:empty {
+    height: 16px;
+    visibility: hidden;
+}
+
+.heap-snapshot-view .data-grid span.percent-column {
+    width: 32px;
+}
+
+.heap-snapshot-view .console-formatted-object,
+.console-formatted-node {
+    display: inline;
+    position: static;
+}
+
+.detached-dom-tree-node {
+    background-color: #FF9999;
+}
+
+.heap-snapshot-view .console-formatted-string {
+    white-space: nowrap;
+}
+
+.heap-snapshot-view tr:not(.selected) .console-formatted-id {
+    color: grey;
+}
+
+.heap-snapshot-view .delimiter {
+    height: 24px;
+    background-color: #d6dde5;
+}
+
+.heap-snapshot-view .data-grid {
+    flex: auto;
+}
+
+.heap-snapshot-view .heap-tracking-overview {
+    flex: 0 0 80px;
+    height: 80px;
+}
+
+.heap-snapshot-view .retaining-paths-view {
+    overflow: hidden;
+}
+
+.heap-snapshot-view .heap-snapshot-view-resizer {
+    background-image: url(Images/statusbarResizerVertical.png);
+    background-color: #eee;
+    border-bottom: 1px solid rgb(179, 179, 179);
+    background-repeat: no-repeat;
+    background-position: right center, center;
+    flex: 0 0 21px;
+}
+
+.heap-snapshot-view .heap-snapshot-view-resizer .title > span {
+    display: inline-block;
+    padding-top: 3px;
+    vertical-align: middle;
+    margin-left: 4px;
+    margin-right: 8px;
+}
+
+.heap-snapshot-view .heap-snapshot-view-resizer * {
+    pointer-events: none;
+}
+
+.heap-snapshot-view .heap-object-details-header {
+    background-color: #eee;
+}
+
+.heap-snapshot-view tr:not(.selected) td.object-column span.highlight {
+    background-color: rgb(255, 255, 200);
+}
+
+.heap-snapshot-view td.object-column span.grayed {
+    color: gray;
+}
+
+.cycled-ancessor-node {
+    opacity: 0.6;
+}
+
+#heap-recording-view .heap-snapshot-view {
+    top: 80px;
+}
+
+.heap-overview-container {
+    overflow: hidden;
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 80px;
+}
+
+#heap-recording-overview-grid .resources-dividers-label-bar {
+    pointer-events: auto;
+}
+
+#heap-recording-overview-container {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+}
+
+.heap-recording-overview-canvas {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.heap-snapshot-stats-pie-chart {
+    margin: 12px 30px;
+}
+
+.heap-snapshot-stats-legend {
+    margin-left: 24px;
+}
+
+.heap-snapshot-stats-legend > div {
+    margin-top: 1px;
+    width: 170px;
+}
+
+.heap-snapshot-stats-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border: 1px solid rgba(100, 100, 100, 0.3);
+}
+
+.heap-snapshot-stats-swatch.heap-snapshot-stats-empty-swatch {
+    border: none;
+}
+
+.heap-snapshot-stats-name,
+.heap-snapshot-stats-size {
+    display: inline-block;
+    margin-left: 6px;
+}
+
+.heap-snapshot-stats-size {
+    float: right;
+    text-align: right;
+}
+
+.heap-allocation-stack .stack-frame {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid rgb(240, 240, 240);
+    padding: 2px;
+}
+
+.heap-allocation-stack .stack-frame a {
+    color: rgb(33%, 33%, 33%);
+}
+
+.no-heap-allocation-stack {
+    padding: 5px;
+}
