@@ -2,7 +2,8 @@ var expect = require('chai').expect,
   launcher = require('./helpers/launcher.js'),
   CallFramesProvider = require('../lib/CallFramesProvider').CallFramesProvider,
   RuntimeAgent = require('../lib/RuntimeAgent.js').RuntimeAgent,
-  ConsoleClient = require('../lib/ConsoleClient').ConsoleClient;
+  ConsoleClient = require('../lib/ConsoleClient').ConsoleClient,
+  HeapProfilerClient = require('../lib/HeapProfilerClient').HeapProfilerClient;
 
 describe('RuntimeAgent', function() {
   after(launcher.stopAllDebuggers);
@@ -341,7 +342,8 @@ describe('RuntimeAgent', function() {
 
 function setupRuntimeAgent(debuggerClient) {
   var consoleClient = new ConsoleClient({}, debuggerClient);
-  return new RuntimeAgent({}, debuggerClient, consoleClient);
+  var heapProfilerClient = new HeapProfilerClient({}, debuggerClient);
+  return new RuntimeAgent({}, debuggerClient, consoleClient, heapProfilerClient);
 }
 
 function convertPropertyArrayToLookup(array) {

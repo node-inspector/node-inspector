@@ -2,9 +2,11 @@ var expect = require('chai').expect,
     launcher = require('./helpers/launcher.js'),
     EventEmitter = require('events').EventEmitter,
     InjectorClient = require('../lib/InjectorClient').InjectorClient,
-    HeapProfilerAgent = require('../lib/HeapProfilerAgent').HeapProfilerAgent;
+    HeapProfilerAgent = require('../lib/HeapProfilerAgent').HeapProfilerAgent,
+    HeapProfilerClient = require('../lib/HeapProfilerClient').HeapProfilerClient;
 
 var heapProfilerAgent,
+    heapProfilerClient,
     debuggerClient;
 var frontendClient = new EventEmitter();
 frontendClient.sendEvent = function(event, message) {
@@ -167,11 +169,36 @@ describe('HeapProfiler Agent', function() {
   });
 });
 
+
+
+describe('HeapProfilerClient', function() {
+  it('should match only valid heapObjectId', function() {
+    function expectIsHeapObjectId(id) {
+      return expect(heapProfilerClient.isHeapObjectId(id), id);
+    }
+
+    expectIsHeapObjectId('heap:1').to.be.true();
+    expectIsHeapObjectId('heap:1:1').to.be.false();
+    expectIsHeapObjectId('heap:a').to.be.false();
+    expectIsHeapObjectId('heap:').to.be.false();
+    expectIsHeapObjectId('hea:1').to.be.false();
+    expectIsHeapObjectId(':').to.be.false();
+    expectIsHeapObjectId('1').to.be.false();
+  });
+});
+
 function initializeProfiler(done) {
   launcher.runPeriodicConsoleLog(true, function(childProcess, client) {
     var injectorClient = new InjectorClient({}, client);
     debuggerClient = client;
-    heapProfilerAgent = new HeapProfilerAgent({}, debuggerClient, injectorClient, frontendClient);
+    heapProfilerClient = new HeapProfilerClient({}, debuggerClient);
+    heapProfilerAgent = new HeapProfilerAgent(
+      {},
+      debuggerClient,
+      injectorClient,
+      frontendClient,
+      heapProfilerClient);
+
     injectorClient.once('inject', function(injected) {
       if (injected) done();
     });
