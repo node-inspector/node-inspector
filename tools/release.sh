@@ -3,9 +3,9 @@
 set -e
 
 VERSION=${1:?version is mandatory}
-TAG=v{$VERSION}
+TAG=v${VERSION}
 
-echo --RELEASE $VERSION--
+echo --RELEASE $VERSION AS TAG $TAG--
 
 echo --Pull remote changes--
 git pull
@@ -26,10 +26,10 @@ echo --Commit the changes--
 git commit -m "$VERSION" ChangeLog.md package.json
 
 echo --Tag the release--
-git tag -a "$TAG" -m "$VERSION"
+tools/git-changelog -l -t "$VERSION" | git tag -a "$TAG" -F-
 
 echo --Push to github--
-git push && git push "$TAG"
+git push && git push origin "$TAG"
 
 echo --Publish to npmjs.org--
 npm publish
