@@ -1,3 +1,102 @@
+## 2014-12-03, Version 0.8.0
+
+ * Fixed issue #478 (jlu)
+
+ * Modified DebuggerAgent.getFunctionDetails (3y3)
+
+ * Added HeapProfiler._lookupHeapObjectId (3y3)
+
+ * Console serializing and caching logic moved to InjectorServer (3y3)
+
+ * README: fix command for debugging Gulp on Windows (thorn0)
+
+ * Console API (3y3)
+
+ * HeapProfiler API (3y3)
+
+ * ChangeLog: update to the new markdown format (Miroslav Bajtoš)
+
+ * Simplify the release process (Miroslav Bajtoš)
+
+ * README: Fix broken link. (Marcelo Campos Rocha)
+
+ * README: Add info on debugging Gulp tasks (Eric Eastwood)
+
+ * Update README.MD (3y3)
+
+ * Added usage examples (3y3)
+
+ * New help system (3y3)
+
+ * Added customizable webHost to node-debug (3y3)
+
+ * Exclude configuration logic from node-debug (3y3)
+
+ * Use yargs as argv preprocessor in config.js (3y3)
+
+ * Deprecate allowed web-host `null` value (3y3)
+
+ * Create config from constructor (3y3)
+
+ * Enable node-inspector listening on https. (mriehle)
+
+ * Profiler API (3y3)
+
+ * Use correct comment style in Overrides.css (3y3)
+
+ * Overrides: fix `WebInspector.UIString` (Miroslav Bajtoš)
+
+ * front-end: hide DOM, XHR and Event Listener breakpoints (3y3)
+
+ * front-end: rename "(no domain)" to "(core modules)" (3y3)
+
+ * front-end: remove unusable tabs in settings screen (3y3)
+
+ * Extend noop-commands list (3y3)
+
+ * test: increase test timeout in InjectorClient (Miroslav Bajtoš)
+
+ * Fix passing config from session.js to ScriptManager.js (3y3)
+
+ * Add Inspector favicon (3y3)
+
+ * test: increase test timeout in InjectorClient (Miroslav Bajtoš)
+
+ * Version checking refactored (3y3)
+
+ * Update devtools overview url in README (Fodi69)
+
+ * Deprecated config.js cleanup (3y3)
+
+ * README: fix link pointing to docs.strongloop.com (Miroslav Bajtoš)
+
+ * test: fix race condition in launcher (Miroslav Bajtoš)
+
+ * package: update dependencies, use "^" (Miroslav Bajtoš)
+
+ * README: minor improvements (Miroslav Bajtoš)
+
+ * BreakEventHandler: fix break on uncaught exception (Miroslav Bajtoš)
+
+ * debugger: fix protocol debug log (Miroslav Bajtoš)
+
+ * Injector API restructuring (3y3)
+
+ * Add Bountysource badge to README (bountysource-support)
+
+ * Fix InjectorServer socket closing (3y3)
+
+ * Update `debug` to "1.0" (Miroslav Bajtoš)
+
+ * Removed trailing space. (Miroslav Bajtoš)
+
+ * Bump up the next version to 0.8.0 (Miroslav Bajtoš)
+
+ * Injector API (3y3)
+
+ * start work on v0.7.5 (Miroslav Bajtoš)
+
+
 ## 2014-06-05, Version 0.7.4
 
  * Non-ascii string saving fix (junecoder)
