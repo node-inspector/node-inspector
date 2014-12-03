@@ -24,12 +24,14 @@ DATE=`date +'%Y-%m-%d'`
 HEAD="## $DATE, Version $TAG\n\n"
 
 if $LIST; then
-	lasttag=$(git rev-list --tags --max-count=1 2>/dev/null)
-	version=$(git describe --tags --abbrev=0 $lasttag 2>/dev/null)
+  printf "$HEAD"
+  lasttag=$(git rev-list --tags --max-count=1 2>/dev/null)
+  version=$(git describe --tags --abbrev=0 $lasttag 2>/dev/null)
+  export GIT_PAGER=cat # disable pager when running interactively
   if test -z "$version"; then
-	  git log --no-merges --pretty="format: * %s (%an)%n"
+    git log --no-merges --pretty="format: * %s (%an)%n"
   else
-	  git log --no-merges --pretty="format: * %s (%an)%n" $version..
+    git log --no-merges --pretty="format: * %s (%an)%n" $version..
   fi
   exit
 fi
@@ -42,7 +44,6 @@ if test "$CHANGELOG" = ""; then
   fi
 fi
 tmp="/tmp/changelog"
-printf "$HEAD" > $tmp
 $0 --list >> $tmp
 printf '\n' >> $tmp
 if [ -f $CHANGELOG ]; then echo "" >> $tmp; cat $CHANGELOG >> $tmp; fi
