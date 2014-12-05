@@ -30,22 +30,24 @@ describe('convert', function() {
   });
 
   describe('inspectorUrlToV8Name', function() {
+    function dummyNormalize(name) { return name; }
 
     it('returns filename without path for node.js internal modules', function() {
-      expect(convert.inspectorUrlToV8Name('events.js')).to.equal('events.js');
+      expect(convert.inspectorUrlToV8Name('events.js', dummyNormalize)).to.equal('events.js');
     });
 
     it('converts URL to unix path', function() {
-      expect(convert.inspectorUrlToV8Name('file:///home/user/app.js')).to.equal('/home/user/app.js');
+      expect(convert.inspectorUrlToV8Name('file:///home/user/app.js', dummyNormalize))
+        .to.equal('/home/user/app.js');
     });
 
     it('converts URL to windows disk path', function() {
-      expect(convert.inspectorUrlToV8Name('file:///C:/Users/user/app.js'))
+      expect(convert.inspectorUrlToV8Name('file:///C:/Users/user/app.js', dummyNormalize))
         .to.equal('C:\\Users\\user\\app.js');
     });
 
     it('converts URL to windows UNC', function() {
-      expect(convert.inspectorUrlToV8Name('file://SHARE/user/app.js'))
+      expect(convert.inspectorUrlToV8Name('file://SHARE/user/app.js', dummyNormalize))
         .to.equal('\\\\SHARE\\user\\app.js');
     });
   });
