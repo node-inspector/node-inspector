@@ -1,5 +1,5 @@
 // Auto-generated.
-// Run `node tools/generate-commands.js` to update.
+// Run `node tools/generate-front-end.js` to update.
 
 InspectorBackend.registerCommand("Inspector.enable", [], [], false);
 InspectorBackend.registerCommand("Inspector.disable", [], [], false);

@@ -46,6 +46,7 @@
   "preferGlobal": true,
   "scripts": {
     "pretest": "jshint .",
-    "test": "mocha"
+    "test": "mocha",
+    "generate-front-end": "node --harmony tools/generate-front-end"
   }
 }
