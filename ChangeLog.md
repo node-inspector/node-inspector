@@ -1,3 +1,14 @@
+## 2014-12-08, Version 0.8.0
+
+ * Update v8-profiler version (3y3)
+
+ * Check NaN object in mirrors cache (3y3)
+
+ * tools/git-changelog: always print the header (Miroslav Bajtoš)
+
+ * tools/release: fixes and improvements (Miroslav Bajtoš)
+
+
 ## 2014-12-03, Version 0.8.0
 
  * Fixed issue #478 (jlu)
