@@ -1,5 +1,6 @@
 [
   { "name": "node", "type": "autostart" },
   { "name": "node/settings", "type": "autostart" },
+  { "name": "node/sources", "type": "autostart" },
   { "name": "node/main", "type": "autostart" }
 ]
