@@ -1,7 +1,9 @@
 /*jshint browser:true, nonew:false*/
 /*global WebInspector, Runtime*/
 WebInspector.NodeInspectorOverrides = function() {
-  this._overridenStrings = {};
+  this._overridenStrings = {
+    'Developer Tools - %s': 'Node Inspector - %s'
+  };
   this._overrideMainScriptType();
   this._overrideUIStrings();
 
@@ -33,6 +35,7 @@ WebInspector.NodeInspectorOverrides.prototype = {
       return this.orig_UIString.apply(this, args);
     };
   },
+
   _openMainScriptOnStartup: function() {
     WebInspector.targetManager.addModelListener(
       WebInspector.ResourceTreeModel,

@@ -22,7 +22,6 @@ importScript('WatchExpressionsSidebarPane.js');
 WebInspector.WatchExpressionsSection.NewWatchExpression = '\'\'';
 
 Preferences.localizeUI = false;
-Preferences.applicationTitle = 'Node Inspector';
 
 WebInspector._platformFlavor = WebInspector.PlatformFlavor.MacLeopard;
 
