@@ -16,11 +16,6 @@ WebInspector._panelDescriptors = function() {
   });
 };
 
-// Patch the expression used as an initial value for a new watch.
-// DevTools' value "\n" breaks the debugger protocol.
-importScript('WatchExpressionsSidebarPane.js');
-WebInspector.WatchExpressionsSection.NewWatchExpression = '\'\'';
-
 Preferences.localizeUI = false;
 
 WebInspector._platformFlavor = WebInspector.PlatformFlavor.MacLeopard;

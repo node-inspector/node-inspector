@@ -3,6 +3,7 @@
 WebInspector.SourcesOverrides = function() {
   this._chromeSpecificsAreHidden = false;
   this._hideChromeSpecifics();
+  this._overrideWatchExpression();
 };
 
 WebInspector.SourcesOverrides.prototype = {
@@ -33,6 +34,12 @@ WebInspector.SourcesOverrides.prototype = {
       element.classList.add('hidden');
     });
     this._chromeSpecificsAreHidden = true;
+  },
+
+  _overrideWatchExpression: function() {
+    // Patch the expression used as an initial value for a new watch.
+    // DevTools' value "\n" breaks the debugger protocol.
+    WebInspector.WatchExpressionsSection.NewWatchExpression = '';
   }
 };
 
