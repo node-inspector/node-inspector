@@ -1,7 +1,9 @@
 /*jshint browser:true, nonew:false*/
 /*global WebInspector, Runtime*/
 WebInspector.NodeInspectorOverrides = function() {
+  this._overridenStrings = {};
   this._overrideMainScriptType();
+  this._overrideUIStrings();
 
   this._openMainScriptOnStartup();
 };
@@ -21,6 +23,15 @@ WebInspector.NodeInspectorOverrides.prototype = {
 
         return this.orig_createResourceFromFramePayload(frame, url, type, mimeType);
       };
+  },
+  _overrideUIStrings: function() {
+    var overridenStrings = this._overridenStrings;
+    WebInspector.orig_UIString = WebInspector.UIString;
+    WebInspector.UIString = function(string, vararg) {
+      var args = Array.prototype.slice.call(arguments);
+      args[0] = overridenStrings[string] || string;
+      return this.orig_UIString.apply(this, args);
+    };
   },
   _openMainScriptOnStartup: function() {
     WebInspector.targetManager.addModelListener(

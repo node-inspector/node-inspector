@@ -63,14 +63,3 @@ WebInspector.detached = function () {
     location.reload();
   }, 400);
 };
-
-//Override some specific strings in UI
-var oldUIString = WebInspector.UIString;
-var stringOverrides = {
-  '(no domain)': '(core modules)'
-};
-WebInspector.UIString = function(string, vararg) {
-  var args = Array.prototype.slice.call(arguments);
-  args[0] = stringOverrides[string] || string;
-  return oldUIString.apply(this, args);
-};
