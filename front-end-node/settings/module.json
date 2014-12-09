@@ -1,0 +1,11 @@
+{
+    "dependencies": [
+        "settings"
+    ],
+    "scripts": [
+        "SettingsScreenOverrides.js"
+    ],
+    "stylesheets": [
+        "SettingsScreenOverrides.css"
+    ]
+}

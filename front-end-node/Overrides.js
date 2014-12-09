@@ -134,13 +134,6 @@ WebInspector.detached = function () {
   }, 400);
 };
 
-//Remove unusable tabs in help window
-WebInspector.SettingsController.prototype.orig_showSettingsScreen = 
-  WebInspector.SettingsController.prototype.showSettingsScreen;
-WebInspector.SettingsController.prototype.showSettingsScreen = function() {
-  this.orig_showSettingsScreen(WebInspector.SettingsScreen.Tabs.Shortcuts);
-};
-
 //Override some specific strings in UI
 var oldUIString = WebInspector.UIString;
 var stringOverrides = {
