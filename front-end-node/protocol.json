@@ -1,3 +1,15 @@
 {
-    "domains": []
+    "domains": [
+      {
+        "domain": "Console",
+        "types": [],
+        "commands": [],
+        "events": [
+            {
+                "name": "showConsole",
+                "description": "Open console window"
+            }
+        ]
+      }
+    ]
 }

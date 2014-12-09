@@ -105,6 +105,7 @@ InspectorBackend.registerCommand("Console.setLastEvaluationResult", [{"name": "o
 InspectorBackend.registerEvent("Console.messageAdded", ["message"]);
 InspectorBackend.registerEvent("Console.messageRepeatCountUpdated", ["count", "timestamp"]);
 InspectorBackend.registerEvent("Console.messagesCleared", []);
+InspectorBackend.registerEvent("Console.showConsole", []);
 InspectorBackend.registerEnum("Network.InitiatorType", {Parser: "parser", Script: "script", Other: "other"});
 InspectorBackend.registerCommand("Network.enable", [], [], false);
 InspectorBackend.registerCommand("Network.disable", [], [], false);
