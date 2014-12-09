@@ -1,3 +1,4 @@
 [
-  { "name": "node", "type": "autostart" }
+  { "name": "node", "type": "autostart" },
+  { "name": "node/main", "type": "autostart" }
 ]
