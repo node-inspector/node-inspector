@@ -3,53 +3,6 @@
 /*global Preferences:true */
 
 // Wire up websocket to talk to backend
-WebInspector.loaded = function() {
-
-  var webSocketUrl = function() {
-    var a = document.createElement('a');
-    // browser will resolve this relative path to an absolute one
-    a.href = 'ws';
-    a.search = window.location.search;
-    a.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return a.href;
-  }();
-
-  WebInspector.socket = new WebSocket(webSocketUrl);
-
-  WebInspector.socket.onmessage = onWebSocketMessage;
-  WebInspector.socket.onerror = onWebSocketError;
-  WebInspector.socket.onopen = onWebSocketConnected;
-};
-
-var _inspectorInitialized = false;
-
-function onWebSocketError(error) {
-  console.error(error);
-}
-
-function onWebSocketConnected() {
-  if (_inspectorInitialized) return;
-  InspectorFrontendHost.sendMessageToBackend = WebInspector.socket.send.bind(WebInspector.socket);
-
-  WebInspector.dockController = new WebInspector.DockController();
-  WebInspector.doLoadedDone();
-
-  _inspectorInitialized = true;
-}
-
-function onWebSocketMessage(response) {
-
-  var message = response.data;
-
-  if (!message) return;
-
-  if (message === 'showConsole') {
-    WebInspector.showConsole();
-  } else {
-    InspectorBackend.dispatch(message);
-  }
-}
-
 // Disable HTML & CSS inspections
 WebInspector.queryParamsObject['isSharedWorker'] = true;
 
