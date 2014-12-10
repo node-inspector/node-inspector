@@ -10,15 +10,23 @@ exports.buildInspectorUrl = buildInspectorUrl;
  * @param {number} debugPort as configured via --debug in the debugged app
  */
 function buildInspectorUrl(inspectorHost, inspectorPort, debugPort, fileToShow, isHttps, autoclose) {
+  var query = {
+    port: debugPort,
+    autoclose: autoclose
+  };
+
+  for (var k in query) {
+    if (query[k] === undefined) {
+      delete query[k];
+    }
+  }
+
   var parts = {
     protocol: isHttps ? 'https' : 'http',
     hostname: inspectorHost == '0.0.0.0' ? '127.0.0.1' : inspectorHost,
     port: inspectorPort,
     pathname: '/debug',
-    query: {
-      port: debugPort,
-      autoclose: autoclose
-    }
+    query: query
   };
 
   return url.format(parts);
