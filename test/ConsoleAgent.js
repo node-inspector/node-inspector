@@ -21,22 +21,22 @@ frontendClient.sendLogToConsole = function(type, message) {
 
 describe('ConsoleAgent', function() {
   before(initializeConsole);
-  
+
   it('should translate console message to frontend', function(done) {
     frontendClient.once('Console.messageAdded', function(message) {
       done();
     });
-    childProcess.stdin.write('log simple text');
+    childProcess.stdin.write('log simple text\n');
   });
-  
+
   it('should update repeat counter on repeated message', function(done) {
     frontendClient.once('Console.messageRepeatCountUpdated', function(message) {
       expect(message.count).to.equal(1);
       done();
     });
-    childProcess.stdin.write('log simple text');
+    childProcess.stdin.write('log simple text\n');
   });
-  
+
   it('should translate objects', function(done) {
     frontendClient.once('Console.messageAdded', function(message) {
       expect(message.message.parameters).to.deep.equal([{
@@ -48,9 +48,9 @@ describe('ConsoleAgent', function() {
       }]);
       done();
     });
-    childProcess.stdin.write('log object');
+    childProcess.stdin.write('log object\n');
   });
-  
+
   it('should clear messages', function(done) {
     frontendClient.on('Console.messagesCleared', function() {
       done();
@@ -58,20 +58,29 @@ describe('ConsoleAgent', function() {
     consoleAgent.clearMessages();
   });
 });
-  
+
 describe('ConsoleClient', function() {
-  var _message;
-  
-  before(logObjectInChildProcess);
-  
-  function logObjectInChildProcess(done) {
-    frontendClient.once('Console.messageAdded', function(message) {
-      _message = message.message;
-      done();
+  var _messages = [];
+
+  before(logInChildProcess);
+
+  function logInChildProcess(done) {
+    var state = 0;
+    function updateState() {
+      if (++state == 2) {
+        frontendClient.removeAllListeners();
+        done();
+      }
+    }
+
+    frontendClient.on('Console.messageAdded', function(message) {
+      _messages.push(message.message);
+      updateState();
     });
-    childProcess.stdin.write('log object');
+    childProcess.stdin.write('log object\n');
+    childProcess.stdin.write('log console\n');
   }
-  
+
   it('should match only valid consoleId', function() {
     function expectIsConsoleId(id) {
       return expect(consoleClient.isConsoleId(id), id);
@@ -86,10 +95,10 @@ describe('ConsoleClient', function() {
     expectIsConsoleId('::').to.be.false();
     expectIsConsoleId('1').to.be.false();
   });
-  
+
   it('should provide object data', function(done) {
     consoleClient.lookupConsoleId(
-      _message.parameters[0].objectId, 
+      _messages[0].parameters[0].objectId,
       function(error, lookupBody, lookupRefs) {
         expect(error).to.equal(null);
         expect(lookupBody).to.deep.equal({
@@ -108,9 +117,19 @@ describe('ConsoleClient', function() {
     );
   });
 
+  it('should provide object (with internal properties) data', function(done) {
+    consoleClient.lookupConsoleId(
+      _messages[0].parameters[0].objectId,
+      function(error, lookupBody, lookupRefs) {
+        expect(error).to.equal(null);
+        done();
+      }
+    );
+  });
+
   it('should return error on not existed object', function(done) {
     consoleClient.lookupConsoleId(
-      'console:2:0', 
+      'console:2:0',
       function(error, lookupBody, lookupRefs) {
         expect(error).to.equal('Object #0# not found');
         done();
@@ -120,9 +139,9 @@ describe('ConsoleClient', function() {
 
   it('should return error on not existed message', function(done) {
     consoleClient.lookupConsoleId(
-      'console:3:1', 
+      'console:4:1',
       function(error, lookupBody, lookupRefs) {
-        expect(error).to.equal('Console message #3# not found');
+        expect(error).to.equal('Console message #4# not found');
         done();
       }
     );
@@ -134,16 +153,16 @@ function initializeConsole(done) {
     childProcess = child;
     debuggerClient = client;
     var injectorClient = new InjectorClient({}, debuggerClient);
-        
+
     consoleClient = new ConsoleClient({}, debuggerClient, frontendClient);
 
     consoleAgent = new ConsoleAgent({}, debuggerClient, frontendClient, injectorClient, consoleClient);
-    
+
     injectorClient.once('inject', function(injected) {
       if (injected) debuggerClient.request('continue', null, done);
     });
     injectorClient.once('error', done);
-    
+
     consoleAgent.enable({}, injectorClient.inject.bind(injectorClient));
   });
 }
