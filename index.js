@@ -11,15 +11,9 @@ exports.buildInspectorUrl = buildInspectorUrl;
  */
 function buildInspectorUrl(inspectorHost, inspectorPort, debugPort, fileToShow, isHttps, autoclose) {
   var query = {
-    port: debugPort,
-    autoclose: autoclose
+    port: debugPort
   };
-
-  for (var k in query) {
-    if (query[k] === undefined) {
-      delete query[k];
-    }
-  }
+  if (autoclose) { query.autoclose = true; }
 
   var parts = {
     protocol: isHttps ? 'https' : 'http',
