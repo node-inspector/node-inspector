@@ -189,8 +189,7 @@ var oldDetached = WebInspector.detached;
 WebInspector.detached = function () {
   oldDetached.apply(this, arguments);
   setTimeout(function () {
-    var autoclose = window.location.search.match(/\bautoclose=(.+)\b/);
-    if (autoclose) {
+    if (WebInspector.queryParamsObject.autoclose) {
       window.close();
     } else {
       location.reload();
