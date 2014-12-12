@@ -1,4 +1,4 @@
-## 2014-12-08, Version 0.8.0
+## 2014-12-08, Version 0.8.1
 
  * Update v8-profiler version (3y3)
 
