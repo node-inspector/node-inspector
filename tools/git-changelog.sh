@@ -1,8 +1,17 @@
 #!/bin/bash
 
 FILE=""
+NULL="/dev/null"
 LIST=false
 TAG=$(node -e "console.log(require('./package.json').version)")
+tmp="$TMPDIR/changelog"
+
+if [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ]; then
+  NULL="NUL";
+  # TMP was overriden by Bash (TMP="/tmp") we need to unset it.
+  unset TMP;
+  tmp="$TMP/changelog"
+fi
 
 while [ "$1" != "" ]; do
   case $1 in
@@ -25,8 +34,8 @@ HEAD="## $DATE, Version $TAG\n\n"
 
 if $LIST; then
   printf "$HEAD"
-  lasttag=$(git rev-list --tags --max-count=1 2>/dev/null)
-  version=$(git describe --tags --abbrev=0 $lasttag 2>/dev/null)
+  lasttag=$(git rev-list --tags --max-count=1 2>$NULL)
+  version=$(git describe --tags --abbrev=0 $lasttag 2>$NULL)
   export GIT_PAGER=cat # disable pager when running interactively
   if test -z "$version"; then
     git log --no-merges --pretty="format: * %s (%an)%n"
@@ -43,7 +52,7 @@ if test "$CHANGELOG" = ""; then
     CHANGELOG='History.md';
   fi
 fi
-tmp="/tmp/changelog"
+
 $0 --list >> $tmp
 printf '\n' >> $tmp
 if [ -f $CHANGELOG ]; then echo "" >> $tmp; cat $CHANGELOG >> $tmp; fi
