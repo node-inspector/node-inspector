@@ -16,11 +16,11 @@ rm -rf node_modules && npm install
 echo --Run the tests--
 npm test
 
-echo --Update ChangeLog.md--
-tools/git-changelog -t "$VERSION"
-
 echo --Update the version in package.json--
 npm version --git-tag-version=false "$VERSION"
+
+echo --Update ChangeLog.md--
+tools/git-changelog.sh -t "$VERSION"
 
 echo --Commit the changes--
 git commit -m "$VERSION" ChangeLog.md package.json
