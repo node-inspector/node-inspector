@@ -343,7 +343,7 @@ describe('RuntimeAgent', function() {
 function setupRuntimeAgent(debuggerClient) {
   var consoleClient = new ConsoleClient({}, debuggerClient);
   var heapProfilerClient = new HeapProfilerClient({}, debuggerClient);
-  return new RuntimeAgent({}, debuggerClient, consoleClient, heapProfilerClient);
+  return new RuntimeAgent({}, debuggerClient, {}, consoleClient, heapProfilerClient);
 }
 
 function convertPropertyArrayToLookup(array) {
