@@ -12,6 +12,9 @@ var frontendClient = new EventEmitter();
 frontendClient.sendEvent = function(event, message) {
   this.emit(event, message);
 };
+frontendClient.sendLogToConsole = function(level, text) {
+  console[level](text);
+};
 frontendClient.off = frontendClient.removeListener;
 
 describe('HeapProfiler Agent', function() {
@@ -21,11 +24,10 @@ describe('HeapProfiler Agent', function() {
     var progress,
         total,
         state = 0,
-        chunks = 0,
         data = '';
 
     function updateState() {
-      if (++state == 4) {
+      if (++state == 2) {
         frontendClient.off('HeapProfiler.reportHeapSnapshotProgress', onReportHeapSnapshotProgress);
         frontendClient.off('HeapProfiler.addHeapSnapshotChunk', onAddHeapSnapshotChunk);
         done();
@@ -33,31 +35,17 @@ describe('HeapProfiler Agent', function() {
     }
 
     function onReportHeapSnapshotProgress(message) {
-      expect(message).to.have.keys(['done', 'total']);
-      if (message.done === message.total) updateState();
-    }
-
-    function onAddProfileHeader(message) {
-      expect(message).to.have.keys(['header']);
-      updateState();
+      expect(message).to.have.keys(['done', 'total', 'finished']);
+      if (message.finished) updateState();
     }
 
     function onAddHeapSnapshotChunk(message) {
-      expect(message).to.have.keys(['uid', 'chunk']);
-      chunks++;
+      expect(message).to.have.keys(['chunk']);
       data += message.chunk;
-    }
-
-    function onFinishHeapSnapshot(message) {
-      expect(message).to.deep.equal({ uid: 1 });
-      expect(chunks).to.be.above(0);
-      updateState();
     }
 
     frontendClient.on('HeapProfiler.reportHeapSnapshotProgress', onReportHeapSnapshotProgress);
     frontendClient.on('HeapProfiler.addHeapSnapshotChunk', onAddHeapSnapshotChunk);
-    frontendClient.once('HeapProfiler.addProfileHeader', onAddProfileHeader);
-    frontendClient.once('HeapProfiler.finishHeapSnapshot', onFinishHeapSnapshot);
 
     heapProfilerAgent.takeHeapSnapshot(
       {
@@ -65,70 +53,8 @@ describe('HeapProfiler Agent', function() {
       },
       function(error, result){
         expect(error).to.equal(null);
-        expect(result).to.deep.equal({
-          header: {
-            title: 'Snapshot 1',
-            typeId: 'HEAP',
-            uid: 1
-          }
-        });
+        expect(result).to.equal(undefined);
         updateState();
-      }
-    );
-  });
-
-  it('should get snapshot', function(done) {
-    heapProfilerAgent.getHeapSnapshot(
-      {
-        uid: 1
-      },
-      function(error, result){
-        expect(error).to.equal(null);
-        done();
-      }
-    );
-  });
-
-  it('should return error if requested snapshot not found', function(done) {
-    heapProfilerAgent.getHeapSnapshot(
-      {
-        uid: 2
-      },
-      function(error, result){
-        expect(error).to.equal('Snapshot with id 2 not found');
-        done();
-      }
-    );
-  });
-
-  it('should receive snapshots list', function(done) {
-    heapProfilerAgent.getProfileHeaders({}, function(error, result) {
-      expect(error).to.equal(null);
-      expect(result.headers).to.have.length(1);
-      done();
-    });
-  });
-
-  it('should remove snapshot', function(done) {
-    heapProfilerAgent.removeProfile(
-      {
-        uid: 1
-      },
-      function(error, result){
-        expect(error).to.equal(null);
-        done();
-      }
-    );
-  });
-
-  it('should return error if removing snapshot not found', function(done) {
-    heapProfilerAgent.removeProfile(
-      {
-        uid: 2
-      },
-      function(error, result){
-        expect(error).to.equal('Snapshot with id 2 not found');
-        done();
       }
     );
   });
