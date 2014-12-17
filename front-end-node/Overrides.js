@@ -25,15 +25,6 @@ Preferences.localizeUI = false;
 
 WebInspector._platformFlavor = WebInspector.PlatformFlavor.MacLeopard;
 
-// Front-end uses `eval location.href` to get url of inspected page
-// This does not work in node.js from obvious reasons, and cause
-// a 'null' message to be printed in front-end console.
-// Since Preferences.applicationTitle does not include inspected url,
-// we can return arbitrary string as inspected URL.
-WebInspector.WorkerManager._calculateWorkerInspectorTitle = function() {
-  InspectorFrontendHost.inspectedURLChanged('');
-};
-
 // Do not offer download of the edited file when saving changes to V8.
 // DevTools' implementation changes window.location which closes
 // web-socket connection to the server and thus breaks the inspector.
