@@ -3,6 +3,7 @@
 WebInspector.MainOverrides = function() {
   this._unregisterShortcuts();
   this._allowToSaveModifiedFiles();
+  this._reloadOnDetach();
 };
 
 WebInspector.MainOverrides.prototype = {
@@ -25,6 +26,16 @@ WebInspector.MainOverrides.prototype = {
         }
       }
     );
+  },
+
+  _reloadOnDetach: function() {
+    var oldDetached = WebInspector.Main.prototype.detached;
+    WebInspector.Main.prototype.detached = function () {
+      oldDetached.apply(this, arguments);
+      setTimeout(function () {
+        location.reload();
+      }, 400);
+    };
   },
 
   _shortcutsToUnregister: [

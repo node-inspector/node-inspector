@@ -16,11 +16,3 @@ WebInspector._platformFlavor = WebInspector.PlatformFlavor.MacLeopard;
 InspectorFrontendHost.close = function(url, content, forceSaveAs) {
   delete this._fileBuffers[url];
 };
-
-var oldDetached = WebInspector.detached;
-WebInspector.detached = function () {
-  oldDetached.apply(this, arguments);
-  setTimeout(function () {
-    location.reload();
-  }, 400);
-};
