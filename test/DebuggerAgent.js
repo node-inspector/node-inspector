@@ -1,5 +1,6 @@
 var expect = require('chai').expect,
   launcher = require('./helpers/launcher.js'),
+  ScriptManager = require('../lib/ScriptManager.js').ScriptManager,
   DebuggerAgent = require('../lib/DebuggerAgent.js').DebuggerAgent;
 
 describe('DebuggerAgent', function() {
@@ -245,6 +246,31 @@ describe('DebuggerAgent', function() {
           debuggerClient,
           null,  // BreakEventHandler
           null); // ScripManager
+        done();
+      });
+    }
+  });
+  
+  describe('setBreakpointByUrl()', function() {
+    before(setupDebugScenario);
+    
+    it('does not throw an error', function(done) {
+      expect(function() { agent.setBreakpointByUrl({
+        url: 'folder/app.js',
+        line: 0,
+        column: 0,
+        condition: ''
+      }, done); }).to.not.throw();
+    });
+    
+    var debuggerClient, agent;
+
+    function setupDebugScenario(done) {
+      launcher.runOnBreakInFunction(function(client) {
+        debuggerClient = client;
+        var scriptManager = new ScriptManager({}, null, debuggerClient);
+
+        agent = new DebuggerAgent({}, null, debuggerClient, null, scriptManager);
         done();
       });
     }
