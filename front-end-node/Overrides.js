@@ -6,16 +6,6 @@
 // Disable HTML & CSS inspections
 WebInspector.queryParamsObject['isSharedWorker'] = true;
 
-// disable everything besides scripts and console
-// that means 'profiles' and 'timeline' at the moment
-WebInspector._orig_panelDescriptors = WebInspector._panelDescriptors;
-WebInspector._panelDescriptors = function() {
-  var panelDescriptors = this._orig_panelDescriptors();
-  return panelDescriptors.filter(function(pd) {
-    return ['scripts', 'console', 'profiles'].indexOf(pd.name()) != -1;
-  });
-};
-
 Preferences.localizeUI = false;
 
 WebInspector._platformFlavor = WebInspector.PlatformFlavor.MacLeopard;
