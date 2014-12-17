@@ -17,20 +17,6 @@ InspectorFrontendHost.close = function(url, content, forceSaveAs) {
   delete this._fileBuffers[url];
 };
 
-// Let DevTools know we can save the content of modified files,
-// so that a warning icon is not displayed in the file tab header.
-// See UISourceCode.hasUnsavedCommittedChanges to understand why.
-WebInspector.extensionServer._onSubscribe(
-  {
-    type:WebInspector.extensionAPI.Events.ResourceContentCommitted
-  },
-  {
-    postMessage: function(msg) {
-      // no-op
-    }
-  }
-);
-
 var oldDetached = WebInspector.detached;
 WebInspector.detached = function () {
   oldDetached.apply(this, arguments);

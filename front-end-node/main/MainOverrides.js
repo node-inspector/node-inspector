@@ -2,6 +2,7 @@
 /*global WebInspector:true*/
 WebInspector.MainOverrides = function() {
   this._unregisterShortcuts();
+  this._allowToSaveModifiedFiles();
 };
 
 WebInspector.MainOverrides.prototype = {
@@ -11,6 +12,19 @@ WebInspector.MainOverrides.prototype = {
       var key = WebInspector.shortcutRegistry._defaultKeyToActions.get(String(descriptor.key));
       if (key) key.clear();
     });
+  },
+
+  _allowToSaveModifiedFiles: function() {
+    WebInspector.extensionServer._onSubscribe(
+      {
+        type:WebInspector.extensionAPI.Events.ResourceContentCommitted
+      },
+      {
+        postMessage: function(msg) {
+          // no-op
+        }
+      }
+    );
   },
 
   _shortcutsToUnregister: [
