@@ -8,9 +8,7 @@ tmp="$TMPDIR/changelog"
 
 if [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ]; then
   NULL="NUL";
-  # TMP was overriden by Bash (TMP="/tmp") we need to unset it.
-  unset TMP;
-  tmp="$TMP/changelog"
+  tmp="._changelog"
 fi
 
 while [ "$1" != "" ]; do

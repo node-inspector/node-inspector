@@ -26,10 +26,12 @@ echo --Commit the changes--
 git commit -m "$VERSION" ChangeLog.md package.json
 
 echo --Tag the release--
-tools/git-changelog -l -t "$VERSION" | git tag -a "$TAG" -F-
+tools/git-changelog.sh -l -t "$VERSION" | git tag -a "$TAG" -F-
 
 echo --Push to github--
 git push && git push origin "$TAG"
 
 echo --Publish to npmjs.org--
 npm publish
+
+echo --RELEASED $VERSION--
