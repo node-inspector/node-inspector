@@ -2,6 +2,9 @@ var commands = {
   'log simple text': function() {
     console.log('test');
   },
+  'log simple text async': function() {
+    setTimeout(console.log.bind(console, 'test'), 0);
+  },
   'log object': function() {
     console.log({ a: 'test' });
   },
