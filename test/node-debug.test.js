@@ -1,5 +1,6 @@
 var cli = require('../bin/node-debug');
 var expect = require('chai').expect;
+var localIp = require('network-address');
 
 describe('node-debug', function() {
   describe('argument parser', function() {
@@ -15,9 +16,9 @@ describe('node-debug', function() {
           debugPort: 5858
         },
         inspector: {
-          host: '127.0.0.1',
+          host: localIp(),
           port: 8080,
-          args: ['--web-host=127.0.0.1']
+          args: []
         }
       });
     });
@@ -81,7 +82,7 @@ describe('node-debug', function() {
     it('forwards unknown options to node-inspector', function() {
       var config = cli.createConfig(argv('--some-bool --no-some-other-bool --some-string val app.js'));
       expect(config.inspector.args, 'inspector args').to.eql(
-        ['--web-host=127.0.0.1', '--some-bool', '--some-other-bool=false', '--some-string=val']);
+        ['--some-bool', '--some-other-bool=false', '--some-string=val']);
       expect(config.subproc.execArgs, 'subprocess args').to.not.include.members(
         ['--some-bool', '--some-other-bool=false', '--some-string=val']);
     });
