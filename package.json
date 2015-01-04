@@ -37,7 +37,8 @@
     "network-address": "0.0.5",
     "v8-debug": "~0.4.2",
     "v8-profiler": "~5.2.4",
-    "semver": "^3.0.1"
+    "semver": "^3.0.1",
+    "mdns": "~2.2.2"
   },
   "devDependencies": {
     "mocha": "^1.21",
