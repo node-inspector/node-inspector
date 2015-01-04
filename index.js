@@ -31,6 +31,6 @@ function buildFrontendUrl(host, port, path, debugPort, isHttps) {
  * @param {number} debugPort as configured via --debug in the debugged app
  * @param {boolean} is https or not
  */
-function buildInspectorUrl(inspectorHost, inspectorPort, debugPort, fileToShow, isHttps) {
+function buildInspectorUrl(inspectorHost, inspectorPort, debugPort, isHttps) {
   return buildFrontendUrl(inspectorHost, inspectorPort, '/debug', debugPort, isHttps);
 }
