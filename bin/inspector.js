@@ -51,7 +51,7 @@ function onError(err) {
 }
 
 function onListening() {
-  var address = this.address();
+  var address = this.getInspectorAddress();
   console.log('Visit %s to start debugging.', address.url);
 
   notifyParentProcess({
