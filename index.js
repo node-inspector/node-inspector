@@ -46,7 +46,7 @@ function buildInspectorUrl(inspectorHost, inspectorPort, debugPort, isHttps) {
 function buildWebSocketUrl(host, port, debugPort, isHttps) {
   var parts = {
     protocol: isHttps ? 'wss:' : 'ws:',
-    hostname: host == '0.0.0.0' ? '127.0.0.1' : host,
+    hostname: host,
     port: port,
     pathname: '/ws',
     search: '?port=' + debugPort,
