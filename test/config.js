@@ -97,13 +97,12 @@ describe('Config', function() {
 
   describe('defaults', function(){
     var config = Config._collectDefaults();
-    var ip = localIp();
 
     it('have expected values', function(){
       expect(config.help, 'default help value').to.equal(false);
       expect(config.version, 'default version value').to.equal(false);
       expect(config.webPort, 'default web-port value').to.equal(8080);
-      expect(config.webHost, 'default web-host value').to.equal(ip);
+      expect(config.webHost, 'default web-host value').to.equal('0.0.0.0');
       expect(config.debugPort, 'default debug-port value').to.equal(5858);
       expect(config.saveLiveEdit, 'default save-live-edit value').to.equal(false);
       expect(config.preload, 'default preload value').to.equal(true);
@@ -118,8 +117,7 @@ describe('Config', function() {
 
     it('have expected values in node-debug mode', function() {
       var config = Config._collectDefaults(true);
-      var ip = localIp();
-      expect(config.webHost, 'node-debug default web-host value').to.equal(ip);
+      expect(config.webHost, 'node-debug default web-host value').to.equal('127.0.0.1');
       expect(config.debugBrk, 'node-debug default debug-brk value').to.equal(true);
     });
   });

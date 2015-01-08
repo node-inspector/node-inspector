@@ -16,9 +16,9 @@ describe('node-debug', function() {
           debugPort: 5858
         },
         inspector: {
-          host: localIp(),
+          host: '127.0.0.1',
           port: 8080,
-          args: []
+          args: ['--web-host=127.0.0.1']
         }
       });
     });
@@ -82,7 +82,7 @@ describe('node-debug', function() {
     it('forwards unknown options to node-inspector', function() {
       var config = cli.createConfig(argv('--some-bool --no-some-other-bool --some-string val app.js'));
       expect(config.inspector.args, 'inspector args').to.eql(
-        ['--some-bool', '--some-other-bool=false', '--some-string=val']);
+        ['--web-host=127.0.0.1', '--some-bool', '--some-other-bool=false', '--some-string=val']);
       expect(config.subproc.execArgs, 'subprocess args').to.not.include.members(
         ['--some-bool', '--some-other-bool=false', '--some-string=val']);
     });
