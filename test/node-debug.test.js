@@ -1,6 +1,5 @@
 var cli = require('../bin/node-debug');
 var expect = require('chai').expect;
-var localIp = require('network-address');
 
 describe('node-debug', function() {
   describe('argument parser', function() {

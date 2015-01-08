@@ -1,7 +1,6 @@
 var util = require('util'),
     path = require('path'),
-    expect = require('chai').expect,
-    localIp = require('network-address');
+    expect = require('chai').expect;
 
 var Config = require('../lib/config');
 
