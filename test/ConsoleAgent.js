@@ -51,6 +51,13 @@ describe('ConsoleAgent', function() {
     childProcess.stdin.write('log object\n');
   });
 
+  it('should translate async console message to frontend', function(done) {
+    frontendClient.once('Console.messageAdded', function(message) {
+      done();
+    });
+    childProcess.stdin.write('log simple text async\n');
+  });
+
   it('should clear messages', function(done) {
     frontendClient.on('Console.messagesCleared', function() {
       done();
@@ -102,16 +109,16 @@ describe('ConsoleClient', function() {
       function(error, lookupBody, lookupRefs) {
         expect(error).to.equal(null);
         expect(lookupBody).to.deep.equal({
-          handle: 6,
+          handle: 7,
           type: 'object',
           className: 'Object',
-          constructorFunction: { ref: 7 },
-          protoObject: { ref: 8 },
-          prototypeObject: { ref: 9 },
-          properties: [{ name: 'a', propertyType: 1, ref: 10}],
+          constructorFunction: { ref: 8 },
+          protoObject: { ref: 9 },
+          prototypeObject: { ref: 10 },
+          properties: [{ name: 'a', propertyType: 1, ref: 11}],
           text: '#<Object>'
         });
-        expect(lookupRefs).to.include.keys(['7', '8', '9', '10']);
+        expect(lookupRefs).to.include.keys(['8', '9', '10', '11']);
         done();
       }
     );
@@ -129,7 +136,7 @@ describe('ConsoleClient', function() {
 
   it('should return error on not existed object', function(done) {
     consoleClient.lookupConsoleId(
-      'console:2:0',
+      'console:3:0',
       function(error, lookupBody, lookupRefs) {
         expect(error).to.equal('Object #0# not found');
         done();
@@ -139,9 +146,9 @@ describe('ConsoleClient', function() {
 
   it('should return error on not existed message', function(done) {
     consoleClient.lookupConsoleId(
-      'console:4:1',
+      'console:5:1',
       function(error, lookupBody, lookupRefs) {
-        expect(error).to.equal('Console message #4# not found');
+        expect(error).to.equal('Console message #5# not found');
         done();
       }
     );
