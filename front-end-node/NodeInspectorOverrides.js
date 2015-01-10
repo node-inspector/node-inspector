@@ -2,12 +2,14 @@
 /*global WebInspector, Runtime, InspectorFrontendHost*/
 WebInspector.NodeInspectorOverrides = function() {
   this._overridenStrings = {
-    'Developer Tools - %s': 'Node Inspector - %s'
+    'Developer Tools - %s': 'Node Inspector - %s',
+    '(no domain)': '(core modules)'
   };
   this._overrideMainScriptType();
   this._overrideUIStrings();
 
   this._setWorkerTitle();
+
   this._openMainScriptOnStartup();
 };
 
