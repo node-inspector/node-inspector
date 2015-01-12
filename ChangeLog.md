@@ -1,3 +1,8 @@
+## 2015-01-12, Version 0.8.3
+
+ * Fix release logic (3y3)
+
+
 ## 2015-01-12, Version 0.8.2
 
  * Fix release.sh for Windows (3y3)
@@ -649,5 +654,7 @@
 ## v0.0.1
 
  * added to npm registry
+
+
 
 
