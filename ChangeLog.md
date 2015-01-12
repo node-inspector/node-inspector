@@ -1,3 +1,22 @@
+## 2015-01-12, Version 0.8.2
+
+ * Fix release.sh for Windows (3y3)
+
+ * Fix Console API getCallerFuncLocation (3y3)
+
+ * Wrong name ScriptManager.normalizeV8Name (3y3)
+
+ * Replace deprecated express sendfile with sendFile. (Timur Amirov)
+
+ * front-end: fix non-expanding tree-element (tobiasviehweger)
+
+ * Release script updated (3y3)
+
+ * Check Windows case insensitive app name (3y3)
+
+ * Avoid serialization of internal properties (3y3)
+
+
 ## 2014-12-08, Version 0.8.1
 
  * Update v8-profiler version (3y3)
@@ -630,3 +649,5 @@
 ## v0.0.1
 
  * added to npm registry
+
+
