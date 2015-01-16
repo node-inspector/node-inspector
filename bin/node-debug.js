@@ -5,7 +5,7 @@ var fork = require('child_process').fork;
 var fs = require('fs');
 var path = require('path');
 var util = require('util');
-var open = require('opener');
+var open = require('biased-opener');
 var whichSync = require('which').sync;
 var inspector = require('..');
 
@@ -194,7 +194,17 @@ function openBrowserAndPrintInfo() {
   );
 
   if (!config.options.cli) {
-    open(url);
+    // try to launch the URL in one of those browsers in the defined order
+    // (but if one of them is default browser, then it takes priority)
+    open(url, {
+        preferredBrowsers : ['chrome', 'chromium', 'opera']
+      }, function(err, okMsg) {
+        if (err) {
+           // unable to launch one of preferred browsers for some reason
+           console.log(err.message);
+           console.log('Please open the URL manually in Chrome/Chromium/Opera or similar browser');
+        }
+    });
   }
 
   console.log('Node Inspector is now available from %s', url);

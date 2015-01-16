@@ -30,7 +30,7 @@
     "strong-data-uri": "~0.1.0",
     "debug": "^1.0",
     "ws": "~0.4.31",
-    "opener": "^1.3.0",
+    "biased-opener": "~0.2.2",
     "yargs": "^1.2.1",
     "which": "^1.0.5",
     "v8-debug": "~0.3.0",
