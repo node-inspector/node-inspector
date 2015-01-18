@@ -131,6 +131,7 @@ describe('Config', function() {
       'f': null,
       'g': ['h', 1],
       'j': [],
+      'k': [/abc/gi],
       'camelKeyOption': 'a',
     };
 
@@ -144,6 +145,7 @@ describe('Config', function() {
       expect(serialisedOptions, 'filtered `undefined` value').to.not.contain('-e=undefined');
       expect(serialisedOptions, 'not filtered `null` value').to.contain('-f=null');
       expect(serialisedOptions, 'true serialised array format').to.contain('-g=h -g=1');
+      expect(serialisedOptions, 'true serialised regexp format').to.contain('-k=abc');
       expect(serialisedOptions, 'filtered empty array').to.not.contain('-j');
       expect(serialisedOptions, 'true serialised camelKey option').to.contain('--camel-key-option=a');
     });
