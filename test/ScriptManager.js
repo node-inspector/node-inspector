@@ -1,11 +1,12 @@
 var expect = require('chai').expect,
+    path = require('path'),
     EventEmitter = require('events').EventEmitter,
     ScriptManager = require('../lib/ScriptManager').ScriptManager;
 
 describe('ScriptManager', function() {
   var manager;
-  var realMainAppScript = 'folder/App.js';
-  var mainAppScript = 'folder/app.js';
+  var realMainAppScript = 'folder' + path.sep + 'App.js';
+  var mainAppScript = 'folder' + path.sep + 'app.js';
 
   beforeEach(function() {
     var frontendClientStub = {
