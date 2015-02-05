@@ -89,6 +89,11 @@ describe('Config', function() {
       expect(config.cli).to.equal(true);
     });
 
+    it('handles --sdir', function() {
+      var config = givenConfigFromArgs('--sdir');
+      expect(config.sdir).to.equal(true);
+    });
+
     function givenConfigFromArgs(argv) {
       return new Config([].concat(argv));
     }
@@ -112,6 +117,7 @@ describe('Config', function() {
       expect(config.debugBrk, 'default debug-brk value').to.equal(false);
       expect(config.nodejs.length, 'default nodejs array is empty').to.equal(0);
       expect(config.cli, 'default cli value').to.equal(false);
+      expect(config.sdir, 'default sdir value').to.equal(false);
     });
 
     it('have expected values in node-debug mode', function() {
