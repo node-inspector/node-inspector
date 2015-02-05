@@ -309,6 +309,7 @@ so that sources earlier in this list override later ones.
 | --stack-trace-limit |     | 50      | Number of stack frames to show on a breakpoint.
 | --ssl-key           |     |         | Path to file containing a valid SSL key.
 | --ssl-cert          |     |         | Path to file containing a valid SSL certificate.
+| --sdir              | -s  | false   | glob **/**/* to recurse one extra level of symlinked directories (slower)
 
 ### Usage examples
 

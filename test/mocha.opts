@@ -1,1 +1,2 @@
 --require chai
+--timeout 5000
