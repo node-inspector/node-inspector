@@ -2,3 +2,42 @@
 #tab-general, #general-tab-content { display: none; }
 #tab-overrides, #overrides-tab-content { display: none; }
 #tab-workspace, #workspace-tab-content { display: none; }
+
+/* support file uri links in profiler/console */
+a.profile-node-file, a.console-message-url {
+  pointer-events: none;
+  cursor: default;
+  color: black;
+  text-decoration: none;
+}
+
+span.profile-node-file {
+  margin-top: 1px;
+}
+
+#console-messages span.console-message-url {
+  color: rgb(33%, 33%, 33%) !important;
+  cursor: pointer !important;
+}
+
+#console-messages span.console-message-url:hover {
+  color: rgb(15%, 15%, 15%) !important;
+}
+
+span.profile-node-file {
+  color: rgb(33%, 33%, 33%) !important;
+  cursor: pointer !important;
+}
+
+span.profile-node-file:hover {
+  color: rgb(15%, 15%, 15%) !important;
+}
+
+.data-grid:focus tr.selected .profile-node-file {
+  color: white !important;
+  cursor: pointer !important;
+}
+
+.data-grid:focus tr.selected .profile-node-file:hover {
+  color: rgb(95%, 95%, 95%) !important;
+}

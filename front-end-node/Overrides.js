@@ -233,3 +233,61 @@ WebInspector.settings.lastActivePanel.addChangeListener(
   },
   null
 );
+
+//Override linkifyURLAsNode to enable URI navigation within the inspector (when supported)
+WebInspector.linkifyURLAsNode = function(url, linkText, classes, isExternal, tooltipText)
+{
+  if (!linkText)
+    linkText = url;
+  classes = (classes ? classes + " " : "");
+  classes += isExternal ? "webkit-html-external-link" : "webkit-html-resource-link";
+
+  var a = document.createElement("span");
+  a.className = classes;
+  if (typeof tooltipText === "undefined")
+    a.title = linkText;
+  else if (typeof tooltipText !== "string" || tooltipText.length)
+    a.title = tooltipText;
+  a.textContent = linkText.trimMiddle(WebInspector.Linkifier.MaxLengthForDisplayedURLs);
+  if (isExternal)
+    a.setAttribute("target", "_blank");
+
+  a.addEventListener('click',(function(){
+    var uri = this.textContent.replace(/\:\d*$/gi,"");
+    if (uri === "evalmachine.<anonymous>" || (/\[VM\]\sevalmachin…mous\>\s\(\d+\)/gi).test(uri) === true) {
+      return;
+    }
+    var projects = WebInspector.workspace.projects();
+    var results = [];
+    var result_sourcecode = null;
+    var result_line = 0;
+    projects.forEach(function(project) {
+      project
+        .uiSourceCodes()
+        .filter(function (uiSourceCode) {
+          if (uiSourceCode._url === "file://" + uri || uiSourceCode._name === uri) {
+            results.push(uiSourceCode);
+          }
+        });
+    });
+
+    if (results.length === 1) {
+      result_sourcecode = results[0];
+    } else {
+      results.forEach(function(uiSourceCode){
+        if (uri.indexOf(uiSourceCode._name) > -1){
+          result_sourcecode = uiSourceCode;
+        }
+      });
+    }
+
+    if (result_sourcecode != null) {
+      result_line = parseInt((/\d+$/gi).exec(a.textContent) || 1);
+      //TODO: support sourcemaps
+      WebInspector.showPanel("scripts")._showSourceLocation(result_sourcecode, result_line-1);
+    }
+    return false;
+  }).bind(a));
+
+  return a;
+}
