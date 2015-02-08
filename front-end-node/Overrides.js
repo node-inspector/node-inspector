@@ -64,7 +64,7 @@ WebInspector._panelDescriptors = function() {
 };
 
 // Patch the expression used as an initial value for a new watch.
-// DevTools' value "\n" breaks the debugger protocol.
+// DevTools' value '\n' breaks the debugger protocol.
 importScript('WatchExpressionsSidebarPane.js');
 WebInspector.WatchExpressionsSection.NewWatchExpression = '\'\'';
 
@@ -239,22 +239,23 @@ WebInspector.linkifyURLAsNode = function(url, linkText, classes, isExternal, too
 {
   if (!linkText)
     linkText = url;
-  classes = (classes ? classes + " " : "");
-  classes += isExternal ? "webkit-html-external-link" : "webkit-html-resource-link";
+  classes = (classes ? classes + ' ' : '');
+  classes += isExternal ? 'webkit-html-external-link' : 'webkit-html-resource-link';
 
-  var a = document.createElement("span");
+  var a = document.createElement('span');
   a.className = classes;
-  if (typeof tooltipText === "undefined")
+  if (typeof tooltipText === 'undefined')
     a.title = linkText;
-  else if (typeof tooltipText !== "string" || tooltipText.length)
+  else if (typeof tooltipText !== 'string' || tooltipText.length)
     a.title = tooltipText;
   a.textContent = linkText.trimMiddle(WebInspector.Linkifier.MaxLengthForDisplayedURLs);
   if (isExternal)
-    a.setAttribute("target", "_blank");
+    a.setAttribute('target', '_blank');
 
   a.addEventListener('click',(function(){
-    var uri = this.textContent.replace(/\:\d*$/gi,"");
-    if (uri === "evalmachine.<anonymous>" || (/\[VM\]\sevalmachin…mous\>\s\(\d+\)/gi).test(uri) === true) {
+    var uri = this.textContent.replace(/\:\d*$/gi,'');
+    if (uri === 'evalmachine.<anonymous>'
+      || (/\[VM\]\sevalmachin…mous\>\s\(\d+\)/gi).test(uri) === true) {
       return;
     }
     var projects = WebInspector.workspace.projects();
@@ -265,7 +266,7 @@ WebInspector.linkifyURLAsNode = function(url, linkText, classes, isExternal, too
       project
         .uiSourceCodes()
         .filter(function (uiSourceCode) {
-          if (uiSourceCode._url === "file://" + uri || uiSourceCode._name === uri) {
+          if (uiSourceCode._url === 'file://' + uri || uiSourceCode._name === uri) {
             results.push(uiSourceCode);
           }
         });
@@ -284,10 +285,10 @@ WebInspector.linkifyURLAsNode = function(url, linkText, classes, isExternal, too
     if (result_sourcecode != null) {
       result_line = parseInt((/\d+$/gi).exec(a.textContent) || 1);
       //TODO: support sourcemaps
-      WebInspector.showPanel("scripts")._showSourceLocation(result_sourcecode, result_line-1);
+      WebInspector.showPanel('scripts')._showSourceLocation(result_sourcecode, result_line-1);
     }
     return false;
   }).bind(a));
 
   return a;
-}
+};
