@@ -254,8 +254,8 @@ WebInspector.linkifyURLAsNode = function(url, linkText, classes, isExternal, too
 
   a.addEventListener('click',(function(){
     var uri = this.textContent.replace(/\:\d*$/gi,'');
-    if (uri === 'evalmachine.<anonymous>'
-      || (/\[VM\]\sevalmachin…mous\>\s\(\d+\)/gi).test(uri) === true) {
+    if (uri === 'evalmachine.<anonymous>' ||
+      (/\[VM\]\sevalmachin…mous\>\s\(\d+\)/gi).test(uri) === true) {
       return;
     }
     var projects = WebInspector.workspace.projects();
