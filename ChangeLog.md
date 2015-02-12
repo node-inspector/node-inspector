@@ -1,3 +1,24 @@
+## 2015-02-11, Version 0.9.0
+
+ * tools: set +x for git-changelog.sh (Miroslav Bajtoš)
+
+ * README note about preloading and symlinks (Jurgen Leschner)
+
+ * use glob v4.3.5 - NOTE disables symlink following (Jurgen Leschner)
+
+ * Enable latest Node v0.10 on Travis again (Miroslav Bajtoš)
+
+ * Make sure to open URL in a webkit browser (jakub-g)
+
+ * Fix: Breakpoints doesn't work for Windows (3y3)
+
+ * lib: Fix typo (Seth Krasnianski)
+
+ * Fix --hidden option for NODE_DEBUG mode (3y3)
+
+ * travis: fix Node versions (Miroslav Bajtoš)
+
+
 ## 2015-01-12, Version 0.8.3
 
  * Fix release logic (3y3)
