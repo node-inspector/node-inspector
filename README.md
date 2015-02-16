@@ -278,7 +278,7 @@ to manage configuration options.
 
 Places for configuration:
 * command line arguments (parsed by [yargs](https://github.com/chevex/yargs))
-* enviroment variables prefixed with ```node-inspector_```
+* environment variables prefixed with ```node-inspector_```
 * if you passed an option ```--config file``` then from that file
 * a local ```.node-inspectorrc``` or the first found looking in ```./ ../ ../../
  ../../../``` etc.
@@ -297,7 +297,7 @@ so that sources earlier in this list override later ones.
 | Option | Alias | Default | Description |
 | :------------------ | :-: | :-----: | :-------- |
 | **general**
-| --help              | -h  |         | Display information about avaible options.<br/>Use `--help -l` to display full usage info.<br/>Use `--help <option>` to display quick help on `option`.
+| --help              | -h  |         | Display information about available options.<br/>Use `--help -l` to display full usage info.<br/>Use `--help <option>` to display quick help on `option`.
 | --version           | -v  |         | Display Node Inspector's version.
 | --debug-port        | -d  | 5858    | Node/V8 debugger port.<br/>(`node --debug={port}`)
 | --web-host          |     | 0.0.0.0 | Host to listen on for Node Inspector's web interface.<br/>`node-debug` listens on `127.0.0.1` by default.
