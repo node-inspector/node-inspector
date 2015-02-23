@@ -83,8 +83,8 @@ describe('DebuggerClient', function() {
     launcher.startDebugger(
       mainScript,
       breakOnStart,
-      function(childProcess, debuggerClient) {
-        client = debuggerClient;
+      function(childProcess, session) {
+        client = session.debuggerClient;
         child = childProcess;
         done();
       }

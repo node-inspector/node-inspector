@@ -5,11 +5,8 @@ var expect = require('chai').expect,
     ProfilerAgent = require('../lib/ProfilerAgent').ProfilerAgent;
 
 var profilerAgent,
-    debuggerClient;
-var frontendClient = new EventEmitter();
-frontendClient.sendEvent = function(event, message) {
-  this.emit(event, message);
-};
+    debuggerClient,
+    frontendClient;
 
 describe('Profiler Agent', function() {
   before(initializeProfiler);
@@ -64,10 +61,15 @@ describe('Profiler Agent', function() {
 });
 
 function initializeProfiler(done) {
-  launcher.runPeriodicConsoleLog(true, function(childProcess, client) {
-    var injectorClient = new InjectorClient({}, client);
-    debuggerClient = client;
-    profilerAgent = new ProfilerAgent({}, debuggerClient, injectorClient, frontendClient);
+  launcher.runPeriodicConsoleLog(true, function(childProcess, session) {
+    debuggerClient = session.debuggerClient;
+    frontendClient = session.frontendClient;
+
+    var injectorClient = new InjectorClient({}, session);
+    session.injectorClient = injectorClient;
+
+    profilerAgent = new ProfilerAgent({}, session);
+
     injectorClient.once('inject', function(injected) {
       if (injected) done();
     });

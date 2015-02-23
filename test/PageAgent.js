@@ -15,14 +15,13 @@ describe('PageAgent', function() {
       }, done); }).to.not.throw();
     });
     
-    var debuggerClient, agent;
+    var agent;
 
     function setupDebugScenario(done) {
-      launcher.runOnBreakInFunction(function(client) {
-        debuggerClient = client;
-        var scriptManager = new ScriptManager({}, null, debuggerClient);
+      launcher.runOnBreakInFunction(function(session) {
+        session.scriptManager = new ScriptManager({}, session);
 
-        agent = new PageAgent({}, debuggerClient, scriptManager);
+        agent = new PageAgent({}, session);
         done();
       });
     }

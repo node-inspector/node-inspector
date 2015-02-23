@@ -10,9 +10,9 @@ describe('InjectorClient', function() {
       // increase the timeout for Travis CI
       this.timeout(5000);
 
-      launcher.runPeriodicConsoleLog(false, function(childProcess, client) {
-        debuggerClient = client;
-        injectorClient = new InjectorClient({inject: false}, debuggerClient);
+      launcher.runPeriodicConsoleLog(false, function(childProcess, session) {
+        debuggerClient = session.debuggerClient;
+        injectorClient = new InjectorClient({inject: false}, session);
         debuggerClient.once('break', function(obj) {
           breakedObject = obj;
           done();
@@ -50,9 +50,9 @@ describe('InjectorClient', function() {
       // increase the timeout for Travis CI
       this.timeout(5000);
 
-      launcher.runPeriodicConsoleLog(false, function(childProcess, client) {
-        debuggerClient = client;
-        injectorClient = new InjectorClient({}, debuggerClient);
+      launcher.runPeriodicConsoleLog(false, function(childProcess, session) {
+        debuggerClient = session.debuggerClient;
+        injectorClient = new InjectorClient({}, session);
         injectorClient._pause();
         debuggerClient.once('break', function(obj) {
           injectorClient._appPausedByInjector = injectorClient.containsInjectorMark(obj.invocationText);
@@ -110,9 +110,9 @@ describe('InjectorClient', function() {
       // increase the timeout for Travis CI
       this.timeout(5000);
 
-      launcher.runPeriodicConsoleLog(true, function(childProcess, client) {
-        debuggerClient = client;
-        injectorClient = new InjectorClient({}, debuggerClient);
+      launcher.runPeriodicConsoleLog(true, function(childProcess, session) {
+        debuggerClient = session.debuggerClient;
+        injectorClient = new InjectorClient({}, session);
         done();
       });
     }
@@ -134,9 +134,9 @@ describe('InjectorClient', function() {
       // increase the timeout for Travis CI
       this.timeout(5000);
 
-      launcher.runPeriodicConsoleLog(true, function(childProcess, client) {
-        debuggerClient = client;
-        injectorClient = new InjectorClient({}, debuggerClient);
+      launcher.runPeriodicConsoleLog(true, function(childProcess, session) {
+        debuggerClient = session.debuggerClient;
+        injectorClient = new InjectorClient({}, session);
         injectorClient.once('inject', function(injected) {
           if (injected) done();
         });
@@ -194,9 +194,9 @@ describe('InjectorClient', function() {
       // increase the timeout for Travis CI
       this.timeout(5000);
 
-      launcher.runPeriodicConsoleLog(true, function(childProcess, client) {
-        debuggerClient = client;
-        injectorClient = new InjectorClient({}, debuggerClient);
+      launcher.runPeriodicConsoleLog(true, function(childProcess, session) {
+        debuggerClient = session.debuggerClient;
+        injectorClient = new InjectorClient({}, session);
         injectorClient.once('inject', function(injected) {
           if (injected) done();
         });

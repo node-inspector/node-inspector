@@ -19,15 +19,15 @@ describe('FrontendCommandHandler', function() {
         var scriptToDebug = 'BreakInFunction.js'; // any script will work
         launcher.startDebugger(
           scriptToDebug,
-          function(childProcess, debuggerClient) {
-            cb(null, debuggerClient);
+          function(childProcess, session) {
+            cb(null, session);
           });
       },
 
-      function arrange(debuggerClient, cb) {
+      function arrange(session, cb) {
         this.wsmock = new WebSocketMock();
 
-        var handler = createFrontendCommandHandler(this.wsmock, debuggerClient);
+        var handler = createFrontendCommandHandler(this.wsmock, session);
         this.handler = handler;
         this.handleCommand = function(req) {
           handler.handleCommand(req);
@@ -67,27 +67,13 @@ describe('FrontendCommandHandler', function() {
     ], done);
   });
 
-  function createFrontendCommandHandler(wsclient, debuggerClient) {
-    var config = {
-      isHidden: function() { return false; }
-    };
+  function createFrontendCommandHandler(wsclient, session) {
+    var config = {inject: false};
+    session.frontendClient = new FrontendClient(wsclient);
+    session.injectorClient = new InjectorClient(config, session);
+    session.scriptManager = new ScriptManager(config, session);
+    session.breakEventHandler = {};
 
-    var injectorClient = new InjectorClient({inject: false}, debuggerClient);
-    var frontendClient = new FrontendClient(wsclient);
-
-    var scriptManager = new ScriptManager(
-      config.isHidden,
-      frontendClient,
-      debuggerClient);
-
-    var breakEventHandlerMock = {};
-
-    return new FrontendCommandHandler(
-      config,
-      frontendClient,
-      debuggerClient,
-      breakEventHandlerMock,
-      scriptManager,
-      injectorClient);
+    return new FrontendCommandHandler(config, session);
   }
 });

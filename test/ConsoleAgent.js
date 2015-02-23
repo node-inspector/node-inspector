@@ -9,15 +9,8 @@ var expect = require('chai').expect,
 var consoleAgent,
     consoleClient,
     childProcess,
-    debuggerClient;
-var frontendClient = new EventEmitter();
-frontendClient.sendEvent = function(event, message) {
-  this.emit(event, message);
-};
-frontendClient.sendLogToConsole = function(type, message) {
-  throw new Error(message);
-};
-
+    debuggerClient,
+    frontendClient;
 
 describe('ConsoleAgent', function() {
   before(initializeConsole);
@@ -148,14 +141,18 @@ describe('ConsoleClient', function() {
 });
 
 function initializeConsole(done) {
-  launcher.runCommandlet(true, function(child, client) {
+  launcher.runCommandlet(true, function(child, session) {
     childProcess = child;
-    debuggerClient = client;
-    var injectorClient = new InjectorClient({}, debuggerClient);
+    debuggerClient = session.debuggerClient;
+    frontendClient = session.frontendClient;
 
-    consoleClient = new ConsoleClient({}, debuggerClient, frontendClient);
+    var injectorClient = new InjectorClient({}, session);
+    session.injectorClient = injectorClient;
 
-    consoleAgent = new ConsoleAgent({}, debuggerClient, frontendClient, injectorClient, consoleClient);
+    consoleClient = new ConsoleClient({}, session);
+    session.consoleClient = consoleClient;
+
+    consoleAgent = new ConsoleAgent({}, session);
 
     injectorClient.once('inject', function(injected) {
       if (injected) debuggerClient.request('continue', null, done);

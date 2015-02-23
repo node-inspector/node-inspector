@@ -64,9 +64,9 @@ describe('DebuggerAgent', function() {
     var debuggerClient, agent;
 
     function setupDebugScenario(done) {
-      launcher.runOnBreakInFunction(function(client) {
-        debuggerClient = client;
-        agent = new DebuggerAgent({}, null, debuggerClient, null, null);
+      launcher.runOnBreakInFunction(function(session) {
+        debuggerClient = session.debuggerClient;
+        agent = new DebuggerAgent({}, session);
         done();
       });
     }
@@ -213,12 +213,11 @@ describe('DebuggerAgent', function() {
       );
     });
 
-    var debuggerClient, agent;
+    var agent;
 
     function setupDebugScenario(done) {
-      launcher.runOnBreakInFunction(function(client) {
-        debuggerClient = client;
-        agent = new DebuggerAgent({}, null, debuggerClient, null, null);
+      launcher.runOnBreakInFunction(function(session) {
+        agent = new DebuggerAgent({}, session);
         done();
       });
     }
@@ -232,20 +231,11 @@ describe('DebuggerAgent', function() {
         .to.not.throw();
     });
 
-    var debuggerClient, agent;
+    var agent;
 
     function setupDebugScenario(done) {
-      launcher.runOnBreakInFunction(function(client) {
-        debuggerClient = client;
-        var frontEndClientStub = {
-          sendEvent: function() {}
-        };
-        agent = new DebuggerAgent(
-          {},
-          frontEndClientStub,
-          debuggerClient,
-          null,  // BreakEventHandler
-          null); // ScripManager
+      launcher.runOnBreakInFunction(function(session) {
+        agent = new DebuggerAgent({}, session);
         done();
       });
     }
@@ -263,14 +253,12 @@ describe('DebuggerAgent', function() {
       }, done); }).to.not.throw();
     });
     
-    var debuggerClient, agent;
+    var agent;
 
     function setupDebugScenario(done) {
-      launcher.runOnBreakInFunction(function(client) {
-        debuggerClient = client;
-        var scriptManager = new ScriptManager({}, null, debuggerClient);
-
-        agent = new DebuggerAgent({}, null, debuggerClient, null, scriptManager);
+      launcher.runOnBreakInFunction(function(session) {
+        session.scriptManager = new ScriptManager({}, session);
+        agent = new DebuggerAgent({}, session);
         done();
       });
     }

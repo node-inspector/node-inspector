@@ -1,5 +1,6 @@
 var spawn = require('child_process').spawn,
   path = require('path'),
+  SessionStub = require('./SessionStub'),
   DebuggerClient = require('../../lib/DebuggerClient').DebuggerClient,
   stopDebuggerCallbacks = [];
 
@@ -14,6 +15,7 @@ function startDebugger(scriptPath, breakOnStart, done) {
     debugOption,
     child,
     debuggerClient,
+    session,
     ignoreErrors = false;
 
   debugOption = '--debug' + (breakOnStart ? '-brk=' : '=');
@@ -44,15 +46,19 @@ function startDebugger(scriptPath, breakOnStart, done) {
   stopDebuggerCallbacks.push(function stopDebugger() {
     ignoreErrors = true;
     debuggerClient.close();
+    session = null;
     child.kill();
   });
 
   function setupDebuggerClient() {
+    session = new SessionStub();
     debuggerClient = new DebuggerClient(debugPort);
+    session.debuggerClient = debuggerClient;
+
     debuggerClient.connect();
     debuggerClient.on('connect', function() {
       injectTestHelpers(debuggerClient);
-      done(child, debuggerClient);
+      done(child, session);
     });
     debuggerClient.on('error', function(e) {
       if (!ignoreErrors)
@@ -65,9 +71,9 @@ function startDebugger(scriptPath, breakOnStart, done) {
 
 function runOnBreakInFunction(test) {
   stopAllDebuggers();
-  startDebugger('BreakInFunction.js', function(childProcess, debuggerClient) {
-    debuggerClient.once('break', function() {
-      test(debuggerClient);
+  startDebugger('BreakInFunction.js', function(childProcess, session) {
+    session.debuggerClient.once('break', function() {
+      test(session);
     });
     childProcess.stdin.write('go!\n');
   });
@@ -76,13 +82,13 @@ function runOnBreakInFunction(test) {
 /** @param {function(DebuggerClient, string)} test */
 function runInspectObject(test) {
   stopAllDebuggers();
-  startDebugger('InspectObject.js', function(childProcess, debuggerClient) {
-    debuggerClient.once('break', function() {
-      debuggerClient.fetchObjectId(
-        debuggerClient,
+  startDebugger('InspectObject.js', function(childProcess, session) {
+    session.debuggerClient.once('break', function() {
+      session.debuggerClient.fetchObjectId(
+        session.debuggerClient,
         'inspectedObject',
         function(id) {
-          test(debuggerClient, id);
+          test(session, id);
         }
       );
     });
@@ -96,8 +102,8 @@ function runPeriodicConsoleLog(breakOnStart, test) {
   startDebugger(
     'PeriodicConsoleLog.js',
     breakOnStart,
-    function(childProcess, debuggerClient) {
-      test(childProcess, debuggerClient);
+    function(childProcess, session) {
+      test(childProcess, session);
     }
   );
 }
@@ -107,8 +113,8 @@ function runCommandlet(breakOnStart, test) {
   startDebugger(
     'Commandlet.js',
     breakOnStart,
-    function(childProcess, debuggerClient) {
-      test(childProcess, debuggerClient);
+    function(childProcess, session) {
+      test(childProcess, session);
     }
   );
 }

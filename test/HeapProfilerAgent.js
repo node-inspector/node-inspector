@@ -7,15 +7,8 @@ var expect = require('chai').expect,
 
 var heapProfilerAgent,
     heapProfilerClient,
-    debuggerClient;
-var frontendClient = new EventEmitter();
-frontendClient.sendEvent = function(event, message) {
-  this.emit(event, message);
-};
-frontendClient.sendLogToConsole = function(level, text) {
-  console[level](text);
-};
-frontendClient.off = frontendClient.removeListener;
+    debuggerClient,
+    frontendClient;
 
 describe('HeapProfiler Agent', function() {
   before(initializeProfiler);
@@ -114,16 +107,17 @@ describe('HeapProfilerClient', function() {
 });
 
 function initializeProfiler(done) {
-  launcher.runPeriodicConsoleLog(true, function(childProcess, client) {
-    var injectorClient = new InjectorClient({}, client);
-    debuggerClient = client;
-    heapProfilerClient = new HeapProfilerClient({}, debuggerClient);
-    heapProfilerAgent = new HeapProfilerAgent(
-      {},
-      debuggerClient,
-      injectorClient,
-      frontendClient,
-      heapProfilerClient);
+  launcher.runPeriodicConsoleLog(true, function(childProcess, session) {
+    debuggerClient = session.debuggerClient;
+    frontendClient = session.frontendClient;
+
+    var injectorClient = new InjectorClient({}, session);
+    session.injectorClient = injectorClient;
+
+    heapProfilerClient = new HeapProfilerClient({}, session);
+    session.heapProfilerClient = heapProfilerClient;
+
+    heapProfilerAgent = new HeapProfilerAgent({}, session);
 
     injectorClient.once('inject', function(injected) {
       if (injected) done();

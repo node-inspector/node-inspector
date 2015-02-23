@@ -74,8 +74,8 @@ describe('RuntimeAgent', function() {
 
   it('filter null __proto__', function(done) {
     /*'Object' objectId is 3. __proto__ of 'Object' is 'null'*/
-    launcher.runInspectObject(function(debuggerClient, inspectedObjectId) {
-      var agent = setupRuntimeAgent(debuggerClient);
+    launcher.runInspectObject(function(session, inspectedObjectId) {
+      var agent = setupRuntimeAgent(session);
       agent.getProperties(
         {
           objectId: 3,
@@ -99,8 +99,8 @@ describe('RuntimeAgent', function() {
   });
 
   it('returns object properties with metadata', function(done) {
-    launcher.runInspectObject(function(debuggerClient, inspectedObjectId) {
-      var agent = setupRuntimeAgent(debuggerClient);
+    launcher.runInspectObject(function(session, inspectedObjectId) {
+      var agent = setupRuntimeAgent(session);
       agent.getProperties(
         {
           objectId: inspectedObjectId,
@@ -138,8 +138,8 @@ describe('RuntimeAgent', function() {
   });
 
   it('returns empty result for accessorPropertiesOnly:true', function(done) {
-    launcher.runInspectObject(function(debuggerClient, inspectedObjectId) {
-      var agent = setupRuntimeAgent(debuggerClient);
+    launcher.runInspectObject(function(session, inspectedObjectId) {
+      var agent = setupRuntimeAgent(session);
       agent.getProperties(
         {
           objectId: inspectedObjectId,
@@ -157,8 +157,8 @@ describe('RuntimeAgent', function() {
   });
 
   it('returns __proto__ for ownProperties:true', function(done) {
-    launcher.runInspectObject(function(debuggerClient, inspectedObjectId) {
-      var agent = setupRuntimeAgent(debuggerClient);
+    launcher.runInspectObject(function(session, inspectedObjectId) {
+      var agent = setupRuntimeAgent(session);
       agent.getProperties(
         {
           objectId: inspectedObjectId,
@@ -194,8 +194,9 @@ describe('RuntimeAgent', function() {
   });
 
   it('calls function on an object to get completions', function(done) {
-    launcher.runOnBreakInFunction(function(debuggerClient) {
-      var agent = setupRuntimeAgent(debuggerClient);
+    launcher.runOnBreakInFunction(function(session) {
+      var debuggerClient = session.debuggerClient;
+      var agent = setupRuntimeAgent(session);
 
       debuggerClient.fetchObjectId(agent, 'console', function(consoleObjectId) {
         agent.callFunctionOn(
@@ -273,10 +274,10 @@ describe('RuntimeAgent', function() {
     var debuggerClient, inspectedObjectId, agent;
 
     function setupDebugScenario(done) {
-      launcher.runInspectObject(function(client, objectId) {
-        debuggerClient = client;
+      launcher.runInspectObject(function(session, objectId) {
+        debuggerClient = session.debuggerClient;
         inspectedObjectId = objectId;
-        agent = setupRuntimeAgent(debuggerClient);
+        agent = setupRuntimeAgent(session);
         done();
       });
     }
@@ -340,10 +341,10 @@ describe('RuntimeAgent', function() {
   });
 });
 
-function setupRuntimeAgent(debuggerClient) {
-  var consoleClient = new ConsoleClient({}, debuggerClient);
-  var heapProfilerClient = new HeapProfilerClient({}, debuggerClient);
-  return new RuntimeAgent({}, debuggerClient, {}, consoleClient, heapProfilerClient);
+function setupRuntimeAgent(session) {
+  session.consoleClient = new ConsoleClient({}, session);
+  session.heapProfilerClient = new HeapProfilerClient({}, session);
+  return new RuntimeAgent({}, session);
 }
 
 function convertPropertyArrayToLookup(array) {

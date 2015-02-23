@@ -6,8 +6,8 @@ describe('CallFramesProvider', function() {
   launcher.stopAllDebuggersAfterEachTest();
 
   it('gets stack trace', function(done) {
-    launcher.runOnBreakInFunction(function(debuggerClient) {
-      var provider = new CallFramesProvider({}, debuggerClient);
+    launcher.runOnBreakInFunction(function(session) {
+      var provider = new CallFramesProvider({}, session);
       provider.fetchCallFrames(function(error, callFrames) {
         if (error !== undefined && error !== null) {
           done(error);
@@ -62,8 +62,8 @@ describe('CallFramesProvider', function() {
   });
 
   it('retrieves specified number of stack traces when configured', function(done) {
-    launcher.runOnBreakInFunction(function(debuggerClient) {
-      var provider = new CallFramesProvider({stackTraceLimit: 1}, debuggerClient);
+    launcher.runOnBreakInFunction(function(session) {
+      var provider = new CallFramesProvider({stackTraceLimit: 1}, session);
       provider.fetchCallFrames(function(error, callFrames) {
         if (error !== undefined && error !== null) {
           done(error);

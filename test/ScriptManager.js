@@ -1,6 +1,6 @@
 var expect = require('chai').expect,
     path = require('path'),
-    EventEmitter = require('events').EventEmitter,
+    SessionStub = require('./helpers/SessionStub.js'),
     ScriptManager = require('../lib/ScriptManager').ScriptManager;
 
 describe('ScriptManager', function() {
@@ -9,11 +9,7 @@ describe('ScriptManager', function() {
   var mainAppScript = 'folder' + path.sep + 'app.js';
 
   beforeEach(function() {
-    var frontendClientStub = {
-      sendEvent: function() { }
-    };
-    var debuggerClientStub = new EventEmitter();
-    manager = new ScriptManager([], frontendClientStub, debuggerClientStub);
+    manager = new ScriptManager({}, new SessionStub());
     manager.realMainAppScript = realMainAppScript;
     manager.mainAppScript = mainAppScript;
   });
