@@ -1,3 +1,16 @@
+## 2015-02-24, Version 0.9.1
+
+ * Move gitter badge to right place (3y3)
+
+ * Added Gitter badge (The Gitter Badger)
+
+ * README: fix typos (Wendy Leung)
+
+ * Bump v8-debug to v0.4.2, v8-profiler to 5.2.4 (Jim Cummins)
+
+ * .travis.yml: drop 0.11, add 0.12 and io.js (Miroslav Bajtoš)
+
+
 ## 2015-02-11, Version 0.9.0
 
  * tools: set +x for git-changelog.sh (Miroslav Bajtoš)
@@ -675,6 +688,8 @@
 ## v0.0.1
 
  * added to npm registry
+
+
 
 
 
