@@ -270,12 +270,11 @@ an undocumented API function `process._debugProcess(pid)`:
 
 Another way is to start these three processes:
 
-    ```sh
+
     start "" /D"." node --debug-brk app.js
     start "" /D"." node-inspector &
     start chrome http://127.0.0.1:8080/debug?port=5858
-    ```
-    
+
 You can call these (each line is a command) from the command prompt or put all of them into a batch/or cmd file and then run that. In this example app.js is the applications entry point.
 
 
