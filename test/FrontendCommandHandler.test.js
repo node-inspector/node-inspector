@@ -10,21 +10,25 @@ var WebSocketMock = require('./helpers/wsmock');
 
 describe('FrontendCommandHandler', function() {
   after(launcher.stopAllDebuggers);
+  before(setupProcess);
 
+  var session;
+  
+  function setupProcess(done) {
+    var scriptToDebug = 'BreakInFunction.js'; // any script will work
+    launcher.startDebugger(
+      scriptToDebug,
+      function(childProcess, _session) {
+        session = _session;
+        done();
+      });
+  }
+  
   it('defers "scriptParsed" events until "Page.getResourceTree"', function(done) {
     var TREE_REQID = 10;
 
     async.waterfall([
-      function startDebugger(cb) {
-        var scriptToDebug = 'BreakInFunction.js'; // any script will work
-        launcher.startDebugger(
-          scriptToDebug,
-          function(childProcess, session) {
-            cb(null, session);
-          });
-      },
-
-      function arrange(session, cb) {
+      function arrange(cb) {
         this.wsmock = new WebSocketMock();
 
         var handler = createFrontendCommandHandler(this.wsmock, session);
