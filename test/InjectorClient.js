@@ -138,7 +138,7 @@ describe('InjectorClient', function() {
         debuggerClient = session.debuggerClient;
         injectorClient = new InjectorClient({}, session);
         injectorClient.once('inject', function(injected) {
-          if (injected) done();
+          if (injected) debuggerClient.request('continue', null, done);
         });
         injectorClient.once('error', function(error) {
           done(error);
@@ -162,7 +162,7 @@ describe('InjectorClient', function() {
               message: options.message + message
             });
 
-            return fn.apply(console, arguments);
+            return fn && fn.apply(console, arguments);
           };
         })(console.log);
 
@@ -198,7 +198,7 @@ describe('InjectorClient', function() {
         debuggerClient = session.debuggerClient;
         injectorClient = new InjectorClient({}, session);
         injectorClient.once('inject', function(injected) {
-          if (injected) done();
+          if (injected) debuggerClient.request('continue', null, done);
         });
         injectorClient.once('error', function(error) {
           done(error);

@@ -71,11 +71,10 @@ function initializeProfiler(done) {
     profilerAgent = new ProfilerAgent({}, session);
 
     injectorClient.once('inject', function(injected) {
-      if (injected) done();
+      if (injected) debuggerClient.request('continue', null, done);
     });
-    injectorClient.once('error', function(error) {
-      done(error);
-    });
+    injectorClient.once('error', done);
+
     injectorClient.inject();
   });
 }

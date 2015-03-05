@@ -120,11 +120,10 @@ function initializeProfiler(done) {
     heapProfilerAgent = new HeapProfilerAgent({}, session);
 
     injectorClient.once('inject', function(injected) {
-      if (injected) done();
+      if (injected) debuggerClient.request('continue', null, done);
     });
-    injectorClient.once('error', function(error) {
-      done(error);
-    });
+    injectorClient.once('error', done);
+
     injectorClient.inject();
   });
 }
