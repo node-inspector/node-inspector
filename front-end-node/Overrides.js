@@ -233,3 +233,45 @@ WebInspector.settings.lastActivePanel.addChangeListener(
   },
   null
 );
+
+// Add ECMAScript 6/7 support to console
+if(WebInspector.queryParamsObject["babel"] != null && WebInspector.queryParamsObject["babel"] !== "5"){
+    importScript('node/Babel/acorn_csp.js');
+    importScript('node/Babel/babel.js');
+    importScript('node/Babel/wrapper.js');
+
+    WebInspector.ConsoleView.prototype._appendCommand = function(text, newPromptText, useCommandLineAPI, showResultOnly)
+    {
+        if (!showResultOnly) {
+            var commandMessage = new WebInspector.ConsoleCommand(text);
+            WebInspector.console.addMessage(commandMessage);
+        }
+        this.prompt.text = newPromptText;
+
+        /**
+         * @param {WebInspector.RemoteObject} result
+         * @param {boolean} wasThrown
+         * @param {RuntimeAgent.RemoteObject=} valueResult
+         */
+        function printResult(result, wasThrown, valueResult)
+        {
+            if (!result)
+                return;
+
+            if (!showResultOnly) {
+                this.prompt.pushHistoryItem(text);
+                WebInspector.settings.consoleHistory.set(this.prompt.historyData.slice(-30));
+            }
+
+            this._printResult(result, wasThrown, commandMessage);
+        }
+
+        var code = text;
+        if (WebInspector.queryParamsObject["babel"] != null && WebInspector.queryParamsObject["babel"] !== "5"){
+          code = esnext.transform(text);
+        }
+        WebInspector.runtimeModel.evaluate(code, "console", useCommandLineAPI, false, false, true, printResult.bind(this));
+
+        WebInspector.userMetrics.ConsoleEvaluated.record();
+    };
+}
