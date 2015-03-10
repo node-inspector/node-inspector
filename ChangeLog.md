@@ -1,3 +1,10 @@
+## 2015-03-10, Version 0.9.2
+
+ * Bump express min version to 4.8.0 (Alejandro Larre)
+
+ * Documentation on contributing (jakub-g)
+
+
 ## 2015-02-24, Version 0.9.1
 
  * Move gitter badge to right place (3y3)
