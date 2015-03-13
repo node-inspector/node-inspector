@@ -93,11 +93,9 @@ Node Inspector supports almost all of the debugging features of DevTools, includ
 
 ## Known Issues
 
-* Automatic preloading of js files to set breakpoints will not work in
-  symlinked directories. This is because the [glob](https://github.com/isaacs/node-glob) module doesn't explore
-  symlinked directories, and it doesn't return "real" paths ([issue](https://github.com/isaacs/node-glob/issues/142).)
-  The workaround is to allow the debugger to load those modules at runtime and then set the breakpoints.
-  Not following symlinks does avoid long startup delays when there are symlink cycles.
+* If there are symlink cycles then the [glob](https://github.com/isaacs/node-glob)
+  module may take a long time to return results causing long delays at startup.
+  The workaround is to disable preloading of scripts with `--no-preload`.
 * Be careful about viewing the contents of Buffer objects,
   each byte is displayed as an individual array element;
   for most Buffers this will take too long to render.

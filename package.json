@@ -25,7 +25,7 @@
     "express": "^4.8.0",
     "serve-favicon": "^2.1.1",
     "async": "~0.9",
-    "glob": "^4.3.5",
+    "glob": "^5.0.5",
     "rc": "~0.5.0",
     "strong-data-uri": "~0.1.0",
     "debug": "^1.0",
