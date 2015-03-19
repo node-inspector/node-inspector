@@ -29,14 +29,6 @@ describe('ConsoleAgent', function() {
     childProcess.stdin.write('log simple text\n');
   });
 
-  it('should update repeat counter on repeated message', function(done) {
-    frontendClient.once('Console.messageRepeatCountUpdated', function(message) {
-      expect(message.count).to.equal(1);
-      done();
-    });
-    childProcess.stdin.write('log simple text\n');
-  });
-
   it('should translate objects', function(done) {
     frontendClient.once('Console.messageAdded', function(message) {
       expect(message.message.parameters).to.deep.equal([{
