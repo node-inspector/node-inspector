@@ -4,6 +4,7 @@
     { "name": "node/sources", "type": "autostart" },
     { "name": "node/console", "type": "autostart" },
     { "name": "node/main", "type": "autostart" },
+    { "name": "node/ui", "type": "autostart" },
     { "name": "platform", "type": "autostart" },
     { "name": "main", "type": "autostart" },
     { "name": "components", "type": "autostart" },

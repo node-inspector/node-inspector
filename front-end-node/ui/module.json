@@ -1,0 +1,11 @@
+{
+    "dependencies": [
+    	"ui"
+    ],
+    "scripts": [
+        "UIOverrides.js"
+    ],
+    "stylesheets": [
+    	"StatusBarOverrides.css"
+    ]
+}
