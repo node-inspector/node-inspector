@@ -15,7 +15,7 @@ function buildInspectorUrl(inspectorHost, inspectorPort, debugPort, fileToShow, 
     protocol: isHttps ? 'https' : 'http',
     hostname: host,
     port: inspectorPort,
-    pathname: '/debug',
+    pathname: '/',
     search: '?ws=' + host + ':' + inspectorPort + '&port=' + debugPort
   };
 
