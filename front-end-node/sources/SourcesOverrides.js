@@ -39,7 +39,7 @@ WebInspector.SourcesOverrides.prototype = {
   _overrideWatchExpression: function() {
     // Patch the expression used as an initial value for a new watch.
     // DevTools' value "\n" breaks the debugger protocol.
-    WebInspector.WatchExpressionsSection.NewWatchExpression = '';
+    WebInspector.WatchExpressionsSection.NewWatchExpression = ' ';
   }
 };
 
