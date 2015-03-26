@@ -4,5 +4,8 @@
     ],
     "scripts": [
         "SourcesOverrides.js"
+    ],
+    "stylesheets": [
+    	"SourcesPanelOverrides.css"
     ]
 }

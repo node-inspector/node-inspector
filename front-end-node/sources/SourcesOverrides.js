@@ -4,6 +4,8 @@ WebInspector.SourcesOverrides = function() {
   this._chromeSpecificsAreHidden = false;
   this._hideChromeSpecifics();
   this._overrideWatchExpression();
+  this._hideContentsScript();
+  this._disableAddFolderItem();
 };
 
 WebInspector.SourcesOverrides.prototype = {
@@ -40,6 +42,20 @@ WebInspector.SourcesOverrides.prototype = {
     // Patch the expression used as an initial value for a new watch.
     // DevTools' value "\n" breaks the debugger protocol.
     WebInspector.WatchExpressionsSection.NewWatchExpression = '';
+  },
+  
+  _hideContentsScript: function(){
+    sourcespanel_proto = WebInspector.SourcesPanel.prototype;
+    sourcespanel_proto.oldWasShown = sourcespanel_proto.wasShown;
+    sourcespanel_proto.wasShown = function(){
+      this.registerRequiredCSS('node/sources/SourcesPanelOverrides.css');
+      sourcespanel_proto.wasShown = sourcespanel_proto.oldWasShown;
+      sourcespanel_proto.oldWasShown.call(this);
+    };
+  },
+  
+  _disableAddFolderItem: function(){
+    WebInspector.NavigatorView.prototype._appendAddFolderItem = function(){};
   }
 };
 
