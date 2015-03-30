@@ -9,6 +9,8 @@ WebInspector.NodeInspectorOverrides = function() {
   this._overrideUIStrings();
 
   this._setWorkerTitle();
+  
+  this._mergeConnectionQueryParams();
 
   this._openMainScriptOnStartup();
 };
@@ -58,6 +60,18 @@ WebInspector.NodeInspectorOverrides.prototype = {
       showMainAppFile,
       null
     );
+  },
+  
+  _mergeConnectionQueryParams: function() {
+    var params = Runtime._queryParamsObject;
+    if (params['ws'] && params['port']) {
+      if (params['ws'].indexOf('?') === -1) {
+        params['ws'] += '?';
+      } else {
+        params['ws'] += '&';
+      }
+      params['ws'] += 'port=' + params['port'];
+    }
   }
 };
 
