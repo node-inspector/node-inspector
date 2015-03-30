@@ -1,3 +1,4 @@
+/*jshint debug:true */
 var commands = {
   'log simple text': function() {
     console.log('test');
@@ -10,6 +11,9 @@ var commands = {
   },
   'log console': function() {
     console.log(console);
+  },
+  'pause': function() {
+    debugger;
   }
 };
 
