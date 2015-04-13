@@ -1,5 +1,22 @@
 # Node Inspector
 
+### Node Inspector is [currently broken][break] on Node ≥ v0.11.14!
+> Run `node-inspector` itself on an earlier version of node to unblock yourself, for the moment:
+>
+> - [v0.11.13](http://nodejs.org/dist/v0.11.13/) (last compatible ‘unstable’)
+> - [v0.10.38](http://nodejs.org/dist/v0.10.38/) (last compatible ‘stable’)
+>
+> Node v0.10.38 will give you the profiler 'partial support' warning which you can ignore if you do not use the profiler. Use v0.11.13 as the warning suggests if you need the profiler.
+>
+> This holdover is especially easy with [`nvm`][nvm]:
+>
+>     nvm install v0.11.13 && nvm install v0.10.38
+>     alias inspector-11="nvm run v0.11.13 `which node-inspector`"
+>     alias inspector-10="nvm run v0.10.38 `which node-inspector`"
+
+[break]: <https://github.com/node-inspector/node-inspector/issues/534#issuecomment-85689039>
+[nvm]: <https://github.com/creationix/nvm#readme>
+
 [![Build Status](https://travis-ci.org/node-inspector/node-inspector.png?branch=master)](https://travis-ci.org/node-inspector/node-inspector)
 [![NPM version](https://badge.fury.io/js/node-inspector.png)](http://badge.fury.io/js/node-inspector)
 [![Bountysource](https://www.bountysource.com/badge/tracker?tracker_id=195817)](https://www.bountysource.com/trackers/195817-node-inspector?utm_source=195817&utm_medium=shield&utm_campaign=TRACKER_BADGE)
