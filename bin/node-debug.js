@@ -190,7 +190,10 @@ function openBrowserAndPrintInfo() {
   var url = inspector.buildInspectorUrl(
     config.inspector.host,
     config.inspector.port,
-    config.subproc.debugPort
+    config.subproc.debugPort,
+    undefined,
+    undefined,
+    true
   );
 
   if (!config.options.cli) {
