@@ -45,13 +45,17 @@ WebInspector.SourcesOverrides.prototype = {
   },
   
   _hideContentsScript: function(){
-    sourcespanel_proto = WebInspector.SourcesPanel.prototype;
-    sourcespanel_proto.oldWasShown = sourcespanel_proto.wasShown;
-    sourcespanel_proto.wasShown = function(){
-      this.registerRequiredCSS('node/sources/SourcesPanelOverrides.css');
-      sourcespanel_proto.wasShown = sourcespanel_proto.oldWasShown;
-      sourcespanel_proto.oldWasShown.call(this);
-    };
+    if (WebInspector.SourcesPanel._instanceObject) {
+      WebInspector.SourcesPanel._instanceObject.registerRequiredCSS('node/sources/SourcesPanelOverrides.css');
+    } else {
+      sourcespanel_proto = WebInspector.SourcesPanel.prototype;
+      sourcespanel_proto.oldWasShown = sourcespanel_proto.wasShown;
+      sourcespanel_proto.wasShown = function(){
+        this.registerRequiredCSS('node/sources/SourcesPanelOverrides.css');
+        sourcespanel_proto.wasShown = sourcespanel_proto.oldWasShown;
+        sourcespanel_proto.oldWasShown.call(this);
+      };
+    }
   },
   
   _disableAddFolderItem: function(){
