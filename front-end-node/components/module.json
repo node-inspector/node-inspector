@@ -1,11 +1,11 @@
 {
     "dependencies": [
-        "sources"
+    	"components"
     ],
     "scripts": [
-        "SourcesOverrides.js"
+        "ComponentsOverrides.js"
     ],
     "stylesheets": [
-    	"SourcesPanelOverrides.css"
+    	"ComponentsOverrides.css"
     ]
 }
