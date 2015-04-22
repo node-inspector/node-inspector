@@ -159,6 +159,6 @@ function initializeConsole(done) {
     });
     injectorClient.once('error', done);
 
-    consoleAgent.enable({}, injectorClient.inject.bind(injectorClient));
+    injectorClient.inject();
   });
 }
