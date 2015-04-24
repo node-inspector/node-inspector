@@ -1,3 +1,80 @@
+## 2015-04-24, Version 0.10.0
+
+ * Readme cleanup. (3y3)
+
+ * Implemented "Save" for CPU and Heap profiles. (marco.minetti)
+
+ * Fixed console test (3y3)
+
+ * Fixed debug port not read from URI. (marco.minetti)
+
+ * Fixed new watcher expression input. (Marco Minetti)
+
+ * Fix console in debug-brk mode (3y3)
+
+ * Add tests for BreakEventHandler (3y3)
+
+ * Cache events from app (3y3)
+
+ * Decrease time for FrontendCommandHandler test (3y3)
+
+ * Fix tests for 0.12 (3y3)
+
+ * Passing `session` object everywhere (3y3)
+
+ * Fix console messageRepeatCounter (3y3)
+
+ * Deprecate unuseful front-end changes (3y3)
+
+ * Fix HeapProfilerAgent relative to new protocol.json (3y3)
+
+ * Fix ProfilerAgent relative to new protocol.json (3y3)
+
+ * Reload frontend on detach (3y3)
+
+ * Allow to save modified files (3y3)
+
+ * Disable unusable tabs (3y3)
+
+ * Added PageAgent canEmulate and canScreencast callbacks (3y3)
+
+ * Extend noop commands list (3y3)
+
+ * Send page context to frontend (3y3)
+
+ * Override watch expression (3y3)
+
+ * Replace `(no domain)` string to `(core modules)` (3y3)
+
+ * Replace worker title to '' (3y3)
+
+ * Replace window title to `Node Inspector` (3y3)
+
+ * Override WebInspector.UIString (3y3)
+
+ * Open main script on startup (3y3)
+
+ * Extend protocol by Console.showConsole (3y3)
+
+ * Hide sources chrome specifics (3y3)
+
+ * Remove unusable tabs from settings screen (3y3)
+
+ * Unregister shortcuts (3y3)
+
+ * Use default web socket to connect to inspector backend (3y3)
+
+ * Update tools/generate-commands algorithm (3y3)
+
+ * Frontend update: fetched from 2234 (3y3)
+
+ * Disable debug conn. managment by Debugger Agent (3y3)
+
+ * README: Add note regarding breaking bug (see: #534) (ELLIOTTCABLE)
+
+ * Fixed console warning for profiler/node compatibility. (Marco Minetti)
+
+
 ## 2015-03-10, Version 0.9.2
 
  * Bump express min version to 4.8.0 (Alejandro Larre)
@@ -695,6 +772,8 @@
 ## v0.0.1
 
  * added to npm registry
+
+
 
 
 
