@@ -6,27 +6,6 @@
 
 [![Join the chat at https://gitter.im/node-inspector/node-inspector](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/node-inspector/node-inspector?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Node Inspector is [currently broken][break] on Node ≥ v0.11.14!
-
-Run `node-inspector` itself on an earlier version of node to unblock yourself,
-for the moment:
-
- - [v0.11.13](http://nodejs.org/dist/v0.11.13/) (last compatible ‘unstable’)
- - [v0.10.38](http://nodejs.org/dist/v0.10.38/) (last compatible ‘stable’)
-
-Node v0.10.38 will give you the profiler 'partial support' warning which you
-can ignore if you do not use the profiler. Use v0.11.13 as the warning
-suggests if you need the profiler.
-
-This holdover is especially easy with [`nvm`][nvm]:
-
-    nvm install v0.11.13 && nvm install v0.10.38
-    alias inspector-11="nvm run v0.11.13 `which node-inspector`"
-    alias inspector-10="nvm run v0.10.38 `which node-inspector`"
-
-[break]: <https://github.com/node-inspector/node-inspector/issues/534#issuecomment-85689039>
-[nvm]: <https://github.com/creationix/nvm#readme>
-
 ## Overview
 
 Node Inspector is a debugger interface for Node.js applications that uses the
