@@ -272,7 +272,7 @@ Open http://127.0.0.1:8080/debug?port=5858 in the Chrome browser.
 
 ## Configuration
 
-Both `node-inspector` and `node-debug` use [rc](https://npmjs.org/package/rc) module 
+Both `node-inspector` and `node-debug` use [rc](https://npmjs.org/package/rc) module
 to manage configuration options.
 
 Places for configuration:
@@ -339,7 +339,7 @@ $ node-debug -p 5859 app
 Pass `--web-host=127.0.0.2` to node-inspector. Start node-inspector to listen on `127.0.0.2`:
 ```
 $ node-debug --web-host 127.0.0.2 app
-``` 
+```
 Pass `--option=value` to debugging process:
 ```
 $ node-debug app --option value
