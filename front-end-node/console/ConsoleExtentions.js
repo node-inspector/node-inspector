@@ -9,6 +9,7 @@ WebInspector.ConsoleViewEventDispatcher = {
 
 WebInspector.ConsoleExtensions = function() {
   this._extendConsoleDispatcher();
+  this._overrideFormattedMessage();
 };
 
 WebInspector.ConsoleExtensions.prototype = {
@@ -16,6 +17,18 @@ WebInspector.ConsoleExtensions.prototype = {
     WebInspector.ConsoleDispatcher.prototype.showConsole = function() {
       InspectorFrontendHost.events.dispatchEventToListeners(
         InspectorFrontendHostAPI.Events.ShowConsole, WebInspector.inspectorView);
+    };
+  },
+  
+  _overrideFormattedMessage: function() {
+    WebInspector.ConsoleViewMessage.prototype.formattedMessage = function() {
+        if (!this._formattedMessage) {
+            this._formatMessage();
+            WebInspector.ConsoleViewEventDispatcher.dispatchEventToListeners(
+              WebInspector.ConsoleViewEventDispatcher.Events.MessageFormatted,
+              this._formattedMessage);
+        }
+        return this._formattedMessage;
     };
   }
 };
