@@ -1,5 +1,12 @@
-/*jshint browser:true, nonew:false*/
+/*jshint browser:true, nonew:false, proto:true*/
 /*global WebInspector:true, InspectorFrontendHost:true, InspectorFrontendHostAPI:true*/
+WebInspector.ConsoleViewEventDispatcher = {
+  Events: {
+    MessageFormatted: 'MessageFormatted'
+  },
+  __proto__: WebInspector.Object.prototype
+};
+
 WebInspector.ConsoleExtensions = function() {
   this._extendConsoleDispatcher();
 };
