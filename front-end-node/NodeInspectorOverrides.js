@@ -1,5 +1,5 @@
 /*jshint browser:true, nonew:false*/
-/*global WebInspector, Runtime, InspectorFrontendHost*/
+/*global WebInspector, Runtime, InspectorFrontendHost, InspectorBackendClass*/
 WebInspector.NodeInspectorOverrides = function() {
   this._overridenStrings = {
     'Developer Tools - %s': 'Node Inspector - %s',
@@ -7,9 +7,10 @@ WebInspector.NodeInspectorOverrides = function() {
   };
   this._overrideMainScriptType();
   this._overrideUIStrings();
+  this._overrideWebSocketCreate();
 
   this._setWorkerTitle();
-  
+
   this._mergeConnectionQueryParams();
 
   this._openMainScriptOnStartup();
@@ -42,6 +43,20 @@ WebInspector.NodeInspectorOverrides.prototype = {
     };
   },
 
+  _overrideWebSocketCreate: function() {
+    InspectorBackendClass.WebSocketConnection.origCreate =
+      InspectorBackendClass.WebSocketConnection.Create;
+
+    InspectorBackendClass.WebSocketConnection.Create = function(url, onConnectionReady) {
+      var args = Array.prototype.slice.call(arguments);
+      // If front-end is loaded via HTTPS, WebSocket protocol needs to be
+      // changed to WSS. Otherwise the browser will block the connection.
+      var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      args[0] = url.replace(/^ws:/, protocol);
+      this.origCreate.apply(this, args);
+    };
+  },
+
   _setWorkerTitle: function() {
     // Front-end uses `eval location.href` to get url of inspected page
     // This does not work in node.js from obvious reasons, and cause
@@ -61,7 +76,7 @@ WebInspector.NodeInspectorOverrides.prototype = {
       null
     );
   },
-  
+
   _mergeConnectionQueryParams: function() {
     var params = Runtime._queryParamsObject;
     if (params['ws'] && params['port']) {
