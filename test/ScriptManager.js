@@ -26,6 +26,41 @@ describe('ScriptManager', function() {
     });
   });
 
+  describe('resolveScriptById()', function() {
+    it('returns stored source', function(done) {
+      manager._sources['id'] = 'a-source';
+      manager.resolveScriptById('id', function(err, result) {
+        expect(err).to.equal(null);
+        expect(result).to.equal('a-source');
+        done();
+      });
+    });
+
+    it('requires script from app for unknown id', function(done) {
+      manager._debuggerClient.request = function(command, attributes, cb) {
+        if (command == 'scripts' && attributes.filter == 'unknown-id') {
+          cb(null, [{
+            id: 3,
+            name:'required-id',
+            lineOffset: 1,
+            columnOffset: 1
+          }]);
+        }
+      };
+
+      manager.resolveScriptById('unknown-id', function(err, result) {
+        expect(err).to.equal(null);
+        expect(result).to.deep.equal({
+          scriptId: '3',
+          url: 'required-id',
+          startLine: 1,
+          startColumn: 1
+        });
+        done();
+      });
+    });
+  });
+
   describe('reset()', function() {
     it('removes all stored scripts', function() {
       manager._sources['id'] = 'a-source';
