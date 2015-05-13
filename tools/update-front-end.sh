@@ -27,8 +27,5 @@ cp -r blink-devtools/front_end/* front-end
 find front-end -name '.svn' -type d -exec rm -rf {} \; > /dev/null
 cp blink-devtools/protocol.json tools
 
-echo "Generating front-end/InspectorBackendCommands.js"
-node ./tools/generate-commands.js
-
 echo "Done."
 rm -rf blink-devtools
