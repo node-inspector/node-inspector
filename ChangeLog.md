@@ -1,3 +1,26 @@
+## 2015-05-13, Version 0.10.1
+
+ * Bump dependencies (3y3)
+
+ * Bump FrontendCommandHandler test timeout (3y3)
+
+ * Try resolve script source on `debug` event (3y3)
+
+ * More asynchronous Injector break handling (3y3)
+
+ * Process `break` event in async mode (3y3)
+
+ * Deprecate event caching in BreakEventHandler (3y3)
+
+ * Use `wss:` WebSocket protocol if front-end is using SSL (Adam Biggs)
+
+ * Small fix: redirection in debug-server (3y3)
+
+ * README: remove traling whitespace (Miroslav Bajtoš)
+
+ * ScriptFileStorage: follow symlinks, get realpaths (Jurgen Leschner)
+
+
 ## 2015-04-24, Version 0.10.0
 
  * Readme cleanup. (3y3)
@@ -772,6 +795,8 @@
 ## v0.0.1
 
  * added to npm registry
+
+
 
 
 
