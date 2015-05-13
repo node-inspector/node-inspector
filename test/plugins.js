@@ -1,5 +1,7 @@
 var expect = require('chai').expect,
     plugins = require('../lib/plugins'),
+    PluginError = plugins.PluginError,
+    ProtocolJson = plugins.ProtocolJson,
     InspectorJson = plugins.InspectorJson;
 
 function findEq(collection, option, value) {
@@ -16,6 +18,29 @@ function addCommonPlugin() {
   var manifest = {
     name: 'test-plugin',
     type: 'autostart'
+  };
+  plugins.validateManifest(manifest);
+  plugins.list.push(manifest);
+
+  return manifest;
+}
+
+function addPluginWithProtocol() {
+   var manifest = {
+    name: 'test-plugin',
+    type: 'autostart',
+    protocol: {
+      domains: [
+        {
+          domain: 'test-domain',
+          commands: [
+            {
+              'name': 'test-command'
+            }
+          ]
+        }
+      ]
+    }
   };
   plugins.validateManifest(manifest);
   plugins.list.push(manifest);
@@ -75,6 +100,105 @@ describe('Plugins', function() {
         name: 'plugins/' + manifest.name,
         type: 'autostart'
       });
+    });
+  });
+  
+  describe('ProtocolJson', function() {
+    beforeEach(clearPlugins);
+
+    it('works without plugins if `config.plugins` disabled', function() {
+      var manifest = addPluginWithProtocol();
+      var protocolJson = new ProtocolJson({ plugins: false });
+      var targetName = manifest.protocol.domains[0].domain;
+
+      expect(findEq(protocolJson._domains, 'domain', targetName)).to.equal(undefined);
+    });
+
+    it('should merge plugins if `config.plugins` enabled', function() {
+      var manifest = addPluginWithProtocol();
+      var protocolJson = new ProtocolJson({ plugins: true });
+      var targetName = manifest.protocol.domains[0].domain;
+
+      expect(findEq(protocolJson._domains, 'domain', targetName)).to.deep.equal({
+        domain: 'test-domain',
+        commands: [
+          {
+            'name': 'test-command'
+          }
+        ]
+      });
+    });
+
+    it('should resolve plugins domain conflict', function() {
+      var manifest = addPluginWithProtocol();
+      var manifest_conflict = {
+        name: 'test-plugin-conflict',
+        type: 'autostart',
+        protocol: {
+          domains: [
+            {
+              domain: 'test-domain',
+              commands: [
+                {
+                  'name': 'test-command-no-conflict'
+                }
+              ]
+            }
+          ]
+        }
+      };
+      plugins.validateManifest(manifest_conflict);
+      plugins.list.push(manifest_conflict);
+      
+      var protocolJson = new ProtocolJson({ plugins: true });
+      var targetName = manifest.protocol.domains[0].domain;
+
+      expect(findEq(protocolJson._domains, 'domain', targetName)).to.deep.equal({
+        domain: 'test-domain',
+        commands: [
+          {
+            'name': 'test-command'
+          },
+          {
+            'name': 'test-command-no-conflict'
+          }
+        ]
+      });
+    });
+
+    it('should throw on plugins command conflict', function() {
+      var manifest = addPluginWithProtocol();
+      var manifest_conflict = {
+        name: 'test-plugin-conflict',
+        type: 'autostart',
+        protocol: {
+          domains: [
+            {
+              domain: 'test-domain',
+              commands: [
+                {
+                  'name': 'test-command'
+                }
+              ]
+            }
+          ]
+        }
+      };
+      plugins.validateManifest(manifest_conflict);
+      plugins.list.push(manifest_conflict);
+
+      expect(function() { return new ProtocolJson({ plugins: true }); }).to.throw(PluginError);
+    });
+
+    it('should correctly stringify itself', function() {
+      var manifest = addPluginWithProtocol();
+      var targetDomain = manifest.protocol.domains[0];
+      var targetName = targetDomain.domain;
+      var protocolJson = new ProtocolJson({ plugins: true });
+      var json = JSON.stringify(protocolJson),
+          object = JSON.parse(json);
+
+      expect(findEq(object.domains, 'domain', targetName)).to.deep.equal(targetDomain);
     });
   });
 });
