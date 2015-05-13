@@ -25,6 +25,8 @@ describe('FrontendCommandHandler', function() {
   }
   
   it('defers "scriptParsed" events until "Page.getResourceTree"', function(done) {
+    this.timeout(5000);
+
     var TREE_REQID = 10;
 
     async.waterfall([
