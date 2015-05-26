@@ -4,6 +4,7 @@ WebInspector.MainOverrides = function() {
   this._unregisterShortcuts();
   this._allowToSaveModifiedFiles();
   this._reloadOnDetach();
+  this._exposeSourceMaps();
 };
 
 WebInspector.MainOverrides.prototype = {
@@ -35,6 +36,18 @@ WebInspector.MainOverrides.prototype = {
       setTimeout(function () {
         location.reload();
       }, 400);
+    };
+  },
+
+  _exposeSourceMaps: function() {
+    var oldAddScript = WebInspector.CompilerScriptMapping.prototype.addScript;
+    WebInspector.CompilerScriptMapping.prototype.addScript = function(script) {
+      if (script._target._sourceMapForScriptId == null) {
+        script._target._sourceMapForScriptId = this._sourceMapForScriptId;
+        script._target._scriptForSourceMap = this._scriptForSourceMap;
+        script._target._sourceMapForURL = this._sourceMapForURL;
+      }
+      oldAddScript.apply(this, arguments);
     };
   },
 

@@ -14,6 +14,8 @@ WebInspector.NodeInspectorOverrides = function() {
   this._mergeConnectionQueryParams();
 
   this._openMainScriptOnStartup();
+
+  this._enableDebuggerUINotifications();
 };
 
 WebInspector.NodeInspectorOverrides.prototype = {
@@ -86,6 +88,121 @@ WebInspector.NodeInspectorOverrides.prototype = {
         params['ws'] += '&';
       }
       params['ws'] += 'port=' + params['port'];
+    }
+  },
+
+  _notifications: [],
+
+  _enableDebuggerUINotifications: function() {
+    if (!window.Notification) return;
+
+    function closeAllNotifications() {
+      this._notifications.forEach(closeNotification);
+      this._notifications = [];
+    }
+
+    function clickOnNotification(event) {
+      closeNotification(this);
+      window.focus();
+    }
+
+    function closeNotification(notification) {
+      notification.removeEventListener('click', clickOnNotification);
+      notification.close();
+    }
+
+    Notification.requestPermission(function (permission) {
+      if (permission !== 'granted') return;
+
+      WebInspector.targetManager.addModelListener(
+        WebInspector.DebuggerModel,
+        WebInspector.DebuggerModel.Events.DebuggerPaused,
+        processDebuggerPaused,
+        this
+      );
+
+      window.addEventListener('click', closeAllNotifications.bind(this));
+      window.addEventListener('focus', closeAllNotifications.bind(this));
+    }.bind(this));
+
+    function setMessageTitle(message, reason, currentFrame) {
+      switch (reason) {
+        case 'exception':
+          message.title = 'Exception caught';
+          break;
+        default:
+          message.title = 'Debugger paused';
+          break;
+      }
+    }
+
+    function setMessageHeader(message, reason, currentFrame) {
+      if (!currentFrame) return;
+
+      switch (reason) {
+        case 'exception':
+          message.header = 'Exception caught';
+          break;
+        default:
+          message.header = 'Breakpoint caught';
+          break;
+      }
+    }
+
+    function setMessageFrameInfo(message, reason, currentFrame) {
+      if (!currentFrame) return;
+
+      var lineNumber = currentFrame._location.lineNumber;
+      var columnNumber = currentFrame._location.columnNumber;
+      var scriptId = currentFrame._location.scriptId;
+      var sourceURL = currentFrame._script.sourceURL;
+      var sourceMapForId = currentFrame._target._sourceMapForScriptId;
+
+      if (sourceMapForId[scriptId] != null) {
+        var sourceMapEntry = sourceMapForId[scriptId].findEntry(lineNumber, columnNumber);
+        sourceURL = sourceMapEntry[2];
+        lineNumber = sourceMapEntry[3];
+        columnNumber = sourceMapEntry[4];
+      }
+
+      if (sourceURL) {
+        sourceURL = sourceURL.substr(sourceURL.lastIndexOf('/')+1);
+      }
+
+      message.frameInfo = ' in module ' +
+        (sourceURL || '(' + scriptId + ')') +
+        ' at line ' + (lineNumber + 1) +
+        ' column ' + columnNumber;
+    }
+
+    function processDebuggerPaused(event) {
+      if (document.hasFocus()) return;
+
+      var reason = event.data.reason;
+      var currentFrame = event.data.callFrames[0];
+
+      var message = {
+        title: '',
+        header: '',
+        frameInfo: ''
+      };
+
+      setMessageTitle(message, reason, currentFrame);
+      setMessageHeader(message, reason, currentFrame);
+      setMessageFrameInfo(message, reason, currentFrame);
+
+      var notification = new Notification(message.title, {
+        tag: location.href,
+        body: [
+          message.header,
+          message.frameInfo
+        ].join(''),
+        icon: 'favicon.ico'
+      });
+
+      notification.addEventListener('click', clickOnNotification);
+
+      this._notifications.push(notification);
     }
   }
 };
