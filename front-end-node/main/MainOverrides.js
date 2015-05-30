@@ -4,6 +4,7 @@ WebInspector.MainOverrides = function() {
   this._unregisterShortcuts();
   this._allowToSaveModifiedFiles();
   this._reloadOnDetach();
+  this._avoidSourceMapFetchWhenInline();
 };
 
 WebInspector.MainOverrides.prototype = {
@@ -42,7 +43,45 @@ WebInspector.MainOverrides.prototype = {
     // Front-end intercepts Cmd+R, Ctrl+R and F5 keys and reloads the debugged
     // page instead of the front-end page.  We want to disable this behaviour.
     'F5', 'Ctrl+R', 'Meta+R'
-  ]
+  ],
+
+  _avoidSourceMapFetchWhenInline: function() {
+    WebInspector.CompilerScriptMapping.prototype.orig_loadSourceMapForScript =
+      WebInspector.CompilerScriptMapping.prototype._loadSourceMapForScript;
+
+    WebInspector.CompilerScriptMapping.prototype._loadSourceMapForScript = function(script, callback) {
+      var scriptURL = WebInspector.ParsedURL.completeURL(
+        script.target().resourceTreeModel.inspectedPageURL(),
+        script.sourceURL
+      );
+      if (!scriptURL) {
+        callback(null);
+        return;
+      }
+
+      console.assert(script.sourceMapURL);
+      var scriptSourceMapURL = (script.sourceMapURL);
+
+      var sourceMapURL = WebInspector.ParsedURL.completeURL(scriptURL, scriptSourceMapURL);
+      if (!sourceMapURL) {
+        callback(null);
+        return;
+      }
+
+      var INLINE_SOURCE_MAP_REGEX = /^(data:application\/json;base64,)(.*)$/;
+      var matched = INLINE_SOURCE_MAP_REGEX.exec(sourceMapURL);
+      if (matched) {
+        // Extracting SourceMap object from inline sourceMapURL
+        script.sourceMapURL = script.sourceURL + '.map';
+        var payload = JSON.parse(window.atob(matched[2]));
+        
+        this._sourceMapForSourceMapURL[script.sourceMapURL] =
+          new WebInspector.SourceMap(script.sourceMapURL, payload);
+      }
+
+      this.orig_loadSourceMapForScript(script, callback);
+    };
+  }
 };
 
 new WebInspector.MainOverrides();
