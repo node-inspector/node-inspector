@@ -19,5 +19,7 @@ function sendRequest() {
       server.close();
     });
   });
-  req.end();
+  req.setHeader('Content-Type', 'application/json');
+  req.setHeader('Content-Length', 12);
+  req.end('{"x":[true]}');
 }
