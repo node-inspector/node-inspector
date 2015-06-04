@@ -121,6 +121,8 @@ InspectorBackend.registerCommand("Network.canEmulateNetworkConditions", [], ["re
 InspectorBackend.registerCommand("Network.emulateNetworkConditions", [{"name": "offline", "type": "boolean", "optional": false}, {"name": "latency", "type": "number", "optional": false}, {"name": "downloadThroughput", "type": "number", "optional": false}, {"name": "uploadThroughput", "type": "number", "optional": false}], [], false);
 InspectorBackend.registerCommand("Network.setCacheDisabled", [{"name": "cacheDisabled", "type": "boolean", "optional": false}], [], false);
 InspectorBackend.registerCommand("Network.loadResourceForFrontend", [{"name": "frameId", "type": "string", "optional": false}, {"name": "url", "type": "string", "optional": false}, {"name": "requestHeaders", "type": "object", "optional": true}], ["statusCode", "responseHeaders", "content"], false);
+InspectorBackend.registerCommand("Network._clearCapturedData", [], [], false);
+InspectorBackend.registerCommand("Network._setCapturingEnabled", [{"name": "enabled", "type": "boolean", "optional": false}], [], false);
 InspectorBackend.registerEvent("Network.requestWillBeSent", ["requestId", "frameId", "loaderId", "documentURL", "request", "timestamp", "initiator", "redirectResponse", "type"]);
 InspectorBackend.registerEvent("Network.requestServedFromCache", ["requestId"]);
 InspectorBackend.registerEvent("Network.responseReceived", ["requestId", "frameId", "loaderId", "timestamp", "type", "response"]);

@@ -1,0 +1,8 @@
+{
+    "dependencies": [
+        "network"
+    ],
+    "scripts": [
+        "NetworkPanel.js"
+    ]
+}

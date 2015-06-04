@@ -1,6 +1,7 @@
 [
     { "name": "node", "type": "autostart" },
     { "name": "node/profiler", "type": "autostart" },
+    { "name": "node/network", "type": "autostart" },
     { "name": "node/settings", "type": "autostart" },
     { "name": "node/sources", "type": "autostart" },
     { "name": "node/console", "type": "autostart" },
@@ -20,6 +21,7 @@
     { "name": "sources" },
     { "name": "profiler" },
     { "name": "console" },
+    { "name": "network" },
     { "name": "source_frame" },
     { "name": "settings" },
     { "name": "devices" },
