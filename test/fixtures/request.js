@@ -8,7 +8,13 @@ var server = http.createServer(function(req, res) {
 server.listen(0, sendRequest);
 
 function sendRequest() {
-  var req = http.request('http://127.0.0.1:' + server.address().port + '/page?a=b');
+  var opts = 'http://127.0.0.1:' + server.address().port + '/page?a=b';
+  // var opts = {
+  //   host: '127.0.0.1',
+  //   port: server.address().port,
+  //   path: '/page?a=b'
+  // };
+  var req = http.request(opts);
   req.on('response', function(res) {
     res.setEncoding('utf8');
     res.on('data', function(chunk) {

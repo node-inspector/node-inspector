@@ -24,7 +24,7 @@ describe('NetworkAgent', function() {
       );
     });
   });
-  
+
   describe('requestWillBeSent', function() {
     before(initializeNetwork);
 
