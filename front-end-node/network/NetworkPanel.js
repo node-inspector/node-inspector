@@ -15,3 +15,6 @@ WebInspector.NetworkPanel._instance()._networkLogView.addEventListener(
   function() {
     NetworkAgent._clearCapturedData();
   });
+
+WebInspector.NetworkPanel._instance()._networkLogView._preserveLogCheckbox.setVisible(false);
+WebInspector.NetworkPanel._instance()._networkLogView._disableCacheCheckbox.setVisible(false);

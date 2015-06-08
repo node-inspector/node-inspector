@@ -314,6 +314,42 @@ String.prototype.isDigitAt = function(index)
 }
 
 /**
+ * @return {string}
+ */
+String.prototype.toBase64 = function()
+{
+    /**
+     * @param {number} b
+     * @return {number}
+     */
+    function encodeBits(b)
+    {
+        return b < 26 ? b + 65 : b < 52 ? b + 71 : b < 62 ? b - 4 : b === 62 ? 43 : b === 63 ? 47 : 65;
+    }
+    var encoder = new TextEncoder();
+    var data = encoder.encode(this.toString());
+    var n = data.length;
+    var encoded = "";
+    if (n === 0)
+        return encoded;
+    var shift;
+    var v = 0;
+    for (var i = 0; i < n; i++) {
+        shift = i % 3;
+        v |= data[i] << (16 >>> shift & 24);
+        if (shift === 2) {
+            encoded += String.fromCharCode(encodeBits(v >>> 18 & 63), encodeBits(v >>> 12 & 63), encodeBits(v >>> 6 & 63), encodeBits(v & 63));
+            v = 0;
+        }
+    }
+    if (shift === 0)
+        encoded += String.fromCharCode(encodeBits(v >>> 18 & 63), encodeBits(v >>> 12 & 63), 61, 61);
+    else if (shift === 1)
+        encoded += String.fromCharCode(encodeBits(v >>> 18 & 63), encodeBits(v >>> 12 & 63), encodeBits(v >>> 6 & 63), 61);
+    return encoded;
+}
+
+/**
  * @param {string} a
  * @param {string} b
  * @return {number}
