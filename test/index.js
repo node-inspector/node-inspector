@@ -13,7 +13,7 @@ describe('index', function() {
         null,
         false
       );
-      expect(url).to.equal('http://example.com:2223/debug?ws=example.com:2223&port=7863');
+      expect(url).to.equal('http://example.com:2223/?ws=example.com:2223&port=7863');
     });
 
     it('should build an http URL', function() {
@@ -24,7 +24,7 @@ describe('index', function() {
         null,
         true
       );
-      expect(url).to.equal('https://example.com:2223/debug?ws=example.com:2223&port=7863');
+      expect(url).to.equal('https://example.com:2223/?ws=example.com:2223&port=7863');
     });
   });
 });
