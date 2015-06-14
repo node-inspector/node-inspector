@@ -1,3 +1,36 @@
+## 2015-06-15, Version 0.10.2
+
+ * Fix test for iojs (3y3)
+
+ * Avoid inline sourcemaps to be re-fetched from backend. (Marco Minetti)
+
+ * Improve inline sourcemaps (3y3)
+
+ * Check if source stored in app on source request (3y3)
+
+ * Move `getScriptSourceById` to ScriptManager (3y3)
+
+ * Console: fix max string length (3y3)
+
+ * Console: fix caller script url (3y3)
+
+ * Console: fix currentFrame searching (3y3)
+
+ * Console: added special wrapper for assert func (3y3)
+
+ * Fix index tests (3y3)
+
+ * Fix url backward compatibility (3y3)
+
+ * Fixed #667 (3y3)
+
+ * Fix config web-host deprecation checker (3y3)
+
+ * Added support for Web Notifications on debugger paused. (Marco Minetti)
+
+ * Dropped /debug in favor of root URL. (Marco Minetti)
+
+
 ## 2015-05-13, Version 0.10.1
 
  * Bump dependencies (3y3)
@@ -795,6 +828,8 @@
 ## v0.0.1
 
  * added to npm registry
+
+
 
 
 
