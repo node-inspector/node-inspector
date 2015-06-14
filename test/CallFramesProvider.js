@@ -1,4 +1,5 @@
 var expect = require('chai').expect,
+  semver = require('semver'),
   launcher = require('./helpers/launcher.js'),
   CallFramesProvider = require('../lib/CallFramesProvider').CallFramesProvider;
 
@@ -15,7 +16,9 @@ describe('CallFramesProvider', function() {
         }
 
         // The order of script loading has changed in v0.11
-        var scriptId = /^v0\.10\./.test(process.version) ? '28' : '42';
+        var scriptId = semver.lt(process.version, '0.12.0') ? '28'
+                     : semver.lt(process.version, '1.0.0') ? '42'
+                     : '76';
 
         expect(callFrames).to.have.length.least(2);
 
@@ -28,15 +31,31 @@ describe('CallFramesProvider', function() {
           };
         }
 
+        function scopeWithIndex(index) {
+          var scopeChain;
+
+          if (semver.lt(process.version, '1.0.0'))
+            scopeChain = [
+              { object: objectValueWithId('scope:' + index + ':0'), type: 'local' },
+              { object: objectValueWithId('scope:' + index + ':1'), type: 'closure' },
+              { object: objectValueWithId('scope:' + index + ':2'), type: 'global' }
+            ];
+          else
+            scopeChain = [
+              { object: objectValueWithId('scope:' + index + ':0'), type: 'local' },
+              { object: objectValueWithId('scope:' + index + ':1'), type: 'closure' },
+              { object: objectValueWithId('scope:' + index + ':2'), type: 'unknown' },
+              { object: objectValueWithId('scope:' + index + ':3'), type: 'global' }
+            ];
+
+          return scopeChain;
+        }
+
         assertFrame({
             callFrameId: '0',
             functionName: 'MyObj.myFunc',
             location: {scriptId: scriptId, lineNumber: 8, columnNumber: 4},
-            scopeChain: [
-              { object: objectValueWithId('scope:0:0'), type: 'local' },
-              { object: objectValueWithId('scope:0:1'), type: 'closure' },
-              { object: objectValueWithId('scope:0:2'), type: 'global' }
-            ],
+            scopeChain: scopeWithIndex(0),
             'this': objectValueWithId('1')
           },
           callFrames[0],
@@ -46,11 +65,7 @@ describe('CallFramesProvider', function() {
             callFrameId: '1',
             functionName: 'globalFunc',
             location: {scriptId: scriptId, lineNumber: 13, columnNumber: 6},
-            scopeChain: [
-              { object: objectValueWithId('scope:1:0'), type: 'local' },
-              { object: objectValueWithId('scope:1:1'), type: 'closure' },
-              { object: objectValueWithId('scope:1:2'), type: 'global' }
-            ],
+            scopeChain: scopeWithIndex(1),
             'this': objectValueWithId('10', 'global')
           },
           callFrames[1],

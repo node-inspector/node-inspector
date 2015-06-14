@@ -1,10 +1,13 @@
 var expect = require('chai').expect,
+    semver = require('semver'),
     launcher = require('./helpers/launcher.js'),
     inherits = require('util').inherits,
     EventEmitter = require('events').EventEmitter,
     InjectorClient = require('../lib/InjectorClient').InjectorClient,
     ConsoleClient = require('../lib/ConsoleClient').ConsoleClient,
     ConsoleAgent = require('../lib/ConsoleAgent').ConsoleAgent;
+
+var PROP_TYPE = semver.lt(process.version, '1.0.0') ? 1 : 0;
 
 var consoleAgent,
     consoleClient,
@@ -100,7 +103,7 @@ describe('ConsoleClient', function() {
           constructorFunction: { ref: 8 },
           protoObject: { ref: 9 },
           prototypeObject: { ref: 10 },
-          properties: [{ name: 'a', propertyType: 1, ref: 11}],
+          properties: [{ name: 'a', propertyType: PROP_TYPE, ref: 11}],
           text: '#<Object>'
         });
         expect(lookupRefs).to.include.keys(['8', '9', '10', '11']);
