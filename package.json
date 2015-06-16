@@ -27,6 +27,7 @@
     "debug": "^2.2.0",
     "express": "^4.12.3",
     "glob": "^5.0.5",
+    "path-is-absolute": "^1.0.0",
     "rc": "^1.0.1",
     "semver": "^4.3.4",
     "serve-favicon": "^2.1.1",
