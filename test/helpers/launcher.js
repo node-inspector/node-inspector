@@ -119,6 +119,17 @@ function runCommandlet(breakOnStart, test) {
   );
 }
 
+function runRequest(breakOnStart, test) {
+  stopAllDebuggers();
+  startDebugger(
+    'request.js',
+    breakOnStart,
+    function(childProcess, session) {
+      test(childProcess, session);
+    }
+  );
+}
+
 function stopAllDebuggers() {
   while (stopDebuggerCallbacks.length > 0)
     stopDebuggerCallbacks.shift()();
@@ -152,6 +163,7 @@ exports.startDebugger = startDebugger;
 exports.runOnBreakInFunction = runOnBreakInFunction;
 exports.runPeriodicConsoleLog = runPeriodicConsoleLog;
 exports.runCommandlet = runCommandlet;
+exports.runRequest = runRequest;
 exports.stopAllDebuggers = stopAllDebuggers;
 exports.stopAllDebuggersAfterEachTest = stopAllDebugersAfterEachTest;
 exports.runInspectObject = runInspectObject;
