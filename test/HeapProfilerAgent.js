@@ -92,17 +92,17 @@ describe('HeapProfiler Agent', function() {
 
 describe('HeapProfilerClient', function() {
   it('should match only valid heapObjectId', function() {
-    function expectIsHeapObjectId(id) {
-      return expect(heapProfilerClient.isHeapObjectId(id), id);
+    function expectIsHeapObjectId(id, value) {
+      expect(heapProfilerClient.isHeapObjectId(id), id).to.be.equal(value);
     }
 
-    expectIsHeapObjectId('heap:1').to.be.true();
-    expectIsHeapObjectId('heap:1:1').to.be.false();
-    expectIsHeapObjectId('heap:a').to.be.false();
-    expectIsHeapObjectId('heap:').to.be.false();
-    expectIsHeapObjectId('hea:1').to.be.false();
-    expectIsHeapObjectId(':').to.be.false();
-    expectIsHeapObjectId('1').to.be.false();
+    expectIsHeapObjectId('heap:1', true);
+    expectIsHeapObjectId('heap:1:1', false);
+    expectIsHeapObjectId('heap:a', false);
+    expectIsHeapObjectId('heap:', false);
+    expectIsHeapObjectId('hea:1', false);
+    expectIsHeapObjectId(':', false);
+    expectIsHeapObjectId('1', false);
   });
 });
 

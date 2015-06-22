@@ -15,8 +15,7 @@ function startDebugger(scriptPath, breakOnStart, done) {
     debugOption,
     child,
     debuggerClient,
-    session,
-    ignoreErrors = false;
+    session;
 
   debugOption = '--debug' + (breakOnStart ? '-brk=' : '=');
   if (scriptPath.indexOf(path.sep) == -1)
@@ -44,7 +43,6 @@ function startDebugger(scriptPath, breakOnStart, done) {
   });
 
   stopDebuggerCallbacks.push(function stopDebugger() {
-    ignoreErrors = true;
     debuggerClient.close();
     session = null;
     child.kill();
@@ -61,10 +59,7 @@ function startDebugger(scriptPath, breakOnStart, done) {
       done(child, session);
     });
     debuggerClient.on('error', function(e) {
-      if (!ignoreErrors)
-        throw new Error('Debugger connection error: ' + e);
-      if (e.code != 'ECONNRESET')
-        console.warn('(warning) debugger connection error: ' + e);
+      throw new Error('Debugger connection error: ' + e);
     });
   }
 }

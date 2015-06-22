@@ -77,18 +77,18 @@ describe('ConsoleClient', function() {
   }
 
   it('should match only valid consoleId', function() {
-    function expectIsConsoleId(id) {
-      return expect(consoleClient.isConsoleId(id), id);
+    function expectIsConsoleId(id, value) {
+      expect(consoleClient.isConsoleId(id), id).to.be.equal(value);
     }
 
-    expectIsConsoleId('console:1:1').to.be.true();
-    expectIsConsoleId('console:1:1:1').to.be.false();
-    expectIsConsoleId('console:1:a').to.be.false();
-    expectIsConsoleId('console:1:').to.be.false();
-    expectIsConsoleId('console::').to.be.false();
-    expectIsConsoleId('consol:1:1').to.be.false();
-    expectIsConsoleId('::').to.be.false();
-    expectIsConsoleId('1').to.be.false();
+    expectIsConsoleId('console:1:1', true);
+    expectIsConsoleId('console:1:1:1', false);
+    expectIsConsoleId('console:1:a', false);
+    expectIsConsoleId('console:1:', false);
+    expectIsConsoleId('console::', false);
+    expectIsConsoleId('consol:1:1', false);
+    expectIsConsoleId('::', false);
+    expectIsConsoleId('1', false);
   });
 
   it('should provide object data', function(done) {
