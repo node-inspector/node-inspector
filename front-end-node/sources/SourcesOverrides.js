@@ -4,6 +4,7 @@ WebInspector.SourcesOverrides = function() {
   this._chromeSpecificsAreHidden = false;
   this._hideChromeSpecifics();
   this._overrideWatchExpression();
+  this._overrideShortcutsRegistering();
 };
 
 WebInspector.SourcesOverrides.prototype = {
@@ -40,6 +41,22 @@ WebInspector.SourcesOverrides.prototype = {
     // Patch the expression used as an initial value for a new watch.
     // DevTools' value "\n" breaks the debugger protocol.
     WebInspector.WatchExpressionsSection.NewWatchExpression = ' ';
+  },
+
+  _overrideShortcutsRegistering: function() {
+    // TODO(3y3): Check this before next front-end update.
+    // If it wasn't fixed we need to deprecate it anyway and search other way to fix.
+    setTimeout(function() {
+      WebInspector.SourcesPanel.prototype._createButtonAndRegisterShortcutsForAction =
+        function(buttonId, buttonTitle, actionId) {
+          function handler() {
+            WebInspector.actionRegistry.execute(actionId);
+            return true;
+          }
+          var shortcuts = WebInspector.shortcutRegistry.shortcutDescriptorsForAction(actionId);
+          return this._createButtonAndRegisterShortcuts(buttonId, buttonTitle, handler, shortcuts);
+        };
+    });
   }
 };
 
