@@ -41,6 +41,8 @@ $ node-debug app.js
 
 where ```app.js``` is the name of your main Node application JavaScript file.
 
+See available configuration options [here](https://github.com/node-inspector/node-inspector#configuration)
+
 #### Debug
 
 The `node-debug` command will load Node Inspector in your default browser.
@@ -79,6 +81,9 @@ Node Inspector supports almost all of the debugging features of DevTools, includ
 * Continue to location
 * Break on exceptions
 * Disable/enable all breakpoints
+* CPU and HEAP profiling
+* Network client requests inspection
+* Console output inspection
 
 ### Cool stuff
 * Node Inspector uses WebSockets, so no polling for breaks.
@@ -87,7 +92,6 @@ Node Inspector supports almost all of the debugging features of DevTools, includ
   optionally persisting changes back to the file-system.
 * Set breakpoints in files that are not loaded into V8 yet - useful for
   debugging module loading/initialization.
-* Javascript from top to bottom :)
 * Embeddable in other applications - see [Embedding HOWTO](docs/embedding.md)
   for more details.
 
@@ -102,9 +106,6 @@ Node Inspector supports almost all of the debugging features of DevTools, includ
 * While not stopped at a breakpoint the console doesn't always
   behave as you might expect. See the
   [issue #146](https://github.com/node-inspector/node-inspector/issues/146).
-* Profiler is not implemented yet. Have a look at
-  [node-webkit-agent](https://github.com/c4milo/node-webkit-agent)
-  in the meantime.
 * Break on uncaught exceptions does not work in all Node versions,
   you need at least v0.11.3 (see
   [node#5713](https://github.com/joyent/node/pull/5713)).
