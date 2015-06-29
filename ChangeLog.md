@@ -1,3 +1,30 @@
+## 2015-06-29, Version 0.11.0
+
+ * Update README.md (3y3)
+
+ * front-end: Fix double sending of `togglePause` (3y3)
+
+ * Fix `redirectToRoot` context (3y3)
+
+ * Network: added new tests (3y3)
+
+ * Network: fixed front-end (3y3)
+
+ * Added Network tab (3y3)
+
+ * Properly redirect to root (3y3)
+
+ * Added /json/version http endpoint (Kenneth Auchenberg)
+
+ * Added /json http endpoint (Kenneth Auchenberg)
+
+ * Ignore errors during debugger closing. Fix tests. (3y3)
+
+ * Fix inline sourcemaps path in node 0.10.x (Andres Suarez)
+
+ * Send disconnect request on connection closing (3y3)
+
+
 ## 2015-06-15, Version 0.10.2
 
  * Fix test for iojs (3y3)
@@ -828,6 +855,8 @@
 ## v0.0.1
 
  * added to npm registry
+
+
 
 
 
