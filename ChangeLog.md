@@ -1,3 +1,12 @@
+## 2015-06-30, Version 0.11.1
+
+ * Handle `compileError` as `afterCompile` on node 0.12 (3y3)
+
+ * Fix custom command initialisation in `debug-brk` mode (3y3)
+
+ * Fix Console.message url (3y3)
+
+
 ## 2015-06-29, Version 0.11.0
 
  * Update README.md (3y3)
@@ -855,6 +864,8 @@
 ## v0.0.1
 
  * added to npm registry
+
+
 
 
 
