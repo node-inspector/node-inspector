@@ -310,7 +310,7 @@ so that sources earlier in this list override later ones.
 | **node-inspector**
 | --save-live-edit    |     | false   | Save live edit changes to disk (update the edited files).
 | --preload           |     | true    | Preload *.js files. You can disable this option<br/>to speed up the startup.
-| --inject            |     | true    | Enable injection of debugger extensions into the debugged process.
+| --inject            |     | true    | Enable injection of debugger extensions into the debugged process. It's possible disable only part of injections using subkeys `--no-inject.network`. Allowed keys : `network`, `profiles`, `console`.
 | --hidden            |     | []      | Array of files to hide from the UI,<br/>breakpoints in these files will be ignored.<br/>All paths are interpreted as regular expressions.
 | --stack-trace-limit |     | 50      | Number of stack frames to show on a breakpoint.
 | --ssl-key           |     |         | Path to file containing a valid SSL key.
