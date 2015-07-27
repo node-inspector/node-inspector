@@ -1,0 +1,9 @@
+{
+    "dependencies": [
+        "sources",
+        "console"
+    ],
+    "scripts": [
+        "SearchOverrides.js"
+    ]
+}
