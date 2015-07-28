@@ -1,3 +1,44 @@
+## 2015-07-29, Version 0.12.0
+
+ * JSON endpoints /json and /json/list should return a JSON array (Alain Kalker)
+
+ * Remove useless wrapper in NetworkInjection (3y3)
+
+ * Send correct loaderId in resourceTree (3y3)
+
+ * Receive app evn in one place (3y3)
+
+ * Fix IndexedDB.requestDatabaseNames command (3y3)
+
+ * Plugins: cleanup fixes (3y3)
+
+ * Frontend update: fetched from 2234 (3y3)
+
+ * Add `plugins` option to configuration (3y3)
+
+ * Deprecate front-end generating scripts (3y3)
+
+ * Plugins: tests for merging ProtocolJson (3y3)
+
+ * Plugins: tests for merging InspectorJson (3y3)
+
+ * Plugins: merging ProtocolJson (3y3)
+
+ * Plugins: merging InspectorJson (3y3)
+
+ * Front-end: added event `FormattedMessage` (3y3)
+
+ * Front-end: added event dispatcher for console view (3y3)
+
+ * Update readme and `--help` (3y3)
+
+ * Split injections configuration (3y3)
+
+ * Support objects in config (3y3)
+
+ * Fix pause on first line for node 0.10.* (3y3)
+
+
 ## 2015-07-23, Version 0.11.2
 
  * TravisCI: switch to container based infrastructure (3y3)
@@ -871,6 +912,8 @@
 ## v0.0.1
 
  * added to npm registry
+
+
 
 
 
