@@ -24,7 +24,7 @@ echo --RELEASE $VERSION AS TAG $TAG--
 
 if ! $PUBLISH_ONLY; then
 
-  if ! $VERIFY; then
+  if !$VERIFY; then
     echo --Pull remote changes--
     git pull
 
