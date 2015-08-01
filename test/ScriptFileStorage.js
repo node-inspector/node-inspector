@@ -15,7 +15,6 @@ var NON_APP_DIR = path.join(__dirname, '..', 'front-end', 'cm');
 beforeEach(deleteTemps);
 describe('ScriptFileStorage', function() {
   var storage;
-  launcher.stopAllDebuggersAfterEachTest();
   beforeEach(function() {
     storage = createScriptFileStorage();
   });
@@ -285,7 +284,7 @@ function createScriptFileStorage(config) {
   var session = new SessionStub();
   session.scriptManager = new ScriptManager(config, session);
   var storage = new ScriptFileStorage(config, session);
-  
+
   return storage;
 }
 

@@ -9,21 +9,19 @@ var InjectorClient = require('../lib/InjectorClient.js').InjectorClient;
 var WebSocketMock = require('./helpers/wsmock');
 
 describe('FrontendCommandHandler', function() {
-  after(launcher.stopAllDebuggers);
   before(setupProcess);
 
   var session;
-  
+
   function setupProcess(done) {
-    var scriptToDebug = 'BreakInFunction.js'; // any script will work
     launcher.startDebugger(
-      scriptToDebug,
+      'BreakInFunction.js',
       function(childProcess, _session) {
         session = _session;
         done();
       });
   }
-  
+
   it('defers "scriptParsed" events until "Page.getResourceTree"', function(done) {
     this.timeout(5000);
 

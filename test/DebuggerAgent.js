@@ -4,8 +4,6 @@ var expect = require('chai').expect,
   DebuggerAgent = require('../lib/DebuggerAgent.js').DebuggerAgent;
 
 describe('DebuggerAgent', function() {
-  after(launcher.stopAllDebuggers);
-
   describe('sets variable value', function() {
     before(setupDebugScenario);
 
@@ -240,10 +238,10 @@ describe('DebuggerAgent', function() {
       });
     }
   });
-  
+
   describe('setBreakpointByUrl()', function() {
     before(setupDebugScenario);
-    
+
     it('does not throw an error', function(done) {
       expect(function() { agent.setBreakpointByUrl({
         url: 'folder/app.js',
@@ -252,7 +250,7 @@ describe('DebuggerAgent', function() {
         condition: ''
       }, done); }).to.not.throw();
     });
-    
+
     var agent;
 
     function setupDebugScenario(done) {

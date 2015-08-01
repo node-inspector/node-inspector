@@ -6,8 +6,6 @@ var expect = require('chai').expect,
   HeapProfilerClient = require('../lib/HeapProfilerClient').HeapProfilerClient;
 
 describe('RuntimeAgent', function() {
-  after(launcher.stopAllDebuggers);
-
   it('gets scope properties', function(done) {
     // Hard-coded value for local scope of MyObj.myFunc().
     // See CallFramesProvider 'gets stack trace'

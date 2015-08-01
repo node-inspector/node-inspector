@@ -4,17 +4,15 @@ var expect = require('chai').expect,
   PageAgent = require('../lib/PageAgent.js').PageAgent;
 
 describe('PageAgent', function() {
-  after(launcher.stopAllDebuggers);
-  
   describe('getResourceContent()', function() {
     before(setupDebugScenario);
-    
+
     it('does not throw an error', function(done) {
       expect(function() { agent.getResourceContent({
         url: 'index.js'
       }, done); }).to.not.throw();
     });
-    
+
     var agent;
 
     function setupDebugScenario(done) {

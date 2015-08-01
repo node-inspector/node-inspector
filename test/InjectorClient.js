@@ -10,7 +10,7 @@ describe('InjectorClient', function() {
       // increase the timeout for Travis CI
       this.timeout(5000);
 
-      launcher.runPeriodicConsoleLog(false, function(childProcess, session) {
+      launcher.runCommandlet(false, function(childProcess, session) {
         debuggerClient = session.debuggerClient;
         injectorClient = new InjectorClient({inject: false}, session);
         debuggerClient.once('break', function(obj) {
@@ -50,7 +50,7 @@ describe('InjectorClient', function() {
       // increase the timeout for Travis CI
       this.timeout(5000);
 
-      launcher.runPeriodicConsoleLog(false, function(childProcess, session) {
+      launcher.runCommandlet(false, function(childProcess, session) {
         debuggerClient = session.debuggerClient;
         injectorClient = new InjectorClient({}, session);
         injectorClient._pause();
@@ -110,7 +110,7 @@ describe('InjectorClient', function() {
       // increase the timeout for Travis CI
       this.timeout(5000);
 
-      launcher.runPeriodicConsoleLog(true, function(childProcess, session) {
+      launcher.runCommandlet(true, function(childProcess, session) {
         debuggerClient = session.debuggerClient;
         injectorClient = new InjectorClient({}, session);
         done();
@@ -134,7 +134,7 @@ describe('InjectorClient', function() {
       // increase the timeout for Travis CI
       this.timeout(5000);
 
-      launcher.runPeriodicConsoleLog(true, function(childProcess, session) {
+      launcher.runCommandlet(true, function(childProcess, session) {
         debuggerClient = session.debuggerClient;
         injectorClient = new InjectorClient({}, session);
         injectorClient.once('inject', function(injected) {
@@ -194,7 +194,7 @@ describe('InjectorClient', function() {
       // increase the timeout for Travis CI
       this.timeout(5000);
 
-      launcher.runPeriodicConsoleLog(true, function(childProcess, session) {
+      launcher.runCommandlet(true, function(childProcess, session) {
         debuggerClient = session.debuggerClient;
         injectorClient = new InjectorClient({}, session);
         injectorClient.once('inject', function(injected) {

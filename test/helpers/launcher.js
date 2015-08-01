@@ -1,134 +1,109 @@
 var spawn = require('child_process').spawn,
   path = require('path'),
   SessionStub = require('./SessionStub'),
-  DebuggerClient = require('../../lib/DebuggerClient').DebuggerClient,
-  stopDebuggerCallbacks = [];
+  DebuggerClient = require('../../lib/DebuggerClient').DebuggerClient;
 
-function startDebugger(scriptPath, breakOnStart, done) {
-  if (done === undefined) {
-    done = breakOnStart;
-    breakOnStart = false;
-  }
+var TEST_DIR = path.dirname(__filename);
+var DEBUG_PORT = 61000;
 
-  var testDir = path.dirname(__filename),
-    debugPort = 61000,
-    debugOption,
-    child,
-    debuggerClient,
-    session;
+var Promise = require('promise');
 
-  debugOption = '--debug' + (breakOnStart ? '-brk=' : '=');
+function bind(func) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  return func.bind.apply(func, [null].concat(args));
+}
+
+function expandArrayFor(func, context) {
+  return function(array) {
+    func.apply(context, array);
+  };
+}
+
+function expandInstanceFor(func) {
+  return function(instance) {
+    func(instance.child, instance.session);
+  };
+}
+
+var instances = [];
+function stopAllDebuggers(err) {
+  if (err) console.error(err);
+  var promises = instances.map(stopInstance);
+  instances = [];
+  return new Promise.all(promises);
+}
+
+function instantiate(scriptPath, breakOnStart) {
+  return bind(appInstance, scriptPath, breakOnStart);
+}
+
+function appInstance(scriptPath, breakOnStart) {
   if (scriptPath.indexOf(path.sep) == -1)
-    scriptPath = path.join(testDir, '..', 'fixtures', scriptPath);
-  child = spawn('node', [debugOption + debugPort, scriptPath]);
+    scriptPath = path.join(TEST_DIR, '..', 'fixtures', scriptPath);
 
-  var startupTimer = setTimeout(function() {
-    throw new Error('Timeout while waiting for the child process to initialize the debugger.');
-  }, 1000);
+  breakOnStart = breakOnStart || false;
 
-  child.stderr.on('data', function(data) {
-    // Wait for the child process to initialize the debugger before connecting
-    // Node v0.10 prints "debugger listening..."
-    // Node v0.11 prints "Debugger listening..."
-    if (/^[Dd]ebugger listening on port \d+$/m.test(data.toString())) {
-      clearTimeout(startupTimer);
-      // give the child process some time to finish the initialization code
-      // this is especially important when breakOnStart is true
-      setTimeout(setupDebuggerClient, 200);
-    } else {
-      // Forward any error messages from the child process
-      // to our stderr to make troubleshooting easier
-      process.stderr.write(data);
-    }
+  return new Promise(function(resolve, reject) {
+    var debugOptions = computeDebugOptions(breakOnStart);
+    var childProcess = spawn('node', [debugOptions, scriptPath]);
+    var instance = {
+      child: childProcess,
+      session: null
+    };
+
+    instances.push(instance);
+
+    var startupTimer = setTimeout(function() {
+      reject(new Error('Timeout while waiting for the child process to initialize the debugger.'));
+    }, 1000);
+
+    childProcess.stderr.on('data', function(data) {
+      // Wait for the child process to initialize the debugger before connecting
+      // Node v0.10 prints "debugger listening..."
+      // Node v0.11 prints "Debugger listening..."
+      if (/^[Dd]ebugger listening on port \d+$/m.test(data.toString())) {
+        clearTimeout(startupTimer);
+        // give the child process some time to finish the initialization code
+        // this is especially important when breakOnStart is true
+        setTimeout(resolve, 200, instance);
+      } else {
+        // Forward any error messages from the child process
+        // to our stderr to make troubleshooting easier
+        process.stderr.write(data);
+      }
+    });
   });
+}
 
-  stopDebuggerCallbacks.push(function stopDebugger() {
-    debuggerClient.close();
-    session = null;
-    child.kill();
-  });
+function setupScript(scriptPath, breakOnStart) {
+  return Promise.resolve()
+    .then(stopAllDebuggers)
+    .then(instantiate(scriptPath, breakOnStart))
+    .then(setupDebugger)
+    .then(injectHelpers);
+}
 
-  function setupDebuggerClient() {
-    session = new SessionStub();
-    debuggerClient = new DebuggerClient(debugPort);
-    session.debuggerClient = debuggerClient;
+function computeDebugOptions(breakOnStart) {
+  return '--debug' + (breakOnStart ? '-brk=' : '=') + DEBUG_PORT;
+}
 
-    debuggerClient.connect();
+function setupDebugger(instance) {
+  instance.session = new SessionStub();
+  var debuggerClient = instance.session.debuggerClient = new DebuggerClient(DEBUG_PORT);
+
+  return new Promise(function(resolve, reject) {
     debuggerClient.on('connect', function() {
-      injectTestHelpers(debuggerClient);
-      done(child, session);
+      resolve(instance);
     });
     debuggerClient.on('error', function(e) {
-      throw new Error('Debugger connection error: ' + e);
+      reject(new Error('Debugger connection error: ' + e));
     });
-  }
-}
-
-function runOnBreakInFunction(test) {
-  stopAllDebuggers();
-  startDebugger('BreakInFunction.js', function(childProcess, session) {
-    session.debuggerClient.once('break', function() {
-      test(session);
-    });
-    childProcess.stdin.write('go!\n');
+    debuggerClient.connect();
   });
 }
 
-/** @param {function(DebuggerClient, string)} test */
-function runInspectObject(test) {
-  stopAllDebuggers();
-  startDebugger('InspectObject.js', function(childProcess, session) {
-    session.debuggerClient.once('break', function() {
-      session.debuggerClient.fetchObjectId(
-        session.debuggerClient,
-        'inspectedObject',
-        function(id) {
-          test(session, id);
-        }
-      );
-    });
-
-    childProcess.stdin.write('go!\n');
-  });
-}
-
-function runPeriodicConsoleLog(breakOnStart, test) {
-  stopAllDebuggers();
-  startDebugger(
-    'PeriodicConsoleLog.js',
-    breakOnStart,
-    function(childProcess, session) {
-      test(childProcess, session);
-    }
-  );
-}
-
-function runCommandlet(breakOnStart, test) {
-  stopAllDebuggers();
-  startDebugger(
-    'Commandlet.js',
-    breakOnStart,
-    function(childProcess, session) {
-      test(childProcess, session);
-    }
-  );
-}
-
-function stopAllDebuggers() {
-  while (stopDebuggerCallbacks.length > 0)
-    stopDebuggerCallbacks.shift()();
-}
-
-function stopAllDebugersAfterEachTest() {
-  afterEach(stopAllDebuggers);
-}
-
-process.on('exit', function() {
-  stopAllDebuggers();
-});
-
-function injectTestHelpers(debuggerClient) {
-  debuggerClient.fetchObjectId =
+function injectHelpers(instance) {
+  instance.session.debuggerClient.fetchObjectId =
     function(debuggerClient, expression, callback) {
       this.request(
         'evaluate',
@@ -141,12 +116,78 @@ function injectTestHelpers(debuggerClient) {
         }
       );
     };
+
+  return Promise.resolve(instance);
 }
 
-exports.startDebugger = startDebugger;
-exports.runOnBreakInFunction = runOnBreakInFunction;
-exports.runPeriodicConsoleLog = runPeriodicConsoleLog;
-exports.runCommandlet = runCommandlet;
-exports.stopAllDebuggers = stopAllDebuggers;
-exports.stopAllDebuggersAfterEachTest = stopAllDebugersAfterEachTest;
-exports.runInspectObject = runInspectObject;
+function stopInstance(instance) {
+  return new Promise(function(resolve, reject) {
+    if (instance.session) {
+      instance.session.debuggerClient
+        .once('close', function() {
+          resolve();
+        })
+        .close();
+    } else {
+      process.nextTick(resolve);
+    }
+    instance.child.kill();
+  });
+}
+
+exports.startDebugger = function(scriptPath, breakOnStart, test) {
+  if (!test) {
+    test = breakOnStart;
+    breakOnStart = false;
+  }
+  return setupScript(scriptPath, breakOnStart)
+    .then(expandInstanceFor(test))
+    .catch(stopAllDebuggers);
+};
+exports.runOnBreakInFunction = function(test) {
+  return setupScript('BreakInFunction.js', false)
+    .then(function(instance) {
+      instance.session.debuggerClient.once('break', function() {
+        test(instance.session);
+      });
+      instance.child.stdin.write('go!\n');
+    })
+    .catch(stopAllDebuggers);
+};
+exports.runCommandlet = function(breakOnStart, test) {
+  if (!test) {
+    test = breakOnStart;
+    breakOnStart = false;
+  }
+  return setupScript('Commandlet.js', breakOnStart)
+    .then(expandInstanceFor(test))
+    .catch(stopAllDebuggers);
+};
+exports.runInspectObject = function runInspectObject(test) {
+  return setupScript('InspectObject.js', false)
+    .then(function(instance) {
+      var session = instance.session,
+          debuggerClient = session.debuggerClient;
+
+      return Promise.all([
+        session,
+        new Promise(function(resolve, reject) {
+          session.debuggerClient.once('break', function() {
+            session.debuggerClient.fetchObjectId(
+              session.debuggerClient,
+              'inspectedObject',
+              resolve
+            );
+          });
+
+          instance.child.stdin.write('go!\n');
+        })
+      ]);
+    })
+    .then(expandArrayFor(test))
+    .catch(stopAllDebuggers);
+};
+
+process.on('exit', function() {
+  stopAllDebuggers();
+});

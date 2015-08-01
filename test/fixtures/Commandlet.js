@@ -14,6 +14,13 @@ var commands = {
   'log console': function() {
     console.log(console);
   },
+  'log in loop': function() {
+    var a = 0;
+    console.log(a);
+    setInterval(function(){
+      console.log(++a);
+    }, 1000);
+  },
   'pause': function() {
     debugger;
   },

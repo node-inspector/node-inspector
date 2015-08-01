@@ -4,12 +4,10 @@ var expect = require('chai').expect,
   DebuggerClient = require('../lib/DebuggerClient.js').DebuggerClient;
 
 describe('DebuggerClient', function() {
-  after(launcher.stopAllDebuggers);
   var client, child, mainScript;
 
   describe('evaluteGlobal', function() {
     before(setupConnectedDebuggerClient);
-    after(launcher.stopAllDebuggers);
 
     it('returns full value of a long string', function(done) {
       var longStr = '';
@@ -30,7 +28,6 @@ describe('DebuggerClient', function() {
     before(function(done) {
       setupConnectedDebuggerClient(true, done);
     });
-    after(launcher.stopAllDebuggers);
 
     it('is updated on connect in --debug-brk mode', function(done) {
       expect(client.isRunning, 'isRunning').to.equal(false);
@@ -50,8 +47,6 @@ describe('DebuggerClient', function() {
   });
 
   describe('request', function() {
-    launcher.stopAllDebuggersAfterEachTest();
-
     it('sends correct data length', function(done) {
       setupConnectedDebuggerClient(function() {
         getMainScriptId(function(scriptId) {

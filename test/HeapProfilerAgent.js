@@ -107,7 +107,7 @@ describe('HeapProfilerClient', function() {
 });
 
 function initializeProfiler(done) {
-  launcher.runPeriodicConsoleLog(true, function(childProcess, session) {
+  launcher.runCommandlet(true, function(childProcess, session) {
     debuggerClient = session.debuggerClient;
     frontendClient = session.frontendClient;
 
@@ -120,7 +120,10 @@ function initializeProfiler(done) {
     heapProfilerAgent = new HeapProfilerAgent({}, session);
 
     injectorClient.once('inject', function(injected) {
-      if (injected) debuggerClient.request('continue', null, done);
+      if (injected) debuggerClient.request('continue', null, function() {
+        childProcess.stdin.write('log loop\n');
+        done();
+      });
     });
     injectorClient.once('error', done);
 

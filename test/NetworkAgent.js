@@ -30,10 +30,11 @@ describe('NetworkAgent', function() {
     var requestWillBeSent,
         responseReceived,
         dataReceived,
-        loadingFinished;
+        loadingFinished,
+        loadingFailed;
 
-    before(initializeNetwork);
-    before(function() {
+    beforeEach(initializeNetwork);
+    beforeEach(function() {
       requestWillBeSent = new Promise(function(resolve, reject) {
         frontendClient.once('Network.requestWillBeSent', resolve);
       });
@@ -45,9 +46,12 @@ describe('NetworkAgent', function() {
       });
       loadingFinished = new Promise(function(resolve, reject) {
         frontendClient.once('Network.loadingFinished', resolve);
+        frontendClient.once('Network.loadingFailed', reject);
       });
-
-      commandlet.stdin.write('send GET request\n');
+      loadingFailed = new Promise(function(resolve, reject) {
+        frontendClient.once('Network.loadingFailed', resolve);
+        frontendClient.once('Network.loadingFinished', reject);
+      });
     });
 
     it('should emit `requestWillBeSent` event', function(done) {
@@ -73,6 +77,8 @@ describe('NetworkAgent', function() {
       })
       .then(done)
       .catch(done);
+
+      commandlet.stdin.write('send GET request\n');
     });
 
     it('should emit `responseReceived` event', function(done) {
@@ -119,6 +125,8 @@ describe('NetworkAgent', function() {
       })
       .then(done)
       .catch(done);
+
+      commandlet.stdin.write('send GET request\n');
     });
 
     it('should emit `dataReceived` event', function(done) {
@@ -130,6 +138,8 @@ describe('NetworkAgent', function() {
       })
       .then(done)
       .catch(done);
+
+      commandlet.stdin.write('send GET request\n');
     });
 
     it('should emit `loadingFinished` event', function(done) {
@@ -140,6 +150,8 @@ describe('NetworkAgent', function() {
       })
       .then(done)
       .catch(done);
+
+      commandlet.stdin.write('send GET request\n');
     });
 
     it('should capture response data', function(done) {
@@ -156,12 +168,20 @@ describe('NetworkAgent', function() {
       })
       .then(done)
       .catch(done);
+
+      commandlet.stdin.write('send GET request\n');
     });
 
-    it('should clean captured data', function() {
-      expect(Object.keys(networkAgent._dataStorage).length).to.be.equal(1);
-      networkAgent._clearCapturedData({}, function() {});
-      expect(Object.keys(networkAgent._dataStorage).length).to.be.equal(0);
+    it('should clean captured data', function(done) {
+      loadingFinished.then(function(message) {
+        expect(Object.keys(networkAgent._dataStorage).length).to.be.equal(1);
+        networkAgent._clearCapturedData({}, function() {});
+        expect(Object.keys(networkAgent._dataStorage).length).to.be.equal(0);
+      })
+      .then(done)
+      .catch(done);
+
+      commandlet.stdin.write('send GET request\n');
     });
 
     it('should stop data capturing', function(done) {
@@ -169,7 +189,7 @@ describe('NetworkAgent', function() {
       networkAgent._setCapturingEnabled({
         enabled: false
       }, function() {});
-      frontendClient.once('Network.loadingFinished', function() {
+      loadingFinished.then(function() {
         expect(Object.keys(networkAgent._dataStorage).length).to.be.equal(0);
         networkAgent._setCapturingEnabled({ enabled: true }, done);
       });
@@ -178,7 +198,7 @@ describe('NetworkAgent', function() {
     });
 
     it('should handle failure of request', function(done) {
-      frontendClient.once('Network.loadingFailed', function(message) {
+      loadingFailed.then(function(message) {
         containKeys(message, {
           errorText: 'ECONNRESET',
           type: 'XHR'
@@ -196,7 +216,7 @@ describe('NetworkAgent', function() {
     });
 
     it('should handle unhandled failure of request', function(done) {
-      frontendClient.once('Network.loadingFailed', function(message) {
+      loadingFailed.then(function(message) {
         containKeys(message, {
           errorText: '(unhandled) ECONNRESET',
           type: 'XHR'
@@ -209,7 +229,7 @@ describe('NetworkAgent', function() {
 
     it('should handle failure of request to unexisted server', function(done) {
       this.timeout(5000);
-      frontendClient.once('Network.loadingFailed', function(message) {
+      loadingFailed.then(function(message) {
         containKeys(message, {
           errorText: 'ECONNREFUSED',
           type: 'XHR'
@@ -221,7 +241,7 @@ describe('NetworkAgent', function() {
     });
 
     it('should handle aborted request (on creation step)', function(done) {
-      frontendClient.once('Network.loadingFailed', function(message) {
+      loadingFailed.then(function(message) {
         containKeys(message, {
           type: 'XHR',
           canceled: true
@@ -233,7 +253,7 @@ describe('NetworkAgent', function() {
     });
 
     it('should handle aborted request (on response step)', function(done) {
-      frontendClient.once('Network.loadingFailed', function(message) {
+      loadingFailed.then(function(message) {
         containKeys(message, {
           type: 'XHR',
           canceled: true

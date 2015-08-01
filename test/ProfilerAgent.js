@@ -61,7 +61,7 @@ describe('Profiler Agent', function() {
 });
 
 function initializeProfiler(done) {
-  launcher.runPeriodicConsoleLog(true, function(childProcess, session) {
+  launcher.runCommandlet(true, function(childProcess, session) {
     debuggerClient = session.debuggerClient;
     frontendClient = session.frontendClient;
 
