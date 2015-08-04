@@ -57,6 +57,7 @@ describe('ConsoleAgent', function() {
 describe('ConsoleClient', function() {
   var _messages = [];
 
+  before(initializeConsole);
   before(logInChildProcess);
 
   function logInChildProcess(done) {
@@ -97,16 +98,16 @@ describe('ConsoleClient', function() {
       function(error, lookupBody, lookupRefs) {
         expect(error).to.equal(null);
         expect(lookupBody).to.deep.equal({
-          handle: 7,
+          handle: 0,
           type: 'object',
           className: 'Object',
-          constructorFunction: { ref: 8 },
-          protoObject: { ref: 9 },
-          prototypeObject: { ref: 10 },
-          properties: [{ name: 'a', propertyType: PROP_TYPE, ref: 11}],
+          constructorFunction: { ref: 1 },
+          protoObject: { ref: 2 },
+          prototypeObject: { ref: 3 },
+          properties: [{ name: 'a', propertyType: PROP_TYPE, ref: 4}],
           text: '#<Object>'
         });
-        expect(lookupRefs).to.include.keys(['8', '9', '10', '11']);
+        expect(lookupRefs).to.include.keys(['1', '2', '3', '4']);
         done();
       }
     );
@@ -124,7 +125,7 @@ describe('ConsoleClient', function() {
 
   it('should return error on not existed object', function(done) {
     consoleClient.lookupConsoleId(
-      'console:3:0',
+      'console:1:0',
       function(error, lookupBody, lookupRefs) {
         expect(error).to.equal('Object #0# not found');
         done();
@@ -134,9 +135,9 @@ describe('ConsoleClient', function() {
 
   it('should return error on not existed message', function(done) {
     consoleClient.lookupConsoleId(
-      'console:5:1',
+      'console:2:1',
       function(error, lookupBody, lookupRefs) {
-        expect(error).to.equal('Console message #5# not found');
+        expect(error).to.equal('Console message #2# not found');
         done();
       }
     );
