@@ -1,3 +1,22 @@
+## 2015-08-06, Version 0.12.2
+
+ * Fix tests for 0.10 (3y3)
+
+ * Fix css issue with debugger window cut off #699 (Alex Kras)
+
+ * Isolate injections in `Injections` folder (3y3)
+
+ * Test launcher rewrited for promises (3y3)
+
+ * Changed behavior for session `close` event (3y3)
+
+ * Added DebuggerClient.isReady state (3y3)
+
+ * Revert changes in Network handling (3y3)
+
+ * Update release.sh (3y3)
+
+
 ## 2015-07-29, Version 0.12.1
 
  * Exclude `tools` from .npmignore (Chris Baldwin)
@@ -919,6 +938,8 @@
 ## v0.0.1
 
  * added to npm registry
+
+
 
 
 
