@@ -80,16 +80,6 @@ var commands = {
       }
     );
   },
-  'send GET request to unexisted server': function() {
-    http.request({
-      method: 'GET',
-      host: '127.0.0.2',
-      path: '/page?a=b',
-      port: '80'
-    })
-    .once('error', function() {/*noop*/})
-    .end();
-  },
   'send GET request aborted on creation step': function() {
     startServer({
         res: {

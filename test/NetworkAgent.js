@@ -227,19 +227,6 @@ describe('NetworkAgent', function() {
       commandlet.stdin.write('send GET request with unhandled failure\n');
     });
 
-    it('should handle failure of request to unexisted server', function(done) {
-      this.timeout(5000);
-      loadingFailed.then(function(message) {
-        containKeys(message, {
-          errorText: 'ECONNREFUSED',
-          type: 'XHR'
-        });
-        done();
-      });
-
-      commandlet.stdin.write('send GET request to unexisted server\n');
-    });
-
     it('should handle aborted request (on creation step)', function(done) {
       loadingFailed.then(function(message) {
         containKeys(message, {
