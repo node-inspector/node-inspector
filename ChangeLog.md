@@ -1,3 +1,20 @@
+## 2015-09-05, Version 0.12.3
+
+ * Fix tests (Yury Puzynya)
+
+ * Fix tests (Yury Puzynya)
+
+ * Update dependencies (Yury Puzynya)
+
+ * Fix #730 , Fix #724 (Yury Puzynya)
+
+ * Typo (stack is not a function) Fixes #728 (Michael Plakhov)
+
+ * Fixed #723 (3y3)
+
+ * Update release.sh (3y3)
+
+
 ## 2015-08-06, Version 0.12.2
 
  * Fix tests for 0.10 (3y3)
