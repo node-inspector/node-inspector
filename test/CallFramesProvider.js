@@ -4,91 +4,108 @@ var expect = require('chai').expect,
   CallFramesProvider = require('../lib/CallFramesProvider').CallFramesProvider;
 
 describe('CallFramesProvider', function() {
-  it('gets stack trace', function(done) {
-    launcher.runOnBreakInFunction(function(session) {
-      var provider = new CallFramesProvider({}, session);
-      provider.fetchCallFrames(function(error, callFrames) {
-        if (error !== undefined && error !== null) {
-          done(error);
-          return;
-        }
+  var scriptId,
+      session,
+      callFrames;
 
-        // The order of script loading has changed in v0.11
-        var scriptId = semver.lt(process.version, '0.12.0') ? '28'
-                     : semver.lt(process.version, '1.0.0') ? '42'
-                     : '76';
+  beforeEach(function(done) {
+    launcher.runOnBreakInFunction(function(_session) {
+      session = _session;
 
-        expect(callFrames).to.have.length.least(2);
+      session.debuggerClient.request('scripts', {
+        filter: 'BreakInFunction.js',
+      }, function(error, result) {
+        scriptId = '' + result[0].id;
+        var provider = new CallFramesProvider({}, session);
+        provider.fetchCallFrames(function(error, _callFrames) {
+          if (error !== undefined && error !== null) {
+            done(error);
+            return;
+          }
 
-        function objectValueWithId(id, className) {
-          return {
-            type: 'object',
-            objectId: id,
-            className: className || 'Object',
-            description: className || 'Object'
-          };
-        }
-
-        function scopeWithIndex(index) {
-          var scopeChain;
-
-          if (semver.lt(process.version, '1.0.0'))
-            scopeChain = [
-              { object: objectValueWithId('scope:' + index + ':0'), type: 'local' },
-              { object: objectValueWithId('scope:' + index + ':1'), type: 'closure' },
-              { object: objectValueWithId('scope:' + index + ':2'), type: 'global' }
-            ];
-          else
-            scopeChain = [
-              { object: objectValueWithId('scope:' + index + ':0'), type: 'local' },
-              { object: objectValueWithId('scope:' + index + ':1'), type: 'closure' },
-              { object: objectValueWithId('scope:' + index + ':2'), type: 'unknown' },
-              { object: objectValueWithId('scope:' + index + ':3'), type: 'global' }
-            ];
-
-          return scopeChain;
-        }
-
-        assertFrame({
-            callFrameId: '0',
-            functionName: 'MyObj.myFunc',
-            location: {scriptId: scriptId, lineNumber: 8, columnNumber: 4},
-            scopeChain: scopeWithIndex(0),
-            'this': objectValueWithId('1')
-          },
-          callFrames[0],
-          'frame[0]');
-
-        assertFrame({
-            callFrameId: '1',
-            functionName: 'globalFunc',
-            location: {scriptId: scriptId, lineNumber: 13, columnNumber: 6},
-            scopeChain: scopeWithIndex(1),
-            'this': objectValueWithId('10', 'global')
-          },
-          callFrames[1],
-          'frame[1]');
-
-        done();
+          callFrames = _callFrames;
+          done();
+        });
       });
+    });
+  });
+
+  it('gets stack trace', function(done) {
+    var provider = new CallFramesProvider({}, session);
+    provider.fetchCallFrames(function(error, callFrames) {
+      if (error !== undefined && error !== null) {
+        done(error);
+        return;
+      }
+
+      expect(callFrames).to.have.length.least(2);
+
+      assertFrame({
+          callFrameId: '0',
+          functionName: 'MyObj.myFunc',
+          location: {scriptId: scriptId, lineNumber: 8, columnNumber: 4},
+          scopeChain: scopeWithIndex(0),
+          'this': objectValueWithId('1')
+        },
+        callFrames[0],
+        'frame[0]');
+
+      assertFrame({
+          callFrameId: '1',
+          functionName: 'globalFunc',
+          location: {scriptId: scriptId, lineNumber: 13, columnNumber: 6},
+          scopeChain: scopeWithIndex(1),
+          'this': objectValueWithId('10', 'global')
+        },
+        callFrames[1],
+        'frame[1]');
+
+      done();
     });
   });
 
   it('retrieves specified number of stack traces when configured', function(done) {
-    launcher.runOnBreakInFunction(function(session) {
-      var provider = new CallFramesProvider({stackTraceLimit: 1}, session);
-      provider.fetchCallFrames(function(error, callFrames) {
-        if (error !== undefined && error !== null) {
-          done(error);
-          return;
-        }
+    var provider = new CallFramesProvider({stackTraceLimit: 1}, session);
+    provider.fetchCallFrames(function(error, callFrames) {
+      if (error !== undefined && error !== null) {
+        done(error);
+        return;
+      }
 
-        expect(callFrames).to.have.length(1);
-        done();
-      });
+      expect(callFrames).to.have.length(1);
+      done();
     });
   });
 });
+
+function objectValueWithId(id, className) {
+  return {
+    type: 'object',
+    objectId: id,
+    className: className || 'Object',
+    description: className || 'Object'
+  };
+}
+
+function scopeWithIndex(index) {
+  var scopeChain;
+
+  if (semver.lt(process.version, '1.0.0'))
+    scopeChain = [
+      { object: objectValueWithId('scope:' + index + ':0'), type: 'local' },
+      { object: objectValueWithId('scope:' + index + ':1'), type: 'closure' },
+      { object: objectValueWithId('scope:' + index + ':2'), type: 'global' }
+    ];
+  else
+    scopeChain = [
+      { object: objectValueWithId('scope:' + index + ':0'), type: 'local' },
+      { object: objectValueWithId('scope:' + index + ':1'), type: 'closure' },
+      { object: objectValueWithId('scope:' + index + ':2'), type: 'unknown' },
+      { object: objectValueWithId('scope:' + index + ':3'), type: 'global' }
+    ];
+
+  return scopeChain;
+}
 
 function assertFrame(expected, actual, frameName) {
   expect(actual.callFrameId, frameName + '.callFrameId')
@@ -113,4 +130,3 @@ function assertJSONEqual(expected, actual, message) {
   var actualString = actual ? JSON.stringify(actual) : actual;
   expect(actualString, message).to.equal(expectedString);
 }
-
