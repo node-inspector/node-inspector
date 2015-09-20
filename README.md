@@ -140,6 +140,13 @@ $ node-inspector --hidden='["node_modules/framework"]'
 
 Note that the array items are interpreted as regular expressions.
 
+#### How do I ignore files so that they are not even loaded ?
+You can use glob notation with ```---ignore```. For example you could ignore all `node_modules` and the `client/` with the following: 
+
+```sh
+$ node-inspector --ignore "**/node_modules/**" --ignore "client/**"
+```
+
 #### UI doesn't load or doesn't work and refresh didn't help
 
 Make sure that you have adblock disabled as well as any other content blocking scripts and plugins.
@@ -169,7 +176,9 @@ When you are done cleaning up, hit refresh in the browser.
 
 #### Node Inspector takes a long time to start up.
 
-Try setting --no-preload to true. This option disables searching disk for *.js at startup.
+Try setting ```--ignore "**/node_modules/**"``` to avoid loading the node_modules/ directories.  
+
+If that does not work try setting --no-preload to true. This option disables searching disk for *.js at startup.
 Code will still be loaded into Node Inspector at runtime, as modules are required.
 
 #### How do I debug Mocha unit-tests?
@@ -310,6 +319,7 @@ so that sources earlier in this list override later ones.
 | **node-inspector**
 | --save-live-edit    |     | false   | Save live edit changes to disk (update the edited files).
 | --preload           |     | true    | Preload *.js files. You can disable this option<br/>to speed up the startup.
+| --ignore            |     | []      | Array of files to ignore from loading. You can use this to speed up the startup while maintaining the ability to set breakpoints.
 | --inject            |     | true    | Enable injection of debugger extensions into the debugged process. It's possible disable only part of injections using subkeys `--no-inject.network`. Allowed keys : `network`, `profiles`, `console`.
 | --hidden            |     | []      | Array of files to hide from the UI,<br/>breakpoints in these files will be ignored.<br/>All paths are interpreted as regular expressions.
 | --stack-trace-limit |     | 50      | Number of stack frames to show on a breakpoint.
@@ -353,6 +363,10 @@ Ignore breakpoints in files stored in `node_modules` folder or ending in `.test.
 ```
 $ node-debug --hidden node_modules/ --hidden \.test\.js$ app
 ```
+Ignore `node_modules` during loading
+```
+$ node-debug --ignore "**/node_modules/**"
+```
 Add `--harmony` flag to the node process running the debugged script:
 ```
 $ node-debug --nodejs --harmony app
@@ -373,6 +387,7 @@ Use dashed option names in RC files. Sample config file:
   "save-live-edit": true,
   "preload": false,
   "hidden": ["\.test\.js$", "node_modules/"],
+  "ignore": "**/node_modules/**",
   "nodejs": ["--harmony"],
   "stack-trace-limit": 50,
   "ssl-key": "./ssl/key.pem",
