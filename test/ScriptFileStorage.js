@@ -211,6 +211,21 @@ describe('ScriptFileStorage', function() {
     );
   });
 
+  it('excludes files that are ignored', function(done) {
+    var expectedFiles = givenTempFiles('app.js', 'mod.js').slice(0, 1);
+    storage = createScriptFileStorage({ignore: 'mod.js'});
+    storage.findAllApplicationScripts(
+      TEMP_DIR,
+      path.join(TEMP_DIR, 'app.js'),
+      function(err, files) {
+        if (err) throw err;
+        expect(files.map(relativeToTemp))
+          .to.have.members(expectedFiles.map(relativeToTemp));
+        expect(files).to.have.length(expectedFiles.length);
+        done();
+      }
+    );
+  });
 
   it('disables preloading files', function(done) {
     givenTempFiles('app.js', 'mod.js');
