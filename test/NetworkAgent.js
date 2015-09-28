@@ -271,12 +271,10 @@ describe('NetworkAgent', function() {
 
       networkAgent = new NetworkAgent({}, session);
 
-      injectorClient.once('inject', function(injected) {
-        if (injected) debuggerClient.request('continue', null, done);
+      injectorClient.inject(function(error) {
+        if (error) return done(error);
+        debuggerClient.request('continue', null, done);
       });
-      injectorClient.once('error', done);
-
-      injectorClient.inject();
     });
   }
 });

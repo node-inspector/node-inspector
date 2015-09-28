@@ -119,14 +119,12 @@ function initializeProfiler(done) {
 
     heapProfilerAgent = new HeapProfilerAgent({}, session);
 
-    injectorClient.once('inject', function(injected) {
-      if (injected) debuggerClient.request('continue', null, function() {
+    injectorClient.inject(function(error) {
+      if (error) return done(error);
+      debuggerClient.request('continue', null, function() {
         childProcess.stdin.write('log loop\n');
         done();
       });
     });
-    injectorClient.once('error', done);
-
-    injectorClient.inject();
   });
 }
