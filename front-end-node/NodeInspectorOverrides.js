@@ -1,10 +1,11 @@
 /*jshint browser:true, nonew:false*/
-/*global WebInspector, Runtime, InspectorFrontendHost, InspectorBackendClass*/
+/*global WebInspector, Runtime, InspectorFrontendHost, InspectorBackend, InspectorBackendClass*/
 WebInspector.NodeInspectorOverrides = function() {
   this._overridenStrings = {
     'Developer Tools - %s': 'Node Inspector - %s',
     '(no domain)': '(core modules)'
   };
+  this._overrideProtocolJsonPath();
   this._overrideMainScriptType();
   this._overrideUIStrings();
   this._overrideWebSocketCreate();
@@ -19,6 +20,13 @@ WebInspector.NodeInspectorOverrides = function() {
 };
 
 WebInspector.NodeInspectorOverrides.prototype = {
+  _overrideProtocolJsonPath: function() {
+    InspectorBackend.orig_loadFromJSONIfNeeded = InspectorBackend.loadFromJSONIfNeeded;
+    InspectorBackend.loadFromJSONIfNeeded = function(url) {
+      if (url == '../protocol.json')
+        return this.orig_loadFromJSONIfNeeded('protocol.json');
+    };
+  },
   _overrideMainScriptType: function() {
     WebInspector.ResourceTreeModel.prototype.orig_createResourceFromFramePayload =
       WebInspector.ResourceTreeModel.prototype._createResourceFromFramePayload;
