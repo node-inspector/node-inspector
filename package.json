@@ -32,7 +32,7 @@
     "semver": "^4.3.4",
     "serve-favicon": "^2.1.1",
     "strong-data-uri": "^1.0.0",
-    "v8-debug": "~0.5.0",
+    "v8-debug": "~0.6.1",
     "v8-profiler": "~5.3.0",
     "which": "^1.1.1",
     "ws": "^0.8.0",
