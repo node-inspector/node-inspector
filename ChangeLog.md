@@ -1,3 +1,20 @@
+## 2015-12-03, Version 0.12.4
+
+ * bump v8-debug version (Yury Puzynya)
+
+ * Fix #763 (Yury Puzynya)
+
+ * Prevent leaking of data in Network for AWS and others (Yury Puzynya)
+
+ * Updates TravisCI build (Yury Puzynya)
+
+ * Reimplemented Injector entry point (Yury Puzynya)
+
+ * Simplifies evaluateGlobal func (Yury Puzynya)
+
+ * Update release.sh (Yury Puzynya)
+
+
 ## 2015-09-05, Version 0.12.3
 
  * Fix tests (Yury Puzynya)
