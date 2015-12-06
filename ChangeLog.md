@@ -1,3 +1,10 @@
+## 2015-12-06, Version 0.12.5
+
+ * Bump dependencies (Yury Puzynya)
+
+ * Update build script (Yury Puzynya)
+
+
 ## 2015-12-03, Version 0.12.4
 
  * bump v8-debug version (Yury Puzynya)
