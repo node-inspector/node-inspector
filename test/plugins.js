@@ -2,7 +2,8 @@ var expect = require('chai').expect,
     plugins = require('../lib/plugins'),
     PluginError = plugins.PluginError,
     ProtocolJson = plugins.ProtocolJson,
-    InspectorJson = plugins.InspectorJson;
+    InspectorJson = plugins.InspectorJson,
+    defaultPluginPath = plugins.getPluginPath();
 
 function findEq(collection, option, value) {
   return collection.filter(function(item) {
@@ -11,7 +12,7 @@ function findEq(collection, option, value) {
 }
 
 function clearPlugins() {
-  plugins.list.length = 0;
+  plugins._setMockPlugins(defaultPluginPath, []);
 }
 
 function addCommonPlugin() {
@@ -20,7 +21,7 @@ function addCommonPlugin() {
     type: 'autostart'
   };
   plugins.validateManifest(manifest);
-  plugins.list.push(manifest);
+  plugins.getPlugins({ plugins: true }).push(manifest);
 
   return manifest;
 }
@@ -43,7 +44,7 @@ function addPluginWithProtocol() {
     }
   };
   plugins.validateManifest(manifest);
-  plugins.list.push(manifest);
+  plugins.getPlugins({ plugins: true }).push(manifest);
 
   return manifest;
 }
@@ -69,7 +70,7 @@ describe('Plugins', function() {
       });
     });
 
-    it('should works correctly with `manifest.exclude`', function() {
+    it('should work correctly with `manifest.exclude`', function() {
       var inspectorJson = new InspectorJson({ plugins: false });
 
       var excludeTarget = inspectorJson._notes[0];
@@ -79,7 +80,7 @@ describe('Plugins', function() {
         exclude: [excludeTarget.name]
       };
       plugins.validateManifest(manifest);
-      plugins.list.push(manifest);
+      plugins.getPlugins({ plugins: true }).push(manifest);
 
       expect(excludeTarget).to.be.instanceof(Object);
       expect(findEq(inspectorJson._notes, 'name', excludeTarget.name)).to.not.equal(undefined);
@@ -102,7 +103,7 @@ describe('Plugins', function() {
       });
     });
   });
-  
+
   describe('ProtocolJson', function() {
     beforeEach(clearPlugins);
 
@@ -148,8 +149,8 @@ describe('Plugins', function() {
         }
       };
       plugins.validateManifest(manifest_conflict);
-      plugins.list.push(manifest_conflict);
-      
+      plugins.getPlugins({ plugins: true }).push(manifest_conflict);
+
       var protocolJson = new ProtocolJson({ plugins: true });
       var targetName = manifest.protocol.domains[0].domain;
 
@@ -185,7 +186,7 @@ describe('Plugins', function() {
         }
       };
       plugins.validateManifest(manifest_conflict);
-      plugins.list.push(manifest_conflict);
+      plugins.getPlugins({ plugins: true }).push(manifest_conflict);
 
       expect(function() { return new ProtocolJson({ plugins: true }); }).to.throw(PluginError);
     });
