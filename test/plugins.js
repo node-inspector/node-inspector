@@ -90,6 +90,28 @@ describe('Plugins', function() {
       expect(findEq(inspectorJson._notes, 'name', excludeTarget.name)).to.equal(undefined);
     });
 
+    it('should work correctly with `manifest.override`', function() {
+      var inspectorJson = new InspectorJson({ plugins: false });
+
+      var overrideTarget = inspectorJson._notes[0];
+      var manifest = {
+        name: 'test-plugin',
+        type: 'autostart',
+        override: [{ name: overrideTarget.name, type: 'test' }]
+      };
+      plugins.validateManifest(manifest);
+      plugins.getPlugins({ plugins: true }).push(manifest);
+
+      expect(overrideTarget).to.be.instanceof(Object);
+      expect(findEq(inspectorJson._notes, 'name', overrideTarget.name)).to.not.equal(undefined);
+      expect(findEq(inspectorJson._notes, 'type', 'test')).to.equal(undefined);
+
+      inspectorJson = new InspectorJson({ plugins: true });
+
+      expect(findEq(inspectorJson._notes, 'name', overrideTarget.name)).to.not.equal(undefined);
+      expect(findEq(inspectorJson._notes, 'type', 'test')).to.not.equal(undefined);
+    });
+
     it('should correctly stringify itself', function() {
       var manifest = addCommonPlugin();
       var inspectorJson = new InspectorJson({ plugins: true });
