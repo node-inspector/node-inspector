@@ -59,6 +59,12 @@ describe('Config', function() {
       expect(config.hidden[0]).to.satisfy(util.isRegExp);
     });
 
+    it('handles --ignore', function() {
+      var config = givenConfigFromArgs('--ignore="abc"');
+      expect(config.ignore).to.satisfy(util.isArray);
+      expect(config.ignore.length).to.equal(1);
+    });
+
     it('handles --stack-trace-limit', function() {
       var config = givenConfigFromArgs('--stack-trace-limit=60');
       expect(config.stackTraceLimit).to.equal(60);
@@ -117,6 +123,8 @@ describe('Config', function() {
       expect(config.preload, 'default preload value').to.equal(true);
       expect(config.hidden, 'default hidden value is array').to.satisfy(util.isArray);
       expect(config.hidden.length, 'default hidden array is empty').to.equal(0);
+      expect(config.ignore, 'default ignore value is array').to.satisfy(util.isArray);
+      expect(config.ignore.length, 'default ignore array is empty').to.equal(0);
       expect(config.stackTraceLimit, 'default stack-trace-limit value').to.equal(50);
       expect(config.nodejs, 'default nodejs value is array').to.satisfy(util.isArray);
       expect(config.debugBrk, 'default debug-brk value').to.equal(false);
