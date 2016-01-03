@@ -53,7 +53,7 @@ is your default web browser (e.g. Safari or Internet Explorer).
 
 Node Inspector works almost exactly as the Chrome Developer Tools. Read the
 excellent
-[DevTools overview](https://developer.chrome.com/devtools/index)
+[DevTools overview](https://developers.google.com/web/tools/chrome-devtools/)
 to get started.
 
 Other useful resources:
