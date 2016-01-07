@@ -4,7 +4,7 @@
             "type": "@WebInspector.PanelFactory",
             "name": "elements",
             "title": "Elements",
-            "order": 0,
+            "order": 10,
             "className": "WebInspector.ElementsPanelFactory"
         },
         {
@@ -23,11 +23,12 @@
             "className": "WebInspector.ElementsPanel.DOMNodeRevealer"
         },
         {
-            "type": "ui-setting",
-            "section": "Elements",
+            "type": "setting",
+            "category": "Elements",
             "title": "Color format:",
             "settingName": "colorFormat",
-            "settingType": "select",
+            "settingType": "enum",
+            "defaultValue": "original",
             "options": [
                 ["As authored", "original"],
                 ["HEX: #DAC0DE", "hex", true],
@@ -36,39 +37,70 @@
             ]
         },
         {
-            "type": "ui-setting",
-            "section": "Elements",
-            "title": "Show user agent styles",
-            "settingName": "showUserAgentStyles",
-            "settingType": "checkbox"
-        },
-        {
-            "type": "ui-setting",
-            "section": "Elements",
+            "type": "setting",
+            "category": "Elements",
             "title": "Show user agent shadow DOM",
             "settingName": "showUAShadowDOM",
-            "settingType": "checkbox"
+            "settingType": "boolean",
+            "defaultValue": false
         },
         {
-            "type": "ui-setting",
-            "section": "Elements",
+            "type": "setting",
+            "category": "Elements",
             "title": "Word wrap",
             "settingName": "domWordWrap",
-            "settingType": "checkbox"
+            "settingType": "boolean",
+            "defaultValue": true
         },
         {
-            "type": "ui-setting",
-            "section": "Elements",
+            "type": "setting",
+            "category": "Elements",
             "title": "Show rulers",
             "settingName": "showMetricsRulers",
-            "settingType": "checkbox"
+            "settingType": "boolean",
+            "defaultValue": false
         },
         {
-            "type": "ui-setting",
-            "section": "Elements",
-            "title": "Highlight DOM updates",
-            "settingName": "highlightDOMUpdates",
-            "settingType": "checkbox"
+            "type": "@WebInspector.ToolbarItem.Provider",
+            "className": "WebInspector.StylesSidebarPane.AddNewRuleButtonProvider",
+            "order": 0,
+            "location": "styles-sidebarpane-toolbar"
+        },
+        {
+            "type": "@WebInspector.ToolbarItem.Provider",
+            "className": "WebInspector.ElementStatePaneWidget.ButtonProvider",
+            "order": 1,
+            "location": "styles-sidebarpane-toolbar"
+        },
+        {
+            "type": "@WebInspector.ActionDelegate",
+            "actionId": "elements.hide-element",
+            "className": "WebInspector.ElementsActionDelegate",
+            "bindings": [
+                {
+                    "shortcut": "H"
+                }
+            ]
+        },
+        {
+            "type": "@WebInspector.ActionDelegate",
+            "actionId": "elements.edit-as-html",
+            "className": "WebInspector.ElementsActionDelegate",
+            "bindings": [
+                {
+                    "shortcut": "F2"
+                }
+            ]
+        },
+        {
+            "type": "@WebInspector.DOMPresentationUtils.MarkerDecorator",
+            "className": "WebInspector.ElementsPanel.PseudoStateMarkerDecorator",
+            "marker": "pseudo-state-marker"
+        },
+        {
+            "type": "@WebInspector.DOMPresentationUtils.MarkerDecorator",
+            "className": "WebInspector.ElementsPanel.HiddenMarkerDecorator",
+            "marker": "hidden-marker"
         }
     ],
     "dependencies": [
@@ -76,21 +108,31 @@
         "extensions"
     ],
     "scripts": [
+        "BezierUI.js",
+        "StylesPopoverHelper.js",
+        "BezierEditor.js",
         "Spectrum.js",
         "ElementsBreadcrumbs.js",
         "ElementsSidebarPane.js",
+        "ElementsSidebarView.js",
+        "ElementsTreeElement.js",
         "ElementsTreeOutline.js",
-        "EventListenersSidebarPane.js",
+        "SharedSidebarModel.js",
+        "EventListenersWidget.js",
         "MetricsSidebarPane.js",
-        "PlatformFontsSidebarPane.js",
-        "PropertiesSidebarPane.js",
+        "PlatformFontsWidget.js",
+        "PropertiesWidget.js",
+        "PropertyChangeHighlighter.js",
         "StylesSectionModel.js",
         "StylesSidebarPane.js",
-        "ElementsPanel.js",
-        "AnimationsSidebarPane.js"
+        "ComputedStyleWidget.js",
+        "ElementStatePaneWidget.js",
+        "ElementsPanel.js"
     ],
-    "stylesheets": [
+    "resources": [
+        "bezierEditor.css",
         "breadcrumbs.css",
+        "computedStyleSidebarPane.css",
         "elementsPanel.css",
         "elementsTreeOutline.css",
         "spectrum.css"

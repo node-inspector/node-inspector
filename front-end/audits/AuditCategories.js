@@ -72,7 +72,6 @@ WebInspector.AuditCategories.NetworkUtilization.prototype = {
         this.addRule(new WebInspector.AuditRules.MinimizeDnsLookupsRule(4), WebInspector.AuditRule.Severity.Warning);
         this.addRule(new WebInspector.AuditRules.ParallelizeDownloadRule(4, 10, 0.5), WebInspector.AuditRule.Severity.Warning);
         this.addRule(new WebInspector.AuditRules.BrowserCacheControlRule(), WebInspector.AuditRule.Severity.Severe);
-        this.addRule(new WebInspector.AuditRules.ProxyCacheControlRule(), WebInspector.AuditRule.Severity.Warning);
     },
 
     __proto__: WebInspector.AuditCategoryImpl.prototype

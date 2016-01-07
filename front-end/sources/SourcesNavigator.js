@@ -37,7 +37,7 @@ WebInspector.SourcesNavigator = function(workspace)
     this._workspace = workspace;
 
     this._tabbedPane = new WebInspector.TabbedPane();
-    this._tabbedPane.shrinkableTabs = true;
+    this._tabbedPane.setShrinkableTabs(true);
     this._tabbedPane.element.classList.add("navigator-tabbed-pane");
     this._tabbedPaneController = new WebInspector.ExtensibleTabbedPaneController(this._tabbedPane, "navigator-view", this._navigatorViewCreated.bind(this));
     /** @type {!Map.<string, ?WebInspector.NavigatorView>} */
@@ -52,7 +52,7 @@ WebInspector.SourcesNavigator.Events = {
 WebInspector.SourcesNavigator.prototype = {
     /**
      * @param {string} id
-     * @param {!WebInspector.View} view
+     * @param {!WebInspector.Widget} view
      */
     _navigatorViewCreated: function(id, view)
     {
@@ -64,7 +64,7 @@ WebInspector.SourcesNavigator.prototype = {
     },
 
     /**
-     * @return {!WebInspector.View}
+     * @return {!WebInspector.Widget}
      */
     get view()
     {
@@ -80,7 +80,7 @@ WebInspector.SourcesNavigator.prototype = {
         var promises = [];
         for (var i = 0; i < ids.length; ++i)
             promises.push(this._tabbedPaneController.viewForId(ids[i]));
-        Promise.all(promises).then(filterNavigators.bind(this)).done();
+        Promise.all(promises).then(filterNavigators.bind(this));
 
         /**
          * @param {!Array.<!Object>} objects
@@ -140,6 +140,7 @@ WebInspector.SnippetsNavigatorView.prototype = {
     },
 
     /**
+     * @override
      * @param {!Event} event
      */
     handleContextMenu: function(event)
@@ -150,6 +151,7 @@ WebInspector.SnippetsNavigatorView.prototype = {
     },
 
     /**
+     * @override
      * @param {!Event} event
      * @param {!WebInspector.UISourceCode} uiSourceCode
      */
@@ -187,7 +189,7 @@ WebInspector.SnippetsNavigatorView.prototype = {
 
     _handleCreateSnippet: function()
     {
-        this.create(WebInspector.scriptSnippetModel.project(), "")
+        this.create(WebInspector.scriptSnippetModel.project(), "");
     },
 
     /**

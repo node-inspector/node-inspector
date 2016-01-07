@@ -1,0 +1,81 @@
+/*
+ * Copyright (c) 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.section {
+    position: relative;
+    margin-top: 1px;
+}
+
+.section > .header {
+    padding: 0 8px 0 5px;
+    min-height: 18px;
+    white-space: nowrap;
+    background-origin: padding-box;
+    background-clip: padding-box;
+}
+
+.section > .header::before {
+    -webkit-user-select: none;
+    background-image: url(Images/toolbarButtonGlyphs.png);
+    background-size: 352px 168px;
+    opacity: 0.5;
+    content: "a";
+    color: transparent;
+    text-shadow: none;
+    float: left;
+    width: 8px;
+    margin-right: 4px;
+    margin-top: 2px;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+.section > .header::before {
+    background-image: url(Images/toolbarButtonGlyphs_2x.png);
+}
+} /* media */
+
+.section > .header::before {
+    background-position: -4px -96px;
+}
+
+.section.expanded > .header::before {
+    background-position: -20px -96px;
+}
+
+.section > .header .title {
+    font-weight: normal;
+    word-wrap: break-word;
+    white-space: normal;
+    line-height: 18px;
+}
+
+.section > .header label {
+    display: none;
+}
+
+.section.expanded .header label {
+    display: inline;
+}
+
+.section > .header .subtitle {
+    float: right;
+    margin-left: 5px;
+    max-width: 55%;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.section > .header .subtitle a {
+    color: inherit;
+}
+
+.section > .properties {
+    display: none;
+}
+
+.section.expanded > .properties {
+    display: block;
+}

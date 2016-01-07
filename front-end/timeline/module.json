@@ -4,47 +4,70 @@
             "type": "@WebInspector.PanelFactory",
             "name": "timeline",
             "title": "Timeline",
-            "order": 3,
+            "order": 50,
             "className": "WebInspector.TimelinePanelFactory"
         },
         {
-            "type": "ui-setting",
-            "section": "Profiler",
+            "type": "setting",
+            "category": "Profiler",
             "title": "Hide chrome frame in Layers view",
             "settingName": "frameViewerHideChromeWindow",
-            "settingType": "checkbox"
+            "settingType": "boolean",
+            "defaultValue": false
+        },
+        {
+            "type": "@WebInspector.QueryParamHandler",
+            "name": "loadTimelineFromURL",
+            "className": "WebInspector.LoadTimelineHandler"
+        },
+        {
+            "type": "@WebInspector.ActionDelegate",
+            "actionId": "timeline.toggle-recording",
+            "iconClass": "record-toolbar-item",
+            "contextTypes": ["WebInspector.TimelinePanel"],
+            "className": "WebInspector.TimelinePanel.RecordActionDelegate",
+            "bindings": [
+                {
+                    "platform": "windows,linux",
+                    "shortcut": "Ctrl+E"
+                },
+                {
+                    "platform": "mac",
+                    "shortcut": "Meta+E"
+                }
+            ]
         }
     ],
     "dependencies": [
-        "components"
+        "components",
+        "components_lazy",
+        "ui_lazy"
     ],
     "scripts": [
         "CountersGraph.js",
         "LayerDetailsView.js",
         "LayerTreeOutline.js",
+        "LayerViewHost.js",
         "Layers3DView.js",
         "MemoryCountersGraph.js",
         "TimelineModel.js",
         "TimelineJSProfile.js",
-        "TimelineOverviewPane.js",
         "TimelinePresentationModel.js",
         "TimelineFrameModel.js",
         "TimelineEventOverview.js",
-        "TimelineFrameOverview.js",
-        "TimelineMemoryOverview.js",
-        "TimelinePowerGraph.js",
-        "TimelinePowerOverview.js",
         "TimelineFlameChart.js",
+        "TimelineTreeView.js",
         "TimelineUIUtils.js",
         "TimelineView.js",
         "TimelineLayersView.js",
         "TimelinePaintProfilerView.js",
-        "TracingModel.js",
         "TransformController.js",
         "PaintProfilerView.js",
         "TimelinePanel.js"
     ],
-    "stylesheets": [
-        "timelinePanel.css"
+    "resources": [
+        "invalidationsTree.css",
+        "timelinePanel.css",
+        "timelineStatusDialog.css"
     ]
 }

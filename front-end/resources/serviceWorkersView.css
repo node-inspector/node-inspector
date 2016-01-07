@@ -1,0 +1,303 @@
+/*
+ * Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.service-workers-view {
+    overflow: auto;
+}
+
+.service-workers-settings {
+    border-bottom: 1px solid #e1e1e1;
+    min-height: 26px;
+    overflow: hidden;
+    padding: 5px;
+    white-space: nowrap;
+}
+
+.service-workers-root {
+    margin: 0;
+    padding: 5px;
+}
+
+.service-workers-root ol {
+    list-style-type: none;
+    padding-left: 12px;
+}
+
+.service-workers-origin {
+    padding: 5px;
+}
+
+.service-workers-origin-title {
+    font-size: 20px;
+}
+
+.service-workers-registration {
+    border-right: 1px solid #e1e1e1;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    padding: 0;
+}
+
+.service-workers-registration-header {
+    border-left: 1px solid #e1e1e1;
+    border-top: 1px solid #e1e1e1;
+    display: flex;
+    flex-wrap: wrap;
+    overflow: hidden;
+    position: relative;
+}
+
+.service-workers-registration-title {
+    flex: none;
+    font-size: 15px;
+    padding: 4px;
+}
+
+.service-workers-registration-buttons {
+    flex: 1 1 0;
+    padding: 1px;
+}
+
+.service-workers-registration-content {
+    border: 0;
+    padding: 0;
+}
+
+.service-workers-versions-mode-tab-list {
+    display: flex;
+}
+
+.service-workers-versions-mode-tab {
+    border-bottom: 1px solid #e1e1e1;
+    border-left: 1px solid #e1e1e1;
+    border-top: 1px solid #e1e1e1;
+    display: flex;
+    flex: 1 1 0;
+    flex-wrap: wrap;
+    overflow: hidden;
+    padding: 3px;
+}
+
+.service-workers-versions-mode-tab-disabled {
+    background-color: #eee;
+}
+
+.service-workers-versions-mode-tab-selected {
+    border-bottom: 0;
+}
+
+.service-workers-versions-mode-tab-icon {
+    height: 16px;
+    margin: 1px;
+    -webkit-mask-image: url(Images/serviceWorker.svg);
+    -webkit-mask-size: 16px 16px;
+    width: 16px;
+}
+
+.service-workers-versions-mode-tab-text {
+    margin: 2px;
+}
+
+.service-workers-versions-mode-tab-text-disabled {
+    color: #888;
+}
+
+.service-workers-versions-mode-tab-text-selected {
+    font-weight: bold;
+}
+
+.service-workers-versions-panel {
+    border-bottom: 1px solid #e1e1e1;
+    border-left: 1px solid #e1e1e1;
+    display: flex;
+}
+
+.service-workers-versions-panel-left {
+    flex: 3 3 0;
+    overflow: hidden;
+    padding: 3px;
+}
+.service-workers-versions-panel-right {
+    flex: 5 5 0;
+    padding: 3px;
+}
+
+.service-workers-versions-table-row {
+    display: flex;
+}
+
+.service-workers-versions-table-row-title {
+    color: #888;
+    flex: 1 1 0;
+    overflow: hidden;
+    padding: 8px;
+}
+
+.service-workers-versions-table-row-content {
+    flex: 2 2 0;
+    padding: 8px;
+    text-overflow: ellipsis;
+}
+
+.service-workers-versions-table-messages-title {
+    color: #888;
+    padding: 8px 8px 3px 8px;
+}
+
+.service-workers-versions-table-messages-content {
+    overflow: auto;
+    padding: 3px 3px 3px 10px;
+}
+
+.service-workers-versions-table-clients-title {
+    color: #888;
+    padding: 8px 8px 3px 8px;
+}
+
+.service-workers-versions-table-clients-content {
+    overflow: auto;
+    padding: 3px 3px 3px 10px;
+}
+
+.service-workers-versions-table-worker-running-status-cell {
+    display: flex;
+}
+
+.service-workers-versions-table-running-status-right-cell {
+    padding: 3px;
+}
+
+.service-workers-versions-table-running-status-inspect {
+    color: #00e;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.service-workers-button {
+    -webkit-mask-image: url(Images/toolbarButtonGlyphs.png);
+    -webkit-mask-size: 352px 168px;
+    background-color: rgba(0, 0, 0, 0.75);
+    height: 24px;
+    opacity: 0.8;
+    width: 32px;
+    border: 0;
+    padding: 0;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+.service-workers-button {
+    -webkit-mask-image: url(Images/toolbarButtonGlyphs_2x.png);
+}
+} /* media */
+
+.service-workers-button:hover {
+    opacity: 1;
+}
+
+.service-workers-button:active {
+    opacity: 0.8;
+}
+
+.service-workers-button:disabled {
+    opacity: 0.5;
+}
+
+.service-workers-start-button {
+    -webkit-mask-position: -64px -48px;
+}
+
+.service-workers-stop-button {
+    -webkit-mask-position: -96px -48px;
+}
+
+.service-workers-delete-button {
+    float: right;
+    -webkit-mask-position: -128px -24px;
+    position: relative;
+}
+
+.service-workers-update-button {
+    -webkit-mask-image: url(Images/updateServiceWorker.svg);
+    -webkit-mask-position: 7px 3px;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: 18px 18px;
+}
+
+.service-workers-push-button {
+    -webkit-mask-image: url(Images/notifications.svg);
+    -webkit-mask-position: 7px 3px;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: 18px 18px;
+}
+
+.service-workers-versions-option-panel {
+    border-bottom: 1px solid #e1e1e1;
+    border-left: 1px solid #e1e1e1;
+    display: flex;
+}
+
+.service-workers-skip-waiting-checkbox-label {
+    margin-left: 0px;
+}
+
+.service-workers-error {
+    display: flex;
+}
+
+.service-workers-error-message {
+    font-weight: bold;
+}
+
+.service-workers-info {
+    display: flex;
+}
+
+.service-worker-client-focus {
+   color: #00e;
+   cursor: pointer;
+   padding-left: 4px;
+   text-decoration: underline;
+}
+
+.service-workers-color-0 {
+    background-color: #003366;
+}
+
+.service-workers-color-1 {
+    background-color: #663300;
+}
+
+.service-workers-color-2 {
+    background-color: #660066;
+}
+
+.service-workers-color-3 {
+    background-color: #003300;
+}
+
+.service-workers-color-4 {
+    background-color: #993333;
+}
+
+.service-workers-color-5 {
+    background-color: #000066;
+}
+
+.service-workers-color-6 {
+    background-color: #006666;
+}
+
+.service-workers-color-7 {
+    background-color: #996600;
+}
+
+.service-workers-color-8 {
+    background-color: #9900CC;
+}
+
+.service-workers-color-9 {
+    background-color: #336600;
+}

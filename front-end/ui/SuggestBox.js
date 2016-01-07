@@ -95,27 +95,21 @@ WebInspector.SuggestBox.prototype = {
         // Position relative to main DevTools element.
         var container = WebInspector.Dialog.modalHostView().element;
         anchorBox = anchorBox.relativeToElement(container);
-        var totalWidth = container.offsetWidth;
         var totalHeight = container.offsetHeight;
         var aboveHeight = anchorBox.y;
         var underHeight = totalHeight - anchorBox.y - anchorBox.height;
 
-        var rowHeight = 17;
-        const spacer = 6;
+        this._overlay.setLeftOffset(anchorBox.x);
 
-        var maxHeight = this._maxItemsHeight ? this._maxItemsHeight * rowHeight : Math.max(underHeight, aboveHeight) - spacer;
         var under = underHeight >= aboveHeight;
-        this._leftSpacerElement.style.flexBasis = anchorBox.x + "px";
+        if (under)
+            this._overlay.setVerticalOffset(anchorBox.y + anchorBox.height, true);
+        else
+            this._overlay.setVerticalOffset(totalHeight - anchorBox.y, false);
 
-        this._overlay.element.classList.toggle("under-anchor", under);
-
-        if (under) {
-            this._bottomSpacerElement.style.flexBasis = "auto";
-            this._topSpacerElement.style.flexBasis = (anchorBox.y + anchorBox.height) + "px";
-        } else {
-            this._bottomSpacerElement.style.flexBasis = (totalHeight - anchorBox.y) + "px";
-            this._topSpacerElement.style.flexBasis = "auto";
-        }
+        /** const */ var rowHeight = 17;
+        /** const */ var spacer = 6;
+        var maxHeight = this._maxItemsHeight ? this._maxItemsHeight * rowHeight : Math.max(underHeight, aboveHeight) - spacer;
         this._element.style.maxHeight = maxHeight + "px";
     },
 
@@ -145,15 +139,10 @@ WebInspector.SuggestBox.prototype = {
     {
         if (this.visible())
             return;
-        this._overlay = new WebInspector.SuggestBox.Overlay();
         this._bodyElement = document.body;
         this._bodyElement.addEventListener("mousedown", this._maybeHideBound, true);
-
-        this._leftSpacerElement = this._overlay.element.createChild("div", "suggest-box-left-spacer");
-        this._horizontalElement = this._overlay.element.createChild("div", "suggest-box-horizontal");
-        this._topSpacerElement = this._horizontalElement.createChild("div", "suggest-box-top-spacer");
-        this._horizontalElement.appendChild(this._element);
-        this._bottomSpacerElement = this._horizontalElement.createChild("div", "suggest-box-bottom-spacer");
+        this._overlay = new WebInspector.SuggestBox.Overlay();
+        this._overlay.setContentElement(this._element);
     },
 
     hide: function()
@@ -421,11 +410,50 @@ WebInspector.SuggestBox.prototype = {
 WebInspector.SuggestBox.Overlay = function()
 {
     this.element = createElementWithClass("div", "suggest-box-overlay");
+    var root = WebInspector.createShadowRootWithCoreStyles(this.element);
+    root.appendChild(WebInspector.Widget.createStyleElement("ui/suggestBox.css"));
+    this._leftSpacerElement = root.createChild("div", "suggest-box-left-spacer");
+    this._horizontalElement = root.createChild("div", "suggest-box-horizontal");
+    this._topSpacerElement = this._horizontalElement.createChild("div", "suggest-box-top-spacer");
+    this._bottomSpacerElement = this._horizontalElement.createChild("div", "suggest-box-bottom-spacer");
     this._resize();
     document.body.appendChild(this.element);
 }
 
 WebInspector.SuggestBox.Overlay.prototype = {
+    /**
+     * @param {number} offset
+     */
+    setLeftOffset: function(offset)
+    {
+        this._leftSpacerElement.style.flexBasis = offset + "px";
+    },
+
+    /**
+     * @param {number} offset
+     * @param {boolean} isTopOffset
+     */
+    setVerticalOffset: function(offset, isTopOffset)
+    {
+        this.element.classList.toggle("under-anchor", isTopOffset);
+
+        if (isTopOffset) {
+            this._bottomSpacerElement.style.flexBasis = "auto";
+            this._topSpacerElement.style.flexBasis = offset + "px";
+        } else {
+            this._bottomSpacerElement.style.flexBasis = offset + "px";
+            this._topSpacerElement.style.flexBasis = "auto";
+        }
+    },
+
+    /**
+     * @param {!Element} element
+     */
+    setContentElement: function(element)
+    {
+        this._horizontalElement.insertBefore(element, this._bottomSpacerElement);
+    },
+
     _resize: function()
     {
         var container = WebInspector.Dialog.modalHostView().element;

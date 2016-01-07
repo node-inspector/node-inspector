@@ -1,0 +1,190 @@
+/*
+ * Copyright 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.search-drawer-header {
+    flex: none;
+    padding: 4px;
+    display: flex;
+}
+
+.search-drawer-header input[type="text"].search-config-search {
+    -webkit-appearance: none;
+    padding: 0 3px;
+    margin: 0;
+    border: 1px solid rgb(163, 163, 163);
+    height: 20px;
+    border-radius: 2px;
+    color: #303030;
+}
+
+.search-drawer-header input[type="search"].search-config-search:focus {
+    border: 1px solid rgb(190, 190, 190);
+    outline: none;
+}
+
+:host-context(.platform-mac) .search-drawer-header input[type="search"].search-config-search {
+    top: 1px;
+}
+
+.search-drawer-header label.search-config-label {
+    margin: auto 0;
+    margin-left: 8px;
+    color: #303030;
+    display: flex;
+}
+
+.search-toolbar-summary {
+    background-color: #eee;
+    border-top: 1px solid #ccc;
+    padding-left: 5px;
+    flex: 0 0 19px;
+    display: flex;
+    padding-right: 5px;
+}
+
+.search-toolbar-summary .search-message {
+    padding-top: 2px;
+}
+
+.search-toolbar-summary .search-message-spacer {
+    flex-grow: 1;
+}
+
+#search-results-pane-file-based li {
+    list-style: none;
+}
+
+#search-results-pane-file-based ol {
+    -webkit-padding-start: 0;
+    margin-top: 0;
+}
+
+#search-results-pane-file-based ol.children {
+    display: none;
+}
+
+#search-results-pane-file-based ol.children.expanded {
+    display: block;
+}
+
+#search-results-pane-file-based li.parent::before {
+    -webkit-user-select: none;
+    background-image: url(Images/toolbarButtonGlyphs.png);
+    background-size: 352px 168px;
+    opacity: 0.5;
+    width: 12px;
+    content: "a";
+    color: transparent;
+    margin-left: -5px;
+    padding-right: 4px;
+    display: inline-block;
+    box-sizing: border-box;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+#search-results-pane-file-based li.parent::before {
+    background-image: url(Images/toolbarButtonGlyphs_2x.png);
+}
+} /* media */
+
+#search-results-pane-file-based li.parent::before {
+    background-position: -4px -96px;
+}
+
+#search-results-pane-file-based li.parent.expanded::before {
+    background-position: -20px -96px;
+}
+
+#search-results-pane-file-based .search-result {
+    font-size: 11px;
+    padding: 2px 0 2px 10px;
+    word-wrap: normal;
+    white-space: pre;
+    cursor: pointer;
+}
+
+#search-results-pane-file-based .search-result:hover {
+    background-color: rgba(121, 121, 121, 0.1);
+}
+
+#search-results-pane-file-based .search-result .search-result-file-name {
+    font-weight: bold;
+    color: #222;
+}
+
+#search-results-pane-file-based .search-result .search-result-matches-count {
+    margin-left: 5px;
+    color: #222;
+}
+
+#search-results-pane-file-based .show-more-matches {
+    padding: 4px 0;
+    color: #222;
+    cursor: pointer;
+    font-size: 11px;
+    margin-left: 20px;
+}
+
+#search-results-pane-file-based .show-more-matches:hover {
+    text-decoration: underline;
+}
+
+#search-results-pane-file-based .search-match {
+    word-wrap: normal;
+    white-space: pre;
+}
+
+#search-results-pane-file-based .search-match .search-match-line-number {
+    color: rgb(128, 128, 128);
+    text-align: right;
+    vertical-align: top;
+    word-break: normal;
+    padding-right: 4px;
+    padding-left: 6px;
+    margin-right: 5px;
+    border-right: 1px solid #BBB;
+}
+
+#search-results-pane-file-based .search-match:not(:hover) .search-match-line-number {
+    background-color: #F0F0F0;
+}
+
+#search-results-pane-file-based .search-match:hover {
+    background-color: rgba(56, 121, 217, 0.1);
+}
+
+#search-results-pane-file-based .search-match .highlighted-match {
+    background-color: #F1EA00;
+}
+
+#search-results-pane-file-based a {
+    text-decoration: none;
+    display: block;
+}
+
+#search-results-pane-file-based .search-match .search-match-content {
+    color: #000;
+}
+
+.search-view .search-results {
+    overflow-y: auto;
+    display: flex;
+    flex: auto;
+}
+
+.search-results .empty-view {
+    pointer-events: none;
+}
+
+.empty-view {
+    font-size: 24px;
+    color: rgb(75%, 75%, 75%);
+    font-weight: bold;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

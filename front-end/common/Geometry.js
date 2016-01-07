@@ -71,6 +71,112 @@ WebInspector.Geometry.Vector.prototype = {
 
 /**
  * @constructor
+ * @param {number} x
+ * @param {number} y
+ */
+WebInspector.Geometry.Point = function(x, y) {
+    this.x = x;
+    this.y = y;
+}
+
+WebInspector.Geometry.Point.prototype = {
+    /**
+     * @param {!WebInspector.Geometry.Point} p
+     * @return {number}
+     */
+    distanceTo: function(p)
+    {
+        return Math.sqrt(Math.pow(p.x - this.x, 2) + Math.pow(p.y - this.y, 2));
+    },
+
+    /**
+     * @override
+     * @return {string}
+     */
+    toString: function()
+    {
+       return Math.round(this.x * 100) / 100 + ", " + Math.round(this.y * 100) / 100;
+    }
+}
+
+/**
+ * @constructor
+ * @param {!WebInspector.Geometry.Point} point1
+ * @param {!WebInspector.Geometry.Point} point2
+ */
+WebInspector.Geometry.CubicBezier = function(point1, point2)
+{
+    this.controlPoints = [point1, point2];
+}
+
+WebInspector.Geometry.CubicBezier.KeywordValues = {
+    "linear": "cubic-bezier(0, 0, 1, 1)",
+    "ease": "cubic-bezier(0.25, 0.1, 0.25, 1)",
+    "ease-in": "cubic-bezier(0.42, 0, 1, 1)",
+    "ease-in-out": "cubic-bezier(0.42, 0, 0.58, 1)",
+    "ease-out": "cubic-bezier(0, 0, 0.58, 1)"
+}
+
+/**
+ * @param {string} text
+ * @return {?WebInspector.Geometry.CubicBezier}
+ */
+WebInspector.Geometry.CubicBezier.parse = function(text)
+{
+    var keywordValues = WebInspector.Geometry.CubicBezier.KeywordValues;
+    var value = text.toLowerCase().replace(/\s+/g, "");
+    if (Object.keys(keywordValues).indexOf(value) != -1)
+        return WebInspector.Geometry.CubicBezier.parse(keywordValues[value]);
+    var bezierRegex = /^cubic-bezier\(([^,]+),([^,]+),([^,]+),([^,]+)\)$/;
+    var match = value.match(bezierRegex);
+    if (match) {
+        var control1 = new WebInspector.Geometry.Point(parseFloat(match[1]), parseFloat(match[2]));
+        var control2 = new WebInspector.Geometry.Point(parseFloat(match[3]), parseFloat(match[4]));
+        return new WebInspector.Geometry.CubicBezier(control1, control2);
+    }
+    return null;
+}
+
+
+WebInspector.Geometry.CubicBezier.prototype = {
+    /**
+     * @param {number} t
+     * @return {!WebInspector.Geometry.Point}
+     */
+    evaluateAt: function(t)
+    {
+        /**
+         * @param {number} v1
+         * @param {number} v2
+         * @param {number} t
+         */
+        function evaluate(v1, v2, t)
+        {
+            return 3 * (1 - t) * (1 - t) * t * v1 + 3 * (1 - t) * t * t * v2 + Math.pow(t, 3);
+        }
+
+        var x = evaluate(this.controlPoints[0].x, this.controlPoints[1].x, t);
+        var y = evaluate(this.controlPoints[0].y, this.controlPoints[1].y, t);
+        return new WebInspector.Geometry.Point(x, y);
+    },
+
+    /**
+     * @return {string}
+     */
+    asCSSText: function()
+    {
+        var raw = "cubic-bezier(" + this.controlPoints.join(", ") + ")";
+        var keywordValues = WebInspector.Geometry.CubicBezier.KeywordValues;
+        for (var keyword in keywordValues) {
+            if (raw === keywordValues[keyword])
+                return keyword;
+        }
+        return raw;
+    }
+}
+
+/**
+ * @constructor
  * @param {number} alpha
  * @param {number} beta
  * @param {number} gamma
@@ -248,6 +354,33 @@ Size.prototype.addHeight = function(size)
 {
     return new Size(this.width, this.height + (typeof size === "number" ? size : size.height));
 };
+
+
+/**
+ * @constructor
+ * @param {number} left
+ * @param {number} top
+ * @param {number} right
+ * @param {number} bottom
+ */
+function Insets(left, top, right, bottom)
+{
+    this.left = left;
+    this.top = top;
+    this.right = right;
+    this.bottom = bottom;
+}
+
+Insets.prototype = {
+    /**
+     * @param {?Insets} insets
+     * @return {boolean}
+     */
+    isEqual: function(insets)
+    {
+        return !!insets && this.left === insets.left && this.top === insets.top && this.right == insets.right && this.bottom == insets.bottom;
+    }
+}
 
 
 /**

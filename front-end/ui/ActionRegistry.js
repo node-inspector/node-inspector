@@ -50,7 +50,7 @@ WebInspector.ActionRegistry.prototype = {
 
     /**
      * @param {string} actionId
-     * @return {!Promise.<boolean>}
+     * @return {!Promise.<undefined>}
      */
     execute: function(actionId)
     {
@@ -60,12 +60,33 @@ WebInspector.ActionRegistry.prototype = {
 
         /**
          * @param {!Object} actionDelegate
-         * @return {boolean}
          */
         function handleAction(actionDelegate)
         {
-            return /** @type {!WebInspector.ActionDelegate} */(actionDelegate).handleAction(WebInspector.context);
+            /** @type {!WebInspector.ActionDelegate} */(actionDelegate).handleAction(WebInspector.context, actionId);
         }
+    },
+
+    /**
+     * @param {string} actionId
+     * @return {string}
+     */
+    actionTitle: function(actionId)
+    {
+        var extension = this._actionsById.get(actionId);
+        console.assert(extension, "No action found for actionId '" + actionId + "'");
+        return extension.descriptor()["title"] || "";
+    },
+
+    /**
+     * @param {string} actionId
+     * @return {string}
+     */
+    actionIcon: function(actionId)
+    {
+        var extension = this._actionsById.get(actionId);
+        console.assert(extension, "No action found for actionId '" + actionId + "'");
+        return extension.descriptor()["iconClass"] || "";
     }
 }
 
@@ -79,10 +100,9 @@ WebInspector.ActionDelegate = function()
 WebInspector.ActionDelegate.prototype = {
     /**
      * @param {!WebInspector.Context} context
-     * @return {boolean} True if handled. Note that lazily loaded modules won't be able to consume
-     *                   platform events from their actions.
+     * @param {string} actionId
      */
-    handleAction: function(context) {}
+    handleAction: function(context, actionId) {}
 }
 
 /** @type {!WebInspector.ActionRegistry} */

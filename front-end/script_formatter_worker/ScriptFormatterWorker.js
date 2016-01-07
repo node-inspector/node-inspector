@@ -55,7 +55,7 @@ FormatterWorker = {
  */
 var FormatterParameters;
 
-var onmessage = function(event) {
+self.onmessage = function(event) {
     var data = /** @type !{method: string, params: !FormatterParameters} */ (event.data);
     if (!data.method)
         return;
@@ -91,71 +91,62 @@ FormatterWorker.format = function(params)
 FormatterWorker.javaScriptOutline = function(params)
 {
     var chunkSize = 100000; // characters per data chunk
-    var lines = params.content.split("\n");
     var outlineChunk = [];
     var previousIdentifier = null;
     var previousToken = null;
-    var previousTokenType = null;
     var processedChunkCharacters = 0;
     var addedFunction = false;
     var isReadingArguments = false;
     var argumentsText = "";
     var currentFunction = null;
-    var tokenizer = FormatterWorker.createTokenizer("text/javascript");
-    for (var i = 0; i < lines.length; ++i) {
-        var line = lines[i];
-        tokenizer(line, processToken);
-    }
+    var tokenizer = new FormatterWorker.AcornTokenizer(params.content);
+    var AT = FormatterWorker.AcornTokenizer;
 
-    /**
-     * @param {?string} tokenType
-     * @return {boolean}
-     */
-    function isJavaScriptIdentifier(tokenType)
-    {
-        if (!tokenType)
-            return false;
-        return tokenType.startsWith("variable") || tokenType.startsWith("property") || tokenType === "def";
-    }
+    while (tokenizer.peekToken()) {
+        var token = /** @type {!Acorn.TokenOrComment} */(tokenizer.nextToken());
+        if (AT.lineComment(token) || AT.blockComment(token))
+            continue;
 
-    /**
-     * @param {string} tokenValue
-     * @param {?string} tokenType
-     * @param {number} column
-     * @param {number} newColumn
-     */
-    function processToken(tokenValue, tokenType, column, newColumn)
-    {
-        if (tokenType === "property" && previousTokenType === "property" && (previousToken === "get" || previousToken === "set")) {
-            currentFunction = { line: i, column: column, name: previousToken + " " + tokenValue };
+        var tokenValue = params.content.substring(token.start, token.end);
+
+        if (AT.identifier(token) && previousToken && (AT.identifier(previousToken, "get") || AT.identifier(previousToken, "set"))) {
+            currentFunction = {
+                line: tokenizer.tokenLineStart(),
+                column: tokenizer.tokenColumnStart(),
+                name : previousToken.value + " " + tokenValue
+            };
             addedFunction = true;
             previousIdentifier = null;
-        } else if (isJavaScriptIdentifier(tokenType)) {
+        } else if (AT.identifier(token)) {
             previousIdentifier = tokenValue;
-            if (tokenValue && previousToken === "function") {
+            if (tokenValue && previousToken && AT.keyword(previousToken, "function")) {
                 // A named function: "function f...".
-                currentFunction = { line: i, column: column, name: tokenValue };
+                currentFunction = {
+                    line: tokenizer.tokenLineStart(),
+                    column: tokenizer.tokenColumnStart(),
+                    name: tokenValue
+                };
                 addedFunction = true;
                 previousIdentifier = null;
             }
-        } else if (tokenType === "keyword") {
-            if (tokenValue === "function") {
-                if (previousIdentifier && (previousToken === "=" || previousToken === ":")) {
-                    // Anonymous function assigned to an identifier: "...f = function..."
-                    // or "funcName: function...".
-                    currentFunction = { line: i, column: column, name: previousIdentifier };
-                    addedFunction = true;
-                    previousIdentifier = null;
-                }
-            }
-        } else if (tokenValue === "." && isJavaScriptIdentifier(previousTokenType))
+        } else if (AT.keyword(token, "function") && previousIdentifier && previousToken && AT.punctuator(previousToken, ":=")) {
+            // Anonymous function assigned to an identifier: "...f = function..."
+            // or "funcName: function...".
+            currentFunction = {
+                line: tokenizer.tokenLineStart(),
+                column: tokenizer.tokenColumnStart(),
+                name: previousIdentifier
+            };
+            addedFunction = true;
+            previousIdentifier = null;
+        } else if (AT.punctuator(token, ".") && previousToken && AT.identifier(previousToken))
             previousIdentifier += ".";
-        else if (tokenValue === "(" && addedFunction)
+        else if (AT.punctuator(token, "(") && addedFunction)
             isReadingArguments = true;
         if (isReadingArguments && tokenValue)
             argumentsText += tokenValue;
 
-        if (tokenValue === ")" && isReadingArguments) {
+        if (AT.punctuator(token, ")") && isReadingArguments) {
             addedFunction = false;
             isReadingArguments = false;
             currentFunction.arguments = argumentsText.replace(/,[\r\n\s]*/g, ", ").replace(/([^,])[\r\n\s]+/g, "$1");
@@ -163,12 +154,8 @@ FormatterWorker.javaScriptOutline = function(params)
             outlineChunk.push(currentFunction);
         }
 
-        if (tokenValue.trim().length) {
-            // Skip whitespace tokens.
-            previousToken = tokenValue;
-            previousTokenType = tokenType;
-        }
-        processedChunkCharacters += newColumn - column;
+        previousToken = token;
+        processedChunkCharacters += token.end - token.start;
 
         if (processedChunkCharacters >= chunkSize) {
             postMessage({ chunk: outlineChunk, isLastChunk: false });
@@ -186,13 +173,18 @@ FormatterWorker.CSSParserStates = {
     Style: "Style",
     PropertyName: "PropertyName",
     PropertyValue: "PropertyValue",
-    AtRule: "AtRule",
+    AtRule: "AtRule"
 };
 
 FormatterWorker.parseCSS = function(params)
 {
+    FormatterWorker._innerParseCSS(params.content, postMessage);
+}
+
+FormatterWorker._innerParseCSS = function(text, chunkCallback)
+{
     var chunkSize = 100000; // characters per data chunk
-    var lines = params.content.split("\n");
+    var lines = text.split("\n");
     var rules = [];
     var processedChunkCharacters = 0;
 
@@ -200,6 +192,12 @@ FormatterWorker.parseCSS = function(params)
     var rule;
     var property;
     var UndefTokenType = {};
+
+    var disabledRules = [];
+    function disabledRulesCallback(chunk)
+    {
+        disabledRules = disabledRules.concat(chunk.chunk);
+    }
 
     /**
      * @param {string} tokenValue
@@ -251,31 +249,66 @@ FormatterWorker.parseCSS = function(params)
                 property = {
                     name: tokenValue,
                     value: "",
+                    range: createRange(lineNumber, column),
+                    nameRange: createRange(lineNumber, column)
                 };
                 state = FormatterWorker.CSSParserStates.PropertyName;
             } else if (tokenValue === "}" && tokenType === UndefTokenType) {
                 rules.push(rule);
                 state = FormatterWorker.CSSParserStates.Initial;
+            } else if (tokenType["comment"]) {
+                // The |processToken| is called per-line, so no token spans more then one line.
+                // Support only a one-line comments.
+                if (tokenValue.substring(0, 2) !== "/*" || tokenValue.substring(tokenValue.length - 2) !== "*/")
+                    break;
+                var uncommentedText = tokenValue.substring(2, tokenValue.length - 2);
+                var fakeRule = "a{\n" + uncommentedText + "}";
+                disabledRules = [];
+                FormatterWorker._innerParseCSS(fakeRule, disabledRulesCallback);
+                if (disabledRules.length === 1 && disabledRules[0].properties.length === 1) {
+                    var disabledProperty = disabledRules[0].properties[0];
+                    disabledProperty.disabled = true;
+                    disabledProperty.range = createRange(lineNumber, column);
+                    disabledProperty.range.endColumn = newColumn;
+                    var lineOffset = lineNumber - 1;
+                    var columnOffset = column + 2;
+                    disabledProperty.nameRange.startLine += lineOffset;
+                    disabledProperty.nameRange.startColumn += columnOffset;
+                    disabledProperty.nameRange.endLine += lineOffset;
+                    disabledProperty.nameRange.endColumn += columnOffset;
+                    disabledProperty.valueRange.startLine += lineOffset;
+                    disabledProperty.valueRange.startColumn += columnOffset;
+                    disabledProperty.valueRange.endLine += lineOffset;
+                    disabledProperty.valueRange.endColumn += columnOffset;
+                    rule.properties.push(disabledProperty);
+                }
             }
             break;
         case FormatterWorker.CSSParserStates.PropertyName:
             if (tokenValue === ":" && tokenType === UndefTokenType) {
                 property.name = property.name.trim();
+                property.nameRange.endLine = lineNumber;
+                property.nameRange.endColumn = column;
+                property.valueRange = createRange(lineNumber, newColumn);
                 state = FormatterWorker.CSSParserStates.PropertyValue;
             } else if (tokenType["property"]) {
                 property.name += tokenValue;
             }
             break;
         case FormatterWorker.CSSParserStates.PropertyValue:
-            if (tokenValue === ";" && tokenType === UndefTokenType) {
+            if ((tokenValue === ";" || tokenValue === "}") && tokenType === UndefTokenType) {
                 property.value = property.value.trim();
+                property.valueRange.endLine = lineNumber;
+                property.valueRange.endColumn = column;
+                property.range.endLine = lineNumber;
+                property.range.endColumn = tokenValue === ";" ? newColumn : column;
                 rule.properties.push(property);
-                state = FormatterWorker.CSSParserStates.Style;
-            } else if (tokenValue === "}" && tokenType === UndefTokenType) {
-                property.value = property.value.trim();
-                rule.properties.push(property);
-                rules.push(rule);
-                state = FormatterWorker.CSSParserStates.Initial;
+                if (tokenValue === "}") {
+                    rules.push(rule);
+                    state = FormatterWorker.CSSParserStates.Initial;
+                } else {
+                    state = FormatterWorker.CSSParserStates.Style;
+                }
             } else if (!tokenType["comment"]) {
                 property.value += tokenValue;
             }
@@ -285,7 +318,7 @@ FormatterWorker.parseCSS = function(params)
         }
         processedChunkCharacters += newColumn - column;
         if (processedChunkCharacters > chunkSize) {
-            postMessage({ chunk: rules, isLastChunk: false });
+            chunkCallback({ chunk: rules, isLastChunk: false });
             rules = [];
             processedChunkCharacters = 0;
         }
@@ -296,7 +329,20 @@ FormatterWorker.parseCSS = function(params)
         var line = lines[lineNumber];
         tokenizer(line, processToken);
     }
-    postMessage({ chunk: rules, isLastChunk: true });
+    chunkCallback({ chunk: rules, isLastChunk: true });
+
+    /**
+     * @return {!{startLine: number, startColumn: number, endLine: number, endColumn: number}}
+     */
+    function createRange(lineNumber, columnNumber)
+    {
+        return {
+            startLine: lineNumber,
+            startColumn: columnNumber,
+            endLine: lineNumber,
+            endColumn: columnNumber
+        };
+    }
 }
 
 /**
@@ -311,12 +357,12 @@ FormatterWorker._formatScript = function(content, mapping, offset, formattedOffs
 {
     var formattedContent;
     try {
-        var tokenizer = new FormatterWorker.JavaScriptTokenizer(content);
-        var builder = new FormatterWorker.JavaScriptFormattedContentBuilder(tokenizer.content(), mapping, offset, formattedOffset, indentString);
-        var formatter = new FormatterWorker.JavaScriptFormatter(tokenizer, builder);
+        var builder = new FormatterWorker.JavaScriptFormattedContentBuilder(content, mapping, offset, formattedOffset, indentString);
+        var formatter = new FormatterWorker.JavaScriptFormatter(content, builder);
         formatter.format();
         formattedContent = builder.content();
     } catch (e) {
+        console.error(e);
         formattedContent = content;
     }
     return formattedContent;
@@ -378,7 +424,6 @@ FormatterWorker.HTMLFormatter.prototype = {
         function processToken(tokenValue, tokenType, tokenStart, tokenEnd) {
             if (!tokenType)
                 return;
-            var oldType = tokenType;
             tokenType = tokenType.split(" ").keySet();
             if (!tokenType["tag"])
                 return;
@@ -471,17 +516,3 @@ FormatterWorker.HTMLFormatter.prototype = {
         this._position = cursor;
     }
 }
-
-/**
- * @return {!Object}
- */
-function require()
-{
-    return tokenizerHolder;
-}
-
-/**
- * @type {!{tokenizer}}
- */
-var exports = { tokenizer: null };
-var tokenizerHolder = exports;

@@ -1,11 +1,25 @@
 {
+    "extensions": [
+        {
+            "type": "@WebInspector.AppProvider",
+            "className": "WebInspector.ScreencastAppProvider",
+            "order": 1
+        },
+        {
+            "type": "@WebInspector.ToolbarItem.Provider",
+            "className": "WebInspector.ScreencastApp.ToolbarButtonProvider",
+            "order": 1,
+            "location": "main-toolbar-left"
+        }
+    ],
     "dependencies": [
         "components"
     ],
     "scripts": [
+        "ScreencastApp.js",
         "ScreencastView.js"
     ],
-    "stylesheets": [
+    "resources": [
         "screencastView.css"
     ]
 }

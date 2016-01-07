@@ -122,7 +122,8 @@ WebInspector.HeapSnapshotLoader.prototype = {
      */
     write: function(chunk)
     {
-        this._json += chunk;
+        if (this._json !== null)
+            this._json += chunk;
         while (true) {
             switch (this._state) {
             case "find-snapshot-info": {
@@ -130,18 +131,19 @@ WebInspector.HeapSnapshotLoader.prototype = {
                 var snapshotTokenIndex = this._json.indexOf(snapshotToken);
                 if (snapshotTokenIndex === -1)
                     throw new Error("Snapshot token not found");
-                this._json = this._json.slice(snapshotTokenIndex + snapshotToken.length + 1);
+
+                var json = this._json.slice(snapshotTokenIndex + snapshotToken.length + 1);
                 this._state = "parse-snapshot-info";
                 this._progress.updateStatus("Loading snapshot info\u2026");
-                break;
+                this._json = null;  // tokenizer takes over input.
+                this._jsonTokenizer = new WebInspector.TextUtils.BalancedJSONTokenizer(this._writeBalancedJSON.bind(this));
+                // Fall through with adjusted payload.
+                chunk = json;
             }
             case "parse-snapshot-info": {
-                var closingBracketIndex = WebInspector.TextUtils.findBalancedCurlyBrackets(this._json);
-                if (closingBracketIndex === -1)
-                    return;
-                this._snapshot.snapshot = /** @type {!HeapSnapshotHeader} */ (JSON.parse(this._json.slice(0, closingBracketIndex)));
-                this._json = this._json.slice(closingBracketIndex);
-                this._state = "find-nodes";
+                this._jsonTokenizer.write(chunk);
+                if (this._jsonTokenizer)
+                    return;  // no remainder to process.
                 break;
             }
             case "find-nodes": {
@@ -162,7 +164,7 @@ WebInspector.HeapSnapshotLoader.prototype = {
             }
             case "parse-nodes": {
                 var hasMoreData = this._parseUintArray();
-                this._progress.updateProgress("Loading nodes\u2026 %d\%", this._arrayIndex, this._array.length);
+                this._progress.updateProgress("Loading nodes\u2026 %d%%", this._arrayIndex, this._array.length);
                 if (hasMoreData)
                     return;
                 this._snapshot.nodes = this._array;
@@ -188,16 +190,21 @@ WebInspector.HeapSnapshotLoader.prototype = {
             }
             case "parse-edges": {
                 var hasMoreData = this._parseUintArray();
-                this._progress.updateProgress("Loading edges\u2026 %d\%", this._arrayIndex, this._array.length);
+                this._progress.updateProgress("Loading edges\u2026 %d%%", this._arrayIndex, this._array.length);
                 if (hasMoreData)
                     return;
                 this._snapshot.edges = this._array;
                 this._array = null;
                 // If there is allocation info parse it, otherwise jump straight to strings.
-                if (this._snapshot.snapshot.trace_function_count)
+                if (this._snapshot.snapshot.trace_function_count) {
                     this._state = "find-trace-function-infos";
-                else
+                    this._progress.updateStatus("Loading allocation traces\u2026");
+                } else if (this._snapshot.snapshot.meta.sample_fields) {
+                    this._state = "find-samples";
+                    this._progress.updateStatus("Loading samples\u2026");
+                } else {
                     this._state = "find-strings";
+                }
                 break;
             }
             case "find-trace-function-infos": {
@@ -238,13 +245,42 @@ WebInspector.HeapSnapshotLoader.prototype = {
                 break;
             }
             case "parse-trace-tree": {
-                var stringsToken = "\"strings\"";
-                var stringsTokenIndex = this._json.indexOf(stringsToken);
-                if (stringsTokenIndex === -1)
+                // If there is samples array parse it, otherwise jump straight to strings.
+                var nextToken = this._snapshot.snapshot.meta.sample_fields ? "\"samples\"" : "\"strings\"";
+                var nextTokenIndex = this._json.indexOf(nextToken);
+                if (nextTokenIndex === -1)
                     return;
-                var bracketIndex = this._json.lastIndexOf("]", stringsTokenIndex);
+                var bracketIndex = this._json.lastIndexOf("]", nextTokenIndex);
                 this._snapshot.trace_tree = JSON.parse(this._json.substring(0, bracketIndex + 1));
-                this._json = this._json.slice(bracketIndex);
+                this._json = this._json.slice(bracketIndex + 1);
+                if (this._snapshot.snapshot.meta.sample_fields) {
+                    this._state = "find-samples";
+                    this._progress.updateStatus("Loading samples\u2026");
+                } else {
+                    this._state = "find-strings";
+                    this._progress.updateStatus("Loading strings\u2026");
+                }
+                break;
+            }
+            case "find-samples": {
+                var samplesToken = "\"samples\"";
+                var samplesTokenIndex = this._json.indexOf(samplesToken);
+                if (samplesTokenIndex === -1)
+                    return;
+                var bracketIndex = this._json.indexOf("[", samplesTokenIndex);
+                if (bracketIndex === -1)
+                    return;
+                this._json = this._json.slice(bracketIndex + 1);
+                this._array = [];
+                this._arrayIndex = 0;
+                this._state = "parse-samples";
+                break;
+            }
+            case "parse-samples": {
+                if (this._parseUintArray())
+                    return;
+                this._snapshot.samples = this._array;
+                this._array = null;
                 this._state = "find-strings";
                 this._progress.updateStatus("Loading strings\u2026");
                 break;
@@ -265,5 +301,16 @@ WebInspector.HeapSnapshotLoader.prototype = {
                 return;
             }
         }
+    },
+
+    /**
+     * @param {string} data
+     */
+    _writeBalancedJSON: function(data)
+    {
+        this._json = this._jsonTokenizer.remainder();  // tokenizer releases input.
+        this._jsonTokenizer = null;
+        this._state = "find-nodes";
+        this._snapshot.snapshot = /** @type {!HeapSnapshotHeader} */ (JSON.parse(data));
     }
-};
+}

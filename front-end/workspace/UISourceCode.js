@@ -70,7 +70,7 @@ WebInspector.UISourceCode.prototype = {
     /**
      * @return {string}
      */
-    get url()
+    networkURL: function()
     {
         return this._url;
     },
@@ -123,11 +123,11 @@ WebInspector.UISourceCode.prototype = {
     uri: function()
     {
         var path = this.path();
-        if (!this._project.id())
+        if (!this._project.url())
             return path;
         if (!path)
-            return this._project.id();
-        return this._project.id() + "/" + path;
+            return this._project.url();
+        return this._project.url() + "/" + path;
     },
 
     /**
@@ -195,6 +195,7 @@ WebInspector.UISourceCode.prototype = {
     },
 
     /**
+     * @override
      * @return {string}
      */
     contentURL: function()
@@ -203,6 +204,7 @@ WebInspector.UISourceCode.prototype = {
     },
 
     /**
+     * @override
      * @return {!WebInspector.ResourceType}
      */
     contentType: function()
@@ -227,6 +229,7 @@ WebInspector.UISourceCode.prototype = {
     },
 
     /**
+     * @override
      * @param {function(?string)} callback
      */
     requestContent: function(callback)
@@ -294,13 +297,14 @@ WebInspector.UISourceCode.prototype = {
                 this._terminateContentCheck();
                 return;
             }
+
             if (this._content === updatedContent) {
                 delete this._lastAcceptedContent;
                 this._terminateContentCheck();
                 return;
             }
 
-            if (!this.isDirty()) {
+            if (!this.isDirty() || this._workingCopy === updatedContent) {
                 this._commitContent(updatedContent, false);
                 this._terminateContentCheck();
                 return;
@@ -421,6 +425,7 @@ WebInspector.UISourceCode.prototype = {
             this.addRevision(content);
         }
 
+        WebInspector.userMetrics.RevisionApplied.record();
         this.requestOriginalContent(callback.bind(this));
     },
 
@@ -443,6 +448,7 @@ WebInspector.UISourceCode.prototype = {
             callback(this);
         }
 
+        WebInspector.userMetrics.RevisionApplied.record();
         this.requestOriginalContent(revert.bind(this));
     },
 
@@ -480,12 +486,14 @@ WebInspector.UISourceCode.prototype = {
         this._workingCopy = newWorkingCopy;
         delete this._workingCopyGetter;
         this.dispatchEventToListeners(WebInspector.UISourceCode.Events.WorkingCopyChanged);
+        this._project.workspace().dispatchEventToListeners(WebInspector.Workspace.Events.UISourceCodeWorkingCopyChanged, { uiSourceCode: this });
     },
 
     setWorkingCopyGetter: function(workingCopyGetter)
     {
         this._workingCopyGetter = workingCopyGetter;
         this.dispatchEventToListeners(WebInspector.UISourceCode.Events.WorkingCopyChanged);
+        this._project.workspace().dispatchEventToListeners(WebInspector.Workspace.Events.UISourceCodeWorkingCopyChanged, { uiSourceCode: this  });
     },
 
     removeWorkingCopyGetter: function()
@@ -515,8 +523,6 @@ WebInspector.UISourceCode.prototype = {
      */
     extension: function()
     {
-        if (this._project.type() === WebInspector.projectTypes.Network)
-            return this.contentType().canonicalMimeType();
         var lastIndexOfDot = this._name.lastIndexOf(".");
         var extension = lastIndexOfDot !== -1 ? this._name.substr(lastIndexOfDot + 1) : "";
         var indexOfQuestionMark = extension.indexOf("?");
@@ -534,6 +540,7 @@ WebInspector.UISourceCode.prototype = {
     },
 
     /**
+     * @override
      * @param {string} query
      * @param {boolean} caseSensitive
      * @param {boolean} isRegex
@@ -617,8 +624,16 @@ WebInspector.UILocation.prototype = {
      */
     id: function()
     {
-        return this.uiSourceCode.uri() + ":" + this.lineNumber + ":" + this.columnNumber;
+        return this.uiSourceCode.project().id() + ":" + this.uiSourceCode.uri() + ":" + this.lineNumber + ":" + this.columnNumber;
     },
+
+    /**
+     * @return {string}
+     */
+    toUIString: function()
+    {
+        return this.uiSourceCode.uri() + ":" + (this.lineNumber + 1);
+    }
 }
 
 /**
@@ -671,10 +686,12 @@ WebInspector.Revision.prototype = {
             if (this._uiSourceCode._content !== content)
                 this._uiSourceCode.addRevision(content);
         }
+        WebInspector.userMetrics.RevisionApplied.record();
         this.requestContent(revert.bind(this));
     },
 
     /**
+     * @override
      * @return {string}
      */
     contentURL: function()
@@ -683,6 +700,7 @@ WebInspector.Revision.prototype = {
     },
 
     /**
+     * @override
      * @return {!WebInspector.ResourceType}
      */
     contentType: function()
@@ -691,6 +709,7 @@ WebInspector.Revision.prototype = {
     },
 
     /**
+     * @override
      * @param {function(string)} callback
      */
     requestContent: function(callback)
@@ -699,6 +718,7 @@ WebInspector.Revision.prototype = {
     },
 
     /**
+     * @override
      * @param {string} query
      * @param {boolean} caseSensitive
      * @param {boolean} isRegex

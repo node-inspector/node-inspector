@@ -1,0 +1,90 @@
+{
+    "extensions": [
+        {
+            "type": "@WebInspector.CodeMirrorMimeMode",
+            "className": "WebInspector.DefaultCodeMirrorMimeMode",
+            "fileName": "clike.js",
+            "mimeTypes": [
+                "text/x-csrc",
+                "text/x-c",
+                "text/x-chdr",
+                "text/x-c++src",
+                "text/x-c++hdr",
+                "text/x-java",
+                "text/x-csharp",
+                "text/x-scala",
+                "x-shader/x-vertex",
+                "x-shader/x-fragment"
+            ]
+        },
+        {
+            "type": "@WebInspector.CodeMirrorMimeMode",
+            "className": "WebInspector.DefaultCodeMirrorMimeMode",
+            "fileName": "coffeescript.js",
+            "mimeTypes": [
+                "text/x-coffeescript"
+            ]
+        },
+        {
+            "type": "@WebInspector.CodeMirrorMimeMode",
+            "className": "WebInspector.DefaultCodeMirrorMimeMode",
+            "fileName": "php.js",
+            "dependencies": [
+                "clike.js"
+            ],
+            "mimeTypes": [
+                "application/x-httpd-php",
+                "application/x-httpd-php-open",
+                "text/x-php"
+            ]
+        },
+        {
+            "type": "@WebInspector.CodeMirrorMimeMode",
+            "className": "WebInspector.DefaultCodeMirrorMimeMode",
+            "fileName": "python.js",
+            "mimeTypes": [
+                "text/x-python",
+                "text/x-cython"
+            ]
+        },
+        {
+            "type": "@WebInspector.CodeMirrorMimeMode",
+            "className": "WebInspector.DefaultCodeMirrorMimeMode",
+            "fileName": "shell.js",
+            "mimeTypes": [
+                "text/x-sh"
+            ]
+        },
+        {
+            "type": "@WebInspector.CodeMirrorMimeMode",
+            "className": "WebInspector.DefaultCodeMirrorMimeMode",
+            "fileName": "livescript.js",
+            "mimeTypes": [
+                "text/x-livescript"
+            ]
+        },
+        {
+            "type": "@WebInspector.CodeMirrorMimeMode",
+            "className": "WebInspector.DefaultCodeMirrorMimeMode",
+            "fileName": "clojure.js",
+            "mimeTypes": [
+                "text/x-clojure"
+            ]
+        }
+    ],
+    "dependencies": [
+        "source_frame"
+    ],
+    "scripts": [
+        "DefaultCodeMirrorMimeMode.js"
+    ],
+    "resources": [
+        "clike.js",
+        "coffeescript.js",
+        "php.js",
+        "python.js",
+        "shell.js",
+        "livescript.js",
+        "clojure.js"
+    ]
+}

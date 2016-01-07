@@ -1,0 +1,23 @@
+/*
+ * Copyright (c) 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.filmstrip-dialog {
+    margin: 12px;
+}
+
+.filmstrip-dialog > img {
+    border: 1px solid #ddd;
+}
+
+.filmstrip-dialog-footer {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.filmstrip-dialog-label {
+    margin: 8px 8px;
+}

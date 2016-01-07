@@ -99,11 +99,3 @@ WebInspector.monospaceFontFamily = function()
     }
     return WebInspector._monospaceFontFamily;
 }
-
-/**
- * @return {boolean}
- */
-WebInspector.isWorkerFrontend = function()
-{
-    return !!Runtime.queryParam("isSharedWorker");
-}

@@ -33,6 +33,11 @@ var allDescriptors = [];
 var applicationDescriptor;
 var _loadedScripts = {};
 
+// FIXME: This is a workaround to force Closure compiler provide
+// the standard ES6 runtime for all modules. This should be removed
+// once Closure provides standard externs for Map et al.
+for (var k of []) {};
+
 /**
  * @param {string} url
  * @return {!Promise.<string>}
@@ -102,9 +107,10 @@ function normalizePath(path)
 
 /**
  * @param {!Array.<string>} scriptNames
+ * @param {string=} base
  * @return {!Promise.<undefined>}
  */
-function loadScriptsPromise(scriptNames)
+function loadScriptsPromise(scriptNames, base)
 {
     /** @type {!Array.<!Promise.<string>>} */
     var promises = [];
@@ -114,7 +120,7 @@ function loadScriptsPromise(scriptNames)
     var scriptToEval = 0;
     for (var i = 0; i < scriptNames.length; ++i) {
         var scriptName = scriptNames[i];
-        var sourceURL = self._importScriptPathPrefix + scriptName;
+        var sourceURL = (base || self._importScriptPathPrefix) + scriptName;
         var schemaIndex = sourceURL.indexOf("://") + 3;
         sourceURL = sourceURL.substring(0, schemaIndex) + normalizePath(sourceURL.substring(schemaIndex));
         if (_loadedScripts[sourceURL])
@@ -192,7 +198,7 @@ function Runtime(descriptors, coreModuleNames)
     for (var i = 0; i < descriptors.length; ++i)
         this._registerModule(descriptors[i]);
     if (coreModuleNames)
-        this._loadAutoStartModules(coreModuleNames).catch(Runtime._reportError);
+        this._loadAutoStartModules(coreModuleNames);
 }
 
 /**
@@ -255,14 +261,16 @@ Runtime.startApplication = function(appName)
                 coreModuleNames.push(name);
         }
 
-        Promise.all(moduleJSONPromises).then(instantiateRuntime).catch(Runtime._reportError);
+        Promise.all(moduleJSONPromises).then(instantiateRuntime);
         /**
          * @param {!Array.<!Object>} moduleDescriptors
          */
         function instantiateRuntime(moduleDescriptors)
         {
-            for (var i = 0; !Runtime.isReleaseMode() && i < moduleDescriptors.length; ++i)
+            for (var i = 0; !Runtime.isReleaseMode() && i < moduleDescriptors.length; ++i) {
                 moduleDescriptors[i]["name"] = configuration[i]["name"];
+                moduleDescriptors[i]["condition"] = configuration[i]["condition"];
+            }
             self.runtime = new Runtime(moduleDescriptors, coreModuleNames);
         }
     }
@@ -355,21 +363,14 @@ Runtime._assert = function(value, message)
 {
     if (value)
         return;
-    Runtime._originalAssert.call(Runtime._console, value, message);
-}
-
-/**
- * @param {*} e
- */
-Runtime._reportError = function(e)
-{
-    if (e instanceof Error)
-        console.error(e.stack);
-    else
-        console.error(e);
+    Runtime._originalAssert.call(Runtime._console, value, message + " " + new Error().stack);
 }
 
 Runtime.prototype = {
+    useTestBase: function()
+    {
+        Runtime._remoteBase = "http://localhost:8000/inspector-sources/";
+    },
 
     /**
      * @param {!Runtime.ModuleDescriptor} descriptor
@@ -487,11 +488,7 @@ Runtime.prototype = {
         {
             if (extension._type !== type && extension._typeClass() !== type)
                 return false;
-            var activatorExperiment = extension.descriptor()["experiment"];
-            if (activatorExperiment && !Runtime.experiments.isEnabled(activatorExperiment))
-                return false;
-            activatorExperiment = extension._module._descriptor["experiment"];
-            if (activatorExperiment && !Runtime.experiments.isEnabled(activatorExperiment))
+            if (!extension.enabled())
                 return false;
             return !context || extension.isApplicable(context);
         }
@@ -587,6 +584,11 @@ Runtime.ModuleDescriptor = function()
      * @type {!Array.<string>}
      */
     this.scripts;
+
+    /**
+     * @type {boolean|undefined}
+     */
+    this.remote;
 }
 
 /**
@@ -638,12 +640,42 @@ Runtime.Module.prototype = {
     },
 
     /**
+     * @return {boolean}
+     */
+    enabled: function()
+    {
+        var activatorExperiment = this._descriptor["experiment"];
+        if (activatorExperiment && !Runtime.experiments.isEnabled(activatorExperiment))
+            return false;
+        var condition = this._descriptor["condition"];
+        if (condition && !Runtime.queryParam(condition))
+            return false;
+        return true;
+    },
+
+    /**
+     * @param {string} name
+     * @return {string}
+     */
+    resource: function(name)
+    {
+        var fullName = this._name + "/" + name;
+        var content = Runtime.cachedResources[fullName];
+        if (!content)
+            throw new Error(fullName + " not preloaded. Check module.json");
+        return content;
+    },
+
+    /**
      * @return {!Promise.<undefined>}
      */
     _loadPromise: function()
     {
         if (this._loaded)
             return Promise.resolve();
+
+        if (!this.enabled())
+            return Promise.reject(new Error("Module " + this._name + " is not enabled"));
 
         if (this._pendingLoadPromise)
             return this._pendingLoadPromise;
@@ -654,7 +686,7 @@ Runtime.Module.prototype = {
             dependencyPromises.push(this._manager._modulesMap[dependencies[i]]._loadPromise());
 
         this._pendingLoadPromise = Promise.all(dependencyPromises)
-            .then(this._loadStylesheets.bind(this))
+            .then(this._loadResources.bind(this))
             .then(this._loadScripts.bind(this))
             .then(markAsLoaded.bind(this));
 
@@ -674,15 +706,15 @@ Runtime.Module.prototype = {
      * @return {!Promise.<undefined>}
      * @this {Runtime.Module}
      */
-    _loadStylesheets: function()
+    _loadResources: function()
     {
-        var stylesheets = this._descriptor["stylesheets"];
-        if (!stylesheets)
+        var resources = this._descriptor["resources"];
+        if (!resources)
             return Promise.resolve();
         var promises = [];
-        for (var i = 0; i < stylesheets.length; ++i) {
-            var url = this._modularizeURL(stylesheets[i]);
-            promises.push(loadResourcePromise(url).then(cacheStylesheet.bind(this, url), cacheStylesheet.bind(this, url, undefined)));
+        for (var i = 0; i < resources.length; ++i) {
+            var url = this._modularizeURL(resources[i]);
+            promises.push(loadResourcePromise(url).then(cacheResource.bind(this, url), cacheResource.bind(this, url, undefined)));
         }
         return Promise.all(promises).then(undefined);
 
@@ -690,15 +722,15 @@ Runtime.Module.prototype = {
          * @param {string} path
          * @param {string=} content
          */
-        function cacheStylesheet(path, content)
+        function cacheResource(path, content)
         {
             if (!content) {
-                console.error("Failed to load stylesheet: " + path);
+                console.error("Failed to load resource: " + path);
                 return;
             }
             var sourceURL = window.location.href;
             if (window.location.search)
-                sourceURL.replace(window.location.search, "");
+                sourceURL = sourceURL.replace(window.location.search, "");
             sourceURL = sourceURL.substring(0, sourceURL.lastIndexOf("/") + 1) + path;
             Runtime.cachedResources[path] = content + "\n/*# sourceURL=" + sourceURL + " */";
         }
@@ -713,9 +745,9 @@ Runtime.Module.prototype = {
             return Promise.resolve();
 
         if (Runtime.isReleaseMode())
-            return loadScriptsPromise([this._name + "_module.js"]);
+            return loadScriptsPromise([this._name + "_module.js"], this._remoteBase());
 
-        return loadScriptsPromise(this._descriptor.scripts.map(this._modularizeURL, this)).catch(Runtime._reportError);
+        return loadScriptsPromise(this._descriptor.scripts.map(this._modularizeURL, this));
     },
 
     /**
@@ -727,10 +759,34 @@ Runtime.Module.prototype = {
     },
 
     /**
+     * @return {string|undefined}
+     */
+    _remoteBase: function()
+    {
+        return this._descriptor.remote && Runtime._remoteBase || undefined;
+    },
+
+    /**
+     * @param {string} value
+     * @return {string}
+     */
+    substituteURL: function(value)
+    {
+        var base = this._remoteBase() || "";
+        return value.replace(/@url\(([^\)]*?)\)/g, convertURL.bind(this));
+
+        function convertURL(match, url)
+        {
+            return base + this._modularizeURL(url);
+        }
+    },
+
+    /**
      * @param {string} className
+     * @param {!Runtime.Extension} extension
      * @return {?Object}
      */
-    _instance: function(className)
+    _instance: function(className, extension)
     {
         if (className in this._instanceMap)
             return this._instanceMap[className];
@@ -741,7 +797,7 @@ Runtime.Module.prototype = {
             return null;
         }
 
-        var instance = new constructorFunction();
+        var instance = new constructorFunction(extension);
         this._instanceMap[className] = instance;
         return instance;
     }
@@ -784,6 +840,22 @@ Runtime.Extension.prototype = {
     },
 
     /**
+     * @return {boolean}
+     */
+    enabled: function()
+    {
+        var activatorExperiment = this.descriptor()["experiment"];
+        if (activatorExperiment && activatorExperiment.startsWith("!") && Runtime.experiments.isEnabled(activatorExperiment.substring(1)))
+            return false;
+        if (activatorExperiment && !activatorExperiment.startsWith("!") && !Runtime.experiments.isEnabled(activatorExperiment))
+            return false;
+        var condition = this.descriptor()["condition"];
+        if (condition && !Runtime.queryParam(condition))
+            return false;
+        return this._module.enabled();
+    },
+
+    /**
      * @return {?function(new:Object)}
      */
     _typeClass: function()
@@ -821,11 +893,21 @@ Runtime.Extension.prototype = {
          */
         function constructInstance()
         {
-            var result = this._module._instance(className);
+            var result = this._module._instance(className, this);
             if (!result)
                 return Promise.reject("Could not instantiate: " + className);
             return result;
         }
+    },
+
+    /**
+     * @param {string} platform
+     * @return {string}
+     */
+    title: function(platform)
+    {
+        // FIXME: should be WebInspector.UIString() but runtime is not l10n aware yet.
+        return this._descriptor["title-" + platform] || this._descriptor["title"];
     }
 }
 
@@ -933,6 +1015,13 @@ Runtime.ExperimentsSupport.prototype = {
         this._enabledTransiently[experimentName] = true;
     },
 
+    clearForTest: function()
+    {
+        this._experiments = [];
+        this._experimentNames = {};
+        this._enabledTransiently = {};
+    },
+
     cleanUpStaleExperiments: function()
     {
         var experimentsSetting = Runtime._experimentsSetting();
@@ -995,25 +1084,19 @@ Runtime.Experiment.prototype = {
     var params = queryParams.substring(1).split("&");
     for (var i = 0; i < params.length; ++i) {
         var pair = params[i].split("=");
-        Runtime._queryParamsObject[pair[0]] = pair[1];
-    }
-
-    // Patch settings from the URL param (for tests).
-    var settingsParam = Runtime.queryParam("settings");
-    if (settingsParam) {
-        try {
-            var settings = JSON.parse(window.decodeURI(settingsParam));
-            for (var key in settings)
-                window.localStorage[key] = settings[key];
-        } catch(e) {
-            // Ignore malformed settings.
-        }
+        var name = pair.shift();
+        Runtime._queryParamsObject[name] = pair.join("=");
     }
 })();}
 
 
 // This must be constructed after the query parameters have been parsed.
 Runtime.experiments = new Runtime.ExperimentsSupport();
+
+/**
+ * @type {?string}
+ */
+Runtime._remoteBase = Runtime.queryParam("remoteBase");
 
 /** @type {!Runtime} */
 var runtime;

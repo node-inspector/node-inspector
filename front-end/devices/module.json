@@ -1,19 +1,24 @@
 {
     "extensions": [
         {
-            "type": "drawer-view",
-            "name": "devices",
-            "title": "Devices",
-            "order": "12",
-            "experiment": "devicesPanel",
-            "className": "WebInspector.DevicesView"
+            "type": "@WebInspector.ActionDelegate",
+            "actionId": "devices.dialog.show",
+            "className": "WebInspector.DevicesDialog.ActionDelegate",
+            "title": "Inspect devices\u2026"
+        },
+        {
+            "type": "context-menu-item",
+            "location": "mainMenu/navigate",
+            "actionId": "devices.dialog.show"
         }
     ],
-    "dependencies": [
-        "platform",
-        "sdk",
-        "ui"
+    "dependencies": ["platform", "ui", "host", "components"],
+    "experiment": "inspectDevicesDialog",
+    "scripts": [
+        "DevicesView.js",
+        "DevicesDialog.js"
     ],
-    "scripts": [ "DevicesView.js" ],
-    "stylesheets": [ "devicesView.css" ]
+    "resources": [
+        "devicesView.css"
+    ]
 }

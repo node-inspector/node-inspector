@@ -152,7 +152,6 @@ WorkerRuntime.startWorker = function(moduleName)
  */
 WorkerRuntime.Worker = function(moduleName, workerName)
 {
-    this._isSharedWorker = !!workerName;
     this._workerPromise = workerName ? WorkerRuntime.startSharedWorker(moduleName, /** @type {string} */ (workerName)) : WorkerRuntime.startWorker(moduleName);
 }
 

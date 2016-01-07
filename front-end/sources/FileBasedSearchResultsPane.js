@@ -14,11 +14,9 @@ WebInspector.FileBasedSearchResultsPane = function(searchConfig)
     this._searchResults = [];
 
     this.element.id = "search-results-pane-file-based";
-
-    this._treeOutlineElement = createElement("ol");
-    this._treeOutlineElement.className = "search-results-outline-disclosure";
-    this.element.appendChild(this._treeOutlineElement);
-    this._treeOutline = new TreeOutline(this._treeOutlineElement);
+    this._treeOutline = new TreeOutline();
+    this._treeOutline.element.classList.add("search-results-outline-disclosure");
+    this.element.appendChild(this._treeOutline.element);
 
     this._matchesExpandedCount = 0;
 }
@@ -28,6 +26,7 @@ WebInspector.FileBasedSearchResultsPane.fileMatchesShownAtOnce = 20;
 
 WebInspector.FileBasedSearchResultsPane.prototype = {
     /**
+     * @override
      * @param {!WebInspector.FileBasedSearchResult} searchResult
      */
     addSearchResult: function(searchResult)
@@ -63,7 +62,7 @@ WebInspector.FileBasedSearchResultsPane.prototype = {
  */
 WebInspector.FileBasedSearchResultsPane.FileTreeElement = function(searchConfig, searchResult)
 {
-    TreeElement.call(this, "", null, true);
+    TreeElement.call(this, "", true);
     this._searchConfig = searchConfig;
     this._searchResult = searchResult;
 
@@ -154,7 +153,7 @@ WebInspector.FileBasedSearchResultsPane.FileTreeElement.prototype = {
             var contentSpan = this._createContentSpan(lineContent, matchRanges);
             anchor.appendChild(contentSpan);
 
-            var searchMatchElement = new TreeElement("");
+            var searchMatchElement = new TreeElement();
             searchMatchElement.selectable = false;
             this.appendChild(searchMatchElement);
             searchMatchElement.listItemElement.className = "search-match source-code";
@@ -183,7 +182,7 @@ WebInspector.FileBasedSearchResultsPane.FileTreeElement.prototype = {
      */
     _createAnchor: function(uiSourceCode, lineNumber, columnNumber)
     {
-        return WebInspector.Linkifier.linkifyUsingRevealer(uiSourceCode.uiLocation(lineNumber, columnNumber), "", uiSourceCode.url, lineNumber);
+        return WebInspector.Linkifier.linkifyUsingRevealer(uiSourceCode.uiLocation(lineNumber, columnNumber), "");
     },
 
     /**
@@ -208,7 +207,6 @@ WebInspector.FileBasedSearchResultsPane.FileTreeElement.prototype = {
     {
         regex.lastIndex = 0;
         var match;
-        var offset = 0;
         var matchRanges = [];
         while ((regex.lastIndex < lineContent.length) && (match = regex.exec(lineContent)))
             matchRanges.push(new WebInspector.SourceRange(match.index, match[0].length));

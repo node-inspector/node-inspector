@@ -5,19 +5,10 @@
  */
 
 .request-cookies-view {
-    display: none;
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: 0;
-    bottom: 0;
+    display: flex;
     overflow: auto;
     margin: 12px;
     height: 100%;
-}
-
-.request-cookies-view.visible {
-    display: flex;
 }
 
 .request-cookies-view .data-grid {

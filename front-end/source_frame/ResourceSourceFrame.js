@@ -35,16 +35,36 @@
 WebInspector.ResourceSourceFrame = function(resource)
 {
     this._resource = resource;
+    this._messages = [];
     WebInspector.SourceFrame.call(this, resource);
 }
 
 WebInspector.ResourceSourceFrame.prototype = {
+    /**
+     * @param {!WebInspector.ConsoleMessage} message
+     */
+    addPersistentMessage: function(message)
+    {
+        this._messages.push(message);
+        if (this.loaded)
+            this.addMessageToSource(WebInspector.SourceFrameMessage.fromConsoleMessage(message, message.line - 1, message.column));
+    },
+
+    /**
+     * @override
+     */
+    onTextEditorContentLoaded: function()
+    {
+        for (var message of this._messages)
+            this.addMessageToSource(WebInspector.SourceFrameMessage.fromConsoleMessage(message, message.line - 1, message.column));
+    },
+
     get resource()
     {
         return this._resource;
     },
 
-    populateTextAreaContextMenu: function(contextMenu, lineNumber)
+    populateTextAreaContextMenu: function(contextMenu, lineNumber, columnNumber)
     {
         contextMenu.appendApplicableItems(this._resource);
     },

@@ -1,0 +1,124 @@
+/*
+ * Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.tree-outline {
+    padding: 0 0 4px 4px;
+    margin: 0;
+    z-index: 0;
+    position: relative;
+}
+
+.tree-outline li.hovered:not(.selected) .selection {
+    display: block;
+    left: 3px;
+    right: 3px;
+    background-color: rgba(56, 121, 217, 0.1);
+    border-radius: 5px;
+}
+
+.tree-outline li .selection {
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 17px;
+    z-index: -1;
+    margin-top: -1px;
+}
+
+.tree-outline li.selected .selection {
+    display: block;
+    background-color: #ddd;
+}
+
+.tree-outline li.in-clipboard .highlight {
+    outline: 1px dotted darkgrey;
+}
+
+.tree-outline li.elements-drag-over .selection {
+    display: block;
+    margin-top: -2px;
+    border-top: 2px solid rgb(56, 121, 217);
+}
+
+ol.tree-outline:focus li.selected .selection {
+    background-color: rgb(56, 121, 217);
+}
+
+ol.tree-outline:focus li.parent.selected::before {
+    background-color: white;
+}
+
+ol.tree-outline,
+.tree-outline ol {
+    list-style-type: none;
+}
+
+.tree-outline-no-padding {
+    padding: 0;
+}
+
+.tree-outline ol {
+    padding-left: 12px;
+}
+
+.tree-outline li {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    min-height: 17px;
+    padding-top: 2px;
+}
+
+ol.tree-outline:focus li.selected {
+    color: white;
+}
+
+ol.tree-outline:focus li.selected * {
+    color: inherit;
+}
+
+.tree-outline li::before {
+    float: left;
+    -webkit-user-select: none;
+    -webkit-mask-image: url(Images/toolbarButtonGlyphs.png);
+    -webkit-mask-size: 352px 168px;
+    content: "a";
+    color: transparent;
+    text-shadow: none;
+    position: relative;
+    margin-right: 1px;
+    top: 1px;
+    width: 10px;
+    height: 10px;
+}
+
+.tree-outline li:not(.parent)::before {
+    background-color: transparent;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+.tree-outline li::before {
+    -webkit-mask-image: url(Images/toolbarButtonGlyphs_2x.png);
+}
+} /* media */
+
+.tree-outline li::before {
+    -webkit-mask-position: -4px -96px;
+    background-color: rgb(110, 110, 110);
+}
+
+.tree-outline li.parent.expanded::before {
+    -webkit-mask-position: -20px -96px;
+}
+
+.tree-outline ol.children {
+    display: none;
+}
+
+.tree-outline ol.children.expanded {
+    display: block;
+}

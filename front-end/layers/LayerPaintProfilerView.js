@@ -5,17 +5,17 @@
 /**
  * @constructor
  * @param {function(!WebInspector.Layer, string=)} showImageForLayerCallback
- * @extends {WebInspector.SplitView}
+ * @extends {WebInspector.SplitWidget}
  */
 WebInspector.LayerPaintProfilerView = function(showImageForLayerCallback)
 {
-    WebInspector.SplitView.call(this, true, false);
+    WebInspector.SplitWidget.call(this, true, false);
 
     this._showImageForLayerCallback = showImageForLayerCallback;
     this._logTreeView = new WebInspector.PaintProfilerCommandLogView();
-    this.setSidebarView(this._logTreeView);
+    this.setSidebarWidget(this._logTreeView);
     this._paintProfilerView = new WebInspector.PaintProfilerView(this._showImage.bind(this));
-    this.setMainView(this._paintProfilerView);
+    this.setMainWidget(this._paintProfilerView);
 
     this._paintProfilerView.addEventListener(WebInspector.PaintProfilerView.Events.WindowChanged, this._onWindowChanged, this);
 }
@@ -27,8 +27,8 @@ WebInspector.LayerPaintProfilerView.prototype = {
     profileLayer: function(layer)
     {
         this._logTreeView.setCommandLog(null, []);
-        this._paintProfilerView.setSnapshotAndLog(null, []);
-        layer.requestSnapshot(onSnapshotDone.bind(this));
+        this._paintProfilerView.setSnapshotAndLog(null, [], null);
+        /** @type {!WebInspector.AgentLayer} */ (layer).requestSnapshot(onSnapshotDone.bind(this));
 
         /**
          * @param {!WebInspector.PaintProfilerSnapshot=} snapshot
@@ -47,8 +47,8 @@ WebInspector.LayerPaintProfilerView.prototype = {
          */
         function onCommandLogDone(snapshot, log)
         {
-            this._logTreeView.setCommandLog(snapshot.target(), log);
-            this._paintProfilerView.setSnapshotAndLog(snapshot || null, log || []);
+            this._logTreeView.setCommandLog(snapshot.target(), log || []);
+            this._paintProfilerView.setSnapshotAndLog(snapshot || null, log || [], null);
         }
     },
 
@@ -66,6 +66,6 @@ WebInspector.LayerPaintProfilerView.prototype = {
         this._showImageForLayerCallback(this._layer, imageURL);
     },
 
-    __proto__: WebInspector.SplitView.prototype
+    __proto__: WebInspector.SplitWidget.prototype
 };
 

@@ -30,7 +30,7 @@
 
 /**
  * @constructor
- * @extends {WebInspector.SplitView}
+ * @extends {WebInspector.SplitWidget}
  * @implements {WebInspector.TimelineModeView}
  * @param {string} title
  * @param {!WebInspector.TimelineModeViewDelegate} delegate
@@ -38,7 +38,7 @@
  */
 WebInspector.CountersGraph = function(title, delegate, model)
 {
-    WebInspector.SplitView.call(this, true, false);
+    WebInspector.SplitWidget.call(this, true, false, "memoryCountersSidebar");
 
     this.element.id = "memory-graphs-container";
 
@@ -47,11 +47,11 @@ WebInspector.CountersGraph = function(title, delegate, model)
     this._calculator = new WebInspector.TimelineCalculator(this._model);
 
     this._graphsContainer = new WebInspector.VBox();
-    this.setMainView(this._graphsContainer);
+    this.setMainWidget(this._graphsContainer);
     this._createCurrentValuesBar();
-    this._canvasView = new WebInspector.VBoxWithResizeCallback(this._resize.bind(this));
-    this._canvasView.show(this._graphsContainer.element);
-    this._canvasContainer = this._canvasView.element;
+    var canvasWidget = new WebInspector.VBoxWithResizeCallback(this._resize.bind(this));
+    canvasWidget.show(this._graphsContainer.element);
+    this._canvasContainer = canvasWidget.element;
     this._canvasContainer.id = "memory-graphs-canvas-container";
     this._canvas = this._canvasContainer.createChild("canvas");
     this._canvas.id = "memory-counters-graph";
@@ -65,15 +65,23 @@ WebInspector.CountersGraph = function(title, delegate, model)
     this._canvasContainer.appendChild(this._timelineGrid.dividersElement);
 
     // Populate sidebar
-    this._infoView = new WebInspector.VBox();
-    this._infoView.element.classList.add("sidebar-tree");
-    this._infoView.element.createChild("div", "sidebar-tree-section").textContent = title;
-    this.setSidebarView(this._infoView);
+    this._infoWidget = new WebInspector.VBox();
+    this._infoWidget.element.classList.add("sidebar-tree");
+    this._infoWidget.element.createChild("div", "sidebar-tree-section").textContent = title;
+    this.setSidebarWidget(this._infoWidget);
     this._counters = [];
     this._counterUI = [];
 }
 
 WebInspector.CountersGraph.prototype = {
+    /**
+     * @return {?WebInspector.Target}
+     */
+    target: function()
+    {
+        return this._model.target();
+    },
+
     _createCurrentValuesBar: function()
     {
         this._currentValuesBar = this._graphsContainer.element.createChild("div");
@@ -84,28 +92,36 @@ WebInspector.CountersGraph.prototype = {
      * @param {string} uiName
      * @param {string} uiValueTemplate
      * @param {string} color
+     * @param {function(number):string=} formatter
      * @return {!WebInspector.CountersGraph.Counter}
      */
-    createCounter: function(uiName, uiValueTemplate, color)
+    createCounter: function(uiName, uiValueTemplate, color, formatter)
     {
         var counter = new WebInspector.CountersGraph.Counter();
         this._counters.push(counter);
-        this._counterUI.push(new WebInspector.CountersGraph.CounterUI(this, uiName, uiValueTemplate, color, counter));
+        this._counterUI.push(new WebInspector.CountersGraph.CounterUI(this, uiName, uiValueTemplate, color, counter, formatter));
         return counter;
     },
 
     /**
-     * @return {!WebInspector.View}
+     * @override
+     * @return {!WebInspector.Widget}
      */
     view: function()
     {
         return this;
     },
 
+    /**
+     * @override
+     */
     dispose: function()
     {
     },
 
+    /**
+     * @override
+     */
     reset: function()
     {
         for (var i = 0; i < this._counters.length; ++i) {
@@ -121,11 +137,12 @@ WebInspector.CountersGraph.prototype = {
         this._canvas.width = parentElement.clientWidth  * window.devicePixelRatio;
         this._canvas.height = parentElement.clientHeight * window.devicePixelRatio;
         var timelinePaddingLeft = 15;
-        this._calculator.setDisplayWindow(timelinePaddingLeft, this._canvas.width);
+        this._calculator.setDisplayWindow(this._canvas.width, timelinePaddingLeft);
         this.refresh();
     },
 
     /**
+     * @override
      * @param {number} startTime
      * @param {number} endTime
      */
@@ -188,7 +205,7 @@ WebInspector.CountersGraph.prototype = {
          */
         function findRecordToReveal(record)
         {
-            if (!this._model.isVisible(record))
+            if (!this._model.isVisible(record.traceEvent()))
                 return false;
             if (record.startTime() <= time && time <= record.endTime()) {
                 recordToReveal = record;
@@ -258,6 +275,7 @@ WebInspector.CountersGraph.prototype = {
     },
 
     /**
+     * @override
      * @param {?WebInspector.TimelineModel.Record} record
      * @param {string=} regex
      * @param {boolean=} selectRecord
@@ -267,13 +285,14 @@ WebInspector.CountersGraph.prototype = {
     },
 
     /**
+     * @override
      * @param {?WebInspector.TimelineSelection} selection
      */
     setSelection: function(selection)
     {
     },
 
-    __proto__: WebInspector.SplitView.prototype
+    __proto__: WebInspector.SplitWidget.prototype
 }
 
 /**
@@ -378,17 +397,22 @@ WebInspector.CountersGraph.Counter.prototype = {
  * @param {string} currentValueLabel
  * @param {string} graphColor
  * @param {!WebInspector.CountersGraph.Counter} counter
+ * @param {(function(number): string)|undefined} formatter
  */
-WebInspector.CountersGraph.CounterUI = function(memoryCountersPane, title, currentValueLabel, graphColor, counter)
+WebInspector.CountersGraph.CounterUI = function(memoryCountersPane, title, currentValueLabel, graphColor, counter, formatter)
 {
     this._memoryCountersPane = memoryCountersPane;
     this.counter = counter;
-    var container = memoryCountersPane._infoView.element.createChild("div", "memory-counter-sidebar-info");
-    var swatchColor = graphColor;
-    this._swatch = new WebInspector.SwatchCheckbox(WebInspector.UIString(title), swatchColor);
-    this._swatch.addEventListener(WebInspector.SwatchCheckbox.Events.Changed, this._toggleCounterGraph.bind(this));
-    container.appendChild(this._swatch.element);
-    this._range = this._swatch.element.createChild("span");
+    this._formatter = formatter || Number.withThousandsSeparator;
+    var container = memoryCountersPane._infoWidget.element.createChild("div", "memory-counter-sidebar-info");
+
+    this._filter = new WebInspector.CheckboxFilterUI(title, title);
+    var color = WebInspector.Color.parse(graphColor).setAlpha(0.5).asString(WebInspector.Color.Format.RGBA);
+    if (color)
+        this._filter.setColor(color, "rgba(0,0,0,0.3)");
+    this._filter.addEventListener(WebInspector.FilterUI.Events.FilterChanged, this._toggleCounterGraph.bind(this));
+    container.appendChild(this._filter.element());
+    this._range = this._filter.labelElement().createChild("span", "range");
 
     this._value = memoryCountersPane._currentValuesBar.createChild("span", "memory-counter-value");
     this._value.style.color = graphColor;
@@ -415,12 +439,17 @@ WebInspector.CountersGraph.CounterUI.prototype = {
      */
     setRange: function(minValue, maxValue)
     {
-        this._range.textContent = WebInspector.UIString("[%.0f:%.0f]", minValue, maxValue);
+        var min = this._formatter(minValue);
+        var max = this._formatter(maxValue);
+        this._range.textContent = WebInspector.UIString("[%s\u2009\u2013\u2009%s]", min, max);
     },
 
+    /**
+     * @param {!WebInspector.Event} event
+     */
     _toggleCounterGraph: function(event)
     {
-        this._value.classList.toggle("hidden", !this._swatch.checked);
+        this._value.classList.toggle("hidden", !this._filter.checked());
         this._memoryCountersPane.refresh();
     },
 
@@ -441,7 +470,8 @@ WebInspector.CountersGraph.CounterUI.prototype = {
         if (!this.visible() || !this.counter.values.length || !this.counter.x)
             return;
         var index = this._recordIndexAt(x);
-        this._value.textContent = WebInspector.UIString(this._currentValueLabel, this.counter.values[index]);
+        var value = Number.withThousandsSeparator(this.counter.values[index]);
+        this._value.textContent = WebInspector.UIString(this._currentValueLabel, value);
         var y = this.graphYValues[index] / window.devicePixelRatio;
         this._marker.style.left = x + "px";
         this._marker.style.top = y + "px";
@@ -523,50 +553,6 @@ WebInspector.CountersGraph.CounterUI.prototype = {
      */
     visible: function()
     {
-        return this._swatch.checked;
+        return this._filter.checked();
     }
-}
-
-
-/**
- * @constructor
- * @extends {WebInspector.Object}
- */
-WebInspector.SwatchCheckbox = function(title, color)
-{
-    this.element = createElement("div");
-    this._swatch = this.element.createChild("div", "swatch");
-    this.element.createChild("span", "title").textContent = title;
-    this._color = color;
-    this.checked = true;
-
-    this.element.addEventListener("click", this._toggleCheckbox.bind(this), true);
-}
-
-WebInspector.SwatchCheckbox.Events = {
-    Changed: "Changed"
-}
-
-WebInspector.SwatchCheckbox.prototype = {
-    get checked()
-    {
-        return this._checked;
-    },
-
-    set checked(v)
-    {
-        this._checked = v;
-        if (this._checked)
-            this._swatch.style.backgroundColor = this._color;
-        else
-            this._swatch.style.backgroundColor = "";
-    },
-
-    _toggleCheckbox: function(event)
-    {
-        this.checked = !this.checked;
-        this.dispatchEventToListeners(WebInspector.SwatchCheckbox.Events.Changed);
-    },
-
-    __proto__: WebInspector.Object.prototype
 }

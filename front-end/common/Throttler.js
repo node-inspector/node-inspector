@@ -11,7 +11,7 @@ WebInspector.Throttler = function(timeout)
     this._timeout = timeout;
     this._isRunningProcess = false;
     this._asSoonAsPossible = false;
-    /** @type {?function(!WebInspector.Throttler.FinishCallback)} */
+    /** @type {?function():(!Promise.<?>)} */
     this._process = null;
 }
 
@@ -35,14 +35,15 @@ WebInspector.Throttler.prototype = {
         this._asSoonAsPossible = false;
         this._isRunningProcess = true;
 
-        // Process might issue synchronous calls to this throttler.
-        var process = this._process;
+        Promise.resolve()
+            .then(this._process)
+            .catch(console.error.bind(console))
+            .then(this._processCompleted.bind(this));
         this._process = null;
-        process(this._processCompleted.bind(this));
     },
 
     /**
-     * @param {function(!WebInspector.Throttler.FinishCallback)} process
+     * @param {function():(!Promise.<?>)} process
      * @param {boolean=} asSoonAsPossible
      */
     schedule: function(process, asSoonAsPossible)
@@ -95,5 +96,5 @@ WebInspector.Throttler.prototype = {
     }
 }
 
-/** @typedef {function()} */
+/** @typedef {function(!Error=)} */
 WebInspector.Throttler.FinishCallback;

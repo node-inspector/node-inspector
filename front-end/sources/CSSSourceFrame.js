@@ -36,6 +36,7 @@
 WebInspector.CSSSourceFrame = function(uiSourceCode)
 {
     WebInspector.UISourceCodeFrame.call(this, uiSourceCode);
+    this.textEditor.setAutocompleteDelegate(new WebInspector.CSSSourceFrame.AutocompleteDelegate());
     this._registerShortcuts();
 }
 
@@ -97,4 +98,100 @@ WebInspector.CSSSourceFrame.prototype = {
     },
 
     __proto__: WebInspector.UISourceCodeFrame.prototype
+}
+
+/**
+ * @constructor
+ * @implements {WebInspector.TextEditorAutocompleteDelegate}
+ */
+WebInspector.CSSSourceFrame.AutocompleteDelegate = function()
+{
+    this._simpleDelegate = new WebInspector.SimpleAutocompleteDelegate(".-$");
+}
+
+WebInspector.CSSSourceFrame._backtrackDepth = 10;
+
+WebInspector.CSSSourceFrame.AutocompleteDelegate.prototype = {
+    /**
+     * @override
+     * @param {!WebInspector.CodeMirrorTextEditor} editor
+     */
+    initialize: function(editor)
+    {
+        this._simpleDelegate.initialize(editor);
+    },
+
+    /**
+     * @override
+     */
+    dispose: function()
+    {
+        this._simpleDelegate.dispose();
+    },
+
+    /**
+     * @override
+     * @param {!WebInspector.CodeMirrorTextEditor} editor
+     * @param {number} lineNumber
+     * @param {number} columnNumber
+     * @return {?WebInspector.TextRange}
+     */
+    substituteRange: function(editor, lineNumber, columnNumber)
+    {
+        return this._simpleDelegate.substituteRange(editor, lineNumber, columnNumber);
+    },
+
+    /**
+     * @param {!WebInspector.CodeMirrorTextEditor} editor
+     * @param {number} lineNumber
+     * @param {number} columnNumber
+     * @return {?{startColumn: number, endColumn: number, type: string}}
+     */
+    _backtrackPropertyToken: function(editor, lineNumber, columnNumber)
+    {
+        var tokenPosition = columnNumber;
+        var line = editor.line(lineNumber);
+        var seenColumn = false;
+
+        for (var i = 0; i < WebInspector.CSSSourceFrame._backtrackDepth && tokenPosition >= 0; ++i) {
+            var token = editor.tokenAtTextPosition(lineNumber, tokenPosition);
+            if (!token)
+                return null;
+            if (token.type === "css-property")
+                return seenColumn ? token : null;
+            if (token.type && !(token.type.indexOf("whitespace") !== -1 || token.type.startsWith("css-comment")))
+                return null;
+
+            if (!token.type && line.substring(token.startColumn, token.endColumn) === ":") {
+                if (!seenColumn)
+                    seenColumn = true;
+                else
+                    return null;
+            }
+            tokenPosition = token.startColumn - 1;
+        }
+        return null;
+    },
+
+    /**
+     * @override
+     * @param {!WebInspector.CodeMirrorTextEditor} editor
+     * @param {!WebInspector.TextRange} prefixRange
+     * @param {!WebInspector.TextRange} substituteRange
+     * @return {!Array.<string>}
+     */
+    wordsWithPrefix: function(editor, prefixRange, substituteRange)
+    {
+        var prefix = editor.copyRange(prefixRange);
+        if (prefix.startsWith("$"))
+            return this._simpleDelegate.wordsWithPrefix(editor, prefixRange, substituteRange);
+        var propertyToken = this._backtrackPropertyToken(editor, prefixRange.startLine, prefixRange.startColumn - 1);
+        if (!propertyToken)
+            return this._simpleDelegate.wordsWithPrefix(editor, prefixRange, substituteRange);
+
+        var line = editor.line(prefixRange.startLine);
+        var tokenContent = line.substring(propertyToken.startColumn, propertyToken.endColumn);
+        var keywords = WebInspector.CSSMetadata.keywordsForProperty(tokenContent);
+        return keywords.startsWith(prefix);
+    },
 }

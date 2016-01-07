@@ -49,9 +49,9 @@ WebInspector.RequestCookiesView.prototype = {
         this._request.addEventListener(WebInspector.NetworkRequest.Events.ResponseHeadersChanged, this._refreshCookies, this);
 
         if (!this._gotCookies) {
-            if (!this._emptyView) {
-                this._emptyView = new WebInspector.EmptyView(WebInspector.UIString("This request has no cookies."));
-                this._emptyView.show(this.element);
+            if (!this._emptyWidget) {
+                this._emptyWidget = new WebInspector.EmptyWidget(WebInspector.UIString("This request has no cookies."));
+                this._emptyWidget.show(this.element);
             }
             return;
         }
@@ -73,7 +73,7 @@ WebInspector.RequestCookiesView.prototype = {
 
     _buildCookiesTable: function()
     {
-        this.detachChildViews();
+        this.detachChildWidgets();
 
         this._cookiesTable = new WebInspector.CookiesTable(true);
         this._cookiesTable.setCookieFolders([

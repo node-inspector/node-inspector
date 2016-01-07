@@ -1,0 +1,69 @@
+/*
+ * Copyright (c) 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.timeline-status-dialog {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    font-size: 14px;
+}
+
+.timeline-status-dialog div,button {
+    margin: 5px;
+}
+
+.timeline-status-dialog .title {
+    align-self: center;
+    font-size: 20px;
+    margin-bottom: 12px;
+}
+
+.timeline-status-dialog ::before {
+    display: inline-block;
+    width: 90px;
+    text-align: right;
+    color: #aaa;
+    margin-right: 10px;
+}
+
+.timeline-status-dialog .status::before {
+    content: "Status";
+}
+
+.timeline-status-dialog .time::before {
+    content: "Time";
+}
+
+.timeline-status-dialog .buffer-usage::before {
+    content: "Buffer Usage";
+}
+
+.timeline-status-dialog .buffer-usage .indicator-container {
+    display: inline-block;
+    width: 200px;
+    height: 12px;
+    background-color: #f4f4f4;
+    display: inline-block;
+    margin: 0;
+    vertical-align: middle;
+}
+
+.timeline-status-dialog .buffer-usage .indicator {
+    background-color: rgb(112, 166, 255);
+    height: 100%;
+    width: 0;
+    margin: 0;
+}
+
+.timeline-status-dialog .stop-button {
+    text-align: center;
+    margin-top: 16px;
+}
+
+.timeline-status-dialog button:disabled {
+    opacity: 0.5;
+}
+

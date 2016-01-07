@@ -43,7 +43,7 @@ WebInspector.InplaceEditor.startMultilineEditing = function(element, config)
     {
         var controller = /** @type {!WebInspector.InplaceEditor} */ (inplaceEditor).startEditing(element, config);
         if (!controller)
-            return Promise.rejectWithError("Editing is already in progress");
+            return Promise.reject(new Error("Editing is already in progress"));
         return controller;
     }
 }
@@ -169,6 +169,10 @@ WebInspector.InplaceEditor.prototype = {
             committedCallback(this, self.editorContent(editingContext), editingContext.oldText, context, moveDirection);
         }
 
+        /**
+         * @param {!Event} event
+         * @return {string}
+         */
         function defaultFinishHandler(event)
         {
             var isMetaOrCtrl = WebInspector.isMac() ?
@@ -180,6 +184,7 @@ WebInspector.InplaceEditor.prototype = {
                 return "cancel";
             else if (!isMultiline && event.keyIdentifier === "U+0009") // Tab key
                 return "move-" + (event.shiftKey ? "backward" : "forward");
+            return "";
         }
 
         function handleEditingResult(result, event)
@@ -197,16 +202,23 @@ WebInspector.InplaceEditor.prototype = {
             }
         }
 
+        /**
+         * @param {!Event} event
+         */
         function pasteEventListener(event)
         {
             var result = pasteCallback(event);
             handleEditingResult(result, event);
         }
 
+        /**
+         * @param {!Event} event
+         */
         function keyDownEventListener(event)
         {
-            var handler = config.customFinishHandler || defaultFinishHandler;
-            var result = handler(event);
+            var result = defaultFinishHandler(event);
+            if (!result && config.postKeydownFinishHandler)
+                result = config.postKeydownFinishHandler(event);
             handleEditingResult(result, event);
         }
 
@@ -236,27 +248,24 @@ WebInspector.InplaceEditor.prototype = {
 WebInspector.InplaceEditor.Config = function(commitHandler, cancelHandler, context, blurHandler)
 {
     this.commitHandler = commitHandler;
-    this.cancelHandler = cancelHandler
+    this.cancelHandler = cancelHandler;
     this.context = context;
     this.blurHandler = blurHandler;
 
     /**
-     * Handles the "paste" event, return values are the same as those for customFinishHandler
-     * @type {function(!Element)|undefined}
+     * @type {function(!Event):string|undefined}
      */
     this.pasteHandler;
 
     /**
-     * Whether the edited element is multiline
      * @type {boolean|undefined}
      */
     this.multiline;
 
     /**
-     * Custom finish handler for the editing session (invoked on keydown)
-     * @type {function(!Element,*)|undefined}
+     * @type {function(!Event):string|undefined}
      */
-    this.customFinishHandler;
+    this.postKeydownFinishHandler;
 }
 
 WebInspector.InplaceEditor.Config.prototype = {
@@ -282,8 +291,11 @@ WebInspector.InplaceEditor.Config.prototype = {
         this.smartIndent = smartIndent;
     },
 
-    setCustomFinishHandler: function(customFinishHandler)
+    /**
+     * @param {function(!Event):string} postKeydownFinishHandler
+     */
+    setPostKeydownFinishHandler: function(postKeydownFinishHandler)
     {
-        this.customFinishHandler = customFinishHandler;
+        this.postKeydownFinishHandler = postKeydownFinishHandler;
     }
 }

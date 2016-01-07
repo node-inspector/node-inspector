@@ -4,13 +4,49 @@
         "host",
         "platform"
     ],
+    "extensions": [
+        {
+            "type": "setting",
+            "settingName": "blockedURLs",
+            "settingType": "array",
+            "defaultValue": []
+        },
+        {
+            "type": "setting",
+            "settingName": "skipStackFramesPattern",
+            "settingType": "regex",
+            "defaultValue": ""
+        },
+        {
+            "type": "setting",
+            "settingName": "skipContentScripts",
+            "settingType": "boolean",
+            "defaultValue": false
+        },
+        {
+            "type": "setting",
+            "settingName": "pauseOnExceptionEnabled",
+            "settingType": "boolean",
+            "defaultValue": false
+        },
+        {
+            "type": "setting",
+            "settingName": "pauseOnCaughtException",
+            "settingType": "boolean",
+            "defaultValue": false
+        },
+        {
+            "type": "setting",
+            "settingName": "enableAsyncStackTraces",
+            "settingType": "boolean",
+            "defaultValue": false
+        }
+    ],
     "scripts": [
         "InspectorBackend.js",
         "../InspectorBackendCommands.js",
         "Target.js",
-        "AnimationModel.js",
         "ApplicationCacheModel.js",
-        "BlackboxSupport.js",
         "ConsoleModel.js",
         "ContentProviders.js",
         "CookieParser.js",
@@ -20,22 +56,17 @@
         "CSSParser.js",
         "CSSStyleModel.js",
         "DOMModel.js",
-        "DOMStorage.js",
-        "Database.js",
         "DebuggerModel.js",
-        "FileSystemModel.js",
         "HAREntry.js",
-        "IndexedDBModel.js",
         "LayerTreeModel.js",
         "NetworkLog.js",
-        "OverridesSupport.js",
-        "PowerProfiler.js",
+        "ServiceWorkerManager.js",
         "TracingManager.js",
+        "TracingModel.js",
         "WorkerManager.js",
-        "WorkerTargetManager.js",
         "RuntimeModel.js",
         "Script.js",
-        "SnippetStorage.js",
+        "ServiceWorkerCacheModel.js",
         "RemoteObject.js",
         "Resource.js",
         "ResourceTreeModel.js",

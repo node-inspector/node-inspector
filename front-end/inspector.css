@@ -6,9 +6,5 @@
 
 @import url("dialog.css");
 @import url("inspectorStyle.css");
-@import url("inspectorCommon.css");
-@import url("inspectorSyntaxHighlight.css");
 @import url("popover.css");
 @import url("sidebarPane.css");
-@import url("suggestBox.css");
-@import url("tabbedPane.css");

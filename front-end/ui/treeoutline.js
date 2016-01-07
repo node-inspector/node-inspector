@@ -28,14 +28,89 @@
 
 /**
  * @constructor
+ * @extends {WebInspector.Object}
+ * @param {boolean=} nonFocusable
  */
-function TreeContainerNode()
+function TreeOutline(nonFocusable)
 {
-    /** @type {!Array.<!TreeElement>} */
-    this.children = [];
+    this._createRootElement();
+
+    this.selectedTreeElement = null;
+    this.expandTreeElementsWhenArrowing = false;
+    /** @type {?function(!TreeElement, !TreeElement):number} */
+    this._comparator = null;
+
+    this._contentElement = this._rootElement._childrenListNode;
+    this._contentElement.addEventListener("keydown", this._treeKeyDown.bind(this), true);
+
+    this.setFocusable(!nonFocusable);
+
+    this.element = this._contentElement;
 }
 
-TreeContainerNode.prototype = {
+TreeOutline.Events = {
+    ElementAttached: "ElementAttached",
+    ElementExpanded: "ElementExpanded",
+    ElementCollapsed: "ElementCollapsed"
+}
+
+TreeOutline.prototype = {
+    _createRootElement: function()
+    {
+        this._rootElement = new TreeElement();
+        this._rootElement.treeOutline = this;
+        this._rootElement.root = true;
+        this._rootElement.selectable = false;
+        this._rootElement.expanded = true;
+        this._rootElement._childrenListNode.classList.remove("children");
+    },
+
+    /**
+     * @return {!TreeElement}
+     */
+    rootElement: function()
+    {
+        return this._rootElement;
+    },
+
+    /**
+     * @return {?TreeElement}
+     */
+    firstChild: function()
+    {
+        return this._rootElement.firstChild();
+    },
+
+    /**
+     * @param {!TreeElement} child
+     */
+    appendChild: function(child)
+    {
+        this._rootElement.appendChild(child);
+    },
+
+    /**
+     * @param {!TreeElement} child
+     * @param {number} index
+     */
+    insertChild: function(child, index)
+    {
+        this._rootElement.insertChild(child, index);
+    },
+
+    /**
+     * @param {!TreeElement} child
+     */
+    removeChild: function(child)
+    {
+        this._rootElement.removeChild(child);
+    },
+
+    removeChildren: function()
+    {
+        this._rootElement.removeChildren();
+    },
+
     /**
      * @param {number} x
      * @param {number} y
@@ -43,7 +118,7 @@ TreeContainerNode.prototype = {
      */
     treeElementFromPoint: function(x, y)
     {
-        var node = this._childrenListNode.ownerDocument.deepElementFromPoint(x, y);
+        var node = this._contentElement.ownerDocument.deepElementFromPoint(x, y);
         if (!node)
             return null;
 
@@ -63,300 +138,91 @@ TreeContainerNode.prototype = {
     },
 
     /**
-     * @param {?TreeElement} ancestor
+     * @param {?function(!TreeElement, !TreeElement):number} comparator
+     */
+    setComparator: function(comparator)
+    {
+        this._comparator = comparator;
+    },
+
+    /**
+     * @param {boolean} focusable
+     */
+    setFocusable: function(focusable)
+    {
+        if (focusable)
+            this._contentElement.setAttribute("tabIndex", 0);
+        else
+            this._contentElement.removeAttribute("tabIndex");
+    },
+
+    focus: function()
+    {
+        this._contentElement.focus();
+    },
+
+    /**
+     * @param {!TreeElement} element
+     */
+    _bindTreeElement: function(element)
+    {
+        if (element.treeOutline)
+            console.error("Binding element for the second time: " + new Error().stack);
+        element.treeOutline = this;
+        element.onbind();
+    },
+
+    /**
+     * @param {!TreeElement} element
+     */
+    _unbindTreeElement: function(element)
+    {
+        if (!element.treeOutline)
+            console.error("Unbinding element that was not bound: " + new Error().stack);
+
+        element.deselect();
+        element.onunbind();
+        element.treeOutline = null;
+    },
+
+    /**
      * @return {boolean}
      */
-    hasAncestor: function(ancestor) {
-        if (!ancestor)
-            return false;
-
-        var currentNode = this.parent;
-        while (currentNode) {
-            if (ancestor === currentNode)
-                return true;
-            currentNode = currentNode.parent;
+    selectPrevious: function()
+    {
+        var nextSelectedElement = this.selectedTreeElement.traversePreviousTreeElement(true);
+        while (nextSelectedElement && !nextSelectedElement.selectable)
+            nextSelectedElement = nextSelectedElement.traversePreviousTreeElement(!this.expandTreeElementsWhenArrowing);
+        if (nextSelectedElement) {
+            nextSelectedElement.reveal();
+            nextSelectedElement.select(false, true);
+            return true;
         }
-
         return false;
     },
 
     /**
-     * @param {!TreeElement} child
+     * @return {boolean}
      */
-    appendChild: function(child)
+    selectNext: function()
     {
-        var insertionIndex;
-        if (this.treeOutline.comparator)
-            insertionIndex = insertionIndexForObjectInListSortedByFunction(child, this.children, this.treeOutline.comparator);
-        else
-            insertionIndex = this.children.length;
-        this.insertChild(child, insertionIndex);
+        var nextSelectedElement = this.selectedTreeElement.traverseNextTreeElement(true);
+        while (nextSelectedElement && !nextSelectedElement.selectable)
+            nextSelectedElement = nextSelectedElement.traverseNextTreeElement(!this.expandTreeElementsWhenArrowing);
+        if (nextSelectedElement) {
+            nextSelectedElement.reveal();
+            nextSelectedElement.select(false, true);
+            return true;
+        }
+        return false;
     },
 
     /**
-     * @param {!TreeElement} child
-     * @param {!TreeElement} beforeChild
+     * @param {!Event} event
      */
-    insertBeforeChild: function(child, beforeChild)
-    {
-        if (!child)
-            throw("child can't be undefined or null");
-
-        if (!beforeChild)
-            throw("beforeChild can't be undefined or null");
-
-        var childIndex = this.children.indexOf(beforeChild);
-        if (childIndex === -1)
-            throw("beforeChild not found in this node's children");
-
-        this.insertChild(child, childIndex);
-    },
-
-    /**
-     * @param {!TreeElement} child
-     * @param {number} index
-     */
-    insertChild: function(child, index)
-    {
-        if (!child)
-            throw("child can't be undefined or null");
-
-        var previousChild = (index > 0 ? this.children[index - 1] : null);
-        if (previousChild) {
-            previousChild.nextSibling = child;
-            child.previousSibling = previousChild;
-        } else {
-            child.previousSibling = null;
-        }
-
-        var nextChild = this.children[index];
-        if (nextChild) {
-            nextChild.previousSibling = child;
-            child.nextSibling = nextChild;
-        } else {
-            child.nextSibling = null;
-        }
-
-        this.children.splice(index, 0, child);
-        this.hasChildren = true;
-        child.parent = this;
-        child.treeOutline = this.treeOutline;
-        child.treeOutline._rememberTreeElement(child);
-
-        var current = child.children[0];
-        while (current) {
-            current.treeOutline = this.treeOutline;
-            current.treeOutline._rememberTreeElement(current);
-            current = current.traverseNextTreeElement(false, child, true);
-        }
-
-        if (child.hasChildren && typeof(child.treeOutline._expandedStateMap.get(child.representedObject)) !== "undefined")
-            child.expanded = child.treeOutline._expandedStateMap.get(child.representedObject);
-
-        if (!this._childrenListNode) {
-            this._childrenListNode = this.treeOutline._childrenListNode.ownerDocument.createElement("ol");
-            this._childrenListNode.parentTreeElement = this;
-            this._childrenListNode.classList.add("children");
-            if (this.hidden)
-                this._childrenListNode.classList.add("hidden");
-        }
-
-        child._attach();
-    },
-
-    /**
-     * @param {number} childIndex
-     */
-    removeChildAtIndex: function(childIndex)
-    {
-        if (childIndex < 0 || childIndex >= this.children.length)
-            throw("childIndex out of range");
-
-        var child = this.children[childIndex];
-        this.children.splice(childIndex, 1);
-
-        var parent = child.parent;
-        if (child.deselect()) {
-            if (child.previousSibling)
-                child.previousSibling.select();
-            else if (child.nextSibling)
-                child.nextSibling.select();
-            else
-                parent.select();
-        }
-
-        if (child.previousSibling)
-            child.previousSibling.nextSibling = child.nextSibling;
-        if (child.nextSibling)
-            child.nextSibling.previousSibling = child.previousSibling;
-
-        if (child.treeOutline) {
-            child.treeOutline._forgetTreeElement(child);
-            child.treeOutline._forgetChildrenRecursive(child);
-        }
-
-        child._detach();
-        child.treeOutline = null;
-        child.parent = null;
-        child.nextSibling = null;
-        child.previousSibling = null;
-    },
-
-    /**
-     * @param {!TreeElement} child
-     */
-    removeChild: function(child)
-    {
-        if (!child)
-            throw("child can't be undefined or null");
-
-        var childIndex = this.children.indexOf(child);
-        if (childIndex === -1)
-            throw("child not found in this node's children");
-
-        this.removeChildAtIndex(childIndex);
-    },
-
-    removeChildren: function()
-    {
-        for (var i = 0; i < this.children.length; ++i) {
-            var child = this.children[i];
-            child.deselect();
-
-            if (child.treeOutline) {
-                child.treeOutline._forgetTreeElement(child);
-                child.treeOutline._forgetChildrenRecursive(child);
-            }
-
-            child._detach();
-            child.treeOutline = null;
-            child.parent = null;
-            child.nextSibling = null;
-            child.previousSibling = null;
-        }
-
-        this.children = [];
-    },
-
-    expand: function()
-    {
-    },
-
-    collapse: function()
-    {
-    },
-
-    select: function()
-    {
-    },
-
-    deselect: function()
-    {
-    }
-}
-
-/**
- * @constructor
- * @extends {TreeContainerNode}
- * @param {!Element} listNode
- * @param {boolean=} nonFocusable
- */
-function TreeOutline(listNode, nonFocusable)
-{
-    TreeContainerNode.call(this);
-
-    this.selectedTreeElement = null;
-    this._childrenListNode = listNode;
-    this.childrenListElement = this._childrenListNode;
-    this._childrenListNode.removeChildren();
-    this.expandTreeElementsWhenArrowing = false;
-    this.root = true;
-    this.hasChildren = false;
-    this.expanded = true;
-    this.selected = false;
-    this.treeOutline = this;
-    /** @type {?function(!TreeElement, !TreeElement):number} */
-    this.comparator = null;
-
-    this.setFocusable(!nonFocusable);
-    this._childrenListNode.addEventListener("keydown", this._treeKeyDown.bind(this), true);
-
-    /** @type {!Map.<!Object, !Array.<!TreeElement>>} */
-    this._treeElementsMap = new Map();
-    /** @type {!Map.<!Object, boolean>} */
-    this._expandedStateMap = new Map();
-    this.element = listNode;
-}
-
-TreeOutline.prototype = {
-    setFocusable: function(focusable)
-    {
-        if (focusable)
-            this._childrenListNode.setAttribute("tabIndex", 0);
-        else
-            this._childrenListNode.removeAttribute("tabIndex");
-    },
-
-    /**
-     * @param {!TreeElement} element
-     */
-    _rememberTreeElement: function(element)
-    {
-        var elements = this._treeElementsMap.get(element.representedObject);
-        if (!elements) {
-            elements = [];
-            this._treeElementsMap.set(element.representedObject, elements);
-        }
-
-        if (elements.indexOf(element) !== -1)
-            return;
-
-        elements.push(element);
-    },
-
-    /**
-     * @param {!TreeElement} element
-     */
-    _forgetTreeElement: function(element)
-    {
-        var elements = this._treeElementsMap.get(element.representedObject);
-        if (elements) {
-            elements.remove(element, true);
-            if (!elements.length)
-                this._treeElementsMap.remove(element.representedObject);
-        }
-    },
-
-    /**
-     * @param {!TreeElement} parentElement
-     */
-    _forgetChildrenRecursive: function(parentElement)
-    {
-        var child = parentElement.children[0];
-        while (child) {
-            this._forgetTreeElement(child);
-            child = child.traverseNextTreeElement(false, parentElement, true);
-        }
-    },
-
-    /**
-     * @param {?Object} representedObject
-     * @return {?TreeElement}
-     */
-    getCachedTreeElement: function(representedObject)
-    {
-        if (!representedObject)
-            return null;
-
-        var elements = this._treeElementsMap.get(representedObject);
-        if (elements && elements.length)
-            return elements[0];
-        return null;
-    },
-
     _treeKeyDown: function(event)
     {
-        if (event.target !== this._childrenListNode)
+        if (event.target !== this._contentElement)
             return;
 
         if (!this.selectedTreeElement || event.shiftKey || event.metaKey || event.ctrlKey)
@@ -365,15 +231,9 @@ TreeOutline.prototype = {
         var handled = false;
         var nextSelectedElement;
         if (event.keyIdentifier === "Up" && !event.altKey) {
-            nextSelectedElement = this.selectedTreeElement.traversePreviousTreeElement(true);
-            while (nextSelectedElement && !nextSelectedElement.selectable)
-                nextSelectedElement = nextSelectedElement.traversePreviousTreeElement(!this.expandTreeElementsWhenArrowing);
-            handled = nextSelectedElement ? true : false;
+            handled = this.selectPrevious();
         } else if (event.keyIdentifier === "Down" && !event.altKey) {
-            nextSelectedElement = this.selectedTreeElement.traverseNextTreeElement(true);
-            while (nextSelectedElement && !nextSelectedElement.selectable)
-                nextSelectedElement = nextSelectedElement.traverseNextTreeElement(!this.expandTreeElementsWhenArrowing);
-            handled = nextSelectedElement ? true : false;
+            handled = this.selectNext();
         } else if (event.keyIdentifier === "Left") {
             if (this.selectedTreeElement.expanded) {
                 if (event.altKey)
@@ -395,10 +255,10 @@ TreeOutline.prototype = {
             if (!this.selectedTreeElement.revealed()) {
                 this.selectedTreeElement.reveal();
                 handled = true;
-            } else if (this.selectedTreeElement.hasChildren) {
+            } else if (this.selectedTreeElement._expandable) {
                 handled = true;
                 if (this.selectedTreeElement.expanded) {
-                    nextSelectedElement = this.selectedTreeElement.children[0];
+                    nextSelectedElement = this.selectedTreeElement.firstChild();
                     while (nextSelectedElement && !nextSelectedElement.selectable)
                         nextSelectedElement = nextSelectedElement.nextSibling;
                     handled = nextSelectedElement ? true : false;
@@ -425,200 +285,423 @@ TreeOutline.prototype = {
             event.consume(true);
     },
 
-    __proto__: TreeContainerNode.prototype
+    __proto__: WebInspector.Object.prototype
 }
 
 /**
  * @constructor
- * @extends {TreeContainerNode}
- * @param {string|!Node} title
- * @param {?Object=} representedObject
- * @param {boolean=} hasChildren
+ * @extends {TreeOutline}
+ * @param {string=} className
  */
-function TreeElement(title, representedObject, hasChildren)
+function TreeOutlineInShadow(className)
 {
-    TreeContainerNode.call(this);
-    this._title = title;
-    this.representedObject = representedObject || {};
+    TreeOutline.call(this);
+    var innerElement = this.element;
+    innerElement.classList.add("tree-outline");
+    if (className)
+        innerElement.classList.add(className);
 
-    this.root = false;
-    this._hidden = false;
-    this._selectable = true;
-    this.expanded = false;
-    this.selected = false;
-    this.hasChildren = hasChildren;
+    // Redefine element to the external one.
+    this.element = createElement("div");
+    this._shadowRoot = WebInspector.createShadowRootWithCoreStyles(this.element);
+    this._shadowRoot.appendChild(WebInspector.Widget.createStyleElement("ui/treeoutline.css"));
+    this._shadowRoot.appendChild(innerElement);
+    this._renderSelection = true;
+}
+
+TreeOutlineInShadow.prototype = {
+    /**
+     * @param {string} cssFile
+     */
+    registerRequiredCSS: function(cssFile)
+    {
+        this._shadowRoot.appendChild(WebInspector.Widget.createStyleElement(cssFile));
+    },
+
+    __proto__: TreeOutline.prototype
+}
+
+/**
+ * @constructor
+ * @param {(string|!Node)=} title
+ * @param {boolean=} expandable
+ */
+function TreeElement(title, expandable)
+{
+    /** @type {?TreeOutline} */
     this.treeOutline = null;
     this.parent = null;
     this.previousSibling = null;
     this.nextSibling = null;
-    this._listItemNode = null;
+
+    this._listItemNode = createElement("li");
+    this._listItemNode.treeElement = this;
+    if (title)
+        this.title = title;
+    this._listItemNode.addEventListener("mousedown", this._handleMouseDown.bind(this), false);
+    this._listItemNode.addEventListener("selectstart", this._treeElementSelectStart.bind(this), false);
+    this._listItemNode.addEventListener("click", this._treeElementToggled.bind(this), false);
+    this._listItemNode.addEventListener("dblclick", this._handleDoubleClick.bind(this), false);
+
+    this._childrenListNode = createElement("ol");
+    this._childrenListNode.parentTreeElement = this;
+    this._childrenListNode.classList.add("children");
+
+    this._hidden = false;
+    this._selectable = true;
+    this.expanded = false;
+    this.selected = false;
+    this.setExpandable(expandable || false);
+    this._collapsible = true;
 }
 
 /** @const */
 TreeElement._ArrowToggleWidth = 10;
 
 TreeElement.prototype = {
-    get selectable() {
+    /**
+     * @param {?TreeElement} ancestor
+     * @return {boolean}
+     */
+    hasAncestor: function(ancestor)
+    {
+        if (!ancestor)
+            return false;
+
+        var currentNode = this.parent;
+        while (currentNode) {
+            if (ancestor === currentNode)
+                return true;
+            currentNode = currentNode.parent;
+        }
+
+        return false;
+    },
+
+    /**
+     * @param {?TreeElement} ancestor
+     * @return {boolean}
+     */
+    hasAncestorOrSelf: function(ancestor)
+    {
+        return this === ancestor || this.hasAncestor(ancestor);
+    },
+
+    /**
+     * @return {!Array.<!TreeElement>}
+     */
+    children: function()
+    {
+        return this._children || [];
+    },
+
+    /**
+     * @return {number}
+     */
+    childCount: function()
+    {
+        return this._children ? this._children.length : 0;
+    },
+
+    /**
+     * @return {?TreeElement}
+     */
+    firstChild: function()
+    {
+        return this._children ? this._children[0] : null;
+    },
+
+    /**
+     * @return {?TreeElement}
+     */
+    lastChild: function()
+    {
+        return this._children ? this._children[this._children.length - 1] : null;
+    },
+
+    /**
+     * @param {number} index
+     * @return {?TreeElement}
+     */
+    childAt: function(index)
+    {
+        return this._children ? this._children[index] : null;
+    },
+
+    /**
+     * @param {!TreeElement} child
+     * @return {number}
+     */
+    indexOfChild: function(child)
+    {
+        return this._children ? this._children.indexOf(child) : -1;
+    },
+
+    /**
+     * @param {!TreeElement} child
+     */
+    appendChild: function(child)
+    {
+        if (!this._children)
+            this._children = [];
+
+        var insertionIndex;
+        if (this.treeOutline && this.treeOutline._comparator)
+            insertionIndex = insertionIndexForObjectInListSortedByFunction(child, this._children, this.treeOutline._comparator);
+        else
+            insertionIndex = this._children.length;
+        this.insertChild(child, insertionIndex);
+    },
+
+    /**
+     * @param {!TreeElement} child
+     * @param {number} index
+     */
+    insertChild: function(child, index)
+    {
+        if (!this._children)
+            this._children = [];
+
+        if (!child)
+            throw("child can't be undefined or null");
+
+        console.assert(!child.parent, "Attempting to insert a child that is already in the tree, reparenting is not supported.");
+
+        var previousChild = (index > 0 ? this._children[index - 1] : null);
+        if (previousChild) {
+            previousChild.nextSibling = child;
+            child.previousSibling = previousChild;
+        } else {
+            child.previousSibling = null;
+        }
+
+        var nextChild = this._children[index];
+        if (nextChild) {
+            nextChild.previousSibling = child;
+            child.nextSibling = nextChild;
+        } else {
+            child.nextSibling = null;
+        }
+
+        this._children.splice(index, 0, child);
+
+        this.setExpandable(true);
+        child.parent = this;
+
+        if (this.treeOutline)
+            this.treeOutline._bindTreeElement(child);
+        for (var current = child.firstChild(); this.treeOutline && current; current = current.traverseNextTreeElement(false, child, true))
+            this.treeOutline._bindTreeElement(current);
+        child.onattach();
+        child._ensureSelection();
+        if (this.treeOutline)
+            this.treeOutline.dispatchEventToListeners(TreeOutline.Events.ElementAttached, child);
+        var nextSibling = child.nextSibling ? child.nextSibling._listItemNode : null;
+        this._childrenListNode.insertBefore(child._listItemNode, nextSibling);
+        this._childrenListNode.insertBefore(child._childrenListNode, nextSibling);
+        if (child.selected)
+            child.select();
+        if (child.expanded)
+            child.expand();
+    },
+
+    /**
+     * @param {number} childIndex
+     */
+    removeChildAtIndex: function(childIndex)
+    {
+        if (childIndex < 0 || childIndex >= this._children.length)
+            throw("childIndex out of range");
+
+        var child = this._children[childIndex];
+        this._children.splice(childIndex, 1);
+
+        var parent = child.parent;
+        if (this.treeOutline && this.treeOutline.selectedTreeElement && this.treeOutline.selectedTreeElement.hasAncestorOrSelf(child)) {
+            if (child.nextSibling)
+                child.nextSibling.select(true);
+            else if (child.previousSibling)
+                child.previousSibling.select(true);
+            else if (parent)
+                parent.select(true);
+        }
+
+        if (child.previousSibling)
+            child.previousSibling.nextSibling = child.nextSibling;
+        if (child.nextSibling)
+            child.nextSibling.previousSibling = child.previousSibling;
+        child.parent = null;
+
+        if (this.treeOutline)
+            this.treeOutline._unbindTreeElement(child);
+        for (var current = child.firstChild(); this.treeOutline && current; current = current.traverseNextTreeElement(false, child, true))
+            this.treeOutline._unbindTreeElement(current);
+
+        child._detach();
+    },
+
+    /**
+     * @param {!TreeElement} child
+     */
+    removeChild: function(child)
+    {
+        if (!child)
+            throw("child can't be undefined or null");
+        if (child.parent !== this)
+            return;
+
+        var childIndex = this._children.indexOf(child);
+        if (childIndex === -1)
+            throw("child not found in this node's children");
+
+        this.removeChildAtIndex(childIndex);
+    },
+
+    removeChildren: function()
+    {
+        if (!this.root && this.treeOutline && this.treeOutline.selectedTreeElement && this.treeOutline.selectedTreeElement.hasAncestorOrSelf(this))
+            this.select(true);
+
+        for (var i = 0; this._children && i < this._children.length; ++i) {
+            var child = this._children[i];
+            child.previousSibling = null
+            child.nextSibling = null;
+            child.parent = null;
+
+            if (this.treeOutline)
+                this.treeOutline._unbindTreeElement(child);
+            for (var current = child.firstChild(); this.treeOutline && current; current = current.traverseNextTreeElement(false, child, true))
+                this.treeOutline._unbindTreeElement(current);
+            child._detach();
+        }
+        this._children = [];
+    },
+
+    get selectable()
+    {
         if (this._hidden)
             return false;
         return this._selectable;
     },
 
-    set selectable(x) {
+    set selectable(x)
+    {
         this._selectable = x;
     },
 
-    get listItemElement() {
+    get listItemElement()
+    {
         return this._listItemNode;
     },
 
-    get childrenListElement() {
+    get childrenListElement()
+    {
         return this._childrenListNode;
     },
 
-    get title() {
+    get title()
+    {
         return this._title;
     },
 
-    set title(x) {
+    set title(x)
+    {
         this._title = x;
-        this._setListItemNodeContent();
-    },
-
-    get tooltip() {
-        return this._tooltip;
-    },
-
-    set tooltip(x) {
-        this._tooltip = x;
-        if (this._listItemNode)
-            this._listItemNode.title = x ? x : "";
-    },
-
-    get hasChildren() {
-        return this._hasChildren;
-    },
-
-    /**
-     * Used inside subclasses.
-     *
-     * @param {boolean} hasChildren
-     */
-    setHasChildren: function(hasChildren)
-    {
-        this.hasChildren = hasChildren;
-    },
-
-    set hasChildren(x) {
-        if (this._hasChildren === x)
-            return;
-
-        this._hasChildren = x;
-
-        if (!this._listItemNode)
-            return;
-
-        if (x)
-            this._listItemNode.classList.add("parent");
-        else {
-            this._listItemNode.classList.remove("parent");
-            this.collapse();
-        }
-    },
-
-    get hidden() {
-        return this._hidden;
-    },
-
-    set hidden(x) {
-        if (this._hidden === x)
-            return;
-
-        this._hidden = x;
-
-        if (x) {
-            if (this._listItemNode)
-                this._listItemNode.classList.add("hidden");
-            if (this._childrenListNode)
-                this._childrenListNode.classList.add("hidden");
-        } else {
-            if (this._listItemNode)
-                this._listItemNode.classList.remove("hidden");
-            if (this._childrenListNode)
-                this._childrenListNode.classList.remove("hidden");
-        }
-    },
-
-    get shouldRefreshChildren() {
-        return this._shouldRefreshChildren;
-    },
-
-    set shouldRefreshChildren(x) {
-        this._shouldRefreshChildren = x;
-        if (x && this.expanded)
-            this.expand();
-    },
-
-    _setListItemNodeContent: function()
-    {
-        if (!this._listItemNode)
-            return;
-
         if (typeof this._title === "string")
             this._listItemNode.textContent = this._title;
         else {
             this._listItemNode.removeChildren();
             if (this._title)
                 this._listItemNode.appendChild(this._title);
+            this._ensureSelection();
         }
     },
 
-    _attach: function()
+    /**
+     * @param {string} x
+     */
+    set tooltip(x)
     {
-        if (!this._listItemNode || this.parent._shouldRefreshChildren) {
-            if (this._listItemNode && this._listItemNode.parentNode)
-                this._listItemNode.parentNode.removeChild(this._listItemNode);
+        this._listItemNode.title = x;
+    },
 
-            this._listItemNode = this.treeOutline._childrenListNode.ownerDocument.createElement("li");
-            this._listItemNode.treeElement = this;
-            this._setListItemNodeContent();
-            this._listItemNode.title = this._tooltip ? this._tooltip : "";
+    /**
+     * @return {boolean}
+     */
+    isExpandable: function()
+    {
+        return this._expandable;
+    },
 
-            if (this.hidden)
-                this._listItemNode.classList.add("hidden");
-            if (this.hasChildren)
-                this._listItemNode.classList.add("parent");
-            if (this.expanded)
-                this._listItemNode.classList.add("expanded");
-            if (this.selected)
-                this._listItemNode.classList.add("selected");
+    /**
+     * @param {boolean} expandable
+     */
+    setExpandable: function(expandable)
+    {
+        if (this._expandable === expandable)
+            return;
 
-            this._listItemNode.addEventListener("mousedown", this._handleMouseDown.bind(this), false);
-            this._listItemNode.addEventListener("selectstart", treeElementSelectStart, false);
-            this._listItemNode.addEventListener("click", this._treeElementToggled.bind(this), false);
-            this._listItemNode.addEventListener("dblclick", this._handleDoubleClick.bind(this), false);
+        this._expandable = expandable;
 
-            this.onattach();
-        }
+        this._listItemNode.classList.toggle("parent", expandable);
+        if (!expandable)
+            this.collapse();
+    },
 
-        /**
-         * @param {!Event} event
-         */
-        function treeElementSelectStart(event)
-        {
-            event.currentTarget._selectionStarted = true;
-        }
+    /**
+     * @param {boolean} collapsible
+     */
+    setCollapsible: function(collapsible)
+    {
+        if (this._collapsible === collapsible)
+            return;
 
-        var nextSibling = null;
-        if (this.nextSibling && this.nextSibling._listItemNode && this.nextSibling._listItemNode.parentNode === this.parent._childrenListNode)
-            nextSibling = this.nextSibling._listItemNode;
-        this.parent._childrenListNode.insertBefore(this._listItemNode, nextSibling);
-        if (this._childrenListNode)
-            this.parent._childrenListNode.insertBefore(this._childrenListNode, this._listItemNode.nextSibling);
-        if (this.selected)
-            this.select();
-        if (this.expanded)
+        this._collapsible = collapsible;
+
+        this._listItemNode.classList.toggle("always-parent", !collapsible);
+        if (!collapsible)
             this.expand();
+    },
+
+    get hidden()
+    {
+        return this._hidden;
+    },
+
+    set hidden(x)
+    {
+        if (this._hidden === x)
+            return;
+
+        this._hidden = x;
+
+        this._listItemNode.classList.toggle("hidden", x);
+        this._childrenListNode.classList.toggle("hidden", x);
+    },
+
+    invalidateChildren: function()
+    {
+        if (this._children) {
+            this.removeChildren();
+            this._children = null;
+        }
+    },
+
+    _ensureSelection: function()
+    {
+        if (!this.treeOutline || !this.treeOutline._renderSelection)
+            return;
+        if (!this._selectionElement)
+            this._selectionElement = createElementWithClass("div", "selection");
+        this._listItemNode.insertBefore(this._selectionElement, this.listItemElement.firstChild);
+    },
+
+    /**
+     * @param {!Event} event
+     */
+    _treeElementSelectStart: function(event)
+    {
+        event.currentTarget._selectionStarted = true;
     },
 
     /**
@@ -629,7 +712,7 @@ TreeElement.prototype = {
         var element = event.currentTarget;
         if (element._selectionStarted) {
             delete element._selectionStarted;
-            var selection = element.window().getSelection();
+            var selection = element.getComponentSelection();
             if (selection && !selection.isCollapsed && element.isSelfOrAncestor(selection.anchorNode) && element.isSelfOrAncestor(selection.focusNode))
                 return;
         }
@@ -681,7 +764,7 @@ TreeElement.prototype = {
     },
 
     /**
-     * @param {!MouseEvent} event
+     * @param {!Event} event
      */
     _handleDoubleClick: function(event)
     {
@@ -692,31 +775,26 @@ TreeElement.prototype = {
         var handled = this.ondblclick(event);
         if (handled)
             return;
-        if (this.hasChildren && !this.expanded)
+        if (this._expandable && !this.expanded)
             this.expand();
     },
 
     _detach: function()
     {
-        if (this._listItemNode && this._listItemNode.parentNode)
-            this._listItemNode.parentNode.removeChild(this._listItemNode);
-        if (this._childrenListNode && this._childrenListNode.parentNode)
-            this._childrenListNode.parentNode.removeChild(this._childrenListNode);
+        this._listItemNode.remove();
+        this._childrenListNode.remove();
     },
 
     collapse: function()
     {
-        if (this._listItemNode)
-            this._listItemNode.classList.remove("expanded");
-        if (this._childrenListNode)
-            this._childrenListNode.classList.remove("expanded");
-
+        if (!this.expanded || !this._collapsible)
+            return;
+        this._listItemNode.classList.remove("expanded");
+        this._childrenListNode.classList.remove("expanded");
         this.expanded = false;
-
-        if (this.treeOutline)
-            this.treeOutline._expandedStateMap.set(this.representedObject, false);
-
         this.oncollapse();
+        if (this.treeOutline)
+            this.treeOutline.dispatchEventToListeners(TreeOutline.Events.ElementCollapsed, this);
     },
 
     collapseRecursively: function()
@@ -731,7 +809,7 @@ TreeElement.prototype = {
 
     expand: function()
     {
-        if (!this.hasChildren || (this.expanded && !this._shouldRefreshChildren && this._childrenListNode))
+        if (!this._expandable || (this.expanded && this._children))
             return;
 
         // Set this before onpopulate. Since onpopulate can add elements, this makes
@@ -739,38 +817,14 @@ TreeElement.prototype = {
         // of an infinite loop if onpopulate were to call expand.
 
         this.expanded = true;
-        if (this.treeOutline)
-            this.treeOutline._expandedStateMap.set(this.representedObject, true);
 
-        if (this.treeOutline && (!this._childrenListNode || this._shouldRefreshChildren)) {
-            if (this._childrenListNode && this._childrenListNode.parentNode)
-                this._childrenListNode.parentNode.removeChild(this._childrenListNode);
-
-            this._childrenListNode = this.treeOutline._childrenListNode.ownerDocument.createElement("ol");
-            this._childrenListNode.parentTreeElement = this;
-            this._childrenListNode.classList.add("children");
-
-            if (this.hidden)
-                this._childrenListNode.classList.add("hidden");
-
-            this.onpopulate();
-
-            for (var i = 0; i < this.children.length; ++i)
-                this.children[i]._attach();
-
-            delete this._shouldRefreshChildren;
-        }
-
-        if (this._listItemNode) {
-            this._listItemNode.classList.add("expanded");
-            if (this._childrenListNode && this._childrenListNode.parentNode != this._listItemNode.parentNode)
-                this.parent._childrenListNode.insertBefore(this._childrenListNode, this._listItemNode.nextSibling);
-        }
-
-        if (this._childrenListNode)
-            this._childrenListNode.classList.add("expanded");
+        this._populateIfNeeded();
+        this._listItemNode.classList.add("expanded");
+        this._childrenListNode.classList.add("expanded");
 
         this.onexpand();
+        if (this.treeOutline)
+            this.treeOutline.dispatchEventToListeners(TreeOutline.Events.ElementExpanded, this);
     },
 
     /**
@@ -843,19 +897,23 @@ TreeElement.prototype = {
 
         if (this.treeOutline.selectedTreeElement)
             this.treeOutline.selectedTreeElement.deselect();
+        this.treeOutline.selectedTreeElement = null;
+
+        if (this.treeOutline._rootElement === this)
+            return false;
 
         this.selected = true;
 
         if (!omitFocus)
-            this.treeOutline._childrenListNode.focus();
+            this.treeOutline.focus();
 
         // Focusing on another node may detach "this" from tree.
         if (!this.treeOutline)
             return false;
         this.treeOutline.selectedTreeElement = this;
-        if (this._listItemNode)
-            this._listItemNode.classList.add("selected");
-
+        this._listItemNode.classList.add("selected");
+        if (this._selectionElement)
+            this._selectionElement.style.height = this._listItemNode.offsetHeight + "px";
         return this.onselect(selectedByUser);
     },
 
@@ -870,18 +928,23 @@ TreeElement.prototype = {
 
     /**
      * @param {boolean=} supressOnDeselect
-     * @return {boolean}
      */
     deselect: function(supressOnDeselect)
     {
         if (!this.treeOutline || this.treeOutline.selectedTreeElement !== this || !this.selected)
-            return false;
+            return;
 
         this.selected = false;
         this.treeOutline.selectedTreeElement = null;
-        if (this._listItemNode)
-            this._listItemNode.classList.remove("selected");
-        return true;
+        this._listItemNode.classList.remove("selected");
+    },
+
+    _populateIfNeeded: function()
+    {
+        if (this._expandable && !this._children) {
+            this._children = [];
+            this.onpopulate();
+        }
     },
 
     onpopulate: function()
@@ -913,6 +976,14 @@ TreeElement.prototype = {
         return false;
     },
 
+    onbind: function()
+    {
+    },
+
+    onunbind: function()
+    {
+    },
+
     onattach: function()
     {
     },
@@ -926,7 +997,7 @@ TreeElement.prototype = {
     },
 
     /**
-     * @param {!MouseEvent} e
+     * @param {!Event} e
      * @return {boolean}
      */
     ondblclick: function(e)
@@ -949,20 +1020,20 @@ TreeElement.prototype = {
 
     /**
      * @param {boolean} skipUnrevealed
-     * @param {(!TreeOutline|!TreeElement|null)=} stayWithin
+     * @param {?TreeElement=} stayWithin
      * @param {boolean=} dontPopulate
      * @param {!Object=} info
      * @return {?TreeElement}
      */
     traverseNextTreeElement: function(skipUnrevealed, stayWithin, dontPopulate, info)
     {
-        if (!dontPopulate && this.hasChildren)
-            this.onpopulate();
+        if (!dontPopulate)
+            this._populateIfNeeded();
 
         if (info)
             info.depthChange = 0;
 
-        var element = skipUnrevealed ? (this.revealed() ? this.children[0] : null) : this.children[0];
+        var element = skipUnrevealed ? (this.revealed() ? this.firstChild() : null) : this.firstChild();
         if (element && (!skipUnrevealed || (skipUnrevealed && this.expanded))) {
             if (info)
                 info.depthChange = 1;
@@ -983,7 +1054,7 @@ TreeElement.prototype = {
             element = element.parent;
         }
 
-        if (!element)
+        if (!element || element.root)
             return null;
 
         return (skipUnrevealed ? (element.revealed() ? element.nextSibling : null) : element.nextSibling);
@@ -997,13 +1068,13 @@ TreeElement.prototype = {
     traversePreviousTreeElement: function(skipUnrevealed, dontPopulate)
     {
         var element = skipUnrevealed ? (this.revealed() ? this.previousSibling : null) : this.previousSibling;
-        if (!dontPopulate && element && element.hasChildren)
-            element.onpopulate();
+        if (!dontPopulate && element)
+            element._populateIfNeeded();
 
-        while (element && (skipUnrevealed ? (element.revealed() && element.expanded ? element.children[element.children.length - 1] : null) : element.children[element.children.length - 1])) {
-            if (!dontPopulate && element.hasChildren)
-                element.onpopulate();
-            element = (skipUnrevealed ? (element.revealed() && element.expanded ? element.children[element.children.length - 1] : null) : element.children[element.children.length - 1]);
+        while (element && (skipUnrevealed ? (element.revealed() && element.expanded ? element.lastChild() : null) : element.lastChild())) {
+            if (!dontPopulate)
+                element._populateIfNeeded();
+            element = (skipUnrevealed ? (element.revealed() && element.expanded ? element.lastChild() : null) : element.lastChild());
         }
 
         if (element)
@@ -1025,8 +1096,6 @@ TreeElement.prototype = {
         console.assert(paddingLeftValue.endsWith("px"));
         var computedLeftPadding = parseFloat(paddingLeftValue);
         var left = this._listItemNode.totalOffsetLeft() + computedLeftPadding;
-        return event.pageX >= left && event.pageX <= left + TreeElement._ArrowToggleWidth && this.hasChildren;
-    },
-
-    __proto__: TreeContainerNode.prototype
+        return event.pageX >= left && event.pageX <= left + TreeElement._ArrowToggleWidth && this._expandable;
+    }
 }

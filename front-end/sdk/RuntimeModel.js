@@ -37,14 +37,19 @@ WebInspector.RuntimeModel = function(target)
 {
     WebInspector.SDKModel.call(this, WebInspector.RuntimeModel, target);
 
-    this._debuggerModel = target.debuggerModel;
     this._agent = target.runtimeAgent();
     this.target().registerRuntimeDispatcher(new WebInspector.RuntimeDispatcher(this));
-    this._agent.enable();
+    if (target.hasJSContext())
+        this._agent.enable();
     /**
      * @type {!Object.<number, !WebInspector.ExecutionContext>}
      */
     this._executionContextById = {};
+
+    if (WebInspector.moduleSetting("customFormatters").get())
+        this._agent.setCustomObjectFormatterEnabled(true);
+
+    WebInspector.moduleSetting("customFormatters").addChangeListener(this._customFormattersStateChanged.bind(this));
 }
 
 WebInspector.RuntimeModel.Events = {
@@ -73,7 +78,7 @@ WebInspector.RuntimeModel.prototype = {
         if (context.name == WebInspector.RuntimeModel._privateScript && !context.origin && !Runtime.experiments.isEnabled("privateScriptInspection")) {
             return;
         }
-        var executionContext = new WebInspector.ExecutionContext(this.target(), context.id, context.name, context.origin, context.isPageContext, context.frameId);
+        var executionContext = new WebInspector.ExecutionContext(this.target(), context.id, context.name, context.origin, !context.type, context.frameId);
         this._executionContextById[executionContext.id] = executionContext;
         this.dispatchEventToListeners(WebInspector.RuntimeModel.Events.ExecutionContextCreated, executionContext);
     },
@@ -105,7 +110,7 @@ WebInspector.RuntimeModel.prototype = {
     createRemoteObject: function(payload)
     {
         console.assert(typeof payload === "object", "Remote object payload should only be an object");
-        return new WebInspector.RemoteObjectImpl(this.target(), payload.objectId, payload.type, payload.subtype, payload.value, payload.description, payload.preview);
+        return new WebInspector.RemoteObjectImpl(this.target(), payload.objectId, payload.type, payload.subtype, payload.value, payload.description, payload.preview, payload.customPreview);
     },
 
     /**
@@ -137,6 +142,15 @@ WebInspector.RuntimeModel.prototype = {
         return new WebInspector.RemoteObjectProperty(name, this.createRemoteObjectFromPrimitiveValue(value));
     },
 
+    /**
+     * @param {!WebInspector.Event} event
+     */
+    _customFormattersStateChanged: function(event)
+    {
+        var enabled = /** @type {boolean} */ (event.data);
+        this._agent.setCustomObjectFormatterEnabled(enabled);
+    },
+
     __proto__: WebInspector.SDKModel.prototype
 }
 
@@ -151,16 +165,27 @@ WebInspector.RuntimeDispatcher = function(runtimeModel)
 }
 
 WebInspector.RuntimeDispatcher.prototype = {
+    /**
+     * @override
+     * @param {!RuntimeAgent.ExecutionContextDescription} context
+     */
     executionContextCreated: function(context)
     {
         this._runtimeModel._executionContextCreated(context);
     },
 
+    /**
+     * @override
+     * @param {!RuntimeAgent.ExecutionContextId} executionContextId
+     */
     executionContextDestroyed: function(executionContextId)
     {
         this._runtimeModel._executionContextDestroyed(executionContextId);
     },
 
+    /**
+     * @override
+     */
     executionContextsCleared: function()
     {
         this._runtimeModel._executionContextsCleared();
@@ -185,7 +210,8 @@ WebInspector.ExecutionContext = function(target, id, name, origin, isPageContext
     this.name = name;
     this.origin = origin;
     this.isMainWorldContext = isPageContext;
-    this._debuggerModel = target.debuggerModel;
+    this.runtimeModel = target.runtimeModel;
+    this.debuggerModel = WebInspector.DebuggerModel.fromTarget(target);
     this.frameId = frameId;
 }
 
@@ -196,6 +222,27 @@ WebInspector.ExecutionContext = function(target, id, name, origin, isPageContext
  */
 WebInspector.ExecutionContext.comparator = function(a, b)
 {
+    /**
+     * @param {!WebInspector.Target} target
+     * @return {number}
+     */
+    function targetWeight(target)
+    {
+        if (target.isPage())
+            return 3;
+        if (target.isDedicatedWorker())
+            return 2;
+        return 1;
+    }
+
+    var weightDiff = targetWeight(a.target()) - targetWeight(b.target());
+    if (weightDiff)
+        return -weightDiff;
+
+    var frameIdDiff = String.hashCode(a.frameId) - String.hashCode(b.frameId);
+    if (frameIdDiff)
+        return frameIdDiff;
+
     // Main world context should always go first.
     if (a.isMainWorldContext)
         return -1;
@@ -217,8 +264,8 @@ WebInspector.ExecutionContext.prototype = {
     evaluate: function(expression, objectGroup, includeCommandLineAPI, doNotPauseOnExceptionsAndMuteConsole, returnByValue, generatePreview, callback)
     {
         // FIXME: It will be moved to separate ExecutionContext.
-        if (this._debuggerModel.selectedCallFrame()) {
-            this._debuggerModel.evaluateOnSelectedCallFrame(expression, objectGroup, includeCommandLineAPI, doNotPauseOnExceptionsAndMuteConsole, returnByValue, generatePreview, callback);
+        if (this.debuggerModel.selectedCallFrame()) {
+            this.debuggerModel.evaluateOnSelectedCallFrame(expression, objectGroup, includeCommandLineAPI, doNotPauseOnExceptionsAndMuteConsole, returnByValue, generatePreview, callback);
             return;
         }
         this._evaluateGlobal.apply(this, arguments);
@@ -268,7 +315,7 @@ WebInspector.ExecutionContext.prototype = {
             if (returnByValue)
                 callback(null, !!wasThrown, wasThrown ? null : result, exceptionDetails);
             else
-                callback(this.target().runtimeModel.createRemoteObject(result), !!wasThrown, undefined, exceptionDetails);
+                callback(this.runtimeModel.createRemoteObject(result), !!wasThrown, undefined, exceptionDetails);
         }
         this.target().runtimeAgent().evaluate(expression, objectGroup, includeCommandLineAPI, doNotPauseOnExceptionsAndMuteConsole, this.id, returnByValue, generatePreview, evalCallback.bind(this));
     },
@@ -300,8 +347,8 @@ WebInspector.ExecutionContext.prototype = {
             return;
         }
 
-        if (!expressionString && this._debuggerModel.selectedCallFrame())
-            this._debuggerModel.getSelectedCallFrameVariables(receivedPropertyNames.bind(this));
+        if (!expressionString && this.debuggerModel.selectedCallFrame())
+            this.debuggerModel.selectedCallFrame().variableNames(receivedPropertyNames.bind(this));
         else
             this.evaluate(expressionString, "completion", true, true, false, false, evaluated.bind(this));
 
@@ -316,18 +363,18 @@ WebInspector.ExecutionContext.prototype = {
             }
 
             /**
-             * @param {string} primitiveType
+             * @param {string=} type
              * @suppressReceiverCheck
              * @this {WebInspector.ExecutionContext}
              */
-            function getCompletions(primitiveType)
+            function getCompletions(type)
             {
                 var object;
-                if (primitiveType === "string")
+                if (type === "string")
                     object = new String("");
-                else if (primitiveType === "number")
+                else if (type === "number")
                     object = new Number(0);
-                else if (primitiveType === "boolean")
+                else if (type === "boolean")
                     object = new Boolean(false);
                 else
                     object = this;
@@ -335,6 +382,8 @@ WebInspector.ExecutionContext.prototype = {
                 var resultSet = {};
                 for (var o = object; o; o = o.__proto__) {
                     try {
+                        if (type === "array" && o === object && ArrayBuffer.isView(o) && o.length > 9999)
+                            continue;
                         var names = Object.getOwnPropertyNames(o);
                         for (var i = 0; i < names.length; ++i)
                             resultSet[names[i]] = true;
@@ -345,7 +394,7 @@ WebInspector.ExecutionContext.prototype = {
             }
 
             if (result.type === "object" || result.type === "function")
-                result.callFunctionJSON(getCompletions, undefined, receivedPropertyNames.bind(this));
+                result.callFunctionJSON(getCompletions, [WebInspector.RemoteObject.toCallArgument(result.subtype)], receivedPropertyNames.bind(this));
             else if (result.type === "string" || result.type === "number" || result.type === "boolean")
                 this.evaluate("(" + getCompletions + ")(\"" + result.type + "\")", "completion", false, true, true, false, receivedPropertyNamesFromEval.bind(this));
         }
@@ -429,7 +478,8 @@ WebInspector.ExecutionContext.prototype = {
             if (prefix.length && !property.startsWith(prefix))
                 continue;
 
-            results.push(property);
+            // Substitute actual newlines with newline characters. @see crbug.com/498421
+            results.push(property.split("\n").join("\\n"));
         }
         completionsReadyCallback(results);
     },
@@ -438,6 +488,137 @@ WebInspector.ExecutionContext.prototype = {
 }
 
 /**
- * @type {!WebInspector.RuntimeModel}
+ * @constructor
+ * @extends {WebInspector.SDKObject}
+ * @param {!WebInspector.Target} target
+ * @param {string} type
+ * @param {boolean} useCapture
+ * @param {?WebInspector.RemoteObject} handler
+ * @param {?WebInspector.RemoteObject} originalHandler
+ * @param {!WebInspector.DebuggerModel.Location} location
+ * @param {?WebInspector.RemoteObject} removeFunction
+ * @param {string=} listenerType
  */
-WebInspector.runtimeModel;
+WebInspector.EventListener = function(target, type, useCapture, handler, originalHandler, location, removeFunction, listenerType)
+{
+    WebInspector.SDKObject.call(this, target);
+    this._type = type;
+    this._useCapture = useCapture;
+    this._handler = handler;
+    this._originalHandler = originalHandler || handler;
+    this._location = location;
+    this._sourceURL = location.script().contentURL();
+    this._removeFunction = removeFunction;
+    this._listenerType = listenerType || "normal";
+}
+
+WebInspector.EventListener.prototype = {
+    /**
+     * @return {string}
+     */
+    type: function()
+    {
+        return this._type;
+    },
+
+    /**
+     * @return {boolean}
+     */
+    useCapture: function()
+    {
+        return this._useCapture;
+    },
+
+    /**
+     * @return {?WebInspector.RemoteObject}
+     */
+    handler: function()
+    {
+        return this._handler;
+    },
+
+    /**
+     * @return {!WebInspector.DebuggerModel.Location}
+     */
+    location: function()
+    {
+        return this._location;
+    },
+
+    /**
+     * @return {string}
+     */
+    sourceURL: function()
+    {
+        return this._sourceURL;
+    },
+
+    /**
+     * @return {?WebInspector.RemoteObject}
+     */
+    originalHandler: function()
+    {
+        return this._originalHandler;
+    },
+
+    /**
+     * @return {?WebInspector.RemoteObject}
+     */
+    removeFunction: function()
+    {
+        return this._removeFunction;
+    },
+
+    /**
+     * @return {!Promise<undefined>}
+     */
+    remove: function()
+    {
+        if (!this._removeFunction)
+            return Promise.resolve();
+        return new Promise(promiseConstructor.bind(this));
+
+        /**
+         * @param {function()} success
+         * @this {WebInspector.EventListener}
+         */
+        function promiseConstructor(success)
+        {
+            this._removeFunction.callFunction(callCustomRemove, [
+                WebInspector.RemoteObject.toCallArgument(this._removeFunction),
+                WebInspector.RemoteObject.toCallArgument(this._type),
+                WebInspector.RemoteObject.toCallArgument(this._originalHandler),
+                WebInspector.RemoteObject.toCallArgument(this._useCapture)
+            ], success);
+
+            /**
+             * @param {function(string, function(), boolean)} func
+             * @param {string} type
+             * @param {function()} listener
+             * @param {boolean} useCapture
+             */
+            function callCustomRemove(func, type, listener, useCapture)
+            {
+                func.call(null, type, listener, useCapture);
+            }
+        }
+    },
+
+    /**
+     * @return {string}
+     */
+    listenerType: function()
+    {
+        return this._listenerType;
+    },
+
+    /**
+     * @param {string} listenerType
+     */
+    setListenerType: function(listenerType)
+    {
+        this._listenerType = listenerType;
+    },
+
+    __proto__: WebInspector.SDKObject.prototype
+}

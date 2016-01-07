@@ -30,15 +30,14 @@
 
 /**
  * @constructor
- * @extends {WebInspector.View}
+ * @extends {WebInspector.Widget}
  * @param {!WebInspector.PopoverHelper=} popoverHelper
  */
 WebInspector.Popover = function(popoverHelper)
 {
-    WebInspector.View.call(this);
+    WebInspector.Widget.call(this);
     this.markAsRoot();
     this.element.className = WebInspector.Popover._classNamePrefix; // Override
-    WebInspector.installComponentRootStyles(this.element);
     this._containerElement = createElementWithClass("div", "fill popover-container");
 
     this._popupArrowElement = this.element.createChild("div", "arrow");
@@ -64,7 +63,7 @@ WebInspector.Popover.prototype = {
     },
 
     /**
-     * @param {!WebInspector.View} view
+     * @param {!WebInspector.Widget} view
      * @param {!Element|!AnchorBox} anchor
      * @param {?number=} preferredWidth
      * @param {?number=} preferredHeight
@@ -75,7 +74,7 @@ WebInspector.Popover.prototype = {
     },
 
     /**
-     * @param {?WebInspector.View} view
+     * @param {?WebInspector.Widget} view
      * @param {!Element} contentElement
      * @param {!Element|!AnchorBox} anchor
      * @param {?number=} preferredWidth
@@ -98,19 +97,19 @@ WebInspector.Popover.prototype = {
 
         // Temporarily attach in order to measure preferred dimensions.
         var preferredSize = view ? view.measurePreferredSize() : WebInspector.measurePreferredSize(this._contentElement);
-        preferredWidth = preferredWidth || preferredSize.width;
-        preferredHeight = preferredHeight || preferredSize.height;
+        this._preferredWidth = preferredWidth || preferredSize.width;
+        this._preferredHeight = preferredHeight || preferredSize.height;
 
         window.addEventListener("resize", this._hideBound, false);
         document.body.appendChild(this._containerElement);
-        WebInspector.View.prototype.show.call(this, this._containerElement);
+        WebInspector.Widget.prototype.show.call(this, this._containerElement);
 
         if (view)
             view.show(this._contentDiv);
         else
             this._contentDiv.appendChild(this._contentElement);
 
-        this._positionElement(anchor, preferredWidth, preferredHeight, arrowDirection);
+        this.positionElement(anchor, this._preferredWidth, this._preferredHeight, arrowDirection);
 
         if (this._popoverHelper) {
             this._contentDiv.addEventListener("mousemove", this._popoverHelper._killHidePopoverTimer.bind(this._popoverHelper), true);
@@ -138,6 +137,9 @@ WebInspector.Popover.prototype = {
         this._disposed = true;
     },
 
+    /**
+     * @param {boolean} canShrink
+     */
     setCanShrink: function(canShrink)
     {
         this._hasFixedHeight = !canShrink;
@@ -145,18 +147,30 @@ WebInspector.Popover.prototype = {
     },
 
     /**
+     * @param {boolean} noMargins
+     */
+    setNoMargins: function(noMargins)
+    {
+        this._hasNoMargins = noMargins;
+        this._contentDiv.classList.toggle("no-margin", this._hasNoMargins);
+    },
+
+    /**
      * @param {!Element|!AnchorBox} anchorElement
-     * @param {number} preferredWidth
-     * @param {number} preferredHeight
+     * @param {number=} preferredWidth
+     * @param {number=} preferredHeight
      * @param {?WebInspector.Popover.Orientation=} arrowDirection
      */
-    _positionElement: function(anchorElement, preferredWidth, preferredHeight, arrowDirection)
+    positionElement: function(anchorElement, preferredWidth, preferredHeight, arrowDirection)
     {
-        const borderWidth = 25;
+        const borderWidth = this._hasNoMargins ? 0 : 8;
         const scrollerWidth = this._hasFixedHeight ? 0 : 11;
-        const arrowHeight = 15;
+        const arrowHeight = this._hasNoMargins ? 8 : 15;
         const arrowOffset = 10;
-        const borderRadius = 10;
+        const borderRadius = 4;
+        const arrowRadius = 6;
+        preferredWidth = preferredWidth || this._preferredWidth;
+        preferredHeight = preferredHeight || this._preferredHeight;
 
         // Skinny tooltips are not pretty, their arrow location is not nice.
         preferredWidth = Math.max(preferredWidth, 50);
@@ -201,11 +215,13 @@ WebInspector.Popover.prototype = {
         }
 
         var horizontalAlignment;
+        this._popupArrowElement.removeAttribute("style");
         if (anchorBox.x + newElementPosition.width < totalWidth) {
             newElementPosition.x = Math.max(borderRadius, anchorBox.x - borderRadius - arrowOffset);
             horizontalAlignment = "left";
+            this._popupArrowElement.style.left = arrowOffset + "px";
         } else if (newElementPosition.width + borderRadius * 2 < totalWidth) {
-            newElementPosition.x = totalWidth - newElementPosition.width - borderRadius;
+            newElementPosition.x = totalWidth - newElementPosition.width - borderRadius - 2 * borderWidth;
             horizontalAlignment = "right";
             // Position arrow accurately.
             var arrowRightPosition = Math.max(0, totalWidth - anchorBox.x - anchorBox.width - borderRadius - arrowOffset);
@@ -220,18 +236,16 @@ WebInspector.Popover.prototype = {
             if (verticalAlignment === WebInspector.Popover.Orientation.Bottom)
                 newElementPosition.y -= scrollerWidth;
             // Position arrow accurately.
-            this._popupArrowElement.style.left = Math.max(0, anchorBox.x - borderRadius * 2 - arrowOffset) + "px";
-            this._popupArrowElement.style.left += anchorBox.width / 2;
+            this._popupArrowElement.style.left = Math.max(0, anchorBox.x - newElementPosition.x - borderRadius - arrowRadius + anchorBox.width / 2) + "px";
         }
 
         this.element.className = WebInspector.Popover._classNamePrefix + " " + verticalAlignment + "-" + horizontalAlignment + "-arrow";
-        WebInspector.installComponentRootStyles(this.element);
-        this.element.positionAt(newElementPosition.x - borderWidth, newElementPosition.y - borderWidth, container);
+        this.element.positionAt(newElementPosition.x, newElementPosition.y - borderWidth, container);
         this.element.style.width = newElementPosition.width + borderWidth * 2 + "px";
         this.element.style.height = newElementPosition.height + borderWidth * 2 + "px";
     },
 
-    __proto__: WebInspector.View.prototype
+    __proto__: WebInspector.Widget.prototype
 }
 
 /**
@@ -244,7 +258,6 @@ WebInspector.Popover.prototype = {
  */
 WebInspector.PopoverHelper = function(panelElement, getAnchor, showPopover, onHide, disableOnClick)
 {
-    this._panelElement = panelElement;
     this._getAnchor = getAnchor;
     this._showPopover = showPopover;
     this._onHide = onHide;

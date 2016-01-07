@@ -212,7 +212,7 @@ WebInspector.BottomUpProfileDataGridTree = function(profileView, rootProfileNode
                 var totalTimeAccountedFor = false;
 
                 if (!visitedNodes) {
-                    visitedNodes = {}
+                    visitedNodes = {};
                     visitedProfileNodesForCallUID[profileNode.callUID] = visitedNodes;
                 } else {
                     // The total time for this node has already been accounted for iff one of it's parents has already been visited.
@@ -233,7 +233,7 @@ WebInspector.BottomUpProfileDataGridTree = function(profileView, rootProfileNode
 
             var children = profileNode.children;
             if (children.length) {
-                profileNodeGroups.push(parentProfileNodes.concat([profileNode]))
+                profileNodeGroups.push(parentProfileNodes.concat([profileNode]));
                 profileNodeGroups.push(children);
             }
         }

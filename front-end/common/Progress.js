@@ -30,15 +30,9 @@
 
 /**
  * @interface
- * @extends {WebInspector.EventTarget}
  */
 WebInspector.Progress = function()
 {
-}
-
-WebInspector.Progress.Events = {
-    Canceled: "Canceled",
-    Done: "Done"
 }
 
 WebInspector.Progress.prototype = {
@@ -69,19 +63,11 @@ WebInspector.Progress.prototype = {
      * @return {boolean}
      */
     isCanceled: function() { return false; },
-
-    /**
-     * @param {string} eventType
-     * @param {function(!WebInspector.Event)} listener
-     * @param {!Object=} thisObject
-     */
-    addEventListener: function(eventType, listener, thisObject) { }
 }
 
 /**
  * @constructor
  * @param {!WebInspector.Progress} parent
- * @extends {WebInspector.Object}
  */
 WebInspector.CompositeProgress = function(parent)
 {
@@ -90,7 +76,6 @@ WebInspector.CompositeProgress = function(parent)
     this._childrenDone = 0;
     this._parent.setTotalWork(1);
     this._parent.setWorked(0);
-    parent.addEventListener(WebInspector.Progress.Events.Canceled, this._parentCanceled.bind(this));
 }
 
 WebInspector.CompositeProgress.prototype = {
@@ -98,16 +83,7 @@ WebInspector.CompositeProgress.prototype = {
     {
         if (++this._childrenDone !== this._children.length)
             return;
-        this.dispatchEventToListeners(WebInspector.Progress.Events.Done);
         this._parent.done();
-    },
-
-    _parentCanceled: function()
-    {
-        this.dispatchEventToListeners(WebInspector.Progress.Events.Canceled);
-        for (var i = 0; i < this._children.length; ++i) {
-            this._children[i].dispatchEventToListeners(WebInspector.Progress.Events.Canceled);
-        }
     },
 
     /**
@@ -133,15 +109,12 @@ WebInspector.CompositeProgress.prototype = {
             totalWeights += child._weight;
         }
         this._parent.setWorked(done / totalWeights);
-    },
-
-    __proto__: WebInspector.Object.prototype
+    }
 }
 
 /**
  * @constructor
  * @implements {WebInspector.Progress}
- * @extends {WebInspector.Object}
  * @param {!WebInspector.CompositeProgress} composite
  * @param {number=} weight
  */
@@ -154,6 +127,7 @@ WebInspector.SubProgress = function(composite, weight)
 
 WebInspector.SubProgress.prototype = {
     /**
+     * @override
      * @return {boolean}
      */
     isCanceled: function()
@@ -162,6 +136,7 @@ WebInspector.SubProgress.prototype = {
     },
 
     /**
+     * @override
      * @param {string} title
      */
     setTitle: function(title)
@@ -169,14 +144,17 @@ WebInspector.SubProgress.prototype = {
         this._composite._parent.setTitle(title);
     },
 
+    /**
+     * @override
+     */
     done: function()
     {
         this.setWorked(this._totalWork);
         this._composite._childDone();
-        this.dispatchEventToListeners(WebInspector.Progress.Events.Done);
     },
 
     /**
+     * @override
      * @param {number} totalWork
      */
     setTotalWork: function(totalWork)
@@ -186,6 +164,7 @@ WebInspector.SubProgress.prototype = {
     },
 
     /**
+     * @override
      * @param {number} worked
      * @param {string=} title
      */
@@ -198,12 +177,86 @@ WebInspector.SubProgress.prototype = {
     },
 
     /**
+     * @override
      * @param {number=} worked
      */
     worked: function(worked)
     {
         this.setWorked(this._worked + (worked || 1));
+    }
+}
+
+/**
+ * @constructor
+ * @implements {WebInspector.Progress}
+ * @param {?WebInspector.Progress} delegate
+ * @param {function()=} doneCallback
+ */
+WebInspector.ProgressProxy = function(delegate, doneCallback)
+{
+    this._delegate = delegate;
+    this._doneCallback = doneCallback;
+}
+
+WebInspector.ProgressProxy.prototype = {
+    /**
+     * @override
+     * @return {boolean}
+     */
+    isCanceled: function()
+    {
+        return this._delegate ? this._delegate.isCanceled() : false;
     },
 
-    __proto__: WebInspector.Object.prototype
+    /**
+     * @override
+     * @param {string} title
+     */
+    setTitle: function(title)
+    {
+        if (this._delegate)
+            this._delegate.setTitle(title);
+    },
+
+    /**
+     * @override
+     */
+    done: function()
+    {
+        if (this._delegate)
+            this._delegate.done();
+        if (this._doneCallback)
+            this._doneCallback();
+    },
+
+    /**
+     * @override
+     * @param {number} totalWork
+     */
+    setTotalWork: function(totalWork)
+    {
+        if (this._delegate)
+            this._delegate.setTotalWork(totalWork);
+    },
+
+    /**
+     * @override
+     * @param {number} worked
+     * @param {string=} title
+     */
+    setWorked: function(worked, title)
+    {
+        if (this._delegate)
+            this._delegate.setWorked(worked, title);
+    },
+
+    /**
+     * @override
+     * @param {number=} worked
+     */
+    worked: function(worked)
+    {
+        if (this._delegate)
+            this._delegate.worked(worked);
+    }
 }

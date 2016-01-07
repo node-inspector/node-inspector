@@ -1,0 +1,40 @@
+/*
+ * Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.tabbed-pane-header {
+    background-color: #f3f3f3;
+    flex: 0 0 27px;
+    overflow: visible;
+}
+
+.tabbed-pane-header-tab,
+.tabbed-pane-header-tab.selected {
+    height: 26px;
+    margin: 0;
+    background: none;
+    border: none;
+    border-left: 2px solid transparent;
+    border-right: 2px solid transparent;
+    padding: 0 6px;
+}
+
+.tabbed-pane-header-tab.dragging {
+    box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.37);
+    background: rgb(229, 229, 229);
+}
+
+.tabbed-pane-header-tab:hover {
+    background: rgb(229, 229, 229);
+}
+
+.tabbed-pane-header-tab {
+    color: #5a5a5a;
+}
+
+.tabbed-pane-header-tab.selected {
+    color: #333;
+    border-width: 0 2px 0 2px;
+}

@@ -1,0 +1,69 @@
+/*
+ * Copyright (c) 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+div {
+    width: 10px;
+    height: 10px;
+    margin-right: 2px;
+    display: inline-block;
+}
+
+div.error-icon,
+div.revokedError-icon,
+div.warning-icon,
+div.info-icon,
+div.device-icon,
+div.red-ball,
+div.green-ball,
+div.orange-ball {
+    background-image: url(Images/toolbarButtonGlyphs.png);
+    background-size: 352px 168px;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+div.error-icon,
+div.revokedError-icon,
+div.warning-icon,
+div.info-icon,
+div.device-icon,
+div.red-ball,
+div.green-ball,
+div.orange-ball {
+    background-image: url(Images/toolbarButtonGlyphs_2x.png);
+}
+} /* media */
+
+div.error-icon {
+    background-position: -213px -96px;
+}
+
+div.revokedError-icon {
+    background-position: -245px -107px;
+}
+
+div.warning-icon {
+    background-position: -202px -107px;
+}
+
+div.info-icon {
+    background-position: -213px -107px;
+}
+
+div.device-icon {
+    background-position: -224px -107px;
+}
+
+div.red-ball {
+    background-position: -224px -96px;
+}
+
+div.green-ball {
+    background-position: -235px -96px;
+}
+
+div.orange-ball {
+    background-position: -246px -96px;
+}

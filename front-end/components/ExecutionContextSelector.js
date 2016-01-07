@@ -5,44 +5,61 @@
 /**
  * @constructor
  * @implements {WebInspector.TargetManager.Observer}
+ * @param {!WebInspector.TargetManager} targetManager
+ * @param {!WebInspector.Context} context
  */
-WebInspector.ExecutionContextSelector = function()
+WebInspector.ExecutionContextSelector = function(targetManager, context)
 {
-    WebInspector.targetManager.observeTargets(this);
-    WebInspector.context.addFlavorChangeListener(WebInspector.ExecutionContext, this._executionContextChanged, this);
-    WebInspector.context.addFlavorChangeListener(WebInspector.Target, this._targetChanged, this);
+    targetManager.observeTargets(this);
+    context.addFlavorChangeListener(WebInspector.ExecutionContext, this._executionContextChanged, this);
+    context.addFlavorChangeListener(WebInspector.Target, this._targetChanged, this);
 
-    WebInspector.targetManager.addModelListener(WebInspector.RuntimeModel, WebInspector.RuntimeModel.Events.ExecutionContextCreated, this._onExecutionContextCreated, this);
-    WebInspector.targetManager.addModelListener(WebInspector.RuntimeModel, WebInspector.RuntimeModel.Events.ExecutionContextDestroyed, this._onExecutionContextDestroyed, this);
+    targetManager.addModelListener(WebInspector.RuntimeModel, WebInspector.RuntimeModel.Events.ExecutionContextCreated, this._onExecutionContextCreated, this);
+    targetManager.addModelListener(WebInspector.RuntimeModel, WebInspector.RuntimeModel.Events.ExecutionContextDestroyed, this._onExecutionContextDestroyed, this);
+    this._targetManager = targetManager;
+    this._context = context;
 }
 
 WebInspector.ExecutionContextSelector.prototype = {
 
     /**
+     * @override
      * @param {!WebInspector.Target} target
      */
     targetAdded: function(target)
     {
+        if (!target.hasJSContext())
+            return;
         // Defer selecting default target since we need all clients to get their
         // targetAdded notifications first.
-        setImmediate(function() {
-            if (!WebInspector.context.flavor(WebInspector.Target) || WebInspector.isWorkerFrontend())
-                WebInspector.context.setFlavor(WebInspector.Target, target);
-        });
+        setImmediate(deferred.bind(this));
+
+        /**
+         * @this {WebInspector.ExecutionContextSelector}
+         */
+        function deferred()
+        {
+            // We always want the second context for the service worker targets.
+            if (!this._context.flavor(WebInspector.Target))
+                this._context.setFlavor(WebInspector.Target, target);
+        }
     },
 
     /**
+     * @override
      * @param {!WebInspector.Target} target
      */
     targetRemoved: function(target)
     {
-        var currentExecutionContext = WebInspector.context.flavor(WebInspector.ExecutionContext);
+        if (!target.hasJSContext())
+            return;
+        var currentExecutionContext = this._context.flavor(WebInspector.ExecutionContext);
         if (currentExecutionContext && currentExecutionContext.target() === target)
             this._currentExecutionContextGone();
 
-        var targets = WebInspector.targetManager.targets();
-        if (WebInspector.context.flavor(WebInspector.Target) === target && targets.length && !WebInspector.isWorkerFrontend())
-            WebInspector.context.setFlavor(WebInspector.Target, targets[0]);
+        var targets = this._targetManager.targetsWithJSContext();
+        if (this._context.flavor(WebInspector.Target) === target && targets.length)
+            this._context.setFlavor(WebInspector.Target, targets[0]);
     },
 
     /**
@@ -51,8 +68,20 @@ WebInspector.ExecutionContextSelector.prototype = {
     _executionContextChanged: function(event)
     {
         var newContext = /** @type {?WebInspector.ExecutionContext} */ (event.data);
-        if (newContext)
-            WebInspector.context.setFlavor(WebInspector.Target, newContext.target());
+        if (newContext) {
+            this._context.setFlavor(WebInspector.Target, newContext.target());
+            if (!this._contextIsGoingAway)
+                this._lastSelectedContextId = this._contextPersistentId(newContext);
+        }
+    },
+
+    /**
+     * @param {!WebInspector.ExecutionContext} executionContext
+     * @return {string}
+     */
+    _contextPersistentId: function(executionContext)
+    {
+        return executionContext.isMainWorldContext ? executionContext.target().name() + ":" + executionContext.frameId : "";
     },
 
     /**
@@ -61,7 +90,7 @@ WebInspector.ExecutionContextSelector.prototype = {
     _targetChanged: function(event)
     {
         var newTarget = /** @type {?WebInspector.Target} */(event.data);
-        var currentContext = WebInspector.context.flavor(WebInspector.ExecutionContext);
+        var currentContext = this._context.flavor(WebInspector.ExecutionContext);
 
         if (!newTarget || (currentContext && currentContext.target() === newTarget))
             return;
@@ -75,7 +104,7 @@ WebInspector.ExecutionContextSelector.prototype = {
             if (executionContexts[i].isMainWorldContext)
                 newContext = executionContexts[i];
         }
-        WebInspector.context.setFlavor(WebInspector.ExecutionContext, newContext);
+        this._context.setFlavor(WebInspector.ExecutionContext, newContext);
     },
 
     /**
@@ -84,13 +113,8 @@ WebInspector.ExecutionContextSelector.prototype = {
     _onExecutionContextCreated: function(event)
     {
         var executionContext = /** @type {!WebInspector.ExecutionContext} */ (event.data);
-
-        if (!WebInspector.context.flavor(WebInspector.ExecutionContext)) {
-            // FIXME(413886): Execution context for the main thread on the service/shared worker shadow page
-            // should never be sent to frontend. The worker frontend check below could be removed once this is fixed.
-            if (!WebInspector.isWorkerFrontend() || executionContext.target() !== WebInspector.targetManager.mainTarget())
-                WebInspector.context.setFlavor(WebInspector.ExecutionContext, executionContext);
-        }
+        if (!this._context.flavor(WebInspector.ExecutionContext) || (this._lastSelectedContextId && this._lastSelectedContextId === this._contextPersistentId(executionContext)))
+            this._context.setFlavor(WebInspector.ExecutionContext, executionContext);
     },
 
     /**
@@ -99,16 +123,16 @@ WebInspector.ExecutionContextSelector.prototype = {
     _onExecutionContextDestroyed: function(event)
     {
         var executionContext = /** @type {!WebInspector.ExecutionContext}*/ (event.data);
-        if (WebInspector.context.flavor(WebInspector.ExecutionContext) === executionContext)
+        if (this._context.flavor(WebInspector.ExecutionContext) === executionContext)
             this._currentExecutionContextGone();
     },
 
     _currentExecutionContextGone: function()
     {
-        var targets = WebInspector.targetManager.targets();
+        var targets = this._targetManager.targetsWithJSContext();
         var newContext = null;
         for (var i = 0; i < targets.length; ++i) {
-            if (WebInspector.isWorkerFrontend() && targets[i] === WebInspector.targetManager.mainTarget())
+            if (targets[i].isServiceWorker())
                 continue;
             var executionContexts = targets[i].runtimeModel.executionContexts();
             if (executionContexts.length) {
@@ -116,9 +140,10 @@ WebInspector.ExecutionContextSelector.prototype = {
                 break;
             }
         }
-        WebInspector.context.setFlavor(WebInspector.ExecutionContext, newContext);
+        this._contextIsGoingAway = true;
+        this._context.setFlavor(WebInspector.ExecutionContext, newContext);
+        this._contextIsGoingAway = false;
     }
-
 }
 
 /**
@@ -136,8 +161,14 @@ WebInspector.ExecutionContextSelector.completionsForTextPromptInCurrentContext =
     }
 
     // Pass less stop characters to rangeOfWord so the range will be a more complete expression.
-    var expressionRange = wordRange.startContainer.rangeOfWord(wordRange.startOffset, " =:[({;,!+-*/&|^<>", proxyElement, "backward");
+    var expressionRange = wordRange.startContainer.rangeOfWord(wordRange.startOffset, " =:({;,!+-*/&|^<>", proxyElement, "backward");
     var expressionString = expressionRange.toString();
+
+    // The "[" is also a stop character, except when it's the last character of the expression.
+    var pos = expressionString.lastIndexOf("[", expressionString.length - 2);
+    if (pos !== -1)
+        expressionString = expressionString.substr(pos + 1);
+
     var prefix = wordRange.toString();
     executionContext.completionsForExpression(expressionString, prefix, force, completionsReadyCallback);
 }

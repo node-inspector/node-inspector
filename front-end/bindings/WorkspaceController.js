@@ -50,15 +50,14 @@ WebInspector.WorkspaceController.prototype = {
 
         /**
          * @this {WebInspector.WorkspaceController}
-         * @param {!WebInspector.Throttler.FinishCallback} callback
          */
-        function refreshFileSystems(callback)
+        function refreshFileSystems()
         {
             var barrier = new CallbackBarrier();
             var projects = this._workspace.projects();
             for (var i = 0; i < projects.length; ++i)
                 projects[i].refresh("/", barrier.createCallback());
-            barrier.callWhenDone(callback);
+            return barrier.donePromise();
         }
     }
 }

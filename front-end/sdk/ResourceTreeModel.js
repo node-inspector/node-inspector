@@ -53,6 +53,8 @@ WebInspector.ResourceTreeModel = function(target)
     this._pendingConsoleMessages = {};
     this._securityOriginFrameCount = {};
     this._inspectedPageURL = "";
+    this._pendingReloadOptions = null;
+    this._reloadSuspensionCount = 0;
 }
 
 WebInspector.ResourceTreeModel.EventTypes = {
@@ -66,14 +68,41 @@ WebInspector.ResourceTreeModel.EventTypes = {
     CachedResourcesLoaded: "CachedResourcesLoaded",
     DOMContentLoaded: "DOMContentLoaded",
     Load: "Load",
+    PageReloadRequested: "PageReloadRequested",
     WillReloadPage: "WillReloadPage",
     InspectedURLChanged: "InspectedURLChanged",
     SecurityOriginAdded: "SecurityOriginAdded",
     SecurityOriginRemoved: "SecurityOriginRemoved",
     ScreencastFrame: "ScreencastFrame",
     ScreencastVisibilityChanged: "ScreencastVisibilityChanged",
-    ViewportChanged: "ViewportChanged",
     ColorPicked: "ColorPicked"
+}
+
+
+/**
+ * @return {!Array.<!WebInspector.ResourceTreeFrame>}
+ */
+WebInspector.ResourceTreeModel.frames = function()
+{
+    var result = [];
+    for (var target of WebInspector.targetManager.targets())
+        result = result.concat(Object.values(target.resourceTreeModel._frames));
+    return result;
+}
+
+/**
+ * @param {string} url
+ * @return {?WebInspector.Resource}
+ */
+WebInspector.ResourceTreeModel.resourceForURL = function(url)
+{
+    for (var target of WebInspector.targetManager.targets()) {
+        var mainFrame = target.resourceTreeModel.mainFrame;
+        var result = mainFrame ? mainFrame.resourceForURL(url) : null;
+        if (result)
+            return result;
+    }
+    return null;
 }
 
 WebInspector.ResourceTreeModel.prototype = {
@@ -81,22 +110,29 @@ WebInspector.ResourceTreeModel.prototype = {
     {
         /** @type {!Object.<string, !WebInspector.ResourceTreeFrame>} */
         this._frames = {};
-        delete this._cachedResourcesProcessed;
+        this._cachedResourcesProcessed = false;
         this._agent.getResourceTree(this._processCachedResources.bind(this));
     },
 
     _processCachedResources: function(error, mainFramePayload)
     {
         if (error) {
-            //FIXME: remove resourceTreeModel from worker
-            if (!this.target().isWorkerTarget())
+            // FIXME: support targets that don't have resourceTreeModel.
+            if (this.target().isPage() || this.target().isServiceWorker())
                 console.error(JSON.stringify(error));
+            this._cachedResourcesProcessed = true;
             return;
         }
 
         this.dispatchEventToListeners(WebInspector.ResourceTreeModel.EventTypes.WillLoadCachedResources);
         this._inspectedPageURL = mainFramePayload.frame.url;
-        this._addFramesRecursively(null, mainFramePayload);
+
+        // Do not process SW resources.
+        if (this.target().isPage())
+            this._addFramesRecursively(null, mainFramePayload);
+        else
+            this._addSecurityOrigin(mainFramePayload.frame.securityOrigin);
+
         this._dispatchInspectedURLChanged();
         this._cachedResourcesProcessed = true;
         this.dispatchEventToListeners(WebInspector.ResourceTreeModel.EventTypes.CachedResourcesLoaded);
@@ -210,7 +246,7 @@ WebInspector.ResourceTreeModel.prototype = {
     _frameAttached: function(frameId, parentFrameId)
     {
         // Do nothing unless cached resource tree is processed - it will overwrite everything.
-        if (!this._cachedResourcesProcessed)
+        if (!this._cachedResourcesProcessed && parentFrameId)
             return null;
         if (this._frames[frameId])
             return null;
@@ -232,7 +268,7 @@ WebInspector.ResourceTreeModel.prototype = {
     _frameNavigated: function(framePayload)
     {
         // Do nothing unless cached resource tree is processed - it will overwrite everything.
-        if (!this._cachedResourcesProcessed)
+        if (!this._cachedResourcesProcessed && framePayload.parentId)
             return;
         var frame = this._frames[framePayload.id];
         if (!frame) {
@@ -440,10 +476,7 @@ WebInspector.ResourceTreeModel.prototype = {
         var frameResource = this._createResourceFromFramePayload(framePayload, framePayload.url, WebInspector.resourceTypes.Document, framePayload.mimeType);
         if (frame.isMainFrame())
             this._inspectedPageURL = frameResource.url;
-        // FIXME(413891): This check could be removed once we stop to send frame tree for service/shared workers.
-        // This makes sure that the shadow page document resource does not hide the worker script resource (they have the same url).
-        if (!WebInspector.isWorkerFrontend())
-            frame.addResource(frameResource);
+        frame.addResource(frameResource);
 
         for (var i = 0; frameTreePayload.childFrames && i < frameTreePayload.childFrames.length; ++i)
             this._addFramesRecursively(frame, frameTreePayload.childFrames[i]);
@@ -467,15 +500,35 @@ WebInspector.ResourceTreeModel.prototype = {
         return new WebInspector.Resource(this.target(), null, url, frame.url, frame.id, frame.loaderId, type, mimeType);
     },
 
+    suspendReload: function()
+    {
+        this._reloadSuspensionCount++;
+    },
+
+    resumeReload: function()
+    {
+        this._reloadSuspensionCount--;
+        console.assert(this._reloadSuspensionCount >= 0, "Unbalanced call to ResourceTreeModel.resumeReload()");
+        if (!this._reloadSuspensionCount && this._pendingReloadOptions)
+            this.reloadPage.apply(this, this._pendingReloadOptions);
+    },
+
     /**
      * @param {boolean=} ignoreCache
      * @param {string=} scriptToEvaluateOnLoad
-     * @param {string=} scriptPreprocessor
      */
-    reloadPage: function(ignoreCache, scriptToEvaluateOnLoad, scriptPreprocessor)
+    reloadPage: function(ignoreCache, scriptToEvaluateOnLoad)
     {
+        // Only dispatch PageReloadRequested upon first reload request to simplify client logic.
+        if (!this._pendingReloadOptions)
+            this.dispatchEventToListeners(WebInspector.ResourceTreeModel.EventTypes.PageReloadRequested);
+        if (this._reloadSuspensionCount) {
+            this._pendingReloadOptions = [ignoreCache, scriptToEvaluateOnLoad];
+            return;
+        }
+        this._pendingReloadOptions = null;
         this.dispatchEventToListeners(WebInspector.ResourceTreeModel.EventTypes.WillReloadPage);
-        this._agent.reload(ignoreCache, scriptToEvaluateOnLoad, scriptPreprocessor);
+        this._agent.reload(ignoreCache, scriptToEvaluateOnLoad);
     },
 
     __proto__: WebInspector.SDKModel.prototype
@@ -762,56 +815,94 @@ WebInspector.PageDispatcher.prototype = {
         this._resourceTreeModel.dispatchEventToListeners(WebInspector.ResourceTreeModel.EventTypes.Load, time);
     },
 
+    /**
+     * @override
+     * @param {!PageAgent.FrameId} frameId
+     * @param {!PageAgent.FrameId} parentFrameId
+     */
     frameAttached: function(frameId, parentFrameId)
     {
         this._resourceTreeModel._frameAttached(frameId, parentFrameId);
     },
 
+    /**
+     * @override
+     * @param {!PageAgent.Frame} frame
+     */
     frameNavigated: function(frame)
     {
         this._resourceTreeModel._frameNavigated(frame);
     },
 
+    /**
+     * @override
+     * @param {!PageAgent.FrameId} frameId
+     */
     frameDetached: function(frameId)
     {
         this._resourceTreeModel._frameDetached(frameId);
     },
 
+    /**
+     * @override
+     * @param {!PageAgent.FrameId} frameId
+     */
     frameStartedLoading: function(frameId)
     {
     },
 
+    /**
+     * @override
+     * @param {!PageAgent.FrameId} frameId
+     */
     frameStoppedLoading: function(frameId)
     {
     },
 
+    /**
+     * @override
+     * @param {!PageAgent.FrameId} frameId
+     * @param {number} delay
+     */
     frameScheduledNavigation: function(frameId, delay)
     {
     },
 
+    /**
+     * @override
+     * @param {!PageAgent.FrameId} frameId
+     */
     frameClearedScheduledNavigation: function(frameId)
     {
     },
 
+    /**
+     * @override
+     */
     frameResized: function()
     {
         this._resourceTreeModel.dispatchEventToListeners(WebInspector.ResourceTreeModel.EventTypes.FrameResized, null);
     },
 
-    javascriptDialogOpening: function(message)
+    /**
+     * @override
+     * @param {string} message
+     * @param {string} dialogType
+     */
+    javascriptDialogOpening: function(message, dialogType)
     {
-    },
-
-    javascriptDialogClosed: function()
-    {
-    },
-
-    scriptsEnabled: function(isEnabled)
-    {
-        WebInspector.settings.javaScriptDisabled.set(!isEnabled);
     },
 
     /**
+     * @override
+     * @param {boolean} result
+     */
+    javascriptDialogClosed: function(result)
+    {
+    },
+
+    /**
+     * @override
      * @param {string} data
      * @param {!PageAgent.ScreencastFrameMetadata=} metadata
      * @param {number=} frameNumber
@@ -822,6 +913,7 @@ WebInspector.PageDispatcher.prototype = {
     },
 
     /**
+     * @override
      * @param {boolean} visible
      */
     screencastVisibilityChanged: function(visible)
@@ -830,14 +922,7 @@ WebInspector.PageDispatcher.prototype = {
     },
 
     /**
-     * @param {!PageAgent.Viewport=} viewport
-     */
-    viewportChanged: function(viewport)
-    {
-        this._resourceTreeModel.dispatchEventToListeners(WebInspector.ResourceTreeModel.EventTypes.ViewportChanged, viewport);
-    },
-
-    /**
+     * @override
      * @param {!DOMAgent.RGBA} color
      */
     colorPicked: function(color)
@@ -845,18 +930,19 @@ WebInspector.PageDispatcher.prototype = {
         this._resourceTreeModel.dispatchEventToListeners(WebInspector.ResourceTreeModel.EventTypes.ColorPicked, color);
     },
 
+    /**
+     * @override
+     */
     interstitialShown: function()
     {
         // Frontend is not interested in interstitials.
     },
 
+    /**
+     * @override
+     */
     interstitialHidden: function()
     {
         // Frontend is not interested in interstitials.
     }
 }
-
-/**
- * @type {!WebInspector.ResourceTreeModel}
- */
-WebInspector.resourceTreeModel;

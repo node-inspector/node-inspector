@@ -73,7 +73,7 @@ WebInspector.ParsedURL = function(url)
     var path = this.path;
     var indexOfQuery = path.indexOf("?");
     if (indexOfQuery !== -1) {
-        this.queryParams = path.substring(indexOfQuery + 1)
+        this.queryParams = path.substring(indexOfQuery + 1);
         path = path.substring(0, indexOfQuery);
     }
 
@@ -246,31 +246,58 @@ WebInspector.ParsedURL.prototype = {
     isDataURL: function()
     {
         return this.scheme === "data";
-    }
+    },
+
+    /**
+     * @return {string}
+     */
+    lastPathComponentWithFragment: function()
+    {
+       return this.lastPathComponent + (this.fragment ? "#" + this.fragment : "");
+    },
+
+    /**
+     * @return {string}
+     */
+    domain: function()
+    {
+        return this.host + (this.port ? ":" + this.port : "");
+    },
+
+    /**
+     * @return {string}
+     */
+    urlWithoutScheme: function()
+    {
+        if (this.scheme && this.url.startsWith(this.scheme + "://"))
+            return this.url.substring(this.scheme.length + 3);
+        return this.url;
+    },
 }
 
 /**
  * @param {string} string
- * @return {?{url: string, lineNumber: (number|undefined), columnNumber: (number|undefined)}}
+ * @return {!{url: string, lineNumber: (number|undefined), columnNumber: (number|undefined)}}
  */
 WebInspector.ParsedURL.splitLineAndColumn = function(string)
 {
-    var lineColumnRegEx = /:(\d+)(:(\d+))?$/;
+    var lineColumnRegEx = /(?::(\d+))?(?::(\d+))?$/;
     var lineColumnMatch = lineColumnRegEx.exec(string);
     var lineNumber;
     var columnNumber;
-    if (!lineColumnMatch)
-        return null;
+    console.assert(lineColumnMatch);
 
-    lineNumber = parseInt(lineColumnMatch[1], 10);
-    // Immediately convert line and column to 0-based numbers.
-    lineNumber = isNaN(lineNumber) ? undefined : lineNumber - 1;
-    if (typeof(lineColumnMatch[3]) === "string") {
-        columnNumber = parseInt(lineColumnMatch[3], 10);
+    if (typeof(lineColumnMatch[1]) === "string") {
+        lineNumber = parseInt(lineColumnMatch[1], 10);
+        // Immediately convert line and column to 0-based numbers.
+        lineNumber = isNaN(lineNumber) ? undefined : lineNumber - 1;
+    }
+    if (typeof(lineColumnMatch[2]) === "string") {
+        columnNumber = parseInt(lineColumnMatch[2], 10);
         columnNumber = isNaN(columnNumber) ? undefined : columnNumber - 1;
     }
 
-    return { url: string.substring(0, string.length - lineColumnMatch[0].length), lineNumber: lineNumber, columnNumber: columnNumber};
+    return {url: string.substring(0, string.length - lineColumnMatch[0].length), lineNumber: lineNumber, columnNumber: columnNumber};
 }
 
 /**

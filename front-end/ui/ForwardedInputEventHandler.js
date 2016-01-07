@@ -25,7 +25,7 @@ WebInspector.ForwardedInputEventHandler.prototype = {
         if (type !== "keydown")
             return;
 
-        WebInspector.context.setFlavor(WebInspector.ShortcutRegistry.ForwardedShortcut, WebInspector.ShortcutRegistry.ForwardedShortcut.instance)
+        WebInspector.context.setFlavor(WebInspector.ShortcutRegistry.ForwardedShortcut, WebInspector.ShortcutRegistry.ForwardedShortcut.instance);
         WebInspector.shortcutRegistry.handleKey(WebInspector.KeyboardShortcut.makeKey(keyCode, modifiers), keyIdentifier);
         WebInspector.context.setFlavor(WebInspector.ShortcutRegistry.ForwardedShortcut, null);
     }

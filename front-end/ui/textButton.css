@@ -1,0 +1,48 @@
+/*
+ * Copyright (c) 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+:host {
+    background-image: linear-gradient(hsl(0, 0%, 93%), hsl(0, 0%, 93%) 38%, hsl(0, 0%, 87%));
+    border: 1px solid hsla(0, 0%, 0%, 0.25);
+    border-radius: 2px;
+    box-shadow: 0 1px 0 hsla(0, 0%, 0%, 0.08), inset 0 1px 2px hsla(0, 100%, 100%, 0.75);
+    color: hsl(0, 0%, 27%);
+    font-size: 12px;
+    margin: 0 1px 0 0;
+    text-shadow: 0 1px 0 hsl(0, 0%, 94%);
+    min-height: 2em !important;
+    padding-left: 10px;
+    padding-right: 10px;
+    -webkit-user-select: none;
+    flex: none;
+}
+
+:host-context(body.inactive),
+:host(:disabled) {
+    background-image: linear-gradient(#f1f1f1, #f1f1f1 38%, #e6e6e6);
+    border-color: rgba(80, 80, 80, 0.2);
+    box-shadow: 0 1px 0 rgba(80, 80, 80, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.75);
+    color: #aaa;
+}
+
+:host(:not(:disabled):hover) {
+    background-image: linear-gradient(hsl(0, 0%, 94%), hsl(0, 0%, 94%) 38%, hsl(0, 0%, 88%));
+    border-color: hsla(0, 0%, 0%, 0.3);
+    box-shadow: 0 1px 0 hsla(0, 0%, 0%, 0.12), inset 0 1px 2px hsla(0, 100%, 100%, 0.95);
+    color: hsl(0, 0%, 0%);
+}
+
+:host(:not(:disabled):active) {
+    background-image: linear-gradient(hsl(0, 0%, 91%), hsl(0, 0%, 91%) 38%, hsl(0, 0%, 84%));
+    box-shadow: none;
+    text-shadow: none;
+}
+
+:host(:not(:disabled):focus) {
+    -webkit-transition: border-color 200ms;
+    border-color: rgb(77, 144, 254);
+    outline: none;
+}

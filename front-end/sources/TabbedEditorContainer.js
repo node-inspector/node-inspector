@@ -43,10 +43,10 @@ WebInspector.TabbedEditorContainerDelegate.prototype = {
  * @constructor
  * @extends {WebInspector.Object}
  * @param {!WebInspector.TabbedEditorContainerDelegate} delegate
- * @param {string} settingName
+ * @param {!WebInspector.Setting} setting
  * @param {string} placeholderText
  */
-WebInspector.TabbedEditorContainer = function(delegate, settingName, placeholderText)
+WebInspector.TabbedEditorContainer = function(delegate, setting, placeholderText)
 {
     WebInspector.Object.call(this);
     this._delegate = delegate;
@@ -55,8 +55,10 @@ WebInspector.TabbedEditorContainer = function(delegate, settingName, placeholder
     this._tabbedPane.setPlaceholderText(placeholderText);
     this._tabbedPane.setTabDelegate(new WebInspector.EditorContainerTabDelegate(this));
 
-    this._tabbedPane.closeableTabs = true;
-    this._tabbedPane.element.id = "sources-editor-container-tabbed-pane";
+    this._tabbedPane.setCloseableTabs(true);
+    this._tabbedPane.setAllowTabReorder(true, true);
+    this._tabbedPane.insertBeforeTabStrip(createElementWithClass("div", "sources-editor-tabstrip-left"));
+    this._tabbedPane.appendAfterTabStrip(createElementWithClass("div", "sources-editor-tabstrip-right"));
 
     this._tabbedPane.addEventListener(WebInspector.TabbedPane.EventTypes.TabClosed, this._tabClosed, this);
     this._tabbedPane.addEventListener(WebInspector.TabbedPane.EventTypes.TabSelected, this._tabSelected, this);
@@ -64,7 +66,7 @@ WebInspector.TabbedEditorContainer = function(delegate, settingName, placeholder
     this._tabIds = new Map();
     this._files = {};
 
-    this._previouslyViewedFilesSetting = WebInspector.settings.createSetting(settingName, []);
+    this._previouslyViewedFilesSetting = setting;
     this._history = WebInspector.TabbedEditorContainer.History.fromObject(this._previouslyViewedFilesSetting.get());
 }
 
@@ -79,7 +81,7 @@ WebInspector.TabbedEditorContainer.maximalPreviouslyViewedFilesCount = 30;
 
 WebInspector.TabbedEditorContainer.prototype = {
     /**
-     * @return {!WebInspector.View}
+     * @return {!WebInspector.Widget}
      */
     get view()
     {
@@ -270,6 +272,17 @@ WebInspector.TabbedEditorContainer.prototype = {
     },
 
     /**
+     * @param {string} tabId
+     * @param {!WebInspector.ContextMenu} contextMenu
+     */
+    _onContextMenu: function(tabId, contextMenu)
+    {
+        var uiSourceCode = this._files[tabId];
+        if (uiSourceCode)
+            contextMenu.appendApplicableItems(uiSourceCode);
+    },
+
+    /**
      * @param {!WebInspector.UISourceCode} uiSourceCode
      */
     addUISourceCode: function(uiSourceCode)
@@ -278,11 +291,12 @@ WebInspector.TabbedEditorContainer.prototype = {
         if (this._userSelectedFiles)
             return;
 
-        var index = this._history.index(uri)
+        var index = this._history.index(uri);
         if (index === -1)
             return;
 
-        var tabId = this._tabIds.get(uiSourceCode) || this._appendFileTab(uiSourceCode, false);
+        if (!this._tabIds.has(uiSourceCode))
+            this._appendFileTab(uiSourceCode, false);
 
         // Select tab if this file was the last to be shown.
         if (!index) {
@@ -462,7 +476,7 @@ WebInspector.TabbedEditorContainer.prototype = {
             var title = this._titleForFile(uiSourceCode);
             this._tabbedPane.changeTabTitle(tabId, title);
             if (uiSourceCode.hasUnsavedCommittedChanges())
-                this._tabbedPane.setTabIcon(tabId, "editor-container-unsaved-committed-changes-icon", WebInspector.UIString("Changes to this file were not saved to file system."));
+                this._tabbedPane.setTabIcon(tabId, "warning-icon", WebInspector.UIString("Changes to this file were not saved to file system."));
             else
                 this._tabbedPane.setTabIcon(tabId, "");
         }
@@ -728,11 +742,22 @@ WebInspector.EditorContainerTabDelegate = function(editorContainer)
 
 WebInspector.EditorContainerTabDelegate.prototype = {
     /**
+     * @override
      * @param {!WebInspector.TabbedPane} tabbedPane
      * @param {!Array.<string>} ids
      */
     closeTabs: function(tabbedPane, ids)
     {
         this._editorContainer._closeTabs(ids);
+    },
+
+    /**
+     * @override
+     * @param {string} tabId
+     * @param {!WebInspector.ContextMenu} contextMenu
+     */
+    onContextMenu: function(tabId, contextMenu)
+    {
+        this._editorContainer._onContextMenu(tabId, contextMenu);
     }
 }
