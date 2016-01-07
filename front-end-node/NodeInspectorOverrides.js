@@ -10,7 +10,7 @@ WebInspector.NodeInspectorOverrides = function() {
   this._overrideUIStrings();
   this._overrideWebSocketCreate();
 
-  this._setWorkerTitle();
+  //this._setWorkerTitle();
 
   this._mergeConnectionQueryParams();
 
@@ -27,6 +27,7 @@ WebInspector.NodeInspectorOverrides.prototype = {
         return this.orig_loadFromJSONIfNeeded('protocol.json');
     };
   },
+
   _overrideMainScriptType: function() {
     WebInspector.ResourceTreeModel.prototype.orig_createResourceFromFramePayload =
       WebInspector.ResourceTreeModel.prototype._createResourceFromFramePayload;
@@ -51,6 +52,8 @@ WebInspector.NodeInspectorOverrides.prototype = {
       args[0] = overridenStrings[string] || string;
       return this.orig_UIString.apply(this, args);
     };
+
+    WebInspector.UIString.__proto__ = WebInspector.orig_UIString;
   },
 
   _overrideWebSocketCreate: function() {
@@ -82,8 +85,7 @@ WebInspector.NodeInspectorOverrides.prototype = {
     WebInspector.targetManager.addModelListener(
       WebInspector.ResourceTreeModel,
       WebInspector.ResourceTreeModel.EventTypes.CachedResourcesLoaded,
-      showMainAppFile,
-      null
+      showMainAppFile
     );
   },
 
@@ -223,31 +225,24 @@ function showMainAppFile() {
       return;
     }
 
-    var uiSourceCodes = getAllUiSourceCodes();
-    var uriToShow = WebInspector.inspectedPageURL;
+    setTimeout(() => {
+      var uiSourceCodes = getAllUiSourceCodes();
+      var uriToShow = WebInspector.targetManager.inspectedPageURL();
 
-    for (var i in uiSourceCodes) {
-      if (uiSourceCodes[i].url !== uriToShow) continue;
-      panel.showUISourceCode(uiSourceCodes[i]);
-      return true;
-    }
+      for (var i in uiSourceCodes) {
+        if (uiSourceCodes[i].originURL() !== uriToShow) continue;
+        panel.showUISourceCode(uiSourceCodes[i]);
+        return true;
+      }
 
-    console.error('Cannot show the main application file ', uriToShow);
+      console.error('Cannot show the main application file ', uriToShow);
+    }, 10);
   });
 }
 
 function getAllUiSourceCodes() {
-  // Based on FilteredItemSectionDialog.js > SelectUISourceCodeDialog()
-  var projects = WebInspector.workspace.projects();
-  var uiSourceCodes = [];
-  var projectFiles;
-
-  for (var i = 0; i < projects.length; ++i) {
-    projectFiles = projects[i]
-      .uiSourceCodes()
-      .filter(nameIsNotEmpty);
-    uiSourceCodes = uiSourceCodes.concat(projectFiles);
-  }
+  var project = WebInspector.workspace.project('1:file://');
+  var uiSourceCodes = project.uiSourceCodes().filter(nameIsNotEmpty);;
 
   return uiSourceCodes;
 
