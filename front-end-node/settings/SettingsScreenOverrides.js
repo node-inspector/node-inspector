@@ -13,10 +13,10 @@ WebInspector.SettingsScreenOverrides.prototype = {
       if (!this._settingsScreen)
         this._settingsScreen = new WebInspector.SettingsScreen(this._onHideSettingsScreen.bind(this));
       if (!this._overridenCssRegistered) {
-        this._settingsScreen.registerRequiredCSS('node/settings/SettingsScreenOverrides.css');
+        this._settingsScreen._tabbedPane.registerRequiredCSS('node/settings/SettingsScreenOverrides.css');
         this._overridenCssRegistered = true;
       }
-      this.orig_showSettingsScreen(WebInspector.SettingsScreen.Tabs.Shortcuts);
+      this.orig_showSettingsScreen("shortcuts");
     };
   }
 };
