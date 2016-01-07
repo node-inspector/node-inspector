@@ -50,7 +50,7 @@ WebInspector.HAREntry.prototype = {
     build: function()
     {
         var entry = {
-            startedDateTime: new Date(this._request.startTime * 1000),
+            startedDateTime: WebInspector.HARLog.pseudoWallTime(this._request, this._request.startTime),
             time: this._request.timing ? WebInspector.HAREntry._toMilliseconds(this._request.duration) : 0,
             request: this._buildRequest(),
             response: this._buildResponse(),
@@ -104,6 +104,7 @@ WebInspector.HAREntry.prototype = {
             redirectURL: this._request.responseHeaderValue("Location") || "",
             headersSize: headersText ? headersText.length : -1,
             bodySize: this.responseBodySize,
+            _transferSize: this._request.transferSize,
             _error: this._request.localizedFailDescription
         };
     },
@@ -142,7 +143,7 @@ WebInspector.HAREntry.prototype = {
                 if (values[i] >= 0)
                     return values[i];
             }
-            console.assert(false, "Incomplete requet timing information.");
+            console.assert(false, "Incomplete request timing information.");
         }
 
         var blocked = firstNonNegative([timing.dnsStart, timing.connectStart, timing.sendStart]);
@@ -218,7 +219,7 @@ WebInspector.HAREntry.prototype = {
             value: cookie.value(),
             path: cookie.path(),
             domain: cookie.domain(),
-            expires: cookie.expiresDate(new Date(this._request.startTime * 1000)),
+            expires: cookie.expiresDate(WebInspector.HARLog.pseudoWallTime(this._request, this._request.startTime)),
             httpOnly: cookie.httpOnly(),
             secure: cookie.secure()
         };
@@ -275,6 +276,16 @@ WebInspector.HARLog = function(requests)
     this._requests = requests;
 }
 
+/**
+ * @param {!WebInspector.NetworkRequest} request
+ * @param {number} monotonicTime
+ * @return {!Date}
+ */
+WebInspector.HARLog.pseudoWallTime = function(request, monotonicTime)
+{
+    return new Date(request.pseudoWallTime(monotonicTime) * 1000);
+}
+
 WebInspector.HARLog.prototype = {
     /**
      * @return {!Object}
@@ -307,23 +318,25 @@ WebInspector.HARLog.prototype = {
         var seenIdentifiers = {};
         var pages = [];
         for (var i = 0; i < this._requests.length; ++i) {
-            var page = this._requests[i].target().networkLog.pageLoadForRequest(this._requests[i]);
+            var request = this._requests[i];
+            var page = request.target().networkLog.pageLoadForRequest(request);
             if (!page || seenIdentifiers[page.id])
                 continue;
             seenIdentifiers[page.id] = true;
-            pages.push(this._convertPage(page));
+            pages.push(this._convertPage(page, request));
         }
         return pages;
     },
 
     /**
      * @param {!WebInspector.PageLoad} page
+     * @param {!WebInspector.NetworkRequest} request
      * @return {!Object}
      */
-    _convertPage: function(page)
+    _convertPage: function(page, request)
     {
         return {
-            startedDateTime: new Date(page.startTime * 1000),
+            startedDateTime: WebInspector.HARLog.pseudoWallTime(request, page.startTime),
             id: "page_" + page.id,
             title: page.url, // We don't have actual page title here. URL is probably better than nothing.
             pageTimings: {

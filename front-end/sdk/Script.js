@@ -27,7 +27,7 @@
  * @constructor
  * @extends {WebInspector.SDKObject}
  * @implements {WebInspector.ContentProvider}
- * @param {!WebInspector.Target} target
+ * @param {!WebInspector.DebuggerModel} debuggerModel
  * @param {string} scriptId
  * @param {string} sourceURL
  * @param {number} startLine
@@ -35,12 +35,14 @@
  * @param {number} endLine
  * @param {number} endColumn
  * @param {boolean} isContentScript
+ * @param {boolean} isInternalScript
  * @param {string=} sourceMapURL
  * @param {boolean=} hasSourceURL
  */
-WebInspector.Script = function(target, scriptId, sourceURL, startLine, startColumn, endLine, endColumn, isContentScript, sourceMapURL, hasSourceURL)
+WebInspector.Script = function(debuggerModel, scriptId, sourceURL, startLine, startColumn, endLine, endColumn, isContentScript, isInternalScript, sourceMapURL, hasSourceURL)
 {
-    WebInspector.SDKObject.call(this, target);
+    WebInspector.SDKObject.call(this, debuggerModel.target());
+    this.debuggerModel = debuggerModel;
     this.scriptId = scriptId;
     this.sourceURL = sourceURL;
     this.lineOffset = startLine;
@@ -48,6 +50,7 @@ WebInspector.Script = function(target, scriptId, sourceURL, startLine, startColu
     this.endLine = endLine;
     this.endColumn = endColumn;
     this._isContentScript = isContentScript;
+    this._isInternalScript = isInternalScript;
     this.sourceMapURL = sourceMapURL;
     this.hasSourceURL = hasSourceURL;
 }
@@ -56,8 +59,6 @@ WebInspector.Script.Events = {
     ScriptEdited: "ScriptEdited",
     SourceMapURLAdded: "SourceMapURLAdded",
 }
-
-WebInspector.Script.snippetSourceURLPrefix = "snippets:///";
 
 WebInspector.Script.sourceURLRegex = /\n[\040\t]*\/\/[@#]\ssourceURL=\s*(\S*?)\s*$/mg;
 
@@ -81,6 +82,15 @@ WebInspector.Script.prototype = {
     },
 
     /**
+     * @return {boolean}
+     */
+    isInternalScript: function()
+    {
+        return this._isInternalScript;
+    },
+
+    /**
+     * @override
      * @return {string}
      */
     contentURL: function()
@@ -89,6 +99,7 @@ WebInspector.Script.prototype = {
     },
 
     /**
+     * @override
      * @return {!WebInspector.ResourceType}
      */
     contentType: function()
@@ -97,6 +108,7 @@ WebInspector.Script.prototype = {
     },
 
     /**
+     * @override
      * @param {function(?string)} callback
      */
     requestContent: function(callback)
@@ -124,21 +136,25 @@ WebInspector.Script.prototype = {
     },
 
     /**
+     * @override
      * @param {string} query
      * @param {boolean} caseSensitive
      * @param {boolean} isRegex
-     * @param {function(!Array.<!PageAgent.SearchMatch>)} callback
+     * @param {function(!Array.<!DebuggerAgent.SearchMatch>)} callback
      */
     searchInContent: function(query, caseSensitive, isRegex, callback)
     {
         /**
          * @param {?Protocol.Error} error
-         * @param {!Array.<!PageAgent.SearchMatch>} searchMatches
+         * @param {!Array.<!DebuggerAgent.SearchMatch>} searchMatches
          */
         function innerCallback(error, searchMatches)
         {
-            if (error)
+            if (error) {
                 console.error(error);
+                callback([]);
+                return;
+            }
             var result = [];
             for (var i = 0; i < searchMatches.length; ++i) {
                 var searchMatch = new WebInspector.ContentProvider.SearchMatch(searchMatches[i].lineNumber, searchMatches[i].lineContent);
@@ -177,15 +193,14 @@ WebInspector.Script.prototype = {
          * @param {?Protocol.Error} error
          * @param {!DebuggerAgent.SetScriptSourceError=} errorData
          * @param {!Array.<!DebuggerAgent.CallFrame>=} callFrames
-         * @param {!Object=} debugData
+         * @param {boolean=} stackChanged
          * @param {!DebuggerAgent.StackTrace=} asyncStackTrace
          */
-        function didEditScriptSource(error, errorData, callFrames, debugData, asyncStackTrace)
+        function didEditScriptSource(error, errorData, callFrames, stackChanged, asyncStackTrace)
         {
-            // FIXME: support debugData.stack_update_needs_step_in flag by calling WebInspector.debugger_model.callStackModified
             if (!error)
                 this._source = newSource;
-            var needsStepIn = !!debugData && debugData["stack_update_needs_step_in"] === true;
+            var needsStepIn = !!stackChanged;
             callback(error, errorData, callFrames, asyncStackTrace, needsStepIn);
             if (!error)
                 this.dispatchEventToListeners(WebInspector.Script.Events.ScriptEdited, newSource);
@@ -208,7 +223,7 @@ WebInspector.Script.prototype = {
      */
     rawLocation: function(lineNumber, columnNumber)
     {
-        return new WebInspector.DebuggerModel.Location(this.target(), this.scriptId, lineNumber, columnNumber || 0);
+        return new WebInspector.DebuggerModel.Location(this.debuggerModel, this.scriptId, lineNumber, columnNumber || 0);
     },
 
     /**
@@ -242,17 +257,9 @@ WebInspector.Script.prototype = {
     /**
      * @return {boolean}
      */
-    isSnippet: function()
-    {
-        return !!this.sourceURL && this.sourceURL.startsWith(WebInspector.Script.snippetSourceURLPrefix);
-    },
-
-    /**
-     * @return {boolean}
-     */
     isInlineScriptWithSourceURL: function()
     {
-        return !!this.hasSourceURL && this.isInlineScript()
+        return !!this.hasSourceURL && this.isInlineScript();
     },
 
     __proto__: WebInspector.SDKObject.prototype

@@ -43,6 +43,11 @@
     overflow-x: hidden;
 }
 
+.elements-topbar {
+    border-bottom: 1px solid hsla(0, 0%, 0%, 0.1);
+    flex-shrink: 0;
+}
+
 #elements-crumbs {
     flex: 0 0 19px;
     background-color: white;
@@ -154,48 +159,44 @@
     background-origin: padding;
     background-clip: padding;
     -webkit-user-select: text;
-    border-bottom: 1px solid rgb(191, 191, 191);
+    border-bottom: 1px solid #eee;
     position: relative;
 }
 
+.styles-section:last-child {
+    border-bottom: none;
+}
+
 .styles-pane .sidebar-separator {
-    border-top: 0px none;
+    border-top: 0 none;
 }
 
-.styles-section.user-rule {
-    display: none;
-}
-
-.show-user-styles .styles-section.user-rule {
-    display: block;
-}
-
-.styles-sidebar-placeholder {
-    height: 16px;
-}
-
-.styles-section.read-only:not(.computed-style) {
+.styles-section.read-only {
     background-color: #eee;
 }
 
-.styles-section .properties li.not-parsed-ok {
+.styles-section .style-properties li.not-parsed-ok {
     margin-left: 0;
 }
 
-.styles-section.computed-style .properties li.not-parsed-ok {
-    margin-left: -6px;
-}
-
-.styles-section .properties li.filter-match,
+.styles-section .style-properties li.filter-match,
 .styles-section .simple-selector.filter-match {
     background-color: rgba(255, 255, 0, 0.5);
 }
 
-.styles-section .properties li.overloaded.filter-match {
+.styles-section .style-properties li.overloaded.filter-match {
     background-color: rgba(255, 255, 0, 0.25);
 }
 
-.styles-section .properties li.not-parsed-ok .exclamation-mark {
+.styles-section .style-properties li .css-update-highlight {
+    border-radius: 2px;
+}
+
+.styles-section .style-properties li .css-update-highlight.first-part {
+    color: white !important;
+}
+
+.styles-section .style-properties li.not-parsed-ok .exclamation-mark {
     display: inline-block;
     position: relative;
     width: 11px;
@@ -208,24 +209,32 @@
     z-index: 1;
 }
 
-.styles-section .header {
-    white-space: nowrap;
+.styles-section-title {
     background-origin: padding;
     background-clip: padding;
-}
-
-.styles-section .header .title {
     word-wrap: break-word;
     white-space: normal;
 }
 
-.styles-section .header .title .media,
-.styles-section .header .title .media .subtitle {
-    color: rgb(128, 128, 128);
+.styles-section-title .media-list {
+    color: #888;
+}
+
+.styles-section-title .media-list.media-matches .media.editable-media {
+    color: #222;
+}
+
+.styles-section-title .media:not(.editing-media),
+.styles-section-title .media:not(.editing-media) .subtitle {
     overflow: hidden;
 }
 
-.styles-section .header .subtitle {
+.styles-section-title .media .subtitle {
+    float: right;
+    color: rgb(85, 85, 85);
+}
+
+.styles-section-subtitle {
     color: rgb(85, 85, 85);
     float: right;
     margin-left: 5px;
@@ -235,7 +244,7 @@
     white-space: nowrap;
 }
 
-.styles-section .header .subtitle a {
+.styles-section .styles-section-subtitle a {
     color: inherit;
 }
 
@@ -256,31 +265,26 @@
     text-decoration: underline;
 }
 
-.styles-section .properties {
-    display: none;
+.styles-section .style-properties {
     margin: 0;
     padding: 2px 4px 0 0;
     list-style: none;
     clear: both;
 }
 
-.styles-section.matched-styles .properties {
+.styles-section.matched-styles .style-properties {
     padding-left: 0;
 }
 
-.styles-section.no-affect .properties li {
+.no-affect .style-properties li {
     opacity: 0.5;
 }
 
-.styles-section.no-affect .properties li.editing {
+.no-affect .style-properties li.editing {
     opacity: 1.0;
 }
 
-.styles-section.expanded .properties {
-    display: block;
-}
-
-.styles-section .properties li {
+.styles-section .style-properties li {
     margin-left: 12px;
     padding-left: 22px;
     white-space: normal;
@@ -289,59 +293,51 @@
     cursor: auto;
 }
 
-.styles-section.computed-style.expanded .properties > li {
-    padding-left: 0;
+.styles-section .style-properties li .webkit-css-property {
+    margin-left: -22px; /* outdent the first line of longhand properties (in an expanded shorthand) to compensate for the "padding-left" shift in .styles-section .style-properties li */
 }
 
-.styles-section.computed-style.expanded .properties > li .webkit-css-property {
-    margin-left: 0;
-}
-
-.styles-section .properties li .webkit-css-property {
-    margin-left: -22px; /* outdent the first line of longhand properties (in an expanded shorthand) to compensate for the "padding-left" shift in .styles-section .properties li */
-}
-
-.styles-section.expanded .properties > li {
+.styles-section .style-properties > li {
     padding-left: 38px;
 }
 
-.styles-section .properties > li .webkit-css-property {
-    margin-left: -38px; /* outdent the first line of the top-level properties to compensate for the "padding-left" shift in .styles-section .properties > li */
+.styles-section .style-properties > li .webkit-css-property {
+    margin-left: -38px; /* outdent the first line of the top-level properties to compensate for the "padding-left" shift in .styles-section .style-properties > li */
 }
 
-.styles-section .properties > li.child-editing {
+.styles-section .style-properties > li.child-editing {
     padding-left: 8px;
 }
 
-.styles-section .properties > li.child-editing .webkit-css-property {
+.styles-section .style-properties > li.child-editing .webkit-css-property {
     margin-left: 0;
 }
 
-.styles-section.matched-styles .properties li {
+.styles-section.matched-styles .style-properties li {
     margin-left: 0 !important;
 }
 
-.styles-section .properties li.child-editing {
+.styles-section .style-properties li.child-editing {
     word-wrap: break-word !important;
     white-space: normal !important;
     padding-left: 0;
 }
 
-.styles-section .properties ol {
+.styles-section .style-properties ol {
     display: none;
     margin: 0;
     -webkit-padding-start: 12px;
     list-style: none;
 }
 
-.styles-section .properties ol.expanded {
+.styles-section .style-properties ol.expanded {
     display: block;
 }
 
-.styles-section.matched-styles .properties li.parent .expand-element {
+.styles-section.matched-styles .style-properties li.parent .expand-element {
     -webkit-user-select: none;
-    background-image: url(Images/statusbarButtonGlyphs.png);
-    background-size: 320px 144px;
+    background-image: url(Images/toolbarButtonGlyphs.png);
+    background-size: 352px 168px;
     margin-right: 2px;
     margin-left: -6px;
     opacity: 0.55;
@@ -351,33 +347,33 @@
 }
 
 @media (-webkit-min-device-pixel-ratio: 1.5) {
-.styles-section.matched-styles .properties li.parent .expand-element {
-    background-image: url(Images/statusbarButtonGlyphs_2x.png);
+.styles-section.matched-styles .style-properties li.parent .expand-element {
+    background-image: url(Images/toolbarButtonGlyphs_2x.png);
 }
 } /* media */
 
-.styles-section.matched-styles .properties li.parent .expand-element {
+.styles-section.matched-styles .style-properties li.parent .expand-element {
     background-position: -4px -96px;
 }
 
-.styles-section.matched-styles .properties li.parent.expanded .expand-element {
+.styles-section.matched-styles .style-properties li.parent.expanded .expand-element {
     background-position: -20px -96px;
 }
 
-.styles-section .properties li .info {
+.styles-section .style-properties li .info {
     padding-top: 4px;
     padding-bottom: 3px;
 }
 
-.styles-section.matched-styles:not(.read-only):hover .properties .enabled-button {
+.styles-section.matched-styles:not(.read-only):hover .style-properties .enabled-button {
     visibility: visible;
 }
 
-.styles-section.matched-styles:not(.read-only) .properties li.disabled .enabled-button {
+.styles-section.matched-styles:not(.read-only) .style-properties li.disabled .enabled-button {
     visibility: visible;
 }
 
-.styles-section .properties .enabled-button {
+.styles-section .style-properties .enabled-button {
     visibility: hidden;
     float: left;
     font-size: 10px;
@@ -388,49 +384,79 @@
     width: 18px;
     left: -40px; /* original -2px + (-38px) to compensate for the first line outdent */
     top: 1px;
+    height: 13px;
 }
 
-.styles-section.matched-styles .properties ol.expanded {
+.styles-section.matched-styles .style-properties ol.expanded {
     margin-left: 16px;
 }
 
-.styles-section .properties .overloaded:not(.has-ignorable-error),
-.styles-section .properties .inactive,
-.styles-section .properties .disabled,
-.styles-section .properties .not-parsed-ok:not(.has-ignorable-error) {
+.styles-section .style-properties .overloaded:not(.has-ignorable-error),
+.styles-section .style-properties .inactive,
+.styles-section .style-properties .disabled,
+.styles-section .style-properties .not-parsed-ok:not(.has-ignorable-error) {
     text-decoration: line-through;
 }
 
-.styles-section .properties .has-ignorable-error .webkit-css-property {
+.styles-section .style-properties .has-ignorable-error .webkit-css-property {
     color: inherit;
 }
 
-.styles-section.computed-style .properties .disabled {
-    text-decoration: none;
+.styles-section .style-properties .implicit,
+.styles-section .style-properties .inherited {
     opacity: 0.5;
 }
 
-.styles-section .properties .implicit,
-.styles-section .properties .inherited {
-    opacity: 0.5;
-}
-
-.styles-section .properties .has-ignorable-error {
+.styles-section .style-properties .has-ignorable-error {
     color: gray;
 }
 
 .styles-element-state-pane {
     overflow: hidden;
-    margin-top: -56px;
-    padding-top: 18px;
-    height: 56px;
-    -webkit-transition: margin-top 0.1s ease-in-out;
+    height: 60px;
     padding-left: 2px;
+    border-bottom: 1px solid rgb(189, 189, 189);
 }
 
-.styles-element-state-pane.expanded {
+@keyframes styles-element-state-pane-slidein {
+    from {
+        margin-top: -60px;
+    }
+    to {
+        margin-top: 0px;
+    }
+}
+
+@keyframes styles-element-state-pane-slideout {
+    from {
+        margin-top: 0px;
+    }
+    to {
+        margin-top: -60px;
+    }
+}
+
+.styles-sidebar-toolbar-pane {
+    position: relative;
+    animation-duration: 0.1s;
+    animation-direction: normal;
+}
+
+.styles-sidebar-toolbar-pane-container {
+    position: relative;
+    max-height: 60px;
+    overflow: hidden;
+}
+
+.styles-element-state-pane {
+    background-color: #f3f3f3;
     border-bottom: 1px solid rgb(189, 189, 189);
     margin-top: 0;
+}
+
+
+.styles-element-state-pane > div {
+    margin: 6px 4px 2px;
 }
 
 .styles-element-state-pane > table {
@@ -438,76 +464,43 @@
     border-spacing: 0;
 }
 
-.styles-element-state-pane label {
+.styles-element-state-pane td {
+    padding: 0;
+}
+
+.styles-animations-controls-pane > * {
+    margin: 6px 4px;
+}
+
+.styles-animations-controls-pane {
+    border-bottom: 1px solid rgb(189, 189, 189);
+    height: 60px;
+    overflow: hidden;
+    background-color: #eee;
+}
+
+.animations-controls {
+    width: 100%;
+    max-width: 200px;
     display: flex;
-    margin: 1px;
+    align-items: center;
+}
+
+.animations-controls > .toolbar {
+    display: inline-block;
+}
+
+.animations-controls > input {
+    flex-grow: 1;
+    margin-right: 10px;
+}
+
+.animations-controls > .playback-label {
+    width: 35px;
 }
 
 .styles-selector {
     cursor: text;
-}
-
-.section .event-bars {
-    display: none;
-}
-
-.section.expanded .event-bars {
-    display: block;
-}
-
-.event-bar {
-    position: relative;
-    margin-left: 10px;
-}
-
-.event-bar:first-child {
-    margin-top: 1px;
-}
-
-.event-bars .event-bar .header {
-    padding: 0 8px 0 6px;
-    min-height: 16px;
-    opacity: 1.0;
-    white-space: nowrap;
-    background-origin: padding;
-    background-clip: padding;
-}
-
-.event-bars .event-bar .header .title {
-    font-weight: normal;
-    text-shadow: white 0 1px 0;
-}
-
-.event-bars .event-bar .header .subtitle {
-    color: rgba(90, 90, 90, 0.75);
-}
-
-.event-bars .event-bar .header::before {
-    -webkit-user-select: none;
-    background-image: url(Images/statusbarButtonGlyphs.png);
-    background-size: 320px 144px;
-    opacity: 0.5;
-    content: "a";
-    color: transparent;
-    text-shadow: none;
-    float: left;
-    width: 8px;
-    margin-right: 4px;
-    margin-top: 2px;
-}
-
-@media (-webkit-min-device-pixel-ratio: 1.5) {
-.event-bars .event-bar .header::before {
-    background-image: url(Images/statusbarButtonGlyphs_2x.png);
-}
-} /* media */
-
-.event-bars .event-bar .header::before {
-    background-position: -4px -96px;
-}
-
-.event-bars .event-bar.expanded .header::before {
-    background-position: -20px -96px;
 }
 
 .image-preview-container {
@@ -528,13 +521,17 @@
     position: absolute;
 }
 
-.sidebar-pane.composite > .body {
-    height: 100%;
+.metrics {
+    border-bottom: 1px solid #ccc;
+}
+
+.metrics-and-styles .metrics {
+    border-top: 1px solid #ccc;
+    border-bottom: none;
 }
 
 .sidebar-pane.composite .metrics {
-    border-bottom: 1px solid rgb(64%, 64%, 64%);
-    height: 206px;
+    height: 190px;
     display: flex;
     flex-direction: column;
     -webkit-align-items: center;
@@ -555,46 +552,41 @@
     position: relative;
 }
 
-.sidebar-pane.composite .metrics-and-computed .sidebar-pane-toolbar,
-.sidebar-pane.composite .metrics-and-styles .sidebar-pane-toolbar {
-    position: absolute;
+.styles-sidebar-pane-toolbar {
+    border-bottom: 1px solid #eee;
 }
 
-.sidebar-pane-filter-box {
+.styles-sidebar-pane-filter-box {
+    flex: auto;
     display: flex;
-    border-top: 1px solid rgb(191, 191, 191);
-    flex-basis: 19px;
 }
 
-.sidebar-pane-filter-box > input {
+.styles-sidebar-pane-filter-box > input {
     outline: none !important;
     border: none;
     width: 100%;
-    margin: 0 4px;
     background: transparent;
+    margin-left: 4px;
 }
 
 .styles-filter-engaged {
     background-color: rgba(255, 255, 0, 0.5);
 }
 
-.sidebar-pane.composite .metrics-and-computed .sidebar-pane-toolbar {
-    margin-top: 4px;
-    margin-bottom: -4px;
-    position: relative;
-}
-
-.sidebar-pane.composite .platform-fonts .body {
-    padding: 1ex;
+.sidebar-pane.composite .platform-fonts {
     -webkit-user-select: text;
 }
 
 .sidebar-pane.composite .platform-fonts .sidebar-separator {
-    border-top: none;
+    height: 24px;
+    background-color: #f1f1f1;
+    border-color: #ddd;
+    display: flex;
+    align-items: center;
 }
 
 .sidebar-pane.composite .platform-fonts .stats-section {
-    margin-bottom: 5px;
+    margin: 5px 0;
 }
 
 .sidebar-pane.composite .platform-fonts .font-stats-item {
@@ -609,7 +601,7 @@
     border-bottom: none;
 }
 
-.sidebar-pane > .body > .split-view {
+.sidebar-pane > .split-widget {
     position: absolute;
     top: 0;
     bottom: 0;
@@ -617,39 +609,9 @@
     right: 0;
 }
 
-.panel.elements .sidebar-pane-toolbar > select {
-    float: right;
-    width: 23px;
-    height: 17px;
-    color: transparent;
-    background-color: transparent;
-    border: none;
-    background-repeat: no-repeat;
-    margin: 1px 0 0 0;
-    padding: 0;
-    border-radius: 0;
-    -webkit-appearance: none;
-}
-
-.panel.elements .sidebar-pane-toolbar > select:hover {
-    background-position: -23px 0;
-}
-
-.panel.elements .sidebar-pane-toolbar > select:active {
-    background-position: -46px 0;
-}
-
-.panel.elements .sidebar-pane-toolbar > select.select-filter {
-    background-image: url(Images/paneFilterButtons.png);
-}
-.panel.elements .sidebar-pane-toolbar > select > option,
-.panel.elements .sidebar-pane-toolbar > select > hr {
-    color: black;
-}
-
-.styles-section:not(.read-only) .properties .webkit-css-property.styles-panel-hovered,
-.styles-section:not(.read-only) .properties .value .styles-panel-hovered,
-.styles-section:not(.read-only) .properties .value.styles-panel-hovered,
+.styles-section:not(.read-only) .style-properties .webkit-css-property.styles-panel-hovered,
+.styles-section:not(.read-only) .style-properties .value .styles-panel-hovered,
+.styles-section:not(.read-only) .style-properties .value.styles-panel-hovered,
 .styles-section:not(.read-only) span.simple-selector.styles-panel-hovered {
     text-decoration: underline;
     cursor: default;
@@ -660,10 +622,44 @@
     width: 0;
     opacity: 0;
     pointer-events: none;
+    white-space: pre;
+}
+
+.popover-icon {
+    margin-left: 1px;
+    margin-right: 2px;
+    width: 10px;
+    height: 10px;
+    position: relative;
+    top: 1px;
+    display: inline-block;
+    line-height: 1px;
+    -webkit-user-select: none;
+}
+
+.bezier-icon {
+    background-color: #9C27B0;
+    border-radius: 2px;
+}
+
+.bezier-icon path {
+    stroke: white;
+    stroke-width: 1.5;
+    stroke-linecap: square;
+    fill: none;
+}
+
+.swatch {
+    background-image: url(Images/checker.png);
 }
 
 li.child-editing .styles-clipboard-only {
     display: none;
+}
+
+li.editing .swatch,
+li.editing .enabled-button {
+    display: none !important;
 }
 
 .sidebar-separator {
@@ -689,19 +685,15 @@ li.child-editing .styles-clipboard-only {
     border: 1px solid rgba(64, 64, 64, 0.8);
 }
 
-.animationsSettings {
-    padding: 4px;
-}
-
-.animationSectionBody {
+.animation-section-body {
     display: none;
 }
 
-.animationSectionBody.expanded {
+.animation-section-body.expanded {
     display: block;
 }
 
-.animationSectionBody .section {
+.animation-section-body .section {
     border-bottom: 1px solid rgb(191, 191, 191);
 }
 
@@ -716,4 +708,27 @@ li.child-editing .styles-clipboard-only {
     background-color: #eee;
     border-bottom: 1px solid rgb(163, 163, 163);
     padding-left: 10px;
+}
+
+.events-pane .section:not(:first-of-type) {
+    border-top: 1px solid rgb(231, 231, 231);
+}
+
+.events-pane .section {
+    margin: 0;
+}
+
+.style-properties li.editing {
+    margin-left: 10px;
+    text-overflow: clip;
+}
+
+.style-properties li.editing-sub-part {
+    padding: 3px 6px 8px 18px;
+    margin: -1px -6px -8px -6px;
+    text-overflow: clip;
+}
+
+.properties-widget-section {
+    padding: 2px 0px 2px 5px;
 }

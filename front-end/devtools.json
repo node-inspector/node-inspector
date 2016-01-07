@@ -1,6 +1,0 @@
-[
-    { "name": "platform", "type": "autostart" },
-    { "name": "host", "type": "autostart" },
-    { "name": "common", "type": "autostart" },
-    { "name": "devtools_app", "type": "autostart" }
-]

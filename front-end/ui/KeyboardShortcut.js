@@ -66,7 +66,7 @@ WebInspector.KeyboardShortcut.Keys = {
     Enter: { code: 13, name: { mac: "\u21a9", other: "Enter" } },
     Shift: { code: 16, name: { mac: "\u21e7", other: "Shift" } },
     Ctrl: { code: 17, name: "Ctrl" },
-    Esc: { code: 27, name: { mac: "\u238b", other: "Esc" } },
+    Esc: { code: 27, name: "Esc" },
     Space: { code: 32, name: "Space" },
     PageUp: { code: 33,  name: { mac: "\u21de", other: "PageUp" } },      // also NUM_NORTH_EAST
     PageDown: { code: 34, name: { mac: "\u21df", other: "PageDown" } },   // also NUM_SOUTH_EAST
@@ -104,6 +104,8 @@ WebInspector.KeyboardShortcut.Keys = {
     QuestionMark: { code: 191, name: "?" },
     Apostrophe: { code: 192, name: "`" },
     Tilde: { code: 192, name: "Tilde" },
+    LeftSquareBracket: { code: 219, name: "[" },
+    RightSquareBracket: { code: 221, name: "]" },
     Backslash: { code: 220, name: "\\" },
     SingleQuote: { code: 222, name: "\'" },
     get CtrlOrMeta()
@@ -282,23 +284,24 @@ WebInspector.KeyboardShortcut.keyCodeAndModifiersFromKey = function(key)
  */
 WebInspector.KeyboardShortcut._modifiersToString = function(modifiers)
 {
-    const cmdKey = "\u2318";
-    const optKey = "\u2325";
-    const shiftKey = "\u21e7";
-    const ctrlKey = "\u2303";
-
     var isMac = WebInspector.isMac();
-    var res = "";
-    if (modifiers & WebInspector.KeyboardShortcut.Modifiers.Ctrl)
-        res += isMac ? ctrlKey : "Ctrl + ";
-    if (modifiers & WebInspector.KeyboardShortcut.Modifiers.Alt)
-        res += isMac ? optKey : "Alt + ";
-    if (modifiers & WebInspector.KeyboardShortcut.Modifiers.Shift)
-        res += isMac ? shiftKey : "Shift + ";
-    if (modifiers & WebInspector.KeyboardShortcut.Modifiers.Meta)
-        res += isMac ? cmdKey : "Win + ";
+    var m = WebInspector.KeyboardShortcut.Modifiers;
+    var modifierNames = new Map([
+        [m.Ctrl, isMac ? "Ctrl\u2004" : "Ctrl\u200A+\u200A"],
+        [m.Alt, isMac ? "opt\u2004" : "Alt\u200A+\u200A"],
+        [m.Shift, isMac ? "\u21e7\u2004" : "Shift\u200A+\u200A"],
+        [m.Meta, isMac ? "\u2318\u2004" : "Win\u200A+\u200A"]
+    ]);
+    return [m.Meta, m.Ctrl, m.Alt, m.Shift].map(mapModifiers).join("");
 
-    return res;
+    /**
+     * @param {number} m
+     * @return {string}
+     */
+    function mapModifiers(m)
+    {
+        return modifiers & m ? /** @type {string} */ (modifierNames.get(m)) : "";
+    }
 };
 
 WebInspector.KeyboardShortcut.SelectAll = WebInspector.KeyboardShortcut.makeKey("a", WebInspector.KeyboardShortcut.Modifiers.CtrlOrMeta);

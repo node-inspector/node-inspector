@@ -53,7 +53,12 @@ WebInspector.UserMetrics._ActionCodes = {
     AuditsStarted: 7,
     ConsoleEvaluated: 8,
     FileSavedInWorkspace: 9,
-    DeviceModeEnabled: 10
+    DeviceModeEnabled: 10,
+    AnimationsPlaybackRateChanged: 11,
+    RevisionApplied: 12,
+    FileSystemDirectoryContentReceived: 13,
+    StyleRuleEdited: 14,
+    CommandEvaluatedInConsolePanel: 15
 }
 
 WebInspector.UserMetrics._PanelCodes = {
@@ -64,29 +69,19 @@ WebInspector.UserMetrics._PanelCodes = {
     timeline: 5,
     profiles: 6,
     audits: 7,
-    console: 8
+    console: 8,
+    layers: 9
 }
 
-WebInspector.UserMetrics.UserAction = "UserAction";
-
-WebInspector.UserMetrics.UserActionNames = {
-    ForcedElementState: "forcedElementState",
-    FileSaved: "fileSaved",
-    RevertRevision: "revertRevision",
-    ApplyOriginalContent: "applyOriginalContent",
-    TogglePrettyPrint: "togglePrettyPrint",
-    SetBreakpoint: "setBreakpoint",
-    OpenSourceLink: "openSourceLink",
-    NetworkSort: "networkSort",
-    NetworkRequestSelected: "networkRequestSelected",
-    NetworkRequestTabSelected: "networkRequestTabSelected",
-    HeapSnapshotFilterChanged: "heapSnapshotFilterChanged"
-};
-
 WebInspector.UserMetrics.prototype = {
+    /**
+     * @param {string} panelName
+     */
     panelShown: function(panelName)
     {
-        InspectorFrontendHost.recordPanelShown(WebInspector.UserMetrics._PanelCodes[panelName] || 0);
+        var code = WebInspector.UserMetrics._PanelCodes[panelName] || 0;
+        var size = Object.keys(WebInspector.UserMetrics._PanelCodes).length + 1;
+        InspectorFrontendHost.recordEnumeratedHistogram("DevTools.PanelShown", code, size);
     }
 }
 
@@ -101,7 +96,8 @@ WebInspector.UserMetrics._Recorder = function(actionCode)
 WebInspector.UserMetrics._Recorder.prototype = {
     record: function()
     {
-        InspectorFrontendHost.recordActionTaken(this._actionCode);
+        var size = Object.keys(WebInspector.UserMetrics._ActionCodes).length + 1;
+        InspectorFrontendHost.recordEnumeratedHistogram("DevTools.ActionTaken", this._actionCode, size);
     }
 }
 

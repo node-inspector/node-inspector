@@ -10,10 +10,10 @@
 WebInspector.ShortcutRegistry = function(actionRegistry, document)
 {
     this._actionRegistry = actionRegistry;
-    /** @type {!StringMultimap.<string>} */
-    this._defaultKeyToActions = new StringMultimap();
-    /** @type {!StringMultimap.<!WebInspector.KeyboardShortcut.Descriptor>} */
-    this._defaultActionToShortcut = new StringMultimap();
+    /** @type {!Multimap.<string, string>} */
+    this._defaultKeyToActions = new Multimap();
+    /** @type {!Multimap.<string, !WebInspector.KeyboardShortcut.Descriptor>} */
+    this._defaultActionToShortcut = new Multimap();
     this._registerBindings(document);
 }
 
@@ -61,6 +61,17 @@ WebInspector.ShortcutRegistry.prototype = {
     },
 
     /**
+     * @param {string} actionId
+     * @return {string|undefined}
+     */
+    shortcutTitleForAction: function(actionId)
+    {
+        var descriptors = this.shortcutDescriptorsForAction(actionId);
+        if (descriptors.length)
+            return descriptors[0].name;
+    },
+
+    /**
      * @param {!KeyboardEvent} event
      */
     handleShortcut: function(event)
@@ -88,32 +99,22 @@ WebInspector.ShortcutRegistry.prototype = {
         if (!isPossiblyInputKey()) {
             if (event)
                 event.consume(true);
-            processActionIdsSequentially.call(this);
+            processNextAction.call(this);
         } else {
-            this._pendingActionTimer = setTimeout(processActionIdsSequentially.bind(this), 0);
+            this._pendingActionTimer = setTimeout(processNextAction.bind(this), 0);
         }
 
         /**
          * @this {WebInspector.ShortcutRegistry}
          */
-        function processActionIdsSequentially()
+        function processNextAction()
         {
             delete this._pendingActionTimer;
             var actionId = actionIds.shift();
             if (!actionId)
                 return;
 
-            this._actionRegistry.execute(actionId).then(continueIfNecessary.bind(this));
-
-            /**
-             * @this {WebInspector.ShortcutRegistry}
-             */
-            function continueIfNecessary(result)
-            {
-                if (result)
-                    return;
-                processActionIdsSequentially.call(this);
-            }
+            this._actionRegistry.execute(actionId).then(processNextAction.bind(this));
         }
 
         /**

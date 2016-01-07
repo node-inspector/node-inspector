@@ -36,6 +36,7 @@ WebInspector.StaticContentProvider.searchInContent = function(content, query, ca
 
 WebInspector.StaticContentProvider.prototype = {
     /**
+     * @override
      * @return {string}
      */
     contentURL: function()
@@ -44,6 +45,7 @@ WebInspector.StaticContentProvider.prototype = {
     },
 
     /**
+     * @override
      * @return {!WebInspector.ResourceType}
      */
     contentType: function()
@@ -52,6 +54,7 @@ WebInspector.StaticContentProvider.prototype = {
     },
 
     /**
+     * @override
      * @param {function(?string)} callback
      */
     requestContent: function(callback)
@@ -60,6 +63,7 @@ WebInspector.StaticContentProvider.prototype = {
     },
 
     /**
+     * @override
      * @param {string} query
      * @param {boolean} caseSensitive
      * @param {boolean} isRegex

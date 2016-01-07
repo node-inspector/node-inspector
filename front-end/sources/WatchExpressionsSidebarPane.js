@@ -34,21 +34,25 @@
  */
 WebInspector.WatchExpressionsSidebarPane = function()
 {
-    WebInspector.SidebarPane.call(this, WebInspector.UIString("Watch Expressions"));
-
-    this.section = new WebInspector.WatchExpressionsSection();
-    this.bodyElement.appendChild(this.section.element);
-
-    var refreshButton = this.titleElement.createChild("button", "pane-title-button refresh");
-    refreshButton.addEventListener("click", this._refreshButtonClicked.bind(this), false);
-    refreshButton.title = WebInspector.UIString("Refresh");
-
-    var addButton = this.titleElement.createChild("button", "pane-title-button add");
-    addButton.addEventListener("click", this._addButtonClicked.bind(this), false);
-    addButton.title = WebInspector.UIString("Add watch expression");
+    WebInspector.SidebarPane.call(this, WebInspector.UIString("Watch"));
+    this.registerRequiredCSS("components/objectValue.css");
 
     this._requiresUpdate = true;
-    WebInspector.context.addFlavorChangeListener(WebInspector.ExecutionContext ,this.refreshExpressions, this);
+    /** @type {!Array.<!WebInspector.WatchExpression>} */
+    this._watchExpressions = [];
+    this._watchExpressionsSetting = WebInspector.settings.createLocalSetting("watchExpressions", []);
+
+    var addButton = new WebInspector.ToolbarButton(WebInspector.UIString("Add expression"), "add-toolbar-item");
+    addButton.addEventListener("click", this._addButtonClicked.bind(this));
+    this.toolbar().appendToolbarItem(addButton);
+    var refreshButton = new WebInspector.ToolbarButton(WebInspector.UIString("Refresh"), "refresh-toolbar-item");
+    refreshButton.addEventListener("click", this._refreshButtonClicked.bind(this));
+    this.toolbar().appendToolbarItem(refreshButton);
+
+    this._bodyElement = this.element.createChild("div", "vbox watch-expressions");
+    this._bodyElement.addEventListener("contextmenu", this._contextMenu.bind(this), false);
+
+    WebInspector.context.addFlavorChangeListener(WebInspector.ExecutionContext, this.refreshExpressions, this);
 }
 
 WebInspector.WatchExpressionsSidebarPane.prototype = {
@@ -64,34 +68,145 @@ WebInspector.WatchExpressionsSidebarPane.prototype = {
     },
 
     /**
-     * @param {string} expression
+     * @param {string} expressionString
      */
-    addExpression: function(expression)
+    addExpression: function(expressionString)
     {
-        this.section.addExpression(expression);
         this.expand();
+        if (this._requiresUpdate) {
+            this._rebuildWatchExpressions();
+            delete this._requiresUpdate;
+        }
+        this._createWatchExpression(expressionString);
+        this._saveExpressions();
+    },
+
+    expandIfNecessary: function()
+    {
+        if (this._watchExpressionsSetting.get().length)
+            this.expand();
+    },
+
+    _saveExpressions: function()
+    {
+        var toSave = [];
+        for (var i = 0; i < this._watchExpressions.length; i++)
+            if (this._watchExpressions[i].expression())
+                toSave.push(this._watchExpressions[i].expression());
+
+        this._watchExpressionsSetting.set(toSave);
     },
 
     _refreshExpressionsIfNeeded: function()
     {
         if (this._requiresUpdate && this.isShowing()) {
-            this.section.update();
+            this._rebuildWatchExpressions();
             delete this._requiresUpdate;
         } else
             this._requiresUpdate = true;
     },
 
+    /**
+     * @param {!WebInspector.Event=} event
+     */
     _addButtonClicked: function(event)
     {
-        event.consume();
+        if (event)
+            event.consume(true);
         this.expand();
-        this.section.addNewExpressionAndEdit();
+        this._createWatchExpression(null).startEditing();
     },
 
+    /**
+     * @param {!WebInspector.Event} event
+     */
     _refreshButtonClicked: function(event)
     {
         event.consume();
         this.refreshExpressions();
+    },
+
+    _rebuildWatchExpressions: function()
+    {
+        this._bodyElement.removeChildren();
+        this._watchExpressions = [];
+        this._emptyElement = this._bodyElement.createChild("div", "info");
+        this._emptyElement.textContent = WebInspector.UIString("No Watch Expressions");
+        var watchExpressionStrings = this._watchExpressionsSetting.get();
+        for (var i = 0; i < watchExpressionStrings.length; ++i) {
+            var expression = watchExpressionStrings[i];
+            if (!expression)
+                continue;
+
+            this._createWatchExpression(expression);
+        }
+    },
+
+    /**
+     * @param {?string} expression
+     * @return {!WebInspector.WatchExpression}
+     */
+    _createWatchExpression: function(expression)
+    {
+        this._emptyElement.classList.add("hidden");
+        var watchExpression = new WebInspector.WatchExpression(expression);
+        watchExpression.addEventListener(WebInspector.WatchExpression.Events.ExpressionUpdated, this._watchExpressionUpdated.bind(this));
+        this._bodyElement.appendChild(watchExpression.element());
+        this._watchExpressions.push(watchExpression);
+        return watchExpression;
+    },
+
+    /**
+     * @param {!WebInspector.Event} event
+     */
+    _watchExpressionUpdated: function(event)
+    {
+        var watchExpression = /** @type {!WebInspector.WatchExpression} */ (event.target);
+        if (!watchExpression.expression()) {
+            this._watchExpressions.remove(watchExpression);
+            this._bodyElement.removeChild(watchExpression.element());
+            this._emptyElement.classList.toggle("hidden", !!this._watchExpressions.length);
+        }
+
+        this._saveExpressions();
+    },
+
+    /**
+     * @param {!Event} event
+     */
+    _contextMenu: function(event)
+    {
+        var contextMenu = new WebInspector.ContextMenu(event);
+        this._populateContextMenu(contextMenu, event);
+        contextMenu.show();
+    },
+
+    /**
+     * @param {!WebInspector.ContextMenu} contextMenu
+     * @param {!Event} event
+     */
+    _populateContextMenu: function(contextMenu, event)
+    {
+        var isEditing = false;
+        for (var watchExpression of this._watchExpressions)
+           isEditing |=  watchExpression.isEditing();
+
+        if (!isEditing)
+            contextMenu.appendItem(WebInspector.UIString.capitalize("Add ^watch ^expression"), this._addButtonClicked.bind(this));
+
+        if (this._watchExpressions.length > 1)
+            contextMenu.appendItem(WebInspector.UIString.capitalize("Delete ^all ^watch ^expressions"), this._deleteAllButtonClicked.bind(this));
+
+        for (var watchExpression of this._watchExpressions)
+            if (watchExpression.element().containsEventPoint(event))
+                watchExpression._populateContextMenu(contextMenu, event);
+    },
+
+    _deleteAllButtonClicked: function()
+    {
+        this._watchExpressions = [];
+        this._saveExpressions();
+        this._rebuildWatchExpressions();
     },
 
     __proto__: WebInspector.SidebarPane.prototype
@@ -99,450 +214,220 @@ WebInspector.WatchExpressionsSidebarPane.prototype = {
 
 /**
  * @constructor
- * @extends {WebInspector.PropertiesSection}
+ * @extends {WebInspector.Object}
+ * @param {?string} expression
  */
-WebInspector.WatchExpressionsSection = function()
+WebInspector.WatchExpression = function(expression)
 {
-    this._watchObjectGroupId = "watch-group";
+    this._expression = expression;
+    this._element = createElementWithClass("div", "watch-expression monospace");
+    this._editing = false;
 
-    WebInspector.PropertiesSection.call(this, "");
-    this.treeElementConstructor = WebInspector.WatchedPropertyTreeElement;
-    this.skipProto = false;
-    /** @type {!Set.<string>} */
-    this._expandedExpressions = new Set();
-    /** @type {!Set.<string>} */
-    this._expandedProperties = new Set();
-
-    this.emptyElement = createElementWithClass("div", "info");
-    this.emptyElement.textContent = WebInspector.UIString("No Watch Expressions");
-
-    /** @type {!Array.<string>} */
-    this.watchExpressions = WebInspector.settings.watchExpressions.get();
-
-    this.headerElement.className = "hidden";
-    this.editable = true;
-    this.expanded = true;
-    this.propertiesElement.classList.add("watch-expressions");
-
-    this.element.addEventListener("mousemove", this._mouseMove.bind(this), true);
-    this.element.addEventListener("mouseleave", this._mouseLeave.bind(this), true);
-    this.element.addEventListener("dblclick", this._sectionDoubleClick.bind(this), false);
-    this.emptyElement.addEventListener("contextmenu", this._emptyElementContextMenu.bind(this), false);
+    this._createWatchExpression(null, false);
+    this.update();
 }
 
-WebInspector.WatchExpressionsSection.NewWatchExpression = "\xA0";
+WebInspector.WatchExpression._watchObjectGroupId = "watch-group";
 
-WebInspector.WatchExpressionsSection.prototype = {
-    /**
-     * @param {!Event=} e
-     */
-    update: function(e)
-    {
-        if (e)
-            e.consume();
-
-        /***
-         * @param {string} expression
-         * @param {number} watchIndex
-         * @param {?WebInspector.RemoteObject} result
-         * @param {boolean} wasThrown
-         * @this {WebInspector.WatchExpressionsSection}
-         */
-        function appendResult(expression, watchIndex, result, wasThrown)
-        {
-            if (!result)
-                return;
-
-            var property = new WebInspector.RemoteObjectProperty(expression, result);
-            property.watchIndex = watchIndex;
-            property.wasThrown = wasThrown;
-
-            // To clarify what's going on here:
-            // In the outer function, we calculate the number of properties
-            // that we're going to be updating, and set that in the
-            // propertyCount variable.
-            // In this function, we test to see when we are processing the
-            // last property, and then call the superclass's updateProperties()
-            // method to get all the properties refreshed at once.
-            properties.push(property);
-
-            if (properties.length == propertyCount) {
-                this.updateProperties(properties);
-
-                // check to see if we just added a new watch expression,
-                // which will always be the last property
-                if (this._newExpressionAdded) {
-                    delete this._newExpressionAdded;
-
-                    var treeElement = this.findAddedTreeElement();
-                    if (treeElement)
-                        treeElement.startEditing();
-                }
-
-                // Force displaying delete button for hovered element.
-                if (this._lastMouseMovePageY)
-                    this._updateHoveredElement(this._lastMouseMovePageY);
-            }
-        }
-
-        // TODO: pass exact injected script id.
-        WebInspector.targetManager.targets().forEach(function(target) { target.runtimeAgent().releaseObjectGroup(this._watchObjectGroupId); }, this);
-        var properties = [];
-
-        // Count the properties, so we known when to call this.updateProperties()
-        // in appendResult()
-        var propertyCount = 0;
-        for (var i = 0; i < this.watchExpressions.length; ++i) {
-            if (!this.watchExpressions[i])
-                continue;
-            ++propertyCount;
-        }
-
-        // Now process all the expressions, since we have the actual count,
-        // which is checked in the appendResult inner function.
-        var currentExecutionContext = WebInspector.context.flavor(WebInspector.ExecutionContext);
-        if (currentExecutionContext) {
-            for (var i = 0; i < this.watchExpressions.length; ++i) {
-                var expression = this.watchExpressions[i];
-                if (!expression)
-                    continue;
-
-                currentExecutionContext.evaluate(expression, this._watchObjectGroupId, false, true, false, false, appendResult.bind(this, expression, i));
-            }
-        }
-
-        if (!propertyCount) {
-            this.element.appendChild(this.emptyElement);
-            this.propertiesTreeOutline.removeChildren();
-            this._expandedExpressions.clear();
-            this._expandedProperties.clear();
-        } else {
-            this.emptyElement.remove();
-        }
-
-        // Note: this is setting the expansion of the tree, not the section;
-        // with no expressions, and expanded tree, we get some extra vertical
-        // white space.
-        this.expanded = (propertyCount != 0);
-    },
-
-
-    /**
-     * @param {!Array.<!WebInspector.RemoteObjectProperty>} properties
-     */
-    updateProperties: function(properties)
-    {
-        this.propertiesTreeOutline.removeChildren();
-        WebInspector.ObjectPropertyTreeElement.populateWithProperties(this.propertiesTreeOutline, properties, [],
-            WebInspector.WatchExpressionTreeElement, WebInspector.WatchExpressionsSection.CompareProperties, false, null);
-
-        this.propertiesForTest = properties;
-    },
-
-    /**
-     * @param {string} expression
-     */
-    addExpression: function(expression)
-    {
-        this.watchExpressions.push(expression);
-        this.saveExpressions();
-        this.update();
-    },
-
-    addNewExpressionAndEdit: function()
-    {
-        this._newExpressionAdded = true;
-        this.watchExpressions.push(WebInspector.WatchExpressionsSection.NewWatchExpression);
-        this.update();
-    },
-
-    _sectionDoubleClick: function(event)
-    {
-        if (event.target !== this.element && event.target !== this.propertiesElement && event.target !== this.emptyElement)
-            return;
-        event.consume();
-        this.addNewExpressionAndEdit();
-    },
-
-    /**
-     * @param {!WebInspector.ObjectPropertyTreeElement} element
-     * @param {?string} value
-     */
-    updateExpression: function(element, value)
-    {
-        if (value === null) {
-            var index = element.property.watchIndex;
-            this.watchExpressions.splice(index, 1);
-        } else {
-            this.watchExpressions[element.property.watchIndex] = value;
-        }
-        this.saveExpressions();
-        this.update();
-    },
-
-    _deleteAllExpressions: function()
-    {
-        this.watchExpressions = [];
-        this.saveExpressions();
-        this.update();
-    },
-
-    /**
-     * @return {?TreeElement}
-     */
-    findAddedTreeElement: function()
-    {
-        var children = this.propertiesTreeOutline.children;
-        for (var i = 0; i < children.length; ++i) {
-            if (children[i].property.name === WebInspector.WatchExpressionsSection.NewWatchExpression)
-                return children[i];
-        }
-        return null;
-    },
-
-    /**
-     * @return {number}
-     */
-    saveExpressions: function()
-    {
-        var toSave = [];
-        for (var i = 0; i < this.watchExpressions.length; i++)
-            if (this.watchExpressions[i])
-                toSave.push(this.watchExpressions[i]);
-
-        WebInspector.settings.watchExpressions.set(toSave);
-        return toSave.length;
-    },
-
-    _mouseMove: function(e)
-    {
-        if (this.propertiesElement.firstChild)
-            this._updateHoveredElement(e.pageY);
-    },
-
-    _mouseLeave: function()
-    {
-        if (this._hoveredElement) {
-            this._hoveredElement.classList.remove("hovered");
-            delete this._hoveredElement;
-        }
-        delete this._lastMouseMovePageY;
-    },
-
-    _updateHoveredElement: function(pageY)
-    {
-        var candidateElement = this.propertiesElement.firstChild;
-        while (true) {
-            var next = candidateElement.nextSibling;
-            while (next && !next.clientHeight)
-                next = next.nextSibling;
-            if (!next || next.totalOffsetTop() > pageY)
-                break;
-            candidateElement = next;
-        }
-
-        if (this._hoveredElement !== candidateElement) {
-            if (this._hoveredElement)
-                this._hoveredElement.classList.remove("hovered");
-            if (candidateElement)
-                candidateElement.classList.add("hovered");
-            this._hoveredElement = candidateElement;
-        }
-
-        this._lastMouseMovePageY = pageY;
-    },
-
-    _emptyElementContextMenu: function(event)
-    {
-        var contextMenu = new WebInspector.ContextMenu(event);
-        contextMenu.appendItem(WebInspector.UIString(WebInspector.useLowerCaseMenuTitles() ? "Add watch expression" : "Add Watch Expression"), this.addNewExpressionAndEdit.bind(this));
-        contextMenu.show();
-    },
-
-    __proto__: WebInspector.PropertiesSection.prototype
+WebInspector.WatchExpression.Events = {
+    ExpressionUpdated: "ExpressionUpdated"
 }
 
-/**
- * @param {!WebInspector.RemoteObjectProperty} propertyA
- * @param {!WebInspector.RemoteObjectProperty} propertyB
- * @return {number}
- */
-WebInspector.WatchExpressionsSection.CompareProperties = function(propertyA, propertyB)
-{
-    if (propertyA.watchIndex == propertyB.watchIndex)
-        return 0;
-    else if (propertyA.watchIndex < propertyB.watchIndex)
-        return -1;
-    else
-        return 1;
-}
+WebInspector.WatchExpression.prototype = {
 
-/**
- * @constructor
- * @extends {WebInspector.ObjectPropertyTreeElement}
- * @param {!WebInspector.RemoteObjectProperty} property
- */
-WebInspector.WatchExpressionTreeElement = function(property)
-{
-    WebInspector.ObjectPropertyTreeElement.call(this, property);
-}
-
-WebInspector.WatchExpressionTreeElement.prototype = {
-    onexpand: function()
+    /**
+     * @return {!Element}
+     */
+    element: function()
     {
-        WebInspector.ObjectPropertyTreeElement.prototype.onexpand.call(this);
-        this.treeOutline.section._expandedExpressions.add(this._expression());
+        return this._element;
     },
 
-    oncollapse: function()
+    /**
+     * @return {?string}
+     */
+    expression: function()
     {
-        WebInspector.ObjectPropertyTreeElement.prototype.oncollapse.call(this);
-        this.treeOutline.section._expandedExpressions.remove(this._expression());
-    },
-
-    onattach: function()
-    {
-        WebInspector.ObjectPropertyTreeElement.prototype.onattach.call(this);
-        if (this.treeOutline.section._expandedExpressions.has(this._expression()))
-            this.expanded = true;
-    },
-
-    _expression: function()
-    {
-        return this.property.name;
+        return this._expression;
     },
 
     update: function()
     {
-        WebInspector.ObjectPropertyTreeElement.prototype.update.call(this);
-
-        if (this.property.wasThrown) {
-            this.valueElement.textContent = WebInspector.UIString("<not available>");
-            this.listItemElement.classList.add("dimmed");
-        } else {
-            this.listItemElement.classList.remove("dimmed");
-        }
-
-        var deleteButton = createElementWithClass("input", "enabled-button delete-button");
-        deleteButton.type = "button";
-        deleteButton.title = WebInspector.UIString("Delete watch expression.");
-        deleteButton.addEventListener("click", this._deleteButtonClicked.bind(this), false);
-        this.listItemElement.addEventListener("contextmenu", this._contextMenu.bind(this), false);
-        this.listItemElement.insertBefore(deleteButton, this.listItemElement.firstChild);
+        var currentExecutionContext = WebInspector.context.flavor(WebInspector.ExecutionContext);
+        if (currentExecutionContext && this._expression)
+            currentExecutionContext.evaluate(this._expression, WebInspector.WatchExpression._watchObjectGroupId, false, true, false, false, this._createWatchExpression.bind(this));
     },
 
-    /**
-     * @param {!WebInspector.ContextMenu} contextMenu
-     * @override
-     */
-    populateContextMenu: function(contextMenu)
+    startEditing: function()
     {
-        if (!this.isEditing()) {
-            contextMenu.appendItem(WebInspector.UIString(WebInspector.useLowerCaseMenuTitles() ? "Add watch expression" : "Add Watch Expression"), this.treeOutline.section.addNewExpressionAndEdit.bind(this.treeOutline.section));
-            contextMenu.appendItem(WebInspector.UIString(WebInspector.useLowerCaseMenuTitles() ? "Delete watch expression" : "Delete Watch Expression"), this._deleteButtonClicked.bind(this, null));
-        }
-        if (this.treeOutline.section.watchExpressions.length > 1)
-            contextMenu.appendItem(WebInspector.UIString(WebInspector.useLowerCaseMenuTitles() ? "Delete all watch expressions" : "Delete All Watch Expressions"), this._deleteAllButtonClicked.bind(this));
-        if (!this.isEditing() && (this.property.value.type === "number" || this.property.value.type === "string"))
-            contextMenu.appendItem(WebInspector.UIString(WebInspector.useLowerCaseMenuTitles() ? "Copy value" : "Copy Value"), this._copyValueButtonClicked.bind(this));
-    },
-
-    _contextMenu: function(event)
-    {
-        var contextMenu = new WebInspector.ContextMenu(event);
-        this.populateContextMenu(contextMenu);
-        contextMenu.show();
-    },
-
-    _deleteAllButtonClicked: function()
-    {
-        this.treeOutline.section._deleteAllExpressions();
-    },
-
-    _deleteButtonClicked: function(event)
-    {
-        if (event)
-            event.consume();
-        this.treeOutline.section.updateExpression(this, null);
-    },
-
-    _copyValueButtonClicked: function()
-    {
-        InspectorFrontendHost.copyText(this.valueElement.textContent);
+        this._editing = true;
+        this._element.removeChild(this._objectPresentationElement);
+        var newDiv = this._element.createChild("div");
+        newDiv.textContent = this._nameElement.textContent;
+        this._textPrompt = new WebInspector.ObjectPropertyPrompt();
+        this._textPrompt.renderAsBlock();
+        var proxyElement = this._textPrompt.attachAndStartEditing(newDiv, this._finishEditing.bind(this));
+        proxyElement.classList.add("watch-expression-text-prompt-proxy");
+        proxyElement.addEventListener("keydown", this._promptKeyDown.bind(this), false);
+        this._element.getComponentSelection().setBaseAndExtent(newDiv, 0, newDiv, 1);
     },
 
     /**
      * @return {boolean}
      */
-    renderPromptAsBlock: function()
+    isEditing: function()
     {
-        return true;
+        return !!this._editing;
     },
 
     /**
-     * @override
-     * @return {{element: !Element, value: (string|undefined)}}
+     * @param {!Event} event
+     * @param {boolean=} canceled
      */
-    elementAndValueToEdit: function()
+    _finishEditing: function(event, canceled)
     {
-        return { element: this.nameElement, value: this.property.name.trim() };
+        if (event)
+            event.consume(true);
+
+        this._editing = false;
+        this._textPrompt.detach();
+        var newExpression = canceled ? this._expression : this._textPrompt.text();
+        delete this._textPrompt;
+        this._element.removeChildren();
+        this._element.appendChild(this._objectPresentationElement);
+        this._updateExpression(newExpression);
     },
 
     /**
-     * @override
+     * @param {!Event} event
      */
-    editingCancelled: function(element, context)
+    _dblClickOnWatchExpression: function(event)
     {
-        if (!context.elementToEdit.textContent)
-            this.treeOutline.section.updateExpression(this, null);
-
-        WebInspector.ObjectPropertyTreeElement.prototype.editingCancelled.call(this, element, context);
+        event.consume();
+        if (!this.isEditing())
+            this.startEditing();
     },
 
     /**
-     * @override
-     * @param {string} expression
+     * @param {?string} newExpression
      */
-    applyExpression: function(expression)
+    _updateExpression: function(newExpression)
     {
-        expression = expression.trim();
-        this.property.name = expression || null;
-        this.treeOutline.section.updateExpression(this, expression);
+        this._expression = newExpression;
+        this.update();
+        this.dispatchEventToListeners(WebInspector.WatchExpression.Events.ExpressionUpdated);
     },
 
-    __proto__: WebInspector.ObjectPropertyTreeElement.prototype
-}
-
-
-/**
- * @constructor
- * @extends {WebInspector.ObjectPropertyTreeElement}
- * @param {!WebInspector.RemoteObjectProperty} property
- */
-WebInspector.WatchedPropertyTreeElement = function(property)
-{
-    WebInspector.ObjectPropertyTreeElement.call(this, property);
-}
-
-WebInspector.WatchedPropertyTreeElement.prototype = {
-    onattach: function()
+    /**
+     * @param {!Event} event
+     */
+    _deleteWatchExpression: function(event)
     {
-        WebInspector.ObjectPropertyTreeElement.prototype.onattach.call(this);
-        if (this.hasChildren && this.treeOutline.section._expandedProperties.has(this.propertyPath()))
-            this.expand();
+        event.consume(true);
+        this._updateExpression(null);
     },
 
-    onexpand: function()
+    /**
+     * @param {?WebInspector.RemoteObject} result
+     * @param {boolean} wasThrown
+     */
+    _createWatchExpression: function(result, wasThrown)
     {
-        WebInspector.ObjectPropertyTreeElement.prototype.onexpand.call(this);
-        this.treeOutline.section._expandedProperties.add(this.propertyPath());
+        this._result = result;
+
+        var headerElement= createElementWithClass("div", "watch-expression-header");
+        var deleteButton = headerElement.createChild("button", "watch-expression-delete-button");
+        deleteButton.title = WebInspector.UIString("Delete watch expression");
+        deleteButton.addEventListener("click", this._deleteWatchExpression.bind(this), false);
+
+        var titleElement = headerElement.createChild("div", "watch-expression-title");
+        this._nameElement = WebInspector.ObjectPropertiesSection.createNameElement(this._expression);
+        if (wasThrown || !result) {
+            this._valueElement = createElementWithClass("span", "error-message value");
+            titleElement.classList.add("dimmed");
+            this._valueElement.textContent = WebInspector.UIString("<not available>");
+        } else {
+            this._valueElement = WebInspector.ObjectPropertiesSection.createValueElementWithCustomSupport(result, wasThrown, titleElement);
+        }
+        var separatorElement = createElementWithClass("span", "watch-expressions-separator");
+        separatorElement.textContent = ": ";
+        titleElement.appendChildren(this._nameElement, separatorElement, this._valueElement);
+
+        this._element.removeChildren();
+        this._objectPropertiesSection = null;
+        if (!wasThrown && result && result.hasChildren && !result.customPreview()) {
+            this._objectPropertiesSection = new WebInspector.ObjectPropertiesSection(result, headerElement);
+            this._objectPresentationElement = this._objectPropertiesSection.element;
+            var objectTreeElement = this._objectPropertiesSection.objectTreeElement();
+            objectTreeElement.toggleOnClick = false;
+            objectTreeElement.listItemElement.addEventListener("click", this._onSectionClick.bind(this), false);
+            objectTreeElement.listItemElement.addEventListener("dblclick", this._dblClickOnWatchExpression.bind(this));
+        } else {
+            this._objectPresentationElement = headerElement;
+            this._objectPresentationElement.addEventListener("dblclick", this._dblClickOnWatchExpression.bind(this));
+        }
+
+        this._element.appendChild(this._objectPresentationElement);
     },
 
-    oncollapse: function()
+    /**
+     * @param {!Event} event
+     */
+    _onSectionClick: function(event)
     {
-        WebInspector.ObjectPropertyTreeElement.prototype.oncollapse.call(this);
-        this.treeOutline.section._expandedProperties.remove(this.propertyPath());
+        event.consume(true);
+        if (event.detail == 1) {
+            this._preventClickTimeout = setTimeout(handleClick.bind(this), 333);
+        } else {
+            clearTimeout(this._preventClickTimeout);
+            delete this._preventClickTimeout;
+        }
+
+        /**
+         * @this {WebInspector.WatchExpression}
+         */
+        function handleClick()
+        {
+            if (!this._objectPropertiesSection)
+                return;
+
+            var objectTreeElement = this._objectPropertiesSection.objectTreeElement();
+            if (objectTreeElement.expanded)
+                objectTreeElement.collapse();
+            else
+                objectTreeElement.expand();
+        }
     },
 
-    __proto__: WebInspector.ObjectPropertyTreeElement.prototype
+    /**
+     * @param {!Event} event
+     */
+    _promptKeyDown: function(event)
+    {
+        if (isEnterKey(event) || isEscKey(event))
+            this._finishEditing(event, isEscKey(event));
+    },
+
+    /**
+     * @param {!WebInspector.ContextMenu} contextMenu
+     * @param {!Event} event
+     */
+    _populateContextMenu: function(contextMenu, event)
+    {
+        if (!this.isEditing())
+            contextMenu.appendItem(WebInspector.UIString.capitalize("Delete ^watch ^expression"), this._updateExpression.bind(this, null));
+
+        if (!this.isEditing() && this._result && (this._result.type === "number" || this._result.type === "string"))
+            contextMenu.appendItem(WebInspector.UIString.capitalize("Copy ^value"), this._copyValueButtonClicked.bind(this));
+
+        if (this._valueElement.containsEventPoint(event))
+            contextMenu.appendApplicableItems(this._result);
+    },
+
+    _copyValueButtonClicked: function()
+    {
+        InspectorFrontendHost.copyText(this._valueElement.textContent);
+    },
+
+    __proto__: WebInspector.Object.prototype
 }

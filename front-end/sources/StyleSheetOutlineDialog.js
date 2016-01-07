@@ -42,21 +42,21 @@ WebInspector.StyleSheetOutlineDialog = function(uiSourceCode, selectItemCallback
 }
 
 /**
- * @param {!WebInspector.View} view
  * @param {!WebInspector.UISourceCode} uiSourceCode
  * @param {function(number, number)} selectItemCallback
  */
-WebInspector.StyleSheetOutlineDialog.show = function(view, uiSourceCode, selectItemCallback)
+WebInspector.StyleSheetOutlineDialog.show = function(uiSourceCode, selectItemCallback)
 {
     if (WebInspector.Dialog.currentInstance())
         return;
     var delegate = new WebInspector.StyleSheetOutlineDialog(uiSourceCode, selectItemCallback);
     var filteredItemSelectionDialog = new WebInspector.FilteredItemSelectionDialog(delegate);
-    WebInspector.Dialog.show(view.element, filteredItemSelectionDialog);
+    WebInspector.Dialog.show(filteredItemSelectionDialog);
 }
 
 WebInspector.StyleSheetOutlineDialog.prototype = {
     /**
+     * @override
      * @return {number}
      */
     itemCount: function()
@@ -65,6 +65,7 @@ WebInspector.StyleSheetOutlineDialog.prototype = {
     },
 
     /**
+     * @override
      * @param {number} itemIndex
      * @return {string}
      */
@@ -75,6 +76,7 @@ WebInspector.StyleSheetOutlineDialog.prototype = {
     },
 
     /**
+     * @override
      * @param {number} itemIndex
      * @param {string} query
      * @return {number}
@@ -86,6 +88,7 @@ WebInspector.StyleSheetOutlineDialog.prototype = {
     },
 
     /**
+     * @override
      * @param {number} itemIndex
      * @param {string} query
      * @param {!Element} titleElement
@@ -100,6 +103,7 @@ WebInspector.StyleSheetOutlineDialog.prototype = {
     },
 
     /**
+     * @override
      * @param {number} itemIndex
      * @param {string} promptValue
      */

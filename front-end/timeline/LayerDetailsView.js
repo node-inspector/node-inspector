@@ -30,13 +30,17 @@
 
 /**
  * @constructor
- * @extends {WebInspector.View}
+ * @param {!WebInspector.LayerViewHost} layerViewHost
+ * @extends {WebInspector.Widget}
+ * @implements {WebInspector.LayerView}
  */
-WebInspector.LayerDetailsView = function()
+WebInspector.LayerDetailsView = function(layerViewHost)
 {
-    WebInspector.View.call(this);
+    WebInspector.Widget.call(this);
     this.element.classList.add("layer-details-view");
-    this._emptyView = new WebInspector.EmptyView(WebInspector.UIString("Select a layer to see its details"));
+    this._layerViewHost = layerViewHost;
+    this._layerViewHost.registerView(this);
+    this._emptyWidget = new WebInspector.EmptyWidget(WebInspector.UIString("Select a layer to see its details"));
     this._buildContent();
 }
 
@@ -44,7 +48,6 @@ WebInspector.LayerDetailsView = function()
  * @enum {string}
  */
 WebInspector.LayerDetailsView.Events = {
-    ObjectSelected: "ObjectSelected",
     PaintProfilerRequested: "PaintProfilerRequested"
 }
 
@@ -84,23 +87,36 @@ WebInspector.LayerDetailsView.CompositingReasonDetail = {
     "layerForForeground": WebInspector.UIString("Layer for foreground."),
     "layerForBackground": WebInspector.UIString("Layer for background."),
     "layerForMask": WebInspector.UIString("Layer for mask."),
-    "layerForVideoOverlay": WebInspector.UIString("Layer for video overlay.")
+    "layerForVideoOverlay": WebInspector.UIString("Layer for video overlay."),
 };
 
 WebInspector.LayerDetailsView.prototype = {
     /**
-     * @param {?WebInspector.Layers3DView.Selection} selection
+     * @param {?WebInspector.LayerView.Selection} selection
+     * @override
      */
-    setObject: function(selection)
+    hoverObject: function(selection) { },
+
+    /**
+     * @param {?WebInspector.LayerView.Selection} selection
+     * @override
+     */
+    selectObject: function(selection)
     {
         this._selection = selection;
         if (this.isShowing())
             this.update();
     },
 
+    /**
+     * @param {?WebInspector.LayerTreeBase} layerTree
+     * @override
+     */
+    setLayerTree: function(layerTree) { },
+
     wasShown: function()
     {
-        WebInspector.View.prototype.wasShown.call(this);
+        WebInspector.Widget.prototype.wasShown.call(this);
         this.update();
     },
 
@@ -112,12 +128,13 @@ WebInspector.LayerDetailsView.prototype = {
     {
         if (event.which !== 1)
             return;
-        this.dispatchEventToListeners(WebInspector.LayerDetailsView.Events.ObjectSelected, new WebInspector.Layers3DView.ScrollRectSelection(this._selection.layer, index));
+        this._layerViewHost.selectObject(new WebInspector.LayerView.ScrollRectSelection(this._selection.layer(), index));
     },
 
     _onPaintProfilerButtonClicked: function()
     {
-        this.dispatchEventToListeners(WebInspector.LayerDetailsView.Events.PaintProfilerRequested, this._selection.traceEvent);
+        var traceEvent = this._selection.type() === WebInspector.LayerView.Selection.Type.Tile ? /** @type {!WebInspector.LayerView.TileSelection} */ (this._selection).traceEvent() : null;
+        this.dispatchEventToListeners(WebInspector.LayerDetailsView.Events.PaintProfilerRequested, traceEvent);
     },
 
     /**
@@ -138,25 +155,25 @@ WebInspector.LayerDetailsView.prototype = {
 
     update: function()
     {
-        var layer = this._selection && this._selection.layer;
+        var layer = this._selection && this._selection.layer();
         if (!layer) {
             this._tableElement.remove();
             this._paintProfilerButton.remove();
-            this._emptyView.show(this.element);
+            this._emptyWidget.show(this.element);
             return;
         }
-        this._emptyView.detach();
+        this._emptyWidget.detach();
         this.element.appendChild(this._tableElement);
         this.element.appendChild(this._paintProfilerButton);
         this._sizeCell.textContent = WebInspector.UIString("%d × %d (at %d,%d)", layer.width(), layer.height(), layer.offsetX(), layer.offsetY());
         this._paintCountCell.parentElement.classList.toggle("hidden", !layer.paintCount());
         this._paintCountCell.textContent = layer.paintCount();
-        const bytesPerPixel = 4;
-        this._memoryEstimateCell.textContent = Number.bytesToString(layer.invisible() ? 0 : layer.width() * layer.height() * bytesPerPixel);
+        this._memoryEstimateCell.textContent = Number.bytesToString(layer.gpuMemoryUsage());
         layer.requestCompositingReasons(this._updateCompositingReasons.bind(this));
         this._scrollRectsCell.removeChildren();
         layer.scrollRects().forEach(this._createScrollRectElement.bind(this));
-        this._paintProfilerButton.classList.toggle("hidden", !this._selection.traceEvent);
+        var traceEvent = this._selection.type() === WebInspector.LayerView.Selection.Type.Tile ? /** @type {!WebInspector.LayerView.TileSelection} */ (this._selection).traceEvent() : null;
+        this._paintProfilerButton.classList.toggle("hidden", !traceEvent);
     },
 
     _buildContent: function()
@@ -204,5 +221,5 @@ WebInspector.LayerDetailsView.prototype = {
         }
     },
 
-    __proto__: WebInspector.View.prototype
+    __proto__: WebInspector.Widget.prototype
 }

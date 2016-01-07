@@ -5,17 +5,18 @@
 /**
  * @constructor
  * @implements {WebInspector.DebuggerSourceMapping}
- * @param {!WebInspector.Target} target
+ * @param {!WebInspector.DebuggerModel} debuggerModel
  * @param {!WebInspector.ScriptFormatterEditorAction} editorAction
  */
-WebInspector.FormatterScriptMapping = function(target, editorAction)
+WebInspector.FormatterScriptMapping = function(debuggerModel, editorAction)
 {
-    this._target = target;
+    this._debuggerModel = debuggerModel;
     this._editorAction = editorAction;
 }
 
 WebInspector.FormatterScriptMapping.prototype = {
     /**
+     * @override
      * @param {!WebInspector.DebuggerModel.Location} rawLocation
      * @return {?WebInspector.UILocation}
      */
@@ -38,6 +39,7 @@ WebInspector.FormatterScriptMapping.prototype = {
     },
 
     /**
+     * @override
      * @param {!WebInspector.UISourceCode} uiSourceCode
      * @param {number} lineNumber
      * @param {number} columnNumber
@@ -50,13 +52,14 @@ WebInspector.FormatterScriptMapping.prototype = {
             return null;
         var originalLocation = formatData.mapping.formattedToOriginal(lineNumber, columnNumber);
         for (var i = 0; i < formatData.scripts.length; ++i) {
-            if (formatData.scripts[i].target() === this._target)
-                return this._target.debuggerModel.createRawLocation(formatData.scripts[i], originalLocation[0], originalLocation[1])
+            if (formatData.scripts[i].debuggerModel === this._debuggerModel)
+                return this._debuggerModel.createRawLocation(formatData.scripts[i], originalLocation[0], originalLocation[1]);
         }
         return null;
     },
 
     /**
+     * @override
      * @return {boolean}
      */
     isIdentity: function()
@@ -65,6 +68,7 @@ WebInspector.FormatterScriptMapping.prototype = {
     },
 
     /**
+     * @override
      * @param {!WebInspector.UISourceCode} uiSourceCode
      * @param {number} lineNumber
      * @return {boolean}
@@ -104,6 +108,7 @@ WebInspector.FormatterProjectDelegate = function(workspace, id)
 
 WebInspector.FormatterProjectDelegate.prototype = {
     /**
+     * @override
      * @return {string}
      */
     displayName: function()
@@ -163,22 +168,30 @@ WebInspector.ScriptFormatterEditorAction = function()
 
 WebInspector.ScriptFormatterEditorAction.prototype = {
     /**
+     * @override
      * @param {!WebInspector.Target} target
      */
     targetAdded: function(target)
     {
-        this._scriptMappingByTarget.set(target, new WebInspector.FormatterScriptMapping(target, this));
-        target.debuggerModel.addEventListener(WebInspector.DebuggerModel.Events.GlobalObjectCleared, this._debuggerReset, this);
+        var debuggerModel = WebInspector.DebuggerModel.fromTarget(target);
+        if (!debuggerModel)
+            return;
+        this._scriptMappingByTarget.set(target, new WebInspector.FormatterScriptMapping(debuggerModel, this));
+        debuggerModel.addEventListener(WebInspector.DebuggerModel.Events.GlobalObjectCleared, this._debuggerReset, this);
     },
 
     /**
+     * @override
      * @param {!WebInspector.Target} target
      */
     targetRemoved: function(target)
     {
+        var debuggerModel = WebInspector.DebuggerModel.fromTarget(target);
+        if (!debuggerModel)
+            return;
         this._scriptMappingByTarget.remove(target);
         this._cleanForTarget(target);
-        target.debuggerModel.removeEventListener(WebInspector.DebuggerModel.Events.GlobalObjectCleared, this._debuggerReset, this);
+        debuggerModel.removeEventListener(WebInspector.DebuggerModel.Events.GlobalObjectCleared, this._debuggerReset, this);
     },
 
     /**
@@ -190,7 +203,8 @@ WebInspector.ScriptFormatterEditorAction.prototype = {
         this._updateButton(uiSourceCode);
 
         var path = uiSourceCode.project().id() + ":" + uiSourceCode.path();
-        if (this._isFormatableScript(uiSourceCode) && uiSourceCode.url && this._pathsToFormatOnLoad.has(path) && !this._formattedPaths.get(path))
+        var networkURL = WebInspector.networkMapping.networkURL(uiSourceCode);
+        if (this._isFormatableScript(uiSourceCode) && networkURL && this._pathsToFormatOnLoad.has(path) && !this._formattedPaths.get(path))
             this._formatUISourceCodeScript(uiSourceCode);
     },
 
@@ -216,8 +230,9 @@ WebInspector.ScriptFormatterEditorAction.prototype = {
     },
 
     /**
+     * @override
      * @param {!WebInspector.SourcesView} sourcesView
-     * @return {!WebInspector.StatusBarButton}
+     * @return {!WebInspector.ToolbarButton}
      */
     button: function(sourcesView)
     {
@@ -228,7 +243,7 @@ WebInspector.ScriptFormatterEditorAction.prototype = {
         this._sourcesView.addEventListener(WebInspector.SourcesView.Events.EditorSelected, this._editorSelected.bind(this));
         this._sourcesView.addEventListener(WebInspector.SourcesView.Events.EditorClosed, this._editorClosed.bind(this));
 
-        this._button = new WebInspector.StatusBarButton(WebInspector.UIString("Pretty print"), "format-status-bar-item");
+        this._button = new WebInspector.ToolbarButton(WebInspector.UIString("Pretty print"), "format-toolbar-item");
         this._button.setToggled(false);
         this._button.addEventListener("click", this._toggleFormatScriptSource, this);
         this._updateButton(sourcesView.currentUISourceCode());
@@ -257,12 +272,6 @@ WebInspector.ScriptFormatterEditorAction.prototype = {
         if (!this._isFormatableScript(uiSourceCode))
             return;
         this._formatUISourceCodeScript(uiSourceCode);
-
-        WebInspector.notifications.dispatchEventToListeners(WebInspector.UserMetrics.UserAction, {
-            action: WebInspector.UserMetrics.UserActionNames.TogglePrettyPrint,
-            enabled: true,
-            url: uiSourceCode.originURL()
-        });
     },
 
     /**
@@ -297,7 +306,7 @@ WebInspector.ScriptFormatterEditorAction.prototype = {
         this._formatData.remove(formattedUISourceCode);
         var path = formatData.projectId + ":" + formatData.path;
         this._formattedPaths.remove(path);
-        this._pathsToFormatOnLoad.remove(path);
+        this._pathsToFormatOnLoad.delete(path);
         for (var i = 0; i < formatData.scripts.length; ++i) {
             this._uiSourceCodes.remove(formatData.scripts[i]);
             WebInspector.debuggerWorkspaceBinding.popSourceMapping(formatData.scripts[i]);
@@ -358,14 +367,16 @@ WebInspector.ScriptFormatterEditorAction.prototype = {
 
         if (uiSourceCode.contentType() === WebInspector.resourceTypes.Document) {
             var scripts = [];
-            var targets = WebInspector.targetManager.targets();
-            for (var i = 0; i < targets.length; ++i)
-                scripts.pushAll(targets[i].debuggerModel.scriptsForSourceURL(uiSourceCode.url));
+            var debuggerModels = WebInspector.DebuggerModel.instances();
+            for (var i = 0; i < debuggerModels.length; ++i) {
+                var networkURL = WebInspector.networkMapping.networkURL(uiSourceCode);
+                scripts.pushAll(debuggerModels[i].scriptsForSourceURL(networkURL));
+            }
             return scripts.filter(isInlineScript);
         }
         if (uiSourceCode.contentType() === WebInspector.resourceTypes.Script) {
             var rawLocations = WebInspector.debuggerWorkspaceBinding.uiLocationToRawLocations(uiSourceCode, 0, 0);
-            return rawLocations.map(function(rawLocation) { return rawLocation.script()});
+            return rawLocations.map(function(rawLocation) { return rawLocation.script(); });
         }
         return [];
     },
@@ -393,9 +404,8 @@ WebInspector.ScriptFormatterEditorAction.prototype = {
          */
         function contentLoaded(content)
         {
-            var formatter = WebInspector.Formatter.createFormatter(uiSourceCode.contentType());
             var highlighterType = WebInspector.SourcesView.uiSourceCodeHighlighterType(uiSourceCode);
-            formatter.formatContent(highlighterType, content || "", innerCallback.bind(this));
+            WebInspector.Formatter.format(uiSourceCode.contentType(), highlighterType, content || "", innerCallback.bind(this));
         }
 
         /**
@@ -412,7 +422,8 @@ WebInspector.ScriptFormatterEditorAction.prototype = {
             else
                 name = uiSourceCode.name() || (scripts.length ? scripts[0].scriptId : "");
 
-            formattedPath = this._projectDelegate._addFormatted(name, uiSourceCode.url, uiSourceCode.contentType(), formattedContent);
+            var networkURL = WebInspector.networkMapping.networkURL(uiSourceCode);
+            formattedPath = this._projectDelegate._addFormatted(name, networkURL, uiSourceCode.contentType(), formattedContent);
             var formattedUISourceCode = /** @type {!WebInspector.UISourceCode} */ (this._workspace.uiSourceCode(this._projectId, formattedPath));
             var formatData = new WebInspector.FormatterScriptMapping.FormatData(uiSourceCode.project().id(), uiSourceCode.path(), formatterMapping, scripts);
             this._formatData.set(formattedUISourceCode, formatData);

@@ -9,6 +9,7 @@
     background-color: #eee;
     border-top: 1px solid #ccc;
     display: flex;
+    overflow: hidden;
 }
 
 .search-bar.replaceable {

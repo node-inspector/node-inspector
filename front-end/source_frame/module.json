@@ -9,11 +9,12 @@
             "className": "WebInspector.CodeMirrorUtils.TokenizerFactory"
         },
         {
-            "type": "ui-setting",
-            "section": "Sources",
+            "type": "setting",
+            "category": "Sources",
             "title": "Default indentation:",
             "settingName": "textEditorIndent",
-            "settingType": "select",
+            "settingType": "enum",
+            "defaultValue": "    ",
             "options": [
                 ["2 spaces", "  "],
                 ["4 spaces", "    "],
@@ -31,20 +32,18 @@
         "../cm/javascript.js",
         "../cm/xml.js",
         "../cm/htmlmixed.js",
+        "../cm/htmlembedded.js",
 
         "../cm/matchbrackets.js",
         "../cm/closebrackets.js",
         "../cm/markselection.js",
         "../cm/comment.js",
         "../cm/overlay.js",
+        "../cm/activeline.js",
 
-        "../cm/htmlembedded.js",
-        "../cm/clike.js",
-        "../cm/coffeescript.js",
-        "../cm/php.js",
-        "../cm/python.js",
-        "../cm/shell.js",
         "CodeMirrorUtils.js",
+        "CodeMirrorDictionary.js",
+        "TextEditorAutocompleteController.js",
         "CodeMirrorTextEditor.js",
         "FontView.js",
         "ImageView.js",
@@ -58,21 +57,16 @@
         "../cm/javascript.js",
         "../cm/xml.js",
         "../cm/htmlmixed.js",
+        "../cm/htmlembedded.js",
 
         "../cm/matchbrackets.js",
         "../cm/closebrackets.js",
         "../cm/markselection.js",
         "../cm/comment.js",
         "../cm/overlay.js",
-
-        "../cm/htmlembedded.js",
-        "../cm/clike.js",
-        "../cm/coffeescript.js",
-        "../cm/php.js",
-        "../cm/python.js",
-        "../cm/shell.js"
+        "../cm/activeline.js"
     ],
-    "stylesheets": [
+    "resources": [
         "../cm/codemirror.css",
         "cmdevtools.css",
         "fontView.css",

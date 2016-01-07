@@ -1,0 +1,274 @@
+/*
+ * Copyright (C) 2013 Google Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *     * Neither the name of Google Inc. nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+.overrides-view fieldset {
+    border: none;
+    padding: 0 0 5px 15px;
+}
+
+.overrides-view fieldset p {
+    display: inline-block;
+    padding: 0;
+    margin: 0;
+    border: 0;
+}
+
+.overrides-view fieldset p label {
+    display: inline-block;
+}
+
+.overrides-view .field-error-message {
+    display: none;
+}
+
+.overrides-view input[type='text']:focus::-webkit-input-placeholder {
+    color: transparent !important;
+}
+
+.overrides-view > .tabbed-pane {
+    overflow: hidden;
+}
+
+/* Network tab */
+
+.overrides-network fieldset {
+    padding-top: 5px;
+}
+
+.overrides-network fieldset p {
+    width: 100%;
+    margin-left: 2px;
+}
+
+.overrides-network fieldset select {
+    margin: 5px 0;
+}
+
+.overrides-network fieldset p label {
+    cursor: default;
+    margin-right: 5px;
+}
+
+.overrides-network fieldset input[type='text'] {
+    display: block;
+    width: 100%;
+    max-width: 400px;
+    min-width: 176px;
+    margin: 5px 0;
+}
+
+/* Device tab */
+
+.overrides-device {
+    width: 100%;
+}
+
+.overrides-device input.numeric {
+    text-align: right;
+}
+
+.overrides-device input[type=range] {
+    width: 100%;
+}
+
+.overrides-device > label {
+    display: block;
+    margin-bottom: 7px;
+    white-space: nowrap;
+}
+
+.overrides-device button {
+    margin: 0 3px;
+}
+
+.overrides-device label {
+    margin-bottom: 10px;
+}
+
+.overrides-device table {
+    margin-bottom: 5px;
+    white-space: nowrap !important;
+}
+
+.overrides-device > label {
+    margin-bottom: 4px;
+}
+
+.overrides-device .help-footnote {
+    border-top: 1px solid #EEEEEE;
+    margin: 0;
+    padding: 12px;
+}
+
+.overrides-view label {
+    display: flex;
+    height: auto;
+}
+
+.overrides-view fieldset[disabled] * {
+    cursor: default !important;
+}
+
+.overrides-device .overrides-device-model-section {
+    margin-bottom: 15px;
+    white-space: nowrap;
+}
+
+.overrides-device .overrides-device-model-section > span {
+    padding: 0 10px 0 3px;
+}
+
+.overrides-device .overrides-device-model-section select {
+    height: 20px;
+}
+
+.overrides-device .overrides-device-model-section select.device-select {
+    width: 180px;
+    margin-right: 6px;
+}
+
+.overrides-device .overrides-device-model-section .mode-container {
+    display: inline-block;
+    width: 140px;
+}
+
+/* Media tab */
+
+.overrides-media > label {
+    margin-bottom: 4px;
+}
+
+/* Sensors tab */
+
+.overrides-sensors > label {
+    margin-bottom: 10px;
+}
+
+.overrides-device, .overrides-media, .overrides-network, .overrides-sensors {
+    flex: none !important;
+}
+
+.overrides-sensors input {
+    text-align: right;
+}
+
+.tabbed-pane-header-tab.overrides-activate {
+    opacity: 0.8;
+}
+
+.tabbed-pane-header-tab.overrides-activate .tabbed-pane-header-tab-title::after {
+    padding-left: 3px;
+    content: "\2713";
+    color: rgb(25, 100, 228);
+}
+
+.tabbed-pane-header-tab.overrides-activate.selected {
+    opacity: 1;
+}
+
+.overrides-view input[type=text]:enabled:focus,
+.overrides-view select:enabled:focus {
+    -webkit-transition: border-color 200ms;
+    border-color: rgb(77, 144, 254);
+    outline: none;
+}
+
+.overrides-view input[type=text],
+.overrides-view select {
+    border: 1px solid #bfbfbf;
+    border-radius: 2px;
+    box-sizing: border-box;
+    color: #444;
+    font: inherit;
+    border-width: 1px;
+}
+
+.overrides-view input[type=text] {
+    margin-left: 3px;
+    min-height: 2em;
+    padding: 3px;
+}
+
+.overrides-view input[readonly] {
+    background-color: rgb(235, 235, 228);
+}
+
+.overrides-view .overrides-footer {
+    flex: none;
+    padding: 0 0 1px 3px;
+    border-top: 1px solid rgb(203,203,203);
+    background-color: #eee;
+}
+
+.overrides-view .overrides-footer::before {
+    background-image: url(Images/toolbarButtonGlyphs.png);
+    background-size: 352px 168px;
+    width: 10px;
+    height: 10px;
+    content: "";
+    position: relative;
+    top: 2px;
+    background-position: -202px -107px;
+    float: left;
+    margin-right: 4px;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+.overrides-view .overrides-footer::before {
+    background-image: url(Images/toolbarButtonGlyphs_2x.png);
+}
+} /* media */
+
+.overrides-view .overrides-footer label[is=dt-icon-label] {
+    margin-right: 3px;
+}
+
+.overrides-splash-screen {
+    padding: 10px 10px;
+    flex: auto;
+}
+
+.overrides-splash-screen .toolbar {
+    display: inline-block;
+    margin-left: -4px;
+    position: relative;
+    top: 8px;
+}
+
+#overrides-reset-button,
+#overrides-disable-button {
+    margin: 9px 0 0 17px;
+    display: block;
+    width: 60px;
+}
+
+.overrides-enable-button {
+    margin: 4px !important;
+}

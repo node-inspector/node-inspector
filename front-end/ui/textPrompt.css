@@ -1,0 +1,39 @@
+/*
+ * Copyright (c) 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.text-prompt-editing {
+    -webkit-user-select: text;
+    box-shadow: rgba(0, 0, 0, .5) 3px 3px 4px;
+    outline: 1px solid rgb(66%, 66%, 66%) !important;
+    background-color: white;
+    -webkit-user-modify: read-write-plaintext-only;
+    text-overflow: clip !important;
+    padding-left: 2px;
+    margin-left: -2px;
+    padding-right: 2px;
+    margin-right: -2px;
+    margin-bottom: -1px;
+    padding-bottom: 1px;
+    opacity: 1.0 !important;
+}
+
+.text-prompt-editing,
+.text-prompt-editing ::content * {
+    color: #222 !important;
+    text-decoration: none !important;
+    -webkit-user-modify: read-write-plaintext-only;
+}
+
+::content .auto-complete-text,
+.text-prompt-editing ::content .auto-complete-text {
+    color: rgb(128, 128, 128) !important;
+    -webkit-user-select: none;
+    -webkit-user-modify: read-only;
+}
+
+.text-prompt-editing ::content br {
+    display: none;
+}

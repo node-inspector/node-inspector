@@ -107,7 +107,7 @@ WebInspector.AuditLauncherView.prototype = {
 
         var selectedCategories = this._selectedCategoriesSetting.get();
         var categoryElement = this._createCategoryElement(category.displayName, category.id);
-        category._checkboxElement = categoryElement.firstChild;
+        category._checkboxElement = categoryElement.checkboxElement;
         if (this._selectAllCheckboxElement.checked || selectedCategories[category.displayName]) {
             category._checkboxElement.checked = true;
             ++this._currentCategoriesCount;
@@ -130,24 +130,12 @@ WebInspector.AuditLauncherView.prototype = {
         this._selectedCategoriesUpdated();
     },
 
-    /**
-     * @param {boolean} auditRunning
-     */
-    _setAuditRunning: function(auditRunning)
-    {
-        if (this._auditRunning === auditRunning)
-            return;
-        this._auditRunning = auditRunning;
-        this._updateButton();
-        this._toggleUIComponents(this._auditRunning);
-        if (this._auditRunning)
-            this._startAudit();
-        else
-            this._stopAudit();
-    },
-
     _startAudit: function()
     {
+        this._auditRunning = true;
+        this._updateButton();
+        this._toggleUIComponents(this._auditRunning);
+
         var catIds = [];
         for (var category = 0; category < this._sortedCategories.length; ++category) {
             if (this._sortedCategories[category]._checkboxElement.checked)
@@ -156,7 +144,6 @@ WebInspector.AuditLauncherView.prototype = {
 
         this._resetResourceCount();
         this._progressIndicator = new WebInspector.ProgressIndicator();
-        this._progressIndicator.hideStopButton();
         this._buttonContainerElement.appendChild(this._progressIndicator.element);
         this._displayResourceLoadingProgress = true;
 
@@ -167,15 +154,17 @@ WebInspector.AuditLauncherView.prototype = {
         {
             this._displayResourceLoadingProgress = false;
         }
-        this._auditController.initiateAudit(catIds, this._progressIndicator, this._auditPresentStateElement.checked, onAuditStarted.bind(this), this._setAuditRunning.bind(this, false));
+        this._auditController.initiateAudit(catIds, new WebInspector.ProgressProxy(this._progressIndicator, this._auditsDone.bind(this)), this._auditPresentStateElement.checked, onAuditStarted.bind(this));
     },
 
-    _stopAudit: function()
+    _auditsDone: function()
     {
         this._displayResourceLoadingProgress = false;
-        this._progressIndicator.cancel();
-        this._progressIndicator.done();
         delete this._progressIndicator;
+        this._launchButton.disabled = false;
+        this._auditRunning = false;
+        this._updateButton();
+        this._toggleUIComponents(this._auditRunning);
     },
 
     /**
@@ -184,14 +173,20 @@ WebInspector.AuditLauncherView.prototype = {
     _toggleUIComponents: function(disable)
     {
         this._selectAllCheckboxElement.disabled = disable;
-        this._categoriesElement.disabled = disable;
+        for (var child = this._categoriesElement.firstChild; child; child = child.nextSibling)
+            child.checkboxElement.disabled = disable;
         this._auditPresentStateElement.disabled = disable;
         this._auditReloadedStateElement.disabled = disable;
     },
 
     _launchButtonClicked: function(event)
     {
-        this._setAuditRunning(!this._auditRunning);
+        if (this._auditRunning) {
+            this._launchButton.disabled = true;
+            this._progressIndicator.cancel();
+            return;
+        }
+        this._startAudit();
     },
 
     _clearButtonClicked: function()
@@ -207,7 +202,7 @@ WebInspector.AuditLauncherView.prototype = {
     {
         var childNodes = this._categoriesElement.childNodes;
         for (var i = 0, length = childNodes.length; i < length; ++i)
-            childNodes[i].firstChild.checked = checkCategories;
+            childNodes[i].checkboxElement.checked = checkCategories;
         this._currentCategoriesCount = checkCategories ? this._sortedCategories.length : 0;
         this._selectedCategoriesUpdated(userGesture);
     },
@@ -221,19 +216,15 @@ WebInspector.AuditLauncherView.prototype = {
 
     /**
      * @param {string} title
-     * @param {string} id
+     * @param {string=} id
      */
     _createCategoryElement: function(title, id)
     {
-        var labelElement = createElement("label");
-        labelElement.id = this._categoryIdPrefix + id;
-
-        var element = createElement("input");
-        element.type = "checkbox";
-        if (id !== "")
-            element.addEventListener("click", this._boundCategoryClickListener, false);
-        labelElement.appendChild(element);
-        labelElement.createTextChild(title);
+        var labelElement = createCheckboxLabel(title);
+        if (id) {
+            labelElement.id = this._categoryIdPrefix + id;
+            labelElement.checkboxElement.addEventListener("click", this._boundCategoryClickListener, false);
+        }
         labelElement.__displayName = title;
 
         return labelElement;
@@ -244,9 +235,7 @@ WebInspector.AuditLauncherView.prototype = {
         this._headerElement = createElement("h1");
         this._headerElement.textContent = WebInspector.UIString("Select audits to run");
 
-        for (var child = 0; child < this._contentElement.children.length; ++child)
-            this._contentElement.removeChild(this._contentElement.children[child]);
-
+        this._contentElement.removeChildren();
         this._contentElement.appendChild(this._headerElement);
 
         /**
@@ -259,7 +248,7 @@ WebInspector.AuditLauncherView.prototype = {
         }
         var categoryElement = this._createCategoryElement(WebInspector.UIString("Select All"), "");
         categoryElement.id = "audit-launcher-selectall";
-        this._selectAllCheckboxElement = categoryElement.firstChild;
+        this._selectAllCheckboxElement = categoryElement.checkboxElement;
         this._selectAllCheckboxElement.checked = this._selectedCategoriesSetting.get()[WebInspector.AuditLauncherView.AllCategoriesKey];
         this._selectAllCheckboxElement.addEventListener("click", handleSelectAllClick.bind(this), false);
         this._contentElement.appendChild(categoryElement);
@@ -271,27 +260,19 @@ WebInspector.AuditLauncherView.prototype = {
 
         this._buttonContainerElement = this._contentElement.createChild("div", "button-container");
 
-        var labelElement = this._buttonContainerElement.createChild("label");
-        this._auditPresentStateElement = labelElement.createChild("input");
-        this._auditPresentStateElement.name = "audit-mode";
-        this._auditPresentStateElement.type = "radio";
-        this._auditPresentStateElement.checked = true;
-        this._auditPresentStateLabelElement = createTextNode(WebInspector.UIString("Audit Present State"));
-        labelElement.appendChild(this._auditPresentStateLabelElement);
+        var radio = createRadioLabel("audit-mode", WebInspector.UIString("Audit Present State"), true);
+        this._buttonContainerElement.appendChild(radio);
+        this._auditPresentStateElement = radio.radioElement;
 
-        labelElement = this._buttonContainerElement.createChild("label");
-        this._auditReloadedStateElement = labelElement.createChild("input");
-        this._auditReloadedStateElement.name = "audit-mode";
-        this._auditReloadedStateElement.type = "radio";
-        labelElement.createTextChild("Reload Page and Audit on Load");
+        radio = createRadioLabel("audit-mode", WebInspector.UIString("Reload Page and Audit on Load"));
+        this._buttonContainerElement.appendChild(radio);
+        this._auditReloadedStateElement = radio.radioElement;
 
-        this._launchButton = this._buttonContainerElement.createChild("button", "text-button");
-        this._launchButton.textContent = WebInspector.UIString("Run");
-        this._launchButton.addEventListener("click", this._launchButtonClicked.bind(this), false);
+        this._launchButton = createTextButton(WebInspector.UIString("Run"), this._launchButtonClicked.bind(this));
+        this._buttonContainerElement.appendChild(this._launchButton);
 
-        this._clearButton = this._buttonContainerElement.createChild("button", "text-button");
-        this._clearButton.textContent = WebInspector.UIString("Clear");
-        this._clearButton.addEventListener("click", this._clearButtonClicked.bind(this), false);
+        this._clearButton = createTextButton(WebInspector.UIString("Clear"), this._clearButtonClicked.bind(this));
+        this._buttonContainerElement.appendChild(this._clearButton);
 
         this._selectAllClicked(this._selectAllCheckboxElement.checked);
     },
@@ -313,7 +294,7 @@ WebInspector.AuditLauncherView.prototype = {
         var selectedCategories = userGesture ? {} : this._selectedCategoriesSetting.get();
         var childNodes = this._categoriesElement.childNodes;
         for (var i = 0, length = childNodes.length; i < length; ++i)
-            selectedCategories[childNodes[i].__displayName] = childNodes[i].firstChild.checked;
+            selectedCategories[childNodes[i].__displayName] = childNodes[i].checkboxElement.checked;
         selectedCategories[WebInspector.AuditLauncherView.AllCategoriesKey] = this._selectAllCheckboxElement.checked;
         this._selectedCategoriesSetting.set(selectedCategories);
         this._updateButton();

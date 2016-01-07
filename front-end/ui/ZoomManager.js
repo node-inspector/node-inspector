@@ -28,6 +28,24 @@ WebInspector.ZoomManager.prototype = {
         return this._zoomFactor;
     },
 
+    /**
+     * @param {number} value
+     * @return {number}
+     */
+    cssToDIP: function(value)
+    {
+        return value * this._zoomFactor;
+    },
+
+    /**
+     * @param {number} valueDIP
+     * @return {number}
+     */
+    dipToCSS: function(valueDIP)
+    {
+        return valueDIP / this._zoomFactor;
+    },
+
     _onWindowResize: function()
     {
         var oldZoomFactor = this._zoomFactor;

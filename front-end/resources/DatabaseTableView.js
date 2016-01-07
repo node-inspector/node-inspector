@@ -34,11 +34,14 @@ WebInspector.DatabaseTableView = function(database, tableName)
     this.database = database;
     this.tableName = tableName;
 
-    this.element.classList.add("storage-view");
-    this.element.classList.add("table");
+    this.element.classList.add("storage-view", "table");
 
-    this.refreshButton = new WebInspector.StatusBarButton(WebInspector.UIString("Refresh"), "refresh-status-bar-item");
+    this._visibleColumnsSetting = WebInspector.settings.createSetting("databaseTableViewVisibleColumns", {});
+
+    this.refreshButton = new WebInspector.ToolbarButton(WebInspector.UIString("Refresh"), "refresh-toolbar-item");
     this.refreshButton.addEventListener("click", this._refreshButtonClicked, this);
+    this._visibleColumnsInput = new WebInspector.ToolbarInput(WebInspector.UIString("Visible columns"), 1);
+    this._visibleColumnsInput.addEventListener(WebInspector.ToolbarInput.Event.TextChanged, this._onVisibleColumnsChanged, this);
 }
 
 WebInspector.DatabaseTableView.prototype = {
@@ -48,11 +51,11 @@ WebInspector.DatabaseTableView.prototype = {
     },
 
     /**
-     * @return {!Array.<!WebInspector.StatusBarItem>}
+     * @return {!Array.<!WebInspector.ToolbarItem>}
      */
-    statusBarItems: function()
+    toolbarItems: function()
     {
-        return [this.refreshButton];
+        return [this.refreshButton, this._visibleColumnsInput];
     },
 
     /**
@@ -71,22 +74,61 @@ WebInspector.DatabaseTableView.prototype = {
 
     _queryFinished: function(columnNames, values)
     {
-        this.detachChildViews();
+        this.detachChildWidgets();
         this.element.removeChildren();
 
-        var dataGrid = WebInspector.SortableDataGrid.create(columnNames, values);
-        if (!dataGrid) {
-            this._emptyView = new WebInspector.EmptyView(WebInspector.UIString("The “%s”\ntable is empty.", this.tableName));
-            this._emptyView.show(this.element);
+        this._dataGrid = WebInspector.SortableDataGrid.create(columnNames, values);
+        this._visibleColumnsInput.setVisible(!!this._dataGrid);
+        if (!this._dataGrid) {
+            this._emptyWidget = new WebInspector.EmptyWidget(WebInspector.UIString("The “%s”\ntable is empty.", this.tableName));
+            this._emptyWidget.show(this.element);
             return;
         }
-        dataGrid.show(this.element);
-        dataGrid.autoSizeColumns(5);
+        this._dataGrid.show(this.element);
+        this._dataGrid.autoSizeColumns(5);
+
+        this._columnsMap = new Map();
+        for (var i = 1; i < columnNames.length; ++i)
+            this._columnsMap.set(columnNames[i], String(i));
+        this._lastVisibleColumns = "";
+        var visibleColumnsText = this._visibleColumnsSetting.get()[this.tableName] || "";
+        this._visibleColumnsInput.setValue(visibleColumnsText);
+        this._onVisibleColumnsChanged();
+    },
+
+    _onVisibleColumnsChanged: function()
+    {
+        if (!this._dataGrid)
+            return;
+        var text = this._visibleColumnsInput.value();
+        var parts = text.split(/[\s,]+/);
+        var matches = new Set();
+        var columnsVisibility = {};
+        columnsVisibility["0"] = true;
+        for (var i = 0; i < parts.length; ++i) {
+            var part = parts[i];
+            if (this._columnsMap.has(part)) {
+                matches.add(part);
+                columnsVisibility[this._columnsMap.get(part)] = true;
+            }
+        }
+        var newVisibleColumns = matches.valuesArray().sort().join(", ");
+        if (newVisibleColumns.length === 0) {
+            for (var v of this._columnsMap.values())
+                columnsVisibility[v] = true;
+        }
+        if (newVisibleColumns === this._lastVisibleColumns)
+            return;
+        var visibleColumnsRegistry = this._visibleColumnsSetting.get();
+        visibleColumnsRegistry[this.tableName] = text;
+        this._visibleColumnsSetting.set(visibleColumnsRegistry);
+        this._dataGrid.setColumnsVisiblity(columnsVisibility);
+        this._lastVisibleColumns = newVisibleColumns;
     },
 
     _queryError: function(error)
     {
-        this.detachChildViews();
+        this.detachChildWidgets();
         this.element.removeChildren();
 
         var errorMsgElement = createElement("div");

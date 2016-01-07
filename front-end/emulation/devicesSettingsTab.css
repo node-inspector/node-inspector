@@ -1,0 +1,156 @@
+/*
+ * Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.devices-settings-tab .settings-tab.help-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    height: 100%;
+    margin: 0;
+}
+
+.devices-settings-tab .devices-title {
+    font-size: 120%;
+    color: #222;
+    flex: none;
+}
+
+.devices-settings-tab .devices-button-row {
+    flex: none;
+    display: flex;
+}
+
+.devices-settings-tab .devices-button-row button {
+    margin-right: 10px;
+    min-width: 120px;
+    flex: none;
+}
+
+.devices-settings-tab .devices-list {
+    width: 350px;
+    overflow-y: auto;
+    margin: 10px 0;
+    border: 1px solid rgb(231, 231, 231);
+    flex: auto 0 1;
+}
+
+.devices-settings-tab .devices-custom-separator {
+    background: rgb(231, 231, 231);
+    height: 1px;
+}
+
+.devices-settings-tab .devices-list-item {
+    padding: 3px 0 3px 10px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.devices-settings-tab .devices-list-item:hover {
+    background: hsl(0, 0%, 85%);
+}
+
+.devices-settings-tab .devices-list-checkbox {
+    height: 12px;
+    width: 12px;
+    margin: 3px 5px 2px 2px;
+    flex: none;
+    pointer-events: none;
+}
+
+.devices-settings-tab .devices-list-title {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    flex: auto;
+    -webkit-user-select: none;
+    color: #aaa;
+}
+
+.devices-settings-tab .device-list-item-show .devices-list-title {
+    color: #222;
+}
+
+.devices-settings-tab .devices-list-remove,
+.devices-settings-tab .devices-list-edit {
+    background-image: url(Images/toolbarButtonGlyphs.png);
+    background-size: 352px 168px;
+    width: 32px;
+    height: 24px;
+    opacity: 0.5;
+    cursor: pointer;
+    flex: none;
+    visibility: hidden;
+}
+
+.devices-settings-tab .devices-list:not(.devices-list-editing) .devices-list-item:hover .devices-list-remove,
+.devices-settings-tab .devices-list-item:hover .devices-list-edit {
+    visibility: visible;
+}
+
+.devices-settings-tab .devices-list-remove:hover,
+.devices-settings-tab .devices-list-edit:hover {
+    opacity: 0.7;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+.devices-settings-tab .devices-list-remove,
+.devices-settings-tab .devices-list-edit {
+    background-image: url(Images/toolbarButtonGlyphs_2x.png);
+}
+} /* media */
+
+.devices-settings-tab .devices-list-remove {
+    background-position: -128px -24px;
+}
+
+.devices-settings-tab .devices-list-edit {
+    background-position: -224px -72px;
+}
+
+.devices-settings-tab .devices-edit-container {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    flex: none;
+    padding: 10px 20px 0 10px;
+    background: hsl(0, 0%, 95%);
+}
+
+.devices-settings-tab .devices-edit-checkbox {
+    height: 12px;
+    width: 12px;
+    margin: 3px 5px 2px 2px;
+    flex: none;
+    cursor: pointer;
+}
+
+.devices-settings-tab .devices-edit-fields {
+    flex: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.devices-settings-tab .devices-edit-fields input {
+    margin-right: 10px;
+}
+
+.devices-settings-tab .devices-edit-fields input.error-input {
+    outline: auto 2px red;
+    background-color: white;
+}
+
+.devices-settings-tab .devices-edit-fields > * {
+    flex: none;
+    margin-bottom: 10px;
+}
+
+.devices-settings-tab .devices-edit-buttons > button {
+    margin-right: 10px;
+}
+

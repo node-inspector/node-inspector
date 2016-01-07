@@ -157,7 +157,7 @@ WebInspector.TextRange.prototype = {
     },
 
     /**
-     * @return {!Object}
+     * @return {!{startLine: number, startColumn: number, endLine: number, endColumn: number}}
      */
     serializeToObject: function()
     {
@@ -206,6 +206,36 @@ WebInspector.TextRange.prototype = {
     },
 
     /**
+     * @param {number} line
+     * @param {number} column
+     * @return {!WebInspector.TextRange}
+     */
+    relativeTo: function(line, column)
+    {
+        var relative = this.clone();
+
+        if (this.startLine == line)
+            relative.startColumn -= column;
+        if (this.endLine == line)
+            relative.endColumn -= column;
+
+        relative.startLine -= line;
+        relative.endLine -= line;
+        return relative;
+    },
+
+    /**
+     * @param {string} text
+     * @return {!WebInspector.SourceRange}
+     */
+    toSourceRange: function(text)
+    {
+        var start = (this.startLine ? text.lineEndings()[this.startLine - 1] + 1 : 0) + this.startColumn;
+        var end = (this.endLine ? text.lineEndings()[this.endLine - 1] + 1 : 0) + this.endColumn;
+        return new WebInspector.SourceRange(start, end - start);
+    },
+
+    /**
      * @param {!WebInspector.TextRange} originalRange
      * @param {!WebInspector.TextRange} editedRange
      * @return {!WebInspector.TextRange}
@@ -229,11 +259,23 @@ WebInspector.TextRange.prototype = {
     },
 
     /**
+     * @override
      * @return {string}
      */
     toString: function()
     {
         return JSON.stringify(this);
+    },
+
+    /**
+     * @param {string} text
+     * @param {string} replacement
+     * @return {string}
+     */
+    replaceInText: function(text, replacement)
+    {
+        var sourceRange = this.toSourceRange(text);
+        return text.substring(0, sourceRange.offset) + replacement + text.substring(sourceRange.offset + sourceRange.length);
     }
 }
 

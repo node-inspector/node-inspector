@@ -1,0 +1,99 @@
+/*
+ * Copyright (c) 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.computed-properties {
+    -webkit-user-select: text;
+}
+
+.computed-style-property {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.computed-style-property .property-name {
+    width: 16em;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.computed-style-property .property-value {
+    min-width: 5em;
+}
+
+.computed-style-property-inherited {
+    opacity: 0.5;
+}
+
+.trace-link {
+    float: right;
+    padding-left: 1em;
+    position: relative;
+    z-index: 1;
+}
+
+.trace-link a::before {
+    content: attr(data-uncopyable);
+    text-decoration: underline;
+}
+
+.property-trace {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    flex-grow: 1;
+}
+
+.property-trace-selector {
+    color: gray;
+    padding-left: 2em;
+}
+
+.property-trace-value {
+    position: relative;
+    display: inline-block;
+}
+
+.property-trace-inactive .property-trace-value::before {
+    position: absolute;
+    content: ".";
+    border-bottom: 1px solid rgba(0, 0, 0, 0.35);
+    top: 0;
+    bottom: 5px;
+    left: 0;
+    right: 0;
+}
+
+.tree-outline li.odd-row {
+    position: relative;
+    background-color: #F5F5F5;
+}
+
+.tree-outline, .tree-outline ol {
+    padding-left: 0;
+}
+
+.tree-outline li:hover {
+    background-color: rgb(235, 242, 252);
+    cursor: pointer;
+}
+
+/* FIXME: Patch TreeElement styles to use flex for title layout. */
+
+.tree-outline li {
+    display: flex;
+    align-items: baseline;
+}
+
+.tree-outline li::before {
+    float: none;
+    flex: none;
+    -webkit-mask-position: -3px -97px;
+    background-color: rgb(110, 110, 110);
+    margin-left: 4px;
+}
+
+.tree-outline li.parent.expanded::before {
+    -webkit-mask-position: -19px -97px;
+}

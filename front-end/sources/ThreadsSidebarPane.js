@@ -10,12 +10,16 @@
 WebInspector.ThreadsSidebarPane = function()
 {
     WebInspector.SidebarPane.call(this, WebInspector.UIString("Threads"));
-    /** @type {!Map.<!WebInspector.Target, !WebInspector.Placard>} */
-    this._targetsToPlacards = new Map();
-    /** @type {!Map.<!WebInspector.Placard, !WebInspector.Target>} */
-    this._placardsToTargets = new Map();
-    /** @type {?WebInspector.Placard} */
-    this._selectedPlacard = null;
+    this.setVisible(false);
+
+    /** @type {!Map.<!WebInspector.DebuggerModel, !WebInspector.UIList.Item>} */
+    this._debuggerModelToListItems = new Map();
+    /** @type {!Map.<!WebInspector.UIList.Item, !WebInspector.Target>} */
+    this._listItemsToTargets = new Map();
+    /** @type {?WebInspector.UIList.Item} */
+    this._selectedListItem = null;
+    this.threadList = new WebInspector.UIList();
+    this.threadList.show(this.element);
     WebInspector.targetManager.addModelListener(WebInspector.DebuggerModel, WebInspector.DebuggerModel.Events.DebuggerPaused, this._onDebuggerStateChanged, this);
     WebInspector.targetManager.addModelListener(WebInspector.DebuggerModel, WebInspector.DebuggerModel.Events.DebuggerResumed, this._onDebuggerStateChanged, this);
     WebInspector.context.addFlavorChangeListener(WebInspector.Target, this._targetChanged, this);
@@ -23,32 +27,51 @@ WebInspector.ThreadsSidebarPane = function()
 }
 
 WebInspector.ThreadsSidebarPane.prototype = {
-
     /**
+     * @override
      * @param {!WebInspector.Target} target
      */
     targetAdded: function(target)
     {
-        var placard = new WebInspector.Placard(target.name(), "");
-        placard.element.addEventListener("click", this._onPlacardClick.bind(this, placard), false);
+        var debuggerModel = WebInspector.DebuggerModel.fromTarget(target)
+        if (!debuggerModel) {
+            this._updateVisibility();
+            return;
+        }
+        var listItem = new WebInspector.UIList.Item(target.name(), "");
+        listItem.element.addEventListener("click", this._onListItemClick.bind(this, listItem), false);
         var currentTarget = WebInspector.context.flavor(WebInspector.Target);
         if (currentTarget === target)
-            this._selectPlacard(placard);
+            this._selectListItem(listItem);
 
-        this._targetsToPlacards.set(target, placard);
-        this._placardsToTargets.set(placard, target);
-        this.bodyElement.appendChild(placard.element);
-        this._updateDebuggerState(target);
+        this._debuggerModelToListItems.set(debuggerModel, listItem);
+        this._listItemsToTargets.set(listItem, target);
+        this.threadList.addItem(listItem);
+        this._updateDebuggerState(debuggerModel);
+        this._updateVisibility();
+    },
+
+    _updateVisibility: function()
+    {
+        this._wasVisibleAtLeastOnce = this._wasVisibleAtLeastOnce || this._debuggerModelToListItems.size > 1;
+        this.setVisible(this._wasVisibleAtLeastOnce);
     },
 
     /**
+     * @override
      * @param {!WebInspector.Target} target
      */
     targetRemoved: function(target)
     {
-        var placard = this._targetsToPlacards.remove(target);
-        this._placardsToTargets.remove(placard);
-        this.bodyElement.removeChild(placard.element);
+        var debuggerModel = WebInspector.DebuggerModel.fromTarget(target)
+        if (!debuggerModel)
+            return;
+        var listItem = this._debuggerModelToListItems.remove(debuggerModel);
+        if (listItem) {
+            this._listItemsToTargets.remove(listItem);
+            this.threadList.removeItem(listItem);
+        }
+        this._updateVisibility();
     },
 
     /**
@@ -57,8 +80,11 @@ WebInspector.ThreadsSidebarPane.prototype = {
     _targetChanged: function(event)
     {
         var newTarget = /** @type {!WebInspector.Target} */(event.data);
-        var placard =  /** @type {!WebInspector.Placard} */ (this._targetsToPlacards.get(newTarget));
-        this._selectPlacard(placard);
+        var debuggerModel = WebInspector.DebuggerModel.fromTarget(newTarget)
+        if (!debuggerModel)
+            return;
+        var listItem =  /** @type {!WebInspector.UIList.Item} */ (this._debuggerModelToListItems.get(debuggerModel));
+        this._selectListItem(listItem);
     },
 
     /**
@@ -67,40 +93,40 @@ WebInspector.ThreadsSidebarPane.prototype = {
     _onDebuggerStateChanged: function(event)
     {
         var debuggerModel = /** @type {!WebInspector.DebuggerModel} */ (event.target);
-        this._updateDebuggerState(debuggerModel.target());
+        this._updateDebuggerState(debuggerModel);
     },
 
     /**
-     * @param {!WebInspector.Target} target
+     * @param {!WebInspector.DebuggerModel} debuggerModel
      */
-    _updateDebuggerState: function(target)
+    _updateDebuggerState: function(debuggerModel)
     {
-        var placard = this._targetsToPlacards.get(target);
-        placard.subtitle = target.debuggerModel.isPaused() ? WebInspector.UIString("paused") : WebInspector.UIString("");
+        var listItem = this._debuggerModelToListItems.get(debuggerModel);
+        listItem.setSubtitle(WebInspector.UIString(debuggerModel.isPaused() ? "paused" : ""));
     },
 
     /**
-     * @param {!WebInspector.Placard} placard
+     * @param {!WebInspector.UIList.Item} listItem
      */
-    _selectPlacard: function(placard)
+    _selectListItem: function(listItem)
     {
-        if (placard === this._selectedPlacard)
+        if (listItem === this._selectedListItem)
             return;
 
-        if (this._selectedPlacard)
-            this._selectedPlacard.selected = false;
+        if (this._selectedListItem)
+            this._selectedListItem.setSelected(false);
 
-        this._selectedPlacard = placard;
-        placard.selected = true;
+        this._selectedListItem = listItem;
+        listItem.setSelected(true);
     },
 
     /**
-     * @param {!WebInspector.Placard} placard
+     * @param {!WebInspector.UIList.Item} listItem
      */
-    _onPlacardClick: function(placard)
+    _onListItemClick: function(listItem)
     {
-        WebInspector.context.setFlavor(WebInspector.Target, this._placardsToTargets.get(placard));
-        placard.element.scrollIntoViewIfNeeded();
+        WebInspector.context.setFlavor(WebInspector.Target, this._listItemsToTargets.get(listItem));
+        listItem.element.scrollIntoViewIfNeeded();
     },
 
 

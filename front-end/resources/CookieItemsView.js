@@ -37,31 +37,31 @@ WebInspector.CookieItemsView = function(treeElement, cookieDomain)
 
     this.element.classList.add("storage-view");
 
-    this._deleteButton = new WebInspector.StatusBarButton(WebInspector.UIString("Delete"), "delete-status-bar-item");
+    this._deleteButton = new WebInspector.ToolbarButton(WebInspector.UIString("Delete"), "delete-toolbar-item");
     this._deleteButton.setVisible(false);
     this._deleteButton.addEventListener("click", this._deleteButtonClicked, this);
 
-    this._clearButton = new WebInspector.StatusBarButton(WebInspector.UIString("Clear"), "clear-status-bar-item");
+    this._clearButton = new WebInspector.ToolbarButton(WebInspector.UIString("Clear"), "clear-toolbar-item");
     this._clearButton.setVisible(false);
     this._clearButton.addEventListener("click", this._clearButtonClicked, this);
 
-    this._refreshButton = new WebInspector.StatusBarButton(WebInspector.UIString("Refresh"), "refresh-status-bar-item");
+    this._refreshButton = new WebInspector.ToolbarButton(WebInspector.UIString("Refresh"), "refresh-toolbar-item");
     this._refreshButton.addEventListener("click", this._refreshButtonClicked, this);
 
     this._treeElement = treeElement;
     this._cookieDomain = cookieDomain;
 
-    this._emptyView = new WebInspector.EmptyView(cookieDomain ? WebInspector.UIString("This site has no cookies.") : WebInspector.UIString("By default cookies are disabled for local files.\nYou could override this by starting the browser with --enable-file-cookies command line flag."));
-    this._emptyView.show(this.element);
+    this._emptyWidget = new WebInspector.EmptyWidget(cookieDomain ? WebInspector.UIString("This site has no cookies.") : WebInspector.UIString("By default cookies are disabled for local files.\nYou could override this by starting the browser with --enable-file-cookies command line flag."));
+    this._emptyWidget.show(this.element);
 
     this.element.addEventListener("contextmenu", this._contextMenu.bind(this), true);
 }
 
 WebInspector.CookieItemsView.prototype = {
     /**
-     * @return {!Array.<!WebInspector.StatusBarItem>}
+     * @return {!Array.<!WebInspector.ToolbarItem>}
      */
-    statusBarItems: function()
+    toolbarItems: function()
     {
         return [this._refreshButton, this._clearButton, this._deleteButton];
     },
@@ -90,7 +90,7 @@ WebInspector.CookieItemsView.prototype = {
 
         if (!this._cookies.length) {
             // Nothing to show.
-            this._emptyView.show(this.element);
+            this._emptyWidget.show(this.element);
             this._clearButton.setVisible(false);
             this._deleteButton.setVisible(false);
             if (this._cookiesTable)
@@ -102,7 +102,7 @@ WebInspector.CookieItemsView.prototype = {
             this._cookiesTable = new WebInspector.CookiesTable(false, this._update.bind(this), this._showDeleteButton.bind(this));
 
         this._cookiesTable.setCookies(this._cookies);
-        this._emptyView.detach();
+        this._emptyWidget.detach();
         this._cookiesTable.show(this.element);
         this._treeElement.subtitle = String.sprintf(WebInspector.UIString("%d cookies (%s)"), this._cookies.length,
             Number.bytesToString(this._totalSize));

@@ -44,8 +44,6 @@ WebInspector.SoftContextMenu.prototype = {
      */
     show: function(document, x, y)
     {
-        if (this._contextMenuElement)
-            this._discardMenu(true);
         if (!this._items.length)
             return;
 
@@ -55,11 +53,18 @@ WebInspector.SoftContextMenu.prototype = {
         this._time = new Date().getTime();
 
         // Create context menu.
-        this._contextMenuElement = createElementWithClass("div", "soft-context-menu");
-        this._contextMenuElement.tabIndex = 0;
-        this._contextMenuElement.style.top = y + "px";
-        this._contextMenuElement.style.left = x + "px";
+        this.element = createElementWithClass("div", "soft-context-menu");
+        var root = WebInspector.createShadowRootWithCoreStyles(this.element);
+        root.appendChild(WebInspector.Widget.createStyleElement("ui/softContextMenu.css"));
+        this._contextMenuElement = root.createChild("div");
+        this.element.style.top = y + "px";
+        this.element.style.left = x + "px";
 
+        var maxHeight = WebInspector.Dialog.modalHostView().element.offsetHeight;
+        maxHeight -= y - WebInspector.Dialog.modalHostView().element.totalOffsetTop();
+        this.element.style.maxHeight = maxHeight + "px";
+
+        this._contextMenuElement.tabIndex = 0;
         this._contextMenuElement.addEventListener("mouseup", consumeEvent, false);
         this._contextMenuElement.addEventListener("keydown", this._menuKeyDown.bind(this), false);
 
@@ -68,21 +73,28 @@ WebInspector.SoftContextMenu.prototype = {
 
         // Install glass pane capturing events.
         if (!this._parentMenu) {
-            this._glassPaneElement = createElementWithClass("div", "soft-context-menu-glass-pane");
+            this._glassPaneElement = createElementWithClass("div", "soft-context-menu-glass-pane fill");
             this._glassPaneElement.tabIndex = 0;
             this._glassPaneElement.addEventListener("mouseup", this._glassPaneMouseUp.bind(this), false);
-            this._glassPaneElement.appendChild(this._contextMenuElement);
+            this._glassPaneElement.appendChild(this.element);
             document.body.appendChild(this._glassPaneElement);
+            this._discardMenuOnResizeListener = this._discardMenu.bind(this, true);
+            document.defaultView.addEventListener("resize", this._discardMenuOnResizeListener, false);
             this._focus();
         } else {
-            this._parentMenu._parentGlassPaneElement().appendChild(this._contextMenuElement);
+            this._parentMenu._parentGlassPaneElement().appendChild(this.element);
         }
 
         // Re-position menu in case it does not fit.
-        if (document.body.offsetWidth <  this._contextMenuElement.offsetLeft + this._contextMenuElement.offsetWidth)
-            this._contextMenuElement.style.left = Math.max(0, x - this._contextMenuElement.offsetWidth) + "px";
-        if (document.body.offsetHeight < this._contextMenuElement.offsetTop + this._contextMenuElement.offsetHeight)
-            this._contextMenuElement.style.top = Math.max(0, document.body.offsetHeight - this._contextMenuElement.offsetHeight) + "px";
+        if (document.body.offsetWidth <  this.element.offsetLeft + this.element.offsetWidth)
+            this.element.style.left = Math.max(0, document.body.offsetWidth - this.element.offsetWidth) + "px";
+        if (document.body.offsetHeight < this.element.offsetTop + this.element.offsetHeight)
+            this.element.style.top = Math.max(0, document.body.offsetHeight - this.element.offsetHeight) + "px";
+    },
+
+    discard: function()
+    {
+        this._discardMenu(true);
     },
 
     _parentGlassPaneElement: function()
@@ -103,12 +115,19 @@ WebInspector.SoftContextMenu.prototype = {
             return this._createSubMenu(item);
 
         var menuItemElement = createElementWithClass("div", "soft-context-menu-item");
-        var checkMarkElement = menuItemElement.createChild("span", "soft-context-menu-item-checkmark");
-        checkMarkElement.textContent = "\u2713 "; // Checkmark Unicode symbol
+        var checkMarkElement = menuItemElement.createChild("div", "checkmark");
         if (!item.checked)
             checkMarkElement.style.opacity = "0";
 
+        if (item.element) {
+            var wrapper = menuItemElement.createChild("div", "soft-context-menu-custom-item");
+            wrapper.appendChild(item.element);
+            menuItemElement._isCustom = true;
+            return menuItemElement;
+        }
+
         menuItemElement.createTextChild(item.label);
+        menuItemElement.createChild("span", "soft-context-menu-shortcut").textContent = item.shortcut;
 
         menuItemElement.addEventListener("mousedown", this._menuItemMouseDown.bind(this), false);
         menuItemElement.addEventListener("mouseup", this._menuItemMouseUp.bind(this), false);
@@ -197,7 +216,12 @@ WebInspector.SoftContextMenu.prototype = {
             return;
 
         this._subMenu = new WebInspector.SoftContextMenu(menuItemElement._subItems, this._itemSelectedCallback, this);
-        this._subMenu.show(this._document, this._x + menuItemElement.offsetWidth - 3, this._y + menuItemElement.offsetTop - 1);
+        var menuLeft = menuItemElement.totalOffsetLeft();
+        var menuRight = menuLeft + menuItemElement.offsetWidth;
+        var menuX = menuRight - 3;
+        if (menuRight + menuItemElement.offsetWidth > this._document.body.offsetWidth)
+            menuX = Math.max(0, menuLeft - menuItemElement.offsetWidth);
+        this._subMenu.show(this._document, menuX, menuItemElement.totalOffsetTop() - 1);
     },
 
     _hideSubMenu: function()
@@ -250,7 +274,7 @@ WebInspector.SoftContextMenu.prototype = {
     _highlightPrevious: function()
     {
         var menuItemElement = this._highlightedMenuItemElement ? this._highlightedMenuItemElement.previousSibling : this._contextMenuElement.lastChild;
-        while (menuItemElement && menuItemElement._isSeparator)
+        while (menuItemElement && (menuItemElement._isSeparator || menuItemElement._isCustom))
             menuItemElement = menuItemElement.previousSibling;
         if (menuItemElement)
             this._highlightMenuItem(menuItemElement);
@@ -259,7 +283,7 @@ WebInspector.SoftContextMenu.prototype = {
     _highlightNext: function()
     {
         var menuItemElement = this._highlightedMenuItemElement ? this._highlightedMenuItemElement.nextSibling : this._contextMenuElement.firstChild;
-        while (menuItemElement && menuItemElement._isSeparator)
+        while (menuItemElement && (menuItemElement._isSeparator || menuItemElement._isCustom))
             menuItemElement = menuItemElement.nextSibling;
         if (menuItemElement)
             this._highlightMenuItem(menuItemElement);
@@ -304,7 +328,9 @@ WebInspector.SoftContextMenu.prototype = {
     _glassPaneMouseUp: function(event)
     {
         // Return if this is simple 'click', since dispatched on glass pane, can't use 'click' event.
-        if (event.x === this._x && event.y === this._y && new Date().getTime() - this._time < 300)
+        if (new Date().getTime() - this._time < 300)
+            return;
+        if (event.target === this.element)
             return;
         this._discardMenu(true, event);
         event.consume();
@@ -338,6 +364,10 @@ WebInspector.SoftContextMenu.prototype = {
 
             if (event)
                 event.consume(true);
+        }
+        if (this._discardMenuOnResizeListener) {
+            this._document.defaultView.removeEventListener(this._discardMenuOnResizeListener);
+            delete this._discardMenuOnResizeListener;
         }
     },
 

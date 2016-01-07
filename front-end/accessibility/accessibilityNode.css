@@ -1,0 +1,59 @@
+/*
+ * Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.ax-computed-text {
+    padding: 3px 5px 0;
+    background-image: url(Images/speech.png);
+    background-repeat: no-repeat;
+    background-position: 16px center;
+    padding: 4px 4px 0 4px;
+    padding-left: 36px;
+    min-height: 18px;
+}
+
+.ax-computed-text div {
+    display: inline-block;
+    padding: 2px;
+    width: 100%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    width: 100%;
+}
+
+div.ax-text-alternatives {
+    margin-bottom: 3px;
+    border-bottom: 1px solid #BFBFBF;
+}
+
+.ax-name {
+    color: rgb(136, 19, 145);
+    flex-shrink: 0;
+}
+
+.ax-readable-name {
+    flex-shrink: 0;
+}
+
+span.ax-role {
+    font-weight: bold;
+}
+
+span.ax-internal-role {
+    font-style: italic;
+}
+
+.ax-ignored-info {
+    padding: 6px;
+}
+
+.ax-ignored-node-pane {
+    background-color: hsl(0, 0%, 96%);
+}
+
+.tree-outline li {
+    padding-top: 5px;
+}

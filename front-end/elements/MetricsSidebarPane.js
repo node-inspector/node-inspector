@@ -37,65 +37,27 @@ WebInspector.MetricsSidebarPane = function()
 
 WebInspector.MetricsSidebarPane.prototype = {
     /**
-     * @param {?WebInspector.DOMNode} node
-     */
-    setNode: function(node)
-    {
-        WebInspector.ElementsSidebarPane.prototype.setNode.call(this, node);
-        this._updateTarget(node.target());
-    },
-
-    /**
-     * @param {!WebInspector.Target} target
-     */
-    _updateTarget: function(target)
-    {
-        if (this._target === target)
-            return;
-
-        if (this._target) {
-            this._target.cssModel.removeEventListener(WebInspector.CSSStyleModel.Events.StyleSheetAdded, this.update, this);
-            this._target.cssModel.removeEventListener(WebInspector.CSSStyleModel.Events.StyleSheetRemoved, this.update, this);
-            this._target.cssModel.removeEventListener(WebInspector.CSSStyleModel.Events.StyleSheetChanged, this.update, this);
-            this._target.cssModel.removeEventListener(WebInspector.CSSStyleModel.Events.MediaQueryResultChanged, this.update, this);
-            this._target.domModel.removeEventListener(WebInspector.DOMModel.Events.AttrModified, this._attributesUpdated, this);
-            this._target.domModel.removeEventListener(WebInspector.DOMModel.Events.AttrRemoved, this._attributesUpdated, this);
-            this._target.resourceTreeModel.removeEventListener(WebInspector.ResourceTreeModel.EventTypes.FrameResized, this.update, this);
-        }
-        this._target = target;
-        this._target.cssModel.addEventListener(WebInspector.CSSStyleModel.Events.StyleSheetAdded, this.update, this);
-        this._target.cssModel.addEventListener(WebInspector.CSSStyleModel.Events.StyleSheetRemoved, this.update, this);
-        this._target.cssModel.addEventListener(WebInspector.CSSStyleModel.Events.StyleSheetChanged, this.update, this);
-        this._target.cssModel.addEventListener(WebInspector.CSSStyleModel.Events.MediaQueryResultChanged, this.update, this);
-        this._target.domModel.addEventListener(WebInspector.DOMModel.Events.AttrModified, this._attributesUpdated, this);
-        this._target.domModel.addEventListener(WebInspector.DOMModel.Events.AttrRemoved, this._attributesUpdated, this);
-        this._target.resourceTreeModel.addEventListener(WebInspector.ResourceTreeModel.EventTypes.FrameResized, this.update, this);
-    },
-
-    /**
-     * @param {!WebInspector.Throttler.FinishCallback} finishedCallback
+     * @override
      * @protected
+     * @return {!Promise.<?>}
      */
-    doUpdate: function(finishedCallback)
+    doUpdate: function()
     {
         // "style" attribute might have changed. Update metrics unless they are being edited
         // (if a CSS property is added, a StyleSheetChanged event is dispatched).
-        if (this._isEditingMetrics) {
-            finishedCallback();
-            return;
-        }
+        if (this._isEditingMetrics)
+            return Promise.resolve();
 
         // FIXME: avoid updates of a collapsed pane.
         var node = this.node();
-
-        if (!node || node.nodeType() !== Node.ELEMENT_NODE) {
-            this.bodyElement.removeChildren();
-            finishedCallback();
-            return;
+        var cssModel = this.cssModel();
+        if (!node || node.nodeType() !== Node.ELEMENT_NODE || !cssModel) {
+            this.element.removeChildren();
+            return Promise.resolve();
         }
 
         /**
-         * @param {?WebInspector.CSSStyleDeclaration} style
+         * @param {?Map.<string, string>} style
          * @this {WebInspector.MetricsSidebarPane}
          */
         function callback(style)
@@ -104,34 +66,61 @@ WebInspector.MetricsSidebarPane.prototype = {
                 return;
             this._updateMetrics(style);
         }
-        this._target.cssModel.getComputedStyleAsync(node.id, callback.bind(this));
-
         /**
-         * @param {?WebInspector.CSSStyleDeclaration} style
+         * @param {?WebInspector.CSSStyleModel.InlineStyleResult} inlineStyleResult
          * @this {WebInspector.MetricsSidebarPane}
          */
-        function inlineStyleCallback(style)
+        function inlineStyleCallback(inlineStyleResult)
         {
-            if (style && this.node() === node)
-                this.inlineStyle = style;
-            finishedCallback();
+            if (inlineStyleResult && this.node() === node)
+                this.inlineStyle = inlineStyleResult.inlineStyle;
         }
-        this._target.cssModel.getInlineStylesAsync(node.id, inlineStyleCallback.bind(this));
+
+        var promises = [
+            cssModel.computedStylePromise(node.id).then(callback.bind(this)),
+            cssModel.inlineStylesPromise(node.id).then(inlineStyleCallback.bind(this))
+        ];
+        return Promise.all(promises);
     },
 
-    _attributesUpdated: function(event)
+    /**
+     * @override
+     */
+    onDOMModelChanged: function()
     {
-        if (this.node() !== event.data.node)
-            return;
-
         this.update();
     },
 
-    _getPropertyValueAsPx: function(style, propertyName)
+    /**
+     * @override
+     */
+    onCSSModelChanged: function()
     {
-        return Number(style.getPropertyValue(propertyName).replace(/px$/, "") || 0);
+        this.update();
     },
 
+    /**
+     * @override
+     */
+    onFrameResizedThrottled: function()
+    {
+        this.update();
+    },
+
+    /**
+     * @param {!Map.<string, string>} style
+     * @param {string} propertyName
+     * @return {number}
+     */
+    _getPropertyValueAsPx: function(style, propertyName)
+    {
+        return Number(style.get(propertyName).replace(/px$/, "") || 0);
+    },
+
+    /**
+     * @param {!Map.<string, string>} computedStyle
+     * @param {string} componentName
+     */
     _getBox: function(computedStyle, componentName)
     {
         var suffix = componentName === "border" ? "-width" : "";
@@ -157,7 +146,7 @@ WebInspector.MetricsSidebarPane.prototype = {
             this.node().highlight(mode);
         } else {
             delete this._highlightMode;
-            this._target.domModel.hideDOMNodeHighlight();
+            WebInspector.DOMModel.hideDOMNodeHighlight();
         }
 
         for (var i = 0; this._boxElements && i < this._boxElements.length; ++i) {
@@ -170,7 +159,7 @@ WebInspector.MetricsSidebarPane.prototype = {
     },
 
     /**
-     * @param {!WebInspector.CSSStyleDeclaration} style
+     * @param {!Map.<string, string>} style
      */
     _updateMetrics: function(style)
     {
@@ -180,7 +169,7 @@ WebInspector.MetricsSidebarPane.prototype = {
         var self = this;
 
         /**
-         * @param {!WebInspector.CSSStyleDeclaration} style
+         * @param {!Map.<string, string>} style
          * @param {string} name
          * @param {string} side
          * @param {string} suffix
@@ -189,7 +178,7 @@ WebInspector.MetricsSidebarPane.prototype = {
         function createBoxPartElement(style, name, side, suffix)
         {
             var propertyName = (name !== "position" ? name + "-" : "") + side + suffix;
-            var value = style.getPropertyValue(propertyName);
+            var value = style.get(propertyName);
             if (value === "" || (name !== "position" && value === "0px"))
                 value = "\u2012";
             else if (name === "position" && value === "auto")
@@ -204,30 +193,38 @@ WebInspector.MetricsSidebarPane.prototype = {
             return element;
         }
 
+        /**
+         * @param {!Map.<string, string>} style
+         * @return {string}
+         */
         function getContentAreaWidthPx(style)
         {
-            var width = style.getPropertyValue("width").replace(/px$/, "");
-            if (!isNaN(width) && style.getPropertyValue("box-sizing") === "border-box") {
+            var width = style.get("width").replace(/px$/, "");
+            if (!isNaN(width) && style.get("box-sizing") === "border-box") {
                 var borderBox = self._getBox(style, "border");
                 var paddingBox = self._getBox(style, "padding");
 
                 width = width - borderBox.left - borderBox.right - paddingBox.left - paddingBox.right;
             }
 
-            return Number.toFixedIfFloating(width);
+            return Number.toFixedIfFloating(width.toString());
         }
 
+        /**
+         * @param {!Map.<string, string>} style
+         * @return {string}
+         */
         function getContentAreaHeightPx(style)
         {
-            var height = style.getPropertyValue("height").replace(/px$/, "");
-            if (!isNaN(height) && style.getPropertyValue("box-sizing") === "border-box") {
+            var height = style.get("height").replace(/px$/, "");
+            if (!isNaN(height) && style.get("box-sizing") === "border-box") {
                 var borderBox = self._getBox(style, "border");
                 var paddingBox = self._getBox(style, "padding");
 
                 height = height - borderBox.top - borderBox.bottom - paddingBox.top - paddingBox.bottom;
             }
 
-            return Number.toFixedIfFloating(height);
+            return Number.toFixedIfFloating(height.toString());
         }
 
         // Display types for which margin is ignored.
@@ -270,11 +267,11 @@ WebInspector.MetricsSidebarPane.prototype = {
         for (var i = 0; i < boxes.length; ++i) {
             var name = boxes[i];
 
-            if (name === "margin" && noMarginDisplayType[style.getPropertyValue("display")])
+            if (name === "margin" && noMarginDisplayType[style.get("display")])
                 continue;
-            if (name === "padding" && noPaddingDisplayType[style.getPropertyValue("display")])
+            if (name === "padding" && noPaddingDisplayType[style.get("display")])
                 continue;
-            if (name === "position" && noPositionType[style.getPropertyValue("position")])
+            if (name === "position" && noPositionType[style.get("position")])
                 continue;
 
             var boxElement = createElement("div");
@@ -322,10 +319,16 @@ WebInspector.MetricsSidebarPane.prototype = {
 
         metricsElement.appendChild(previousBox);
         metricsElement.addEventListener("mouseover", this._highlightDOMNode.bind(this, false, "all"), false);
-        this.bodyElement.removeChildren();
-        this.bodyElement.appendChild(metricsElement);
+        this.element.removeChildren();
+        this.element.appendChild(metricsElement);
     },
 
+    /**
+     * @param {!Element} targetElement
+     * @param {string} box
+     * @param {string} styleProperty
+     * @param {!Map.<string, string>} computedStyle
+     */
     startEditing: function(targetElement, box, styleProperty, computedStyle)
     {
         if (WebInspector.isBeingEdited(targetElement))
@@ -341,7 +344,7 @@ WebInspector.MetricsSidebarPane.prototype = {
         var config = new WebInspector.InplaceEditor.Config(this.editingCommitted.bind(this), this.editingCancelled.bind(this), context);
         WebInspector.InplaceEditor.startEditing(targetElement, config);
 
-        targetElement.window().getSelection().setBaseAndExtent(targetElement, 0, targetElement, 1);
+        targetElement.getComponentSelection().setBaseAndExtent(targetElement, 0, targetElement, 1);
     },
 
     _handleKeyDown: function(context, styleProperty, event)
@@ -420,7 +423,7 @@ WebInspector.MetricsSidebarPane.prototype = {
         var styleProperty = context.styleProperty;
         var computedStyle = context.computedStyle;
 
-        if (computedStyle.getPropertyValue("box-sizing") === "border-box" && (styleProperty === "width" || styleProperty === "height")) {
+        if (computedStyle.get("box-sizing") === "border-box" && (styleProperty === "width" || styleProperty === "height")) {
             if (!userInput.match(/px$/)) {
                 WebInspector.console.error("For elements with box-sizing: border-box, only absolute content area dimensions can be applied");
                 return;
@@ -444,7 +447,7 @@ WebInspector.MetricsSidebarPane.prototype = {
         var allProperties = this.inlineStyle.allProperties;
         for (var i = 0; i < allProperties.length; ++i) {
             var property = allProperties[i];
-            if (property.name !== context.styleProperty || property.inactive)
+            if (property.name !== context.styleProperty || !property.activeInStyle())
                 continue;
 
             this.previousPropertyDataCandidate = property;
@@ -455,14 +458,13 @@ WebInspector.MetricsSidebarPane.prototype = {
         this.inlineStyle.appendProperty(context.styleProperty, userInput, callback.bind(this));
 
         /**
-         * @param {?WebInspector.CSSStyleDeclaration} style
+         * @param {boolean} success
          * @this {WebInspector.MetricsSidebarPane}
          */
-        function callback(style)
+        function callback(success)
         {
-            if (!style)
+            if (!success)
                 return;
-            this.inlineStyle = style;
             if (!("originalPropertyData" in this))
                 this.originalPropertyData = this.previousPropertyDataCandidate;
 

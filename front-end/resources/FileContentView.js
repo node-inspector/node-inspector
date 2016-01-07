@@ -37,7 +37,7 @@ WebInspector.FileContentView = function(file)
 {
     WebInspector.VBox.call(this);
 
-    this._innerView = /** @type {?WebInspector.View} */ (null);
+    this._innerView = /** @type {?WebInspector.Widget} */ (null);
     this._file = file;
     this._content = null;
 }
@@ -47,9 +47,9 @@ WebInspector.FileContentView.prototype = {
     {
         if (!this._innerView) {
             if (this._file.isTextFile)
-                this._innerView = new WebInspector.EmptyView("");
+                this._innerView = new WebInspector.EmptyWidget("");
             else
-                this._innerView = new WebInspector.EmptyView(WebInspector.UIString("Binary File"));
+                this._innerView = new WebInspector.EmptyWidget(WebInspector.UIString("Binary File"));
             this.refresh();
         }
 
@@ -106,6 +106,7 @@ WebInspector.FileContentView.FileContentProvider = function(file, metadata)
 
 WebInspector.FileContentView.FileContentProvider.prototype = {
     /**
+     * @override
      * @return {string}
      */
     contentURL: function()
@@ -114,6 +115,7 @@ WebInspector.FileContentView.FileContentProvider.prototype = {
     },
 
     /**
+     * @override
      * @return {!WebInspector.ResourceType}
      */
     contentType: function()
@@ -122,6 +124,7 @@ WebInspector.FileContentView.FileContentProvider.prototype = {
     },
 
     /**
+     * @override
      * @param {function(?string)} callback
      */
     requestContent: function(callback)
@@ -149,6 +152,7 @@ WebInspector.FileContentView.FileContentProvider.prototype = {
     },
 
     /**
+     * @override
      * @param {string} query
      * @param {boolean} caseSensitive
      * @param {boolean} isRegex

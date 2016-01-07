@@ -4,6 +4,7 @@
     box-shadow: rgb(140, 140, 140) 0 3px 14px;
     display: flex;
     -webkit-flex-direction: column;
+    background: white;
 }
 
 .dialog-contents {
@@ -14,6 +15,13 @@
     font-family: 'Lucida Grande', sans-serif;
     padding: 10px;
     font-size: inherit;
+}
+
+.devices-dialog {
+    width: 600px;
+    height: 400px;
+    display: flex;
+    padding-top: 8px;
 }
 
 .dialog input[type=text] {
@@ -30,7 +38,7 @@
     box-shadow: 0 1px 0 hsla(0, 0%, 0%, 0.08), inset 0 1px 2px hsla(0, 100%, 100%, 0.75);
     color: hsl(0, 0%, 27%);
     font-size: 12px;
-    margin: 0 1px 0 6px;
+    margin: 0 6px 0 6px;
     text-shadow: 0 1px 0 hsl(0, 0%, 94%);
     min-height: 2em;
     padding-left: 10px;
@@ -47,3 +55,12 @@
     outline: none;
 }
 
+#glass-pane.tinted {
+    background-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+.dialog-close-button {
+    position: absolute;
+    right: 9px;
+    top: 9px;
+}

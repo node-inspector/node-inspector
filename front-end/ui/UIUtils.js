@@ -29,6 +29,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+WebInspector.highlightedSearchResultClassName = "highlighted-search-result";
+
 /**
  * @param {!Element} element
  * @param {?function(!MouseEvent): boolean} elementDragStart
@@ -129,6 +131,11 @@ WebInspector._unregisterDragEvents = function()
  */
 WebInspector._elementDragMove = function(event)
 {
+    if (event.buttons !== 1) {
+        WebInspector._elementDragEnd(event);
+        return;
+    }
+
     if (WebInspector._elementDraggingEventListener(/** @type {!MouseEvent} */ (event)))
         WebInspector._cancelDragEvents(event);
 }
@@ -173,7 +180,7 @@ WebInspector._elementDragEnd = function(event)
 WebInspector.GlassPane = function(document)
 {
     this.element = createElement("div");
-    this.element.style.cssText = "position:absolute;top:0;bottom:0;left:0;right:0;background-color:transparent;z-index:1000;";
+    this.element.style.cssText = "position:absolute;top:0;bottom:0;left:0;right:0;background-color:transparent;z-index:1000;overflow:hidden;";
     this.element.id = "glass-pane";
     document.body.appendChild(this.element);
     WebInspector._glassPane = this;
@@ -190,7 +197,7 @@ WebInspector.GlassPane.prototype = {
 }
 
 /**
- * @type {!Array.<!WebInspector.View|!WebInspector.Dialog>}
+ * @type {!Array.<!WebInspector.Widget|!WebInspector.Dialog>}
  */
 WebInspector.GlassPane.DefaultFocusedViewStack = [];
 
@@ -354,6 +361,42 @@ WebInspector._modifiedFloatNumber = function(number, event)
 }
 
 /**
+ * @param {string} wordString
+ * @param {!Event} event
+ * @param {function(string, number, string):string=} customNumberHandler
+ * @return {?string}
+ */
+WebInspector.createReplacementString = function(wordString, event, customNumberHandler)
+{
+    var replacementString;
+    var prefix, suffix, number;
+
+    var matches;
+    matches = /(.*#)([\da-fA-F]+)(.*)/.exec(wordString);
+    if (matches && matches.length) {
+        prefix = matches[1];
+        suffix = matches[3];
+        number = WebInspector._modifiedHexValue(matches[2], event);
+
+        replacementString = customNumberHandler ? customNumberHandler(prefix, number, suffix) : prefix + number + suffix;
+    } else {
+        matches = /(.*?)(-?(?:\d+(?:\.\d+)?|\.\d+))(.*)/.exec(wordString);
+        if (matches && matches.length) {
+            prefix = matches[1];
+            suffix = matches[3];
+            number = WebInspector._modifiedFloatNumber(parseFloat(matches[2]), event);
+
+            // Need to check for null explicitly.
+            if (number === null)
+                return null;
+
+            replacementString = customNumberHandler ? customNumberHandler(prefix, number, suffix) : prefix + number + suffix;
+        }
+    }
+    return replacementString || null;
+}
+
+/**
  * @param {!Event} event
  * @param {!Element} element
  * @param {function(string,string)=} finishHandler
@@ -377,7 +420,7 @@ WebInspector.handleElementValueModifications = function(event, element, finishHa
     if (!arrowKeyOrMouseWheelEvent && !pageKeyPressed)
         return false;
 
-    var selection = element.window().getSelection();
+    var selection = element.getComponentSelection();
     if (!selection.rangeCount)
         return false;
 
@@ -392,31 +435,7 @@ WebInspector.handleElementValueModifications = function(event, element, finishHa
     if (suggestionHandler && suggestionHandler(wordString))
         return false;
 
-    var replacementString;
-    var prefix, suffix, number;
-
-    var matches;
-    matches = /(.*#)([\da-fA-F]+)(.*)/.exec(wordString);
-    if (matches && matches.length) {
-        prefix = matches[1];
-        suffix = matches[3];
-        number = WebInspector._modifiedHexValue(matches[2], event);
-
-        replacementString = customNumberHandler ? customNumberHandler(prefix, number, suffix) : prefix + number + suffix;
-    } else {
-        matches = /(.*?)(-?(?:\d+(?:\.\d+)?|\.\d+))(.*)/.exec(wordString);
-        if (matches && matches.length) {
-            prefix = matches[1];
-            suffix = matches[3];
-            number = WebInspector._modifiedFloatNumber(parseFloat(matches[2]), event);
-
-            // Need to check for null explicitly.
-            if (number === null)
-                return false;
-
-            replacementString = customNumberHandler ? customNumberHandler(prefix, number, suffix) : prefix + number + suffix;
-        }
-    }
+    var replacementString = WebInspector.createReplacementString(wordString, event, customNumberHandler);
 
     if (replacementString) {
         var replacementTextNode = createTextNode(replacementString);
@@ -455,7 +474,7 @@ Number.preciseMillisToString = function(ms, precision)
 }
 
 /** @type {!WebInspector.UIStringFormat} */
-WebInspector._subMillisFormat = new WebInspector.UIStringFormat("%.3f\u2009ms");
+WebInspector._subMillisFormat = new WebInspector.UIStringFormat("%.2f\u2009ms");
 
 /** @type {!WebInspector.UIStringFormat} */
 WebInspector._millisFormat = new WebInspector.UIStringFormat("%.0f\u2009ms");
@@ -554,24 +573,30 @@ Number.withThousandsSeparator = function(num)
 }
 
 /**
- * @return {boolean}
- */
-WebInspector.useLowerCaseMenuTitles = function()
-{
-    return WebInspector.platform() === "windows";
-}
-
-/**
  * @param {string} format
  * @param {?ArrayLike} substitutions
- * @param {!Object.<string, function(string, ...):*>} formatters
- * @param {string} initialValue
- * @param {function(string, string): ?} append
- * @return {!{formattedResult: string, unusedSubstitutions: ?ArrayLike}};
+ * @param {?string} initialValue
+ * @return {!Element}
  */
-WebInspector.formatLocalized = function(format, substitutions, formatters, initialValue, append)
+WebInspector.formatLocalized = function(format, substitutions, initialValue)
 {
-    return String.format(WebInspector.UIString(format), substitutions, formatters, initialValue, append);
+    var element = createElement("span");
+    var formatters = {
+        s: function(substitution)
+        {
+            return substitution;
+        }
+    };
+    function append(a, b)
+    {
+        if (typeof b === "string")
+            b = createTextNode(b);
+        else if (b.shadowRoot)
+            b = createTextNode(b.shadowRoot.lastChild.textContent);
+        element.appendChild(b);
+    }
+    String.format(WebInspector.UIString(format), substitutions, formatters, initialValue, append);
+    return element;
 }
 
 /**
@@ -579,7 +604,7 @@ WebInspector.formatLocalized = function(format, substitutions, formatters, initi
  */
 WebInspector.openLinkExternallyLabel = function()
 {
-    return WebInspector.UIString(WebInspector.useLowerCaseMenuTitles() ? "Open link in new tab" : "Open Link in New Tab");
+    return WebInspector.UIString.capitalize("Open ^link in ^new ^tab");
 }
 
 /**
@@ -587,7 +612,7 @@ WebInspector.openLinkExternallyLabel = function()
  */
 WebInspector.copyLinkAddressLabel = function()
 {
-    return WebInspector.UIString(WebInspector.useLowerCaseMenuTitles() ? "Copy link address" : "Copy Link Address");
+    return WebInspector.UIString.capitalize("Copy ^link ^address");
 }
 
 /**
@@ -619,23 +644,27 @@ WebInspector.manageBlackboxingButtonLabel = function()
 
 /**
  * @param {!Element} element
- * @return {boolean}
  */
 WebInspector.installComponentRootStyles = function(element)
 {
-    var wasInstalled = element.classList.contains("component-root");
-    if (wasInstalled)
-        return false;
-    element.classList.add("component-root", "platform-" + WebInspector.platform());
-    return true;
+    element.appendChild(WebInspector.Widget.createStyleElement("ui/inspectorCommon.css"));
+    element.appendChild(WebInspector.Widget.createStyleElement("ui/inspectorSyntaxHighlight.css"));
+    element.classList.add("platform-" + WebInspector.platform());
+    if (Runtime.experiments.isEnabled("materialDesign"))
+        element.classList.add("material");
 }
 
 /**
  * @param {!Element} element
+ * @return {!DocumentFragment}
  */
-WebInspector.uninstallComponentRootStyles = function(element)
+WebInspector.createShadowRootWithCoreStyles = function(element)
 {
-    var wasInstalled = element.classList.remove("component-root", "platform-" + WebInspector.platform());
+    var shadowRoot = element.createShadowRoot();
+    shadowRoot.appendChild(WebInspector.Widget.createStyleElement("ui/inspectorCommon.css"));
+    shadowRoot.appendChild(WebInspector.Widget.createStyleElement("ui/inspectorSyntaxHighlight.css"));
+    shadowRoot.addEventListener("focus", WebInspector._focusChanged.bind(WebInspector), true);
+    return shadowRoot;
 }
 
 /**
@@ -675,14 +704,11 @@ WebInspector.currentFocusElement = function()
 }
 
 /**
- * @param {!Document} document
  * @param {!Event} event
  */
-WebInspector._focusChanged = function(document, event)
+WebInspector._focusChanged = function(event)
 {
-    var node = document.activeElement;
-    while (node && node.shadowRoot)
-        node = node.shadowRoot.activeElement;
+    var node = event.deepActiveElement();
     WebInspector.setCurrentFocusElement(node);
 }
 
@@ -728,7 +754,7 @@ WebInspector.setCurrentFocusElement = function(x)
         // Make a caret selection inside the new element if there isn't a range selection and there isn't already a caret selection inside.
         // This is needed (at least) to remove caret from console when focus is moved to some element in the panel.
         // The code below should not be applied to text fields and text areas, hence _isTextEditingElement check.
-        var selection = x.window().getSelection();
+        var selection = x.getComponentSelection();
         if (!WebInspector._isTextEditingElement(WebInspector._currentFocusElement) && selection.isCollapsed && !WebInspector._currentFocusElement.isInsertionCaretInside()) {
             var selectionRange = WebInspector._currentFocusElement.ownerDocument.createRange();
             selectionRange.setStart(WebInspector._currentFocusElement, 0);
@@ -745,43 +771,6 @@ WebInspector.restoreFocusFromElement = function(element)
 {
     if (element && element.isSelfOrAncestor(WebInspector.currentFocusElement()))
         WebInspector.setCurrentFocusElement(WebInspector.previousFocusElement());
-}
-
-/**
- * @param {!Document} document
- * @param {string} backgroundColor
- * @param {string} color
- */
-WebInspector.setToolbarColors = function(document, backgroundColor, color)
-{
-    if (!WebInspector._themeStyleElement) {
-        WebInspector._themeStyleElement = createElement("style");
-        document.head.appendChild(WebInspector._themeStyleElement);
-    }
-    var parsedColor = WebInspector.Color.parse(color);
-    var shadowColor = parsedColor ? parsedColor.invert().setAlpha(0.33).asString(WebInspector.Color.Format.RGBA) : "white";
-    var prefix = WebInspector.isMac() ? "body:not(.undocked)" : "";
-    WebInspector._themeStyleElement.textContent =
-        String.sprintf(
-            "%s .toolbar-colors {" +
-            "    background-image: none !important;" +
-            "    background-color: %s !important;" +
-            "    color: %s !important;" +
-            "}", prefix, backgroundColor, color) +
-        String.sprintf(
-             "%s .toolbar-colors button.status-bar-item .glyph, %s .toolbar-colors button.status-bar-item .long-click-glyph {" +
-             "   background-color: %s;" +
-             "}", prefix, prefix, color) +
-        String.sprintf(
-             "%s .toolbar-colors button.status-bar-item .glyph.shadow, %s .toolbar-colors button.status-bar-item .long-click-glyph.shadow {" +
-             "   background-color: %s;" +
-             "}", prefix, prefix, shadowColor);
-}
-
-WebInspector.resetToolbarColors = function()
-{
-    if (WebInspector._themeStyleElement)
-        WebInspector._themeStyleElement.textContent = "";
 }
 
 /**
@@ -805,19 +794,7 @@ WebInspector.highlightSearchResult = function(element, offset, length, domChange
  */
 WebInspector.highlightSearchResults = function(element, resultRanges, changes)
 {
-    return WebInspector.highlightRangesWithStyleClass(element, resultRanges, "highlighted-search-result", changes);
-}
-
-/**
- * @param {!Element} element
- */
-WebInspector.removeSearchResultsHighlight = function(element)
-{
-    var highlightBits = element.querySelectorAll(".highlighted-search-result");
-    for (var i = 0; i < highlightBits.length; ++i) {
-        var span = highlightBits[i];
-        span.parentElement.replaceChild(createTextNode(span.textContent), span);
-    }
+    return WebInspector.highlightRangesWithStyleClass(element, resultRanges, WebInspector.highlightedSearchResultClassName, changes);
 }
 
 /**
@@ -850,20 +827,19 @@ WebInspector.highlightRangesWithStyleClass = function(element, resultRanges, sty
 {
     changes = changes || [];
     var highlightNodes = [];
-    var lineText = element.textContent;
+    var lineText = element.deepTextContent();
     var ownerDocument = element.ownerDocument;
-    var textNodeSnapshot = ownerDocument.evaluate(".//text()", element, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+    var textNodes = element.childTextNodes();
 
-    var snapshotLength = textNodeSnapshot.snapshotLength;
-    if (snapshotLength === 0)
+    if (textNodes.length === 0)
         return highlightNodes;
 
     var nodeRanges = [];
     var rangeEndOffset = 0;
-    for (var i = 0; i < snapshotLength; ++i) {
+    for (var i = 0; i < textNodes.length; ++i) {
         var range = {};
         range.offset = rangeEndOffset;
-        range.length = textNodeSnapshot.snapshotItem(i).textContent.length;
+        range.length = textNodes[i].textContent.length;
         rangeEndOffset = range.offset + range.length;
         nodeRanges.push(range);
     }
@@ -873,19 +849,19 @@ WebInspector.highlightRangesWithStyleClass = function(element, resultRanges, sty
         var startOffset = resultRanges[i].offset;
         var endOffset = startOffset + resultRanges[i].length;
 
-        while (startIndex < snapshotLength && nodeRanges[startIndex].offset + nodeRanges[startIndex].length <= startOffset)
+        while (startIndex < textNodes.length && nodeRanges[startIndex].offset + nodeRanges[startIndex].length <= startOffset)
             startIndex++;
         var endIndex = startIndex;
-        while (endIndex < snapshotLength && nodeRanges[endIndex].offset + nodeRanges[endIndex].length < endOffset)
+        while (endIndex < textNodes.length && nodeRanges[endIndex].offset + nodeRanges[endIndex].length < endOffset)
             endIndex++;
-        if (endIndex === snapshotLength)
+        if (endIndex === textNodes.length)
             break;
 
         var highlightNode = ownerDocument.createElement("span");
         highlightNode.className = styleClass;
         highlightNode.textContent = lineText.substring(startOffset, endOffset);
 
-        var lastTextNode = textNodeSnapshot.snapshotItem(endIndex);
+        var lastTextNode = textNodes[endIndex];
         var lastText = lastTextNode.textContent;
         lastTextNode.textContent = lastText.substring(endOffset - nodeRanges[endIndex].offset);
         changes.push({ node: lastTextNode, type: "changed", oldText: lastText, newText: lastTextNode.textContent });
@@ -899,7 +875,7 @@ WebInspector.highlightRangesWithStyleClass = function(element, resultRanges, sty
             lastTextNode.parentElement.insertBefore(prefixNode, highlightNode);
             changes.push({ node: prefixNode, type: "added", nextSibling: highlightNode, parent: lastTextNode.parentElement });
         } else {
-            var firstTextNode = textNodeSnapshot.snapshotItem(startIndex);
+            var firstTextNode = textNodes[startIndex];
             var firstText = firstTextNode.textContent;
             var anchorElement = firstTextNode.nextSibling;
 
@@ -911,7 +887,7 @@ WebInspector.highlightRangesWithStyleClass = function(element, resultRanges, sty
             changes.push({ node: firstTextNode, type: "changed", oldText: firstText, newText: firstTextNode.textContent });
 
             for (var j = startIndex + 1; j < endIndex; j++) {
-                var textNode = textNodeSnapshot.snapshotItem(j);
+                var textNode = textNodes[j];
                 var text = textNode.textContent;
                 textNode.textContent = "";
                 changes.push({ node: textNode, type: "changed", oldText: text, newText: textNode.textContent });
@@ -964,13 +940,10 @@ WebInspector.measurePreferredSize = function(element, containerElement)
 {
     containerElement = containerElement || element.ownerDocument.body;
     containerElement.appendChild(element);
-    var fakingComponentRoot = WebInspector.installComponentRootStyles(element);
     element.positionAt(0, 0);
     var result = new Size(element.offsetWidth, element.offsetHeight);
     element.positionAt(undefined, undefined);
     element.remove();
-    if (fakingComponentRoot)
-        WebInspector.uninstallComponentRootStyles(element);
     return result;
 }
 
@@ -1115,8 +1088,7 @@ WebInspector.LongClickController = function(element)
  * @enum {string}
  */
 WebInspector.LongClickController.Events = {
-    LongClick: "LongClick",
-    LongPress: "LongPress"
+    LongClick: "LongClick"
 };
 
 WebInspector.LongClickController.prototype = {
@@ -1141,8 +1113,6 @@ WebInspector.LongClickController.prototype = {
         this._element.addEventListener("mouseup", boundMouseUp, false);
         this._element.addEventListener("click", boundReset, true);
 
-        var longClicks = 0;
-
         this._longClickData = { mouseUp: boundMouseUp, mouseDown: boundMouseDown, reset: boundReset };
 
         /**
@@ -1153,8 +1123,7 @@ WebInspector.LongClickController.prototype = {
         {
             if (e.which !== 1)
                 return;
-            longClicks = 0;
-            this._longClickInterval = setInterval(longClicked.bind(this, e), 200);
+            this._longClickInterval = setTimeout(longClicked.bind(this, e), 200);
         }
 
         /**
@@ -1174,8 +1143,7 @@ WebInspector.LongClickController.prototype = {
          */
         function longClicked(e)
         {
-            ++longClicks;
-            this.dispatchEventToListeners(longClicks === 1 ? WebInspector.LongClickController.Events.LongClick : WebInspector.LongClickController.Events.LongPress, e);
+            this.dispatchEventToListeners(WebInspector.LongClickController.Events.LongClick, e);
         }
     },
 
@@ -1194,59 +1162,13 @@ WebInspector.LongClickController.prototype = {
 }
 
 /**
- * @param {string} url
- * @param {string=} linkText
- * @param {string=} classes
- * @return {!Element}
- */
-WebInspector.createExternalAnchor = function(url, linkText, classes)
-{
-    var anchor = createElementWithClass("a", "link");
-    var href = sanitizeHref(url);
-
-    if (href)
-        anchor.href = href;
-    anchor.title = url;
-
-    if (!linkText)
-        linkText = url;
-
-    anchor.className = classes;
-    anchor.textContent = linkText;
-    anchor.setAttribute("target", "_blank");
-
-    /**
-     * @param {!Event} event
-     */
-    function clickHandler(event)
-    {
-        event.consume(true);
-        InspectorFrontendHost.openInNewTab(anchor.href);
-    }
-
-    anchor.addEventListener("click", clickHandler, false);
-
-    return anchor;
-}
-
-/**
- * @param {string} article
- * @param {string} title
- * @return {!Element}
- */
-WebInspector.createDocumentationAnchor = function(article, title)
-{
-    return WebInspector.createExternalAnchor("https://developer.chrome.com/devtools/docs/" + article, title);
-}
-
-/**
  * @param {!Window} window
  */
 WebInspector.initializeUIUtils = function(window)
 {
     window.addEventListener("focus", WebInspector._windowFocused.bind(WebInspector, window.document), false);
     window.addEventListener("blur", WebInspector._windowBlurred.bind(WebInspector, window.document), false);
-    window.document.addEventListener("focus", WebInspector._focusChanged.bind(WebInspector, window.document), true);
+    window.document.addEventListener("focus", WebInspector._focusChanged.bind(WebInspector), true);
     window.document.addEventListener("blur", WebInspector._documentBlurred.bind(WebInspector, window.document), true);
 }
 
@@ -1257,4 +1179,281 @@ WebInspector.initializeUIUtils = function(window)
 WebInspector.beautifyFunctionName = function(name)
 {
     return name || WebInspector.UIString("(anonymous function)");
+}
+
+/**
+ * @param {string} localName
+ * @param {string} typeExtension
+ * @param {!Object} prototype
+ * @return {function()}
+ * @suppressGlobalPropertiesCheck
+ * @template T
+ */
+function registerCustomElement(localName, typeExtension, prototype)
+{
+    return document.registerElement(typeExtension, {
+        prototype: Object.create(prototype),
+        extends: localName
+    });
+}
+
+/**
+ * @param {string} text
+ * @param {function(!Event)=} clickHandler
+ * @param {string=} className
+ * @param {string=} title
+ * @return {!Element}
+ */
+function createTextButton(text, clickHandler, className, title)
+{
+    var element = createElementWithClass("button", className || "", "text-button");
+    element.textContent = text;
+    if (clickHandler)
+        element.addEventListener("click", clickHandler, false);
+    if (title)
+        element.title = title;
+    return element;
+}
+
+/**
+ * @param {string} name
+ * @param {string} title
+ * @param {boolean=} checked
+ * @return {!Element}
+ */
+function createRadioLabel(name, title, checked)
+{
+    var element = createElement("label", "dt-radio");
+    element.radioElement.name = name;
+    element.radioElement.checked = !!checked;
+    element.createTextChild(title);
+    return element;
+}
+
+/**
+ * @param {string=} title
+ * @param {boolean=} checked
+ * @return {!Element}
+ */
+function createCheckboxLabel(title, checked)
+{
+    var element = createElement("label", "dt-checkbox");
+    element.checkboxElement.checked = !!checked;
+    if (title !== undefined) {
+        element.textElement = element.createChild("div", "dt-checkbox-text");
+        element.textElement.textContent = title;
+    }
+    return element;
+}
+
+;(function() {
+    registerCustomElement("button", "text-button", {
+        /**
+         * @this {Element}
+         */
+        createdCallback: function()
+        {
+            this.type = "button";
+            var root = WebInspector.createShadowRootWithCoreStyles(this);
+            root.appendChild(WebInspector.Widget.createStyleElement("ui/textButton.css"));
+            root.createChild("content");
+        },
+
+        __proto__: HTMLButtonElement.prototype
+    });
+
+    registerCustomElement("label", "dt-radio", {
+        /**
+         * @this {Element}
+         */
+        createdCallback: function()
+        {
+            this.radioElement = this.createChild("input", "dt-radio-button");
+            this.radioElement.type = "radio";
+            var root = WebInspector.createShadowRootWithCoreStyles(this);
+            root.appendChild(WebInspector.Widget.createStyleElement("ui/radioButton.css"));
+            root.createChild("content").select = ".dt-radio-button";
+            root.createChild("content");
+            this.addEventListener("click", radioClickHandler, false);
+        },
+
+        __proto__: HTMLLabelElement.prototype
+    });
+
+    /**
+     * @param {!Event} event
+     * @suppressReceiverCheck
+     * @this {Element}
+     */
+    function radioClickHandler(event)
+    {
+        if (this.radioElement.checked || this.radioElement.disabled)
+            return;
+        this.radioElement.checked = true;
+        this.radioElement.dispatchEvent(new Event("change"));
+    }
+
+    registerCustomElement("label", "dt-checkbox", {
+        /**
+         * @this {Element}
+         */
+        createdCallback: function()
+        {
+            this._root = WebInspector.createShadowRootWithCoreStyles(this);
+            this._root.appendChild(WebInspector.Widget.createStyleElement("ui/checkboxTextLabel.css"));
+            var checkboxElement = createElementWithClass("input", "dt-checkbox-button");
+            checkboxElement.type = "checkbox";
+            this._root.appendChild(checkboxElement);
+            this.checkboxElement = checkboxElement;
+
+            this.addEventListener("click", toggleCheckbox.bind(this));
+
+            /**
+             * @param {!Event} event
+             * @this {Node}
+             */
+            function toggleCheckbox(event)
+            {
+                if (event.target !== checkboxElement && event.target !== this)
+                    checkboxElement.click();
+            }
+
+            this._root.createChild("content");
+        },
+
+        /**
+         * @param {string} color
+         * @this {Element}
+         */
+        set backgroundColor(color)
+        {
+            this.checkboxElement.classList.add("dt-checkbox-themed");
+            this.checkboxElement.style.backgroundColor = color;
+        },
+
+        /**
+         * @param {string} color
+         * @this {Element}
+         */
+        set checkColor(color)
+        {
+            this.checkboxElement.classList.add("dt-checkbox-themed");
+            var stylesheet = createElement("style");
+            stylesheet.textContent = "input.dt-checkbox-themed:checked:after { background-color: " + color + "}";
+            this._root.appendChild(stylesheet);
+        },
+
+        /**
+         * @param {string} color
+         * @this {Element}
+         */
+        set borderColor(color)
+        {
+            this.checkboxElement.classList.add("dt-checkbox-themed");
+            this.checkboxElement.style.borderColor = color;
+        },
+
+        __proto__: HTMLLabelElement.prototype
+    });
+
+    registerCustomElement("label", "dt-icon-label", {
+        /**
+         * @this {Element}
+         */
+        createdCallback: function()
+        {
+            var root = WebInspector.createShadowRootWithCoreStyles(this);
+            root.appendChild(WebInspector.Widget.createStyleElement("ui/smallIcon.css"));
+            this._iconElement = root.createChild("div");
+            root.createChild("content");
+        },
+
+        /**
+         * @param {string} type
+         * @this {Element}
+         */
+        set type(type)
+        {
+            this._iconElement.className = type;
+        },
+
+        __proto__: HTMLLabelElement.prototype
+    });
+
+    registerCustomElement("div", "dt-close-button", {
+        /**
+         * @this {Element}
+         */
+        createdCallback: function()
+        {
+            var root = WebInspector.createShadowRootWithCoreStyles(this);
+            root.appendChild(WebInspector.Widget.createStyleElement("ui/closeButton.css"));
+            this._buttonElement = root.createChild("div", "close-button");
+        },
+
+        /**
+         * @param {boolean} gray
+         * @this {Element}
+         */
+        set gray(gray)
+        {
+            this._buttonElement.className = gray ? "close-button-gray" : "close-button";
+        },
+
+        __proto__: HTMLDivElement.prototype
+    });
+})();
+
+/**
+ * @constructor
+ */
+WebInspector.StringFormatter = function()
+{
+    this._processors = [];
+    this._regexes = [];
+}
+
+WebInspector.StringFormatter.prototype = {
+    /**
+     * @param {!RegExp} regex
+     * @param {function(string):!Node} handler
+     */
+    addProcessor: function(regex, handler)
+    {
+        this._regexes.push(regex);
+        this._processors.push(handler);
+    },
+
+    /**
+     * @param {string} text
+     * @return {!Node}
+     */
+    formatText: function(text)
+    {
+        return this._runProcessor(0, text);
+    },
+
+    /**
+     * @param {number} processorIndex
+     * @param {string} text
+     * @return {!Node}
+     */
+    _runProcessor: function(processorIndex, text)
+    {
+        if (processorIndex >= this._processors.length)
+            return createTextNode(text);
+
+        var container = createDocumentFragment();
+        var regex = this._regexes[processorIndex];
+        var processor = this._processors[processorIndex];
+
+        // Due to the nature of regex, |items| array has matched elements on its even indexes.
+        var items = text.replace(regex, "\0$1\0").split("\0");
+        for (var i = 0; i < items.length; ++i) {
+            var processedNode = i % 2 ? processor(items[i]) : this._runProcessor(processorIndex + 1, items[i]);
+            container.appendChild(processedNode);
+        }
+
+        return container;
+    }
 }

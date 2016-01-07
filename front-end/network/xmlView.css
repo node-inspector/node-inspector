@@ -1,0 +1,87 @@
+/*
+ * Copyright (c) 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.shadow-xml-view {
+    -webkit-user-select: text;
+    overflow: auto;
+    padding: 2px 4px;
+}
+
+.shadow-xml-view ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    -webkit-padding-start: 16px;/* step width + arrow width */
+}
+
+.shadow-xml-view > ol {
+    -webkit-padding-start: 0;
+}
+
+.shadow-xml-view ol.children:not(.expanded) {
+    display: none;
+}
+
+.shadow-xml-view li.parent::before {
+    -webkit-user-select: none;
+    -webkit-mask-image: url(Images/toolbarButtonGlyphs.png);
+    -webkit-mask-size: 352px 168px;
+    -webkit-mask-position: -4px -97px;
+    background-color: rgb(110, 110, 110);
+    content: " ";
+    width: 10px;/* arrow width */
+    height: 10px;
+    display: inline-block;
+    position: relative;
+    top: 2px;
+}
+
+.shadow-xml-view li.parent.expanded::before {
+  -webkit-mask-position: -20px -97px;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+.shadow-xml-view li.parent::before {
+    -webkit-mask-image: url(Images/toolbarButtonGlyphs_2x.png);
+}
+} /* media */
+
+.shadow-xml-view li:not(.parent) {
+    margin-left: 10px; /* arrow width */
+}
+
+.shadow-xml-view li.shadow-xml-view-close-tag {
+    margin-left: -6px; /* step width */
+}
+
+.shadow-xml-view-tag {
+    color: rgb(136, 18, 128);
+}
+
+.shadow-xml-view-comment {
+    color: rgb(35, 110, 37);
+}
+
+.shadow-xml-view-processing-instruction {
+    color: rgb(35, 110, 37);
+}
+
+.shadow-xml-view-attribute-name {
+    color: rgb(153, 69, 0);
+}
+
+.shadow-xml-view-attribute-value {
+    color: rgb(26, 26, 166);
+}
+
+.shadow-xml-view-text {
+    color: rgb(0, 0, 0);
+    white-space: pre;
+}
+
+.shadow-xml-view-cdata {
+    color: rgb(0, 0, 0);
+}

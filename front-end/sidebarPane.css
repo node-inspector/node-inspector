@@ -29,36 +29,23 @@
 
 .sidebar-pane {
     position: relative;
+    flex-direction: column;
+    display: flex;
+    flex: none;
 }
 
-.sidebar-pane > .body {
-    position: relative;
+.sidebar-pane-hidden {
     display: none;
 }
 
-.sidebar-pane > .body .info {
+.sidebar-pane .info {
     text-align: center;
     font-style: italic;
-    font-size: 90%;
     padding: 6px;
     color: #888;
 }
 
-.sidebar-pane > .body .placard.dimmed {
-    opacity: 0.6;
-    font-style: italic;
-}
-
-.sidebar-pane > .body .placard + .info {
-    border-top: 1px solid rgb(189, 189, 189);
-    background-color: rgb(255, 255, 194);
-}
-
-.sidebar-pane.visible > .body {
-    display: block;
-}
-
-.sidebar-pane .section .properties {
+.sidebar-pane .section .properties-tree {
     padding-left: 16px;
 }
 
@@ -67,32 +54,26 @@
     background-color: #eee;
 }
 
-.sidebar-pane-stack > .sidebar-pane.visible:nth-last-of-type(1) {
-    border-bottom: 1px solid rgb(189, 189, 189);
-}
-
 .sidebar-pane-title {
-    position: relative;
+    display: flex;
+    align-items: center;
     background-color: #eee;
     height: 20px;
     padding: 0 5px;
-    border-top: 1px solid rgb(189, 189, 189);
-    border-bottom: 1px solid rgb(189, 189, 189);
-    line-height: 18px;
-    margin-top: -1px;
+    border-top: 1px solid #dadada;
     white-space: nowrap;
     overflow: hidden;
+    position: relative;
 }
 
-.sidebar-pane-title:active {
-    background-color: rgb(204, 204, 204);
-    border-top: 1px solid rgb(178, 178, 178);
-    border-bottom: 1px solid rgb(178, 178, 178);
+.sidebar-pane-title.expanded,
+.sidebar-pane-title:last-child {
+    border-bottom: 1px solid #ddd;
 }
 
 .sidebar-pane-title::before {
-    background-image: url(Images/statusbarButtonGlyphs.png);
-    background-size: 320px 144px;
+    background-image: url(Images/toolbarButtonGlyphs.png);
+    background-size: 352px 168px;
     opacity: 0.5;
     float: left;
     width: 11px;
@@ -100,13 +81,11 @@
     margin-right: 2px;
     content: "a";
     color: transparent;
-    position: relative;
-    top: 3px;
 }
 
 @media (-webkit-min-device-pixel-ratio: 1.5) {
 .sidebar-pane-title::before {
-    background-image: url(Images/statusbarButtonGlyphs_2x.png);
+    background-image: url(Images/toolbarButtonGlyphs_2x.png);
 }
 } /* media */
 
@@ -118,71 +97,18 @@
     background-position: -20px -96px;
 }
 
-.sidebar-pane-toolbar {
-    line-height: 18px;
-    left: 0;
-    right: 4px;
-    top: 0;
-    height: 20px;
-    position: absolute;
-    pointer-events: none;
+.sidebar-pane > .toolbar {
+    border-bottom: 1px solid #eee;
 }
 
-.sidebar-pane-toolbar > * {
+.sidebar-pane > .toolbar > * {
     pointer-events: auto;
 }
 
-.sidebar-pane-toolbar > .pane-title-button,
-.sidebar-pane-toolbar > label {
-    float: right;
-    height: 16px;
-    background-color: transparent;
-    border: none;
-    background-repeat: no-repeat;
-    margin: 1px 0 0 0;
-    padding: 0;
-    border-radius: 0;
-    -webkit-appearance: none;
-}
-
-.sidebar-pane-toolbar > .pane-title-button {
-    width: 23px;
-    color: transparent;
-}
-
-.sidebar-pane-toolbar > .pane-title-button:hover {
-    background-position: -23px 0;
-}
-
-.sidebar-pane-toolbar > .pane-title-button:active,
-.sidebar-pane-toolbar > .pane-title-button.toggled {
-    background-position: -46px 0;
-}
-
-.sidebar-pane-toolbar > .pane-title-button.add {
-    background-image: url(Images/paneAddButtons.png);
-    position: relative;
-}
-
-.sidebar-pane-toolbar > .pane-title-button.add .long-click-glyph {
-    background-color: rgba(135, 135, 135, 1);
-    -webkit-mask-image: url(Images/statusbarButtonGlyphs.png);
-    -webkit-mask-position: -298px -53px;
-    -webkit-mask-size: 320px 144px;
-}
-
-.sidebar-pane-toolbar > .pane-title-button.element-state {
-    background-image: url(Images/paneElementStateButtons.png);
-}
-
-.sidebar-pane-toolbar > .pane-title-button.refresh {
-    background-image: url(Images/paneRefreshButtons.png);
-}
-
-.sidebar-pane-toolbar > label.scripts-callstack-async {
-    margin: auto;
-    margin-right: 5px;
-    display: flex;
+.sidebar-pane-title > .toolbar {
+    position: absolute;
+    right: 0;
+    top: -3px;
 }
 
 .section > .header input[type=checkbox] {
@@ -194,7 +120,7 @@
     vertical-align: bottom;
 }
 
-.hidden-placards-message {
+.hidden-callframes-message {
     text-align: center;
     font-style: italic;
     padding: 4px;
@@ -208,8 +134,8 @@
     position: absolute;
     height: 16px;
     width: 23px;
-    right: 10px;
-    bottom: 1px;
+    right: 5px;
+    bottom: 3px;
     visibility: hidden;
 }
 

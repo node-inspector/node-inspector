@@ -124,6 +124,25 @@ WebInspector.CSSParser.AtRule;
 WebInspector.CSSParser.Rule;
 
 /**
- * @typedef {{name: string, value: string}}
+ * @typedef {{startLine: number, startColumn: number, endLine: number, endColumn: number}}
  */
-WebInspector.CSSParser.Property;
+WebInspector.CSSParser.Range;
+
+/**
+ * @constructor
+ */
+WebInspector.CSSParser.Property = function()
+{
+    /** @type {string} */
+    this.name;
+    /** @type {!WebInspector.CSSParser.Range} */
+    this.nameRange;
+    /** @type {string} */
+    this.value;
+    /** @type {!WebInspector.CSSParser.Range} */
+    this.valueRange;
+    /** @type {!WebInspector.CSSParser.Range} */
+    this.range;
+    /** @type {(boolean|undefined)} */
+    this.disabled;
+}

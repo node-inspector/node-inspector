@@ -152,7 +152,6 @@ WebInspector.ApplicationCacheModel.prototype = {
         if (!this._manifestURLsByFrame[frameId])
             return;
 
-        var manifestURL = this._manifestURLsByFrame[frameId];
         delete this._manifestURLsByFrame[frameId];
         delete this._statuses[frameId];
 
@@ -242,6 +241,7 @@ WebInspector.ApplicationCacheDispatcher = function(applicationCacheModel)
 
 WebInspector.ApplicationCacheDispatcher.prototype = {
     /**
+     * @override
      * @param {string} frameId
      * @param {string} manifestURL
      * @param {number} status
@@ -252,6 +252,7 @@ WebInspector.ApplicationCacheDispatcher.prototype = {
     },
 
     /**
+     * @override
      * @param {boolean} isNowOnline
      */
     networkStateUpdated: function(isNowOnline)

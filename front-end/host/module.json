@@ -4,8 +4,10 @@
         "platform"
     ],
     "scripts": [
+        "InspectorFrontendHostAPI.js",
         "InspectorFrontendHost.js",
         "Platform.js",
+        "ResourceLoader.js",
         "UserMetrics.js"
     ]
 }

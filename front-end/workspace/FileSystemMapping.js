@@ -35,56 +35,15 @@
 WebInspector.FileSystemMapping = function()
 {
     WebInspector.Object.call(this);
-    this._fileSystemMappingSetting = WebInspector.settings.createSetting("fileSystemMapping", {});
-    this._excludedFoldersSetting = WebInspector.settings.createSetting("workspaceExcludedFolders", {});
-    var defaultCommonExcludedFolders = [
-        "/\\.git/",
-        "/\\.sass-cache/",
-        "/\\.hg/",
-        "/\\.idea/",
-        "/\\.svn/",
-        "/\\.cache/",
-        "/\\.project/"
-    ];
-    var defaultWinExcludedFolders = [
-        "/Thumbs.db$",
-        "/ehthumbs.db$",
-        "/Desktop.ini$",
-        "/\\$RECYCLE.BIN/"
-    ];
-    var defaultMacExcludedFolders = [
-        "/\\.DS_Store$",
-        "/\\.Trashes$",
-        "/\\.Spotlight-V100$",
-        "/\\.AppleDouble$",
-        "/\\.LSOverride$",
-        "/Icon$",
-        "/\\._.*$"
-    ];
-    var defaultLinuxExcludedFolders = [
-        "/.*~$"
-    ];
-    var defaultExcludedFolders = defaultCommonExcludedFolders;
-    if (WebInspector.isWin())
-        defaultExcludedFolders = defaultExcludedFolders.concat(defaultWinExcludedFolders);
-    else if (WebInspector.isMac())
-        defaultExcludedFolders = defaultExcludedFolders.concat(defaultMacExcludedFolders);
-    else
-        defaultExcludedFolders = defaultExcludedFolders.concat(defaultLinuxExcludedFolders);
-    var defaultExcludedFoldersPattern = defaultExcludedFolders.join("|");
-    WebInspector.settings.workspaceFolderExcludePattern = WebInspector.settings.createRegExpSetting("workspaceFolderExcludePattern", defaultExcludedFoldersPattern, WebInspector.isWin() ? "i" : "");
+    this._fileSystemMappingSetting = WebInspector.settings.createLocalSetting("fileSystemMapping", {});
     /** @type {!Object.<string, !Array.<!WebInspector.FileSystemMapping.Entry>>} */
     this._fileSystemMappings = {};
-    /** @type {!Object.<string, !Array.<!WebInspector.FileSystemMapping.ExcludedFolderEntry>>} */
-    this._excludedFolders = {};
     this._loadFromSettings();
 }
 
 WebInspector.FileSystemMapping.Events = {
     FileMappingAdded: "FileMappingAdded",
-    FileMappingRemoved: "FileMappingRemoved",
-    ExcludedFolderAdded: "ExcludedFolderAdded",
-    ExcludedFolderRemoved: "ExcludedFolderRemoved"
+    FileMappingRemoved: "FileMappingRemoved"
 }
 
 
@@ -106,21 +65,6 @@ WebInspector.FileSystemMapping.prototype = {
             }
         }
 
-        var savedExcludedFolders = this._excludedFoldersSetting.get();
-        this._excludedFolders = {};
-        for (var fileSystemPath in savedExcludedFolders) {
-            var savedExcludedFoldersForPath = savedExcludedFolders[fileSystemPath];
-
-            this._excludedFolders[fileSystemPath] = [];
-            var excludedFolders = this._excludedFolders[fileSystemPath];
-
-            for (var i = 0; i < savedExcludedFoldersForPath.length; ++i) {
-                var savedEntry = savedExcludedFoldersForPath[i];
-                var entry = new WebInspector.FileSystemMapping.ExcludedFolderEntry(savedEntry.fileSystemPath, savedEntry.path);
-                excludedFolders.push(entry);
-            }
-        }
-
         this._rebuildIndexes();
     },
 
@@ -128,9 +72,6 @@ WebInspector.FileSystemMapping.prototype = {
     {
         var savedMapping = this._fileSystemMappings;
         this._fileSystemMappingSetting.set(savedMapping);
-
-        var savedExcludedFolders = this._excludedFolders;
-        this._excludedFoldersSetting.set(savedExcludedFolders);
 
         this._rebuildIndexes();
     },
@@ -171,7 +112,6 @@ WebInspector.FileSystemMapping.prototype = {
         if (!this._fileSystemMappings[fileSystemPath])
             return;
         delete this._fileSystemMappings[fileSystemPath];
-        delete this._excludedFolders[fileSystemPath];
         this._saveToSettings();
     },
 
@@ -204,34 +144,6 @@ WebInspector.FileSystemMapping.prototype = {
     },
 
     /**
-     * @param {string} fileSystemPath
-     * @param {string} excludedFolderPath
-     */
-    addExcludedFolder: function(fileSystemPath, excludedFolderPath)
-    {
-        if (!this._excludedFolders[fileSystemPath])
-            this._excludedFolders[fileSystemPath] = [];
-        var entry = new WebInspector.FileSystemMapping.ExcludedFolderEntry(fileSystemPath, excludedFolderPath);
-        this._excludedFolders[fileSystemPath].push(entry);
-        this._saveToSettings();
-        this.dispatchEventToListeners(WebInspector.FileSystemMapping.Events.ExcludedFolderAdded, entry);
-    },
-
-    /**
-     * @param {string} fileSystemPath
-     * @param {string} path
-     */
-    removeExcludedFolder: function(fileSystemPath, path)
-    {
-        var entry = this._excludedFolderEntryForPath(fileSystemPath, path);
-        if (!entry)
-            return;
-        this._excludedFolders[fileSystemPath].remove(entry);
-        this._saveToSettings();
-        this.dispatchEventToListeners(WebInspector.FileSystemMapping.Events.ExcludedFolderRemoved, entry);
-    },
-
-    /**
      * @return {!Array.<string>}
      */
     fileSystemPaths: function()
@@ -249,24 +161,6 @@ WebInspector.FileSystemMapping.prototype = {
             var urlPrefix = this._urlPrefixes[i];
             if (url.startsWith(urlPrefix))
                 return this._mappingForURLPrefix[urlPrefix];
-        }
-        return null;
-    },
-
-    /**
-     * @param {string} fileSystemPath
-     * @param {string} path
-     * @return {?WebInspector.FileSystemMapping.ExcludedFolderEntry}
-     */
-    _excludedFolderEntryForPath: function(fileSystemPath, path)
-    {
-        var entries = this._excludedFolders[fileSystemPath];
-        if (!entries)
-            return null;
-
-        for (var i = 0; i < entries.length; ++i) {
-            if (entries[i].path === path)
-                return entries[i];
         }
         return null;
     },
@@ -307,33 +201,6 @@ WebInspector.FileSystemMapping.prototype = {
                 return entries[i];
         }
         return null;
-    },
-
-    /**
-     * @param {string} fileSystemPath
-     * @param {string} folderPath
-     * @return {boolean}
-     */
-    isFileExcluded: function(fileSystemPath, folderPath)
-    {
-        var excludedFolders = this._excludedFolders[fileSystemPath] || [];
-        for (var i = 0; i < excludedFolders.length; ++i) {
-            var entry = excludedFolders[i];
-            if (entry.path === folderPath)
-                return true;
-        }
-        var regex = WebInspector.settings.workspaceFolderExcludePattern.asRegExp();
-        return regex && regex.test(folderPath);
-    },
-
-    /**
-     * @param {string} fileSystemPath
-     * @return {!Array.<!WebInspector.FileSystemMapping.ExcludedFolderEntry>}
-     */
-    excludedFolders: function(fileSystemPath)
-    {
-        var excludedFolders = this._excludedFolders[fileSystemPath];
-        return excludedFolders ? excludedFolders.slice() : [];
     },
 
     /**
@@ -430,15 +297,4 @@ WebInspector.FileSystemMapping.Entry = function(fileSystemPath, urlPrefix, pathP
     this.fileSystemPath = fileSystemPath;
     this.urlPrefix = urlPrefix;
     this.pathPrefix = pathPrefix;
-}
-
-/**
- * @constructor
- * @param {string} fileSystemPath
- * @param {string} path
- */
-WebInspector.FileSystemMapping.ExcludedFolderEntry = function(fileSystemPath, path)
-{
-    this.fileSystemPath = fileSystemPath;
-    this.path = path;
 }

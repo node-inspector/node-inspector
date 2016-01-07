@@ -10,6 +10,7 @@
     cursor: default;
     font-size: 11px;
     line-height: 17px;
+    white-space: nowrap;
 }
 
 .crumbs .crumb {

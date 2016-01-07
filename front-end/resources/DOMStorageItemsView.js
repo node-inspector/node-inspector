@@ -34,14 +34,13 @@ WebInspector.DOMStorageItemsView = function(domStorage)
 
     this.domStorage = domStorage;
 
-    this.element.classList.add("storage-view");
-    this.element.classList.add("table");
+    this.element.classList.add("storage-view", "table");
 
-    this.deleteButton = new WebInspector.StatusBarButton(WebInspector.UIString("Delete"), "delete-status-bar-item");
+    this.deleteButton = new WebInspector.ToolbarButton(WebInspector.UIString("Delete"), "delete-toolbar-item");
     this.deleteButton.setVisible(false);
     this.deleteButton.addEventListener("click", this._deleteButtonClicked, this);
 
-    this.refreshButton = new WebInspector.StatusBarButton(WebInspector.UIString("Refresh"), "refresh-status-bar-item");
+    this.refreshButton = new WebInspector.ToolbarButton(WebInspector.UIString("Refresh"), "refresh-toolbar-item");
     this.refreshButton.addEventListener("click", this._refreshButtonClicked, this);
 
     this.domStorage.addEventListener(WebInspector.DOMStorage.Events.DOMStorageItemsCleared, this._domStorageItemsCleared, this);
@@ -52,9 +51,9 @@ WebInspector.DOMStorageItemsView = function(domStorage)
 
 WebInspector.DOMStorageItemsView.prototype = {
     /**
-     * @return {!Array.<!WebInspector.StatusBarItem>}
+     * @return {!Array.<!WebInspector.ToolbarItem>}
      */
-    statusBarItems: function()
+    toolbarItems: function()
     {
         return [this.refreshButton, this.deleteButton];
     },
@@ -166,7 +165,7 @@ WebInspector.DOMStorageItemsView.prototype = {
 
     _update: function()
     {
-        this.detachChildViews();
+        this.detachChildWidgets();
         this.domStorage.getItems(this._showDOMStorageItems.bind(this));
     },
 

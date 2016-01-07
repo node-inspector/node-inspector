@@ -30,35 +30,42 @@
 
 /**
  * @constructor
+ * @param {!WebInspector.LayerViewHost} layerViewHost
  * @extends {WebInspector.Object}
- * @param {!TreeOutline} treeOutline
+ * @implements {WebInspector.LayerView}
  */
-WebInspector.LayerTreeOutline = function(treeOutline)
+WebInspector.LayerTreeOutline = function(layerViewHost)
 {
     WebInspector.Object.call(this);
-    this._treeOutline = treeOutline;
-    this._treeOutline.childrenListElement.addEventListener("mousemove", this._onMouseMove.bind(this), false);
-    this._treeOutline.childrenListElement.addEventListener("mouseout", this._onMouseMove.bind(this), false);
-    this._treeOutline.childrenListElement.addEventListener("contextmenu", this._onContextMenu.bind(this), true);
-    this._lastHoveredNode = null;
-}
+    this._layerViewHost = layerViewHost;
+    this._layerViewHost.registerView(this);
 
-/**
- * @enum {string}
- */
-WebInspector.LayerTreeOutline.Events = {
-    LayerHovered: "LayerHovered",
-    LayerSelected: "LayerSelected"
+    this._treeOutline = new TreeOutlineInShadow();
+    this._treeOutline.element.classList.add("layer-tree");
+    this._treeOutline.element.addEventListener("mousemove", this._onMouseMove.bind(this), false);
+    this._treeOutline.element.addEventListener("mouseout", this._onMouseMove.bind(this), false);
+    this._treeOutline.element.addEventListener("contextmenu", this._onContextMenu.bind(this), true);
+
+    this._lastHoveredNode = null;
+    this.element = this._treeOutline.element;
+    this._layerViewHost.showInternalLayersSetting().addChangeListener(this._update, this);
 }
 
 WebInspector.LayerTreeOutline.prototype = {
-    /**
-     * @param {?WebInspector.Layer} layer
-     */
-    selectLayer: function(layer)
+    focus: function()
     {
-        this.hoverLayer(null);
-        var node = layer && this._treeOutline.getCachedTreeElement(layer);
+        this._treeOutline.focus();
+    },
+
+    /**
+     * @param {?WebInspector.LayerView.Selection} selection
+     * @override
+     */
+    selectObject: function(selection)
+    {
+        this.hoverObject(null);
+        var layer = selection && selection.layer();
+        var node = layer && layer[WebInspector.LayerTreeElement._symbol];
         if (node)
             node.revealAndSelect(true);
         else if (this._treeOutline.selectedTreeElement)
@@ -66,11 +73,13 @@ WebInspector.LayerTreeOutline.prototype = {
     },
 
     /**
-     * @param {?WebInspector.Layer} layer
+     * @param {?WebInspector.LayerView.Selection} selection
+     * @override
      */
-    hoverLayer: function(layer)
+    hoverObject: function(selection)
     {
-        var node = layer && this._treeOutline.getCachedTreeElement(layer);
+        var layer = selection && selection.layer();
+        var node = layer && layer[WebInspector.LayerTreeElement._symbol];
         if (node === this._lastHoveredNode)
             return;
         if (this._lastHoveredNode)
@@ -82,11 +91,25 @@ WebInspector.LayerTreeOutline.prototype = {
 
     /**
      * @param {?WebInspector.LayerTreeBase} layerTree
+     * @override
      */
-    update: function(layerTree)
+    setLayerTree: function(layerTree)
     {
+        this._layerTree = layerTree;
+        this._update();
+    },
+
+    _update: function()
+    {
+        var showInternalLayers = this._layerViewHost.showInternalLayersSetting().get();
         var seenLayers = new Map();
-        var root = layerTree && (layerTree.contentRoot() || layerTree.root());
+        var root = null;
+        if (this._layerTree) {
+            if (!showInternalLayers)
+                root = this._layerTree.contentRoot();
+            if (!root)
+                root = this._layerTree.root();
+        }
 
         /**
          * @param {!WebInspector.Layer} layer
@@ -94,11 +117,17 @@ WebInspector.LayerTreeOutline.prototype = {
          */
         function updateLayer(layer)
         {
+            if (!layer.drawsContent() && !showInternalLayers)
+                return;
             if (seenLayers.get(layer))
                 console.assert(false, "Duplicate layer: " + layer.id());
             seenLayers.set(layer, true);
-            var node = this._treeOutline.getCachedTreeElement(layer);
-            var parent = layer === root ? this._treeOutline : this._treeOutline.getCachedTreeElement(layer.parent());
+            var node = layer[WebInspector.LayerTreeElement._symbol];
+            var parentLayer = layer.parent();
+            // Skip till nearest visible ancestor.
+            while (parentLayer && parentLayer !== root && !parentLayer.drawsContent() && !showInternalLayers)
+                parentLayer = parentLayer.parent();
+            var parent = layer === root ? this._treeOutline : parentLayer[WebInspector.LayerTreeElement._symbol];
             if (!parent) {
                 console.assert(false, "Parent is not in the tree");
                 return;
@@ -106,19 +135,26 @@ WebInspector.LayerTreeOutline.prototype = {
             if (!node) {
                 node = new WebInspector.LayerTreeElement(this, layer);
                 parent.appendChild(node);
+                // Expand all new non-content layers to expose content layers better.
+                if (!layer.drawsContent())
+                    node.expand();
             } else {
                 if (node.parent !== parent) {
+                    var oldSelection = this._treeOutline.selectedTreeElement;
                     node.parent.removeChild(node);
                     parent.appendChild(node);
+                    if (oldSelection !== this._treeOutline.selectedTreeElement)
+                        oldSelection.select();
                 }
                 node._update();
             }
         }
         if (root)
-            layerTree.forEachLayer(updateLayer.bind(this), root);
+            this._layerTree.forEachLayer(updateLayer.bind(this), root);
         // Cleanup layers that don't exist anymore from tree.
-        for (var node = /** @type {!TreeElement|!TreeOutline|null} */ (this._treeOutline.children[0]); node && !node.root;) {
-            if (seenLayers.get(node.representedObject)) {
+        var rootElement = this._treeOutline.rootElement();
+        for (var node = rootElement.firstChild(); node && !node.root;) {
+            if (seenLayers.get(node._layer)) {
                 node = node.traverseNextTreeElement(false);
             } else {
                 var nextNode = node.nextSibling || node.parent;
@@ -128,8 +164,10 @@ WebInspector.LayerTreeOutline.prototype = {
                 node = nextNode;
             }
         }
-        if (this._treeOutline.children[0])
-            this._treeOutline.children[0].expand();
+        if (!this._treeOutline.selectedTreeElement) {
+            var elementToSelect = this._layerTree.contentRoot() || this._layerTree.root();
+            elementToSelect[WebInspector.LayerTreeElement._symbol].revealAndSelect(true);
+        }
     },
 
     /**
@@ -140,8 +178,7 @@ WebInspector.LayerTreeOutline.prototype = {
         var node = this._treeOutline.treeElementFromEvent(event);
         if (node === this._lastHoveredNode)
             return;
-        var selection = node && node.representedObject ? new WebInspector.Layers3DView.LayerSelection(node.representedObject) : null;
-        this.dispatchEventToListeners(WebInspector.LayerTreeOutline.Events.LayerHovered, selection);
+        this._layerViewHost.hoverObject(this._selectionForNode(node));
     },
 
     /**
@@ -149,9 +186,7 @@ WebInspector.LayerTreeOutline.prototype = {
      */
     _selectedNodeChanged: function(node)
     {
-        var layer = /** @type {!WebInspector.Layer} */ (node.representedObject);
-        var selection = node.representedObject ? new WebInspector.Layers3DView.LayerSelection(node.representedObject) : null;
-        this.dispatchEventToListeners(WebInspector.LayerTreeOutline.Events.LayerSelected, selection);
+        this._layerViewHost.selectObject(this._selectionForNode(node));
     },
 
     /**
@@ -159,18 +194,18 @@ WebInspector.LayerTreeOutline.prototype = {
      */
     _onContextMenu: function(event)
     {
-        var node = this._treeOutline.treeElementFromEvent(event);
-        if (!node || !node.representedObject)
-            return;
-        var layer = /** @type {!WebInspector.Layer} */ (node.representedObject);
-        if (!layer)
-            return;
-        var domNode = layer.nodeForSelfOrAncestor();
-        if (!domNode)
-            return;
+        var selection = this._selectionForNode(this._treeOutline.treeElementFromEvent(event));
         var contextMenu = new WebInspector.ContextMenu(event);
-        contextMenu.appendApplicableItems(domNode);
-        contextMenu.show();
+        this._layerViewHost.showContextMenu(contextMenu, selection);
+    },
+
+    /**
+     * @param {?TreeElement} node
+     * @return {?WebInspector.LayerView.Selection}
+     */
+    _selectionForNode: function(node)
+    {
+        return node && node._layer ? new WebInspector.LayerView.LayerSelection(node._layer) : null;
     },
 
     __proto__: WebInspector.Object.prototype
@@ -184,28 +219,23 @@ WebInspector.LayerTreeOutline.prototype = {
   */
 WebInspector.LayerTreeElement = function(tree, layer)
 {
-    TreeElement.call(this, "", layer);
+    TreeElement.call(this);
     this._treeOutline = tree;
+    this._layer = layer;
+    this._layer[WebInspector.LayerTreeElement._symbol] = this;
     this._update();
 }
 
-WebInspector.LayerTreeElement.prototype = {
-    onattach: function()
-    {
-        var selection = createElement("div");
-        selection.className = "selection";
-        this.listItemElement.insertBefore(selection, this.listItemElement.firstChild);
-    },
+WebInspector.LayerTreeElement._symbol = Symbol("layer");
 
+WebInspector.LayerTreeElement.prototype = {
     _update: function()
     {
-        var layer = /** @type {!WebInspector.Layer} */ (this.representedObject);
-        var node = layer.nodeForSelfOrAncestor();
+        var node = this._layer.nodeForSelfOrAncestor();
         var title = createDocumentFragment();
-        title.createChild("div", "selection");
-        title.createTextChild(node ? WebInspector.DOMPresentationUtils.simpleSelector(node) : "#" + layer.id());
+        title.createTextChild(node ? WebInspector.DOMPresentationUtils.simpleSelector(node) : "#" + this._layer.id());
         var details = title.createChild("span", "dimmed");
-        details.textContent = WebInspector.UIString(" (%d × %d)", layer.width(), layer.height());
+        details.textContent = WebInspector.UIString(" (%d × %d)", this._layer.width(), this._layer.height());
         this.title = title;
     },
 

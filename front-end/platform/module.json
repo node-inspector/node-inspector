@@ -2,7 +2,6 @@
     "dependencies": [
     ],
     "scripts": [
-        "Promise.js",
         "utilities.js",
         "DOMExtension.js"
     ]

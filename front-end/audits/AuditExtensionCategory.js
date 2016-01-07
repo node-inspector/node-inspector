@@ -65,13 +65,12 @@ WebInspector.AuditExtensionCategory.prototype = {
      * @override
      * @param {!WebInspector.Target} target
      * @param {!Array.<!WebInspector.NetworkRequest>} requests
-            * @param {function(!WebInspector.AuditRuleResult)} ruleResultCallback
-     * @param {function()} categoryDoneCallback
+     * @param {function(!WebInspector.AuditRuleResult)} ruleResultCallback
      * @param {!WebInspector.Progress} progress
      */
-    run: function(target, requests, ruleResultCallback, categoryDoneCallback, progress)
+    run: function(target, requests, ruleResultCallback, progress)
     {
-        var results = new WebInspector.AuditExtensionCategoryResults(this, target, ruleResultCallback, categoryDoneCallback, progress);
+        var results = new WebInspector.AuditExtensionCategoryResults(this, target, ruleResultCallback, progress);
         WebInspector.extensionServer.startAuditRun(this.id, results);
     }
 }
@@ -82,15 +81,13 @@ WebInspector.AuditExtensionCategory.prototype = {
  * @param {!WebInspector.AuditExtensionCategory} category
  * @param {!WebInspector.Target} target
  * @param {function(!WebInspector.AuditRuleResult)} ruleResultCallback
- * @param {function()} categoryDoneCallback
  * @param {!WebInspector.Progress} progress
  */
-WebInspector.AuditExtensionCategoryResults = function(category, target, ruleResultCallback, categoryDoneCallback, progress)
+WebInspector.AuditExtensionCategoryResults = function(category, target, ruleResultCallback, progress)
 {
     this._target = target;
     this._category = category;
     this._ruleResultCallback = ruleResultCallback;
-    this._categoryDoneCallback = categoryDoneCallback;
     this._progress = progress;
     this._progress.setTotalWork(1);
     this._expectedResults = category._ruleCount;
@@ -101,6 +98,7 @@ WebInspector.AuditExtensionCategoryResults = function(category, target, ruleResu
 
 WebInspector.AuditExtensionCategoryResults.prototype = {
     /**
+     * @override
      * @return {string}
      */
     id: function()
@@ -108,14 +106,17 @@ WebInspector.AuditExtensionCategoryResults.prototype = {
         return this._id;
     },
 
+    /**
+     * @override
+     */
     done: function()
     {
         WebInspector.extensionServer.stopAuditRun(this);
         this._progress.done();
-        this._categoryDoneCallback();
     },
 
     /**
+     * @override
      * @param {string} displayName
      * @param {string} description
      * @param {string} severity
@@ -124,7 +125,8 @@ WebInspector.AuditExtensionCategoryResults.prototype = {
     addResult: function(displayName, description, severity, details)
     {
         var result = new WebInspector.AuditRuleResult(displayName);
-        result.addChild(description);
+        if (description)
+            result.addChild(description);
         result.severity = severity;
         if (details)
             this._addNode(result, details);
@@ -153,6 +155,7 @@ WebInspector.AuditExtensionCategoryResults.prototype = {
     },
 
     /**
+     * @override
      * @param {number} progress
      */
     updateProgress: function(progress)
@@ -198,7 +201,7 @@ WebInspector.AuditExtensionFormatters = {
         function onEvaluate(remoteObject)
         {
             var section = new WebInspector.ObjectPropertiesSection(remoteObject, title);
-            section.expanded = true;
+            section.expand();
             section.editable = false;
             parentElement.appendChild(section.element);
         }
@@ -222,7 +225,7 @@ WebInspector.AuditExtensionFormatters = {
          */
         function onEvaluate(remoteObject)
         {
-            WebInspector.Renderer.renderPromise(remoteObject).then(appendRenderer).thenOrCatch(remoteObject.release.bind(remoteObject)).done();
+            WebInspector.Renderer.renderPromise(remoteObject).then(appendRenderer).then(remoteObject.release.bind(remoteObject));
 
             /**
              * @param {!Element} element

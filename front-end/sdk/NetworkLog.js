@@ -45,11 +45,37 @@ WebInspector.NetworkLog = function(target)
     target.resourceTreeModel.addEventListener(WebInspector.ResourceTreeModel.EventTypes.DOMContentLoaded, this._onDOMContentLoaded, this);
 }
 
+/**
+ * @param {string} url
+ * @return {?WebInspector.NetworkRequest}
+ */
+WebInspector.NetworkLog.requestForURL = function(url)
+{
+    for (var target of WebInspector.targetManager.targets()) {
+        var result = target.networkLog.requestForURL(url);
+        if (result)
+            return result;
+    }
+    return null;
+}
+
+/**
+ * @return {!Array.<!WebInspector.NetworkRequest>}
+ */
+WebInspector.NetworkLog.requests = function()
+{
+    var result = [];
+    for (var target of WebInspector.targetManager.targets()) {
+        result = result.concat(target.networkLog.requests());
+    }
+    return result;
+}
+
 WebInspector.NetworkLog.prototype = {
     /**
      * @return {!Array.<!WebInspector.NetworkRequest>}
      */
-    get requests()
+    requests: function()
     {
         return this._requests;
     },
@@ -138,11 +164,6 @@ WebInspector.NetworkLog.prototype = {
 
     __proto__: WebInspector.SDKObject.prototype
 }
-
-/**
- * @type {!WebInspector.NetworkLog}
- */
-WebInspector.networkLog;
 
 /**
  * @constructor

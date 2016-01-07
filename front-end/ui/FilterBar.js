@@ -31,20 +31,21 @@
 /**
  * @constructor
  * @extends {WebInspector.Object}
+ * @param {string} name
+ * @param {boolean=} visibleByDefault
  */
-WebInspector.FilterBar = function()
+WebInspector.FilterBar = function(name, visibleByDefault)
 {
     this._filtersShown = false;
-    this._element = createElementWithClass("div", "filter-bar hbox");
+    this._element = createElementWithClass("div", "filter-bar hidden");
 
-    this._filterButton = new WebInspector.StatusBarButton(WebInspector.UIString("Filter"), "filter-status-bar-item", 3);
+    this._filterButton = new WebInspector.ToolbarButton(WebInspector.UIString("Filter"), "filter-toolbar-item", 3);
     this._filterButton.element.addEventListener("click", this._handleFilterButtonClick.bind(this), false);
 
     this._filters = [];
-}
 
-WebInspector.FilterBar.Events = {
-    FiltersToggled: "FiltersToggled"
+    this._stateSetting = WebInspector.settings.createSetting("filterBar-" + name + "-toggled", !!visibleByDefault);
+    this._setState(this._stateSetting.get());
 }
 
 WebInspector.FilterBar.FilterBarState = {
@@ -53,18 +54,13 @@ WebInspector.FilterBar.FilterBarState = {
     Shown : "shown"
 };
 
+WebInspector.FilterBar.Events = {
+    Toggled: "Toggled"
+};
+
 WebInspector.FilterBar.prototype = {
     /**
-     * @param {string} name
-     */
-    setName: function(name)
-    {
-        this._stateSetting = WebInspector.settings.createSetting("filterBar-" + name + "-toggled", false);
-        this._setState(this._stateSetting.get());
-    },
-
-    /**
-     * @return {!WebInspector.StatusBarButton}
+     * @return {!WebInspector.ToolbarButton}
      */
     filterButton: function()
     {
@@ -147,7 +143,7 @@ WebInspector.FilterBar.prototype = {
             this._stateSetting.set(filtersShown);
 
         this._updateFilterButton();
-        this.dispatchEventToListeners(WebInspector.FilterBar.Events.FiltersToggled, this._filtersShown);
+        this._element.classList.toggle("hidden", !this._filtersShown);
         if (this._filtersShown) {
             for (var i = 0; i < this._filters.length; ++i) {
                 if (this._filters[i] instanceof WebInspector.TextFilterUI) {
@@ -156,6 +152,7 @@ WebInspector.FilterBar.prototype = {
                 }
             }
         }
+        this.dispatchEventToListeners(WebInspector.FilterBar.Events.Toggled);
     },
 
     clear: function()
@@ -223,19 +220,19 @@ WebInspector.TextFilterUI = function(supportRegex)
 
     if (this._supportRegex) {
         this._filterElement.classList.add("supports-regex");
-        this._regexCheckBox = this._filterElement.createChild("input");
-        this._regexCheckBox.type = "checkbox";
+        var label = createCheckboxLabel(WebInspector.UIString("Regex"));
+        this._regexCheckBox = label.checkboxElement;
         this._regexCheckBox.id = "text-filter-regex";
         this._regexCheckBox.addEventListener("change", this._onInput.bind(this), false);
+        this._filterElement.appendChild(label);
 
-        this._regexLabel = this._filterElement.createChild("label");
-        this._regexLabel.htmlFor = "text-filter-regex";
-        this._regexLabel.textContent = WebInspector.UIString("Regex");
+        this._regexLabel = this._filterElement.textElement;
     }
 }
 
 WebInspector.TextFilterUI.prototype = {
     /**
+     * @override
      * @return {boolean}
      */
     isActive: function()
@@ -244,6 +241,7 @@ WebInspector.TextFilterUI.prototype = {
     },
 
     /**
+     * @override
      * @return {!Element}
      */
     element: function()
@@ -462,7 +460,7 @@ WebInspector.TextFilterUI.SuggestionBuilder.prototype = {
 WebInspector.NamedBitSetFilterUI = function(items, setting)
 {
     this._filtersElement = createElementWithClass("div", "filter-bitset-filter");
-    this._filtersElement.title = WebInspector.UIString("Use %s Click to select multiple types.", WebInspector.KeyboardShortcut.shortcutToString("", WebInspector.KeyboardShortcut.Modifiers.CtrlOrMeta));
+    this._filtersElement.title = WebInspector.UIString("%sClick to select multiple types", WebInspector.KeyboardShortcut.shortcutToString("", WebInspector.KeyboardShortcut.Modifiers.CtrlOrMeta));
 
     this._allowedTypes = {};
     this._typeFilterElements = {};
@@ -470,7 +468,7 @@ WebInspector.NamedBitSetFilterUI = function(items, setting)
     this._filtersElement.createChild("div", "filter-bitset-filter-divider");
 
     for (var i = 0; i < items.length; ++i)
-        this._addBit(items[i].name, items[i].label);
+        this._addBit(items[i].name, items[i].label, items[i].title);
 
     if (setting) {
         this._setting = setting;
@@ -481,13 +479,14 @@ WebInspector.NamedBitSetFilterUI = function(items, setting)
     }
 }
 
-/** @typedef {{name: string, label: string}} */
+/** @typedef {{name: string, label: string, title: (string|undefined)}} */
 WebInspector.NamedBitSetFilterUI.Item;
 
 WebInspector.NamedBitSetFilterUI.ALL_TYPES = "all";
 
 WebInspector.NamedBitSetFilterUI.prototype = {
     /**
+     * @override
      * @return {boolean}
      */
     isActive: function()
@@ -496,6 +495,7 @@ WebInspector.NamedBitSetFilterUI.prototype = {
     },
 
     /**
+     * @override
      * @return {!Element}
      */
     element: function()
@@ -537,12 +537,15 @@ WebInspector.NamedBitSetFilterUI.prototype = {
     /**
      * @param {string} name
      * @param {string} label
+     * @param {string=} title
      */
-    _addBit: function(name, label)
+    _addBit: function(name, label, title)
     {
         var typeFilterElement = this._filtersElement.createChild("li", name);
         typeFilterElement.typeName = name;
         typeFilterElement.createTextChild(label);
+        if (title)
+            typeFilterElement.title = title;
         typeFilterElement.addEventListener("click", this._onTypeFilterClicked.bind(this), false);
         this._typeFilterElements[name] = typeFilterElement;
     },
@@ -594,7 +597,7 @@ WebInspector.ComboBoxFilterUI = function(options)
     this._filterElement.className = "filter-combobox-filter";
 
     this._options = options;
-    this._filterComboBox = new WebInspector.StatusBarComboBox(this._filterChanged.bind(this));
+    this._filterComboBox = new WebInspector.ToolbarComboBox(this._filterChanged.bind(this));
     for (var i = 0; i < options.length; ++i) {
         var filterOption = options[i];
         var option = createElement("option");
@@ -608,6 +611,7 @@ WebInspector.ComboBoxFilterUI = function(options)
 
 WebInspector.ComboBoxFilterUI.prototype = {
     /**
+     * @override
      * @return {boolean}
      */
     isActive: function()
@@ -616,6 +620,7 @@ WebInspector.ComboBoxFilterUI.prototype = {
     },
 
     /**
+     * @override
      * @return {!Element}
      */
     element: function()
@@ -673,31 +678,38 @@ WebInspector.ComboBoxFilterUI.prototype = {
  */
 WebInspector.CheckboxFilterUI = function(className, title, activeWhenChecked, setting)
 {
-    this._filterElement = createElement("div");
-    this._filterElement.classList.add("filter-checkbox-filter", "filter-checkbox-filter-" + className);
+    this._filterElement = createElementWithClass("div", "filter-checkbox-filter");
     this._activeWhenChecked = !!activeWhenChecked;
-    this._createCheckbox(title);
-
-    if (setting) {
-        this._setting = setting;
-        setting.addChangeListener(this._settingChanged.bind(this));
-        this._settingChanged();
-    } else {
-        this._checked = !this._activeWhenChecked;
-        this._update();
-    }
+    this._label = createCheckboxLabel(title);
+    this._filterElement.appendChild(this._label);
+    this._checkboxElement = this._label.checkboxElement;
+    if (setting)
+        WebInspector.SettingsUI.bindCheckbox(this._checkboxElement, setting);
+    else
+        this._checkboxElement.checked = true;
+    this._checkboxElement.addEventListener("change", this._fireUpdated.bind(this), false);
 }
 
 WebInspector.CheckboxFilterUI.prototype = {
     /**
+     * @override
      * @return {boolean}
      */
     isActive: function()
     {
-        return this._activeWhenChecked === this._checked;
+        return this._activeWhenChecked === this._checkboxElement.checked;
     },
 
     /**
+     * @return {boolean}
+     */
+    checked: function()
+    {
+        return this._checkboxElement.checked;
+    },
+
+    /**
+     * @override
      * @return {!Element}
      */
     element: function()
@@ -706,60 +718,26 @@ WebInspector.CheckboxFilterUI.prototype = {
     },
 
     /**
-     * @return {boolean}
+     * @return {!Element}
      */
-    checked: function()
+    labelElement: function()
     {
-        return this._checked;
+        return this._label;
     },
 
-    /**
-     * @param {boolean} state
-     */
-    setState: function(state)
+    _fireUpdated: function()
     {
-        this._checked = state;
-        if (this._setting)
-            this._setting.set(state);
-        else
-            this._update();
-    },
-
-    _update: function()
-    {
-        this._checkElement.classList.toggle("checkbox-filter-checkbox-checked", this._checked);
         this.dispatchEventToListeners(WebInspector.FilterUI.Events.FilterChanged, null);
     },
 
-    _settingChanged: function()
-    {
-        this._checked = this._setting.get();
-        this._update();
-    },
-
     /**
-     * @param {!Event} event
+     * @param {string} backgroundColor
+     * @param {string} borderColor
      */
-    _onClick: function(event)
+    setColor: function(backgroundColor, borderColor)
     {
-        this._checked = !this._checked;
-        if (this._setting)
-            this._setting.set(this._checked);
-        else
-            this._update();
-    },
-
-    /**
-     * @param {string} title
-     */
-    _createCheckbox: function(title)
-    {
-        var label = this._filterElement.createChild("label");
-        var checkBorder = label.createChild("div", "checkbox-filter-checkbox");
-        this._checkElement = checkBorder.createChild("div", "checkbox-filter-checkbox-check");
-        this._filterElement.addEventListener("click", this._onClick.bind(this), false);
-        var typeElement = label.createChild("span", "type");
-        typeElement.textContent = title;
+        this._label.backgroundColor = backgroundColor;
+        this._label.borderColor = borderColor;
     },
 
     __proto__: WebInspector.Object.prototype

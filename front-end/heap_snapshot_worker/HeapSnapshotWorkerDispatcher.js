@@ -93,7 +93,7 @@ WebInspector.HeapSnapshotWorkerDispatcher.prototype = {
                 }
                 case "evaluateForTest": {
                     try {
-                        response.result = eval(data.source)
+                        response.result = eval(data.source);
                     } catch (e) {
                         response.result = e.toString();
                     }

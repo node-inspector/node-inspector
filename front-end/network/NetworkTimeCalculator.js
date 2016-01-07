@@ -30,11 +30,42 @@
 
 /**
  * @constructor
+ * @param {number} minimum
+ * @param {number} maximum
+ */
+WebInspector.NetworkTimeBoundary = function(minimum, maximum)
+{
+    this.minimum = minimum;
+    this.maximum = maximum;
+}
+
+WebInspector.NetworkTimeBoundary.prototype = {
+    /**
+     * @param {!WebInspector.NetworkTimeBoundary} other
+     * @return {boolean}
+     */
+    equals: function(other)
+    {
+        return (this.minimum === other.minimum) && (this.maximum === other.maximum);
+    }
+}
+
+/**
+ * @constructor
+ * @extends {WebInspector.Object}
  * @implements {WebInspector.TimelineGrid.Calculator}
  */
 WebInspector.NetworkTimeCalculator = function(startAtZero)
 {
     this.startAtZero = startAtZero;
+    this._boundryChangedEventThrottler = new WebInspector.Throttler(0);
+    /** @type {?WebInspector.NetworkTimeBoundary} */
+    this._window = null;
+}
+
+/** @enum {string} */
+WebInspector.NetworkTimeCalculator.Events = {
+    BoundariesChanged: "BoundariesChanged"
 }
 
 /** @type {!WebInspector.UIStringFormat} */
@@ -54,6 +85,21 @@ WebInspector.NetworkTimeCalculator._fromCacheFormat = new WebInspector.UIStringF
 
 WebInspector.NetworkTimeCalculator.prototype = {
     /**
+     * @param {?WebInspector.NetworkTimeBoundary} window
+     */
+    setWindow: function(window)
+    {
+        this._window = window;
+        this._boundaryChanged();
+    },
+
+    setInitialUserFriendlyBoundaries: function()
+    {
+        this._minimumBoundary = 0;
+        this._maximumBoundary = 1;
+    },
+
+    /**
      * @override
      * @return {number}
      */
@@ -69,7 +115,7 @@ WebInspector.NetworkTimeCalculator.prototype = {
      */
     computePosition: function(time)
     {
-        return (time - this._minimumBoundary) / this.boundarySpan() * this._workingArea;
+        return (time - this.minimumBoundary()) / this.boundarySpan() * this._workingArea;
     },
 
     /**
@@ -80,7 +126,7 @@ WebInspector.NetworkTimeCalculator.prototype = {
      */
     formatTime: function(value, precision)
     {
-        return Number.secondsToString(value);
+        return Number.secondsToString(value, !!precision);
     },
 
     /**
@@ -89,7 +135,7 @@ WebInspector.NetworkTimeCalculator.prototype = {
      */
     minimumBoundary: function()
     {
-        return this._minimumBoundary;
+        return this._window ? this._window.minimum : this._minimumBoundary;
     },
 
     /**
@@ -107,7 +153,15 @@ WebInspector.NetworkTimeCalculator.prototype = {
      */
     maximumBoundary: function()
     {
-        return this._maximumBoundary;
+        return this._window ? this._window.maximum : this._maximumBoundary;
+    },
+
+    /**
+     * @return {!WebInspector.NetworkTimeBoundary}
+     */
+    boundary: function()
+    {
+        return new WebInspector.NetworkTimeBoundary(this.minimumBoundary(), this.maximumBoundary());
     },
 
     /**
@@ -116,13 +170,14 @@ WebInspector.NetworkTimeCalculator.prototype = {
      */
     boundarySpan: function()
     {
-        return this._maximumBoundary - this._minimumBoundary;
+        return this.maximumBoundary() - this.minimumBoundary();
     },
 
     reset: function()
     {
         delete this._minimumBoundary;
         delete this._maximumBoundary;
+        this._boundaryChanged();
     },
 
     /**
@@ -148,17 +203,17 @@ WebInspector.NetworkTimeCalculator.prototype = {
     computeBarGraphPercentages: function(request)
     {
         if (request.startTime !== -1)
-            var start = ((request.startTime - this._minimumBoundary) / this.boundarySpan()) * 100;
+            var start = ((request.startTime - this.minimumBoundary()) / this.boundarySpan()) * 100;
         else
             var start = 0;
 
         if (request.responseReceivedTime !== -1)
-            var middle = ((request.responseReceivedTime - this._minimumBoundary) / this.boundarySpan()) * 100;
+            var middle = ((request.responseReceivedTime - this.minimumBoundary()) / this.boundarySpan()) * 100;
         else
             var middle = (this.startAtZero ? start : 100);
 
         if (request.endTime !== -1)
-            var end = ((request.endTime - this._minimumBoundary) / this.boundarySpan()) * 100;
+            var end = ((request.endTime - this.minimumBoundary()) / this.boundarySpan()) * 100;
         else
             var end = (this.startAtZero ? middle : 100);
 
@@ -181,25 +236,47 @@ WebInspector.NetworkTimeCalculator.prototype = {
         // of a specific event. If startAtZero is set, then this is useless, and we
         // want to return 0.
         if (eventTime !== -1 && !this.startAtZero)
-            return ((eventTime - this._minimumBoundary) / this.boundarySpan()) * 100;
+            return ((eventTime - this.minimumBoundary()) / this.boundarySpan()) * 100;
 
         return 0;
     },
 
     /**
+     * @param {number} percentage
+     * @return {number}
+     */
+    percentageToTime: function(percentage)
+    {
+        return percentage * this.boundarySpan() / 100 + this.minimumBoundary();
+    },
+
+    _boundaryChanged: function()
+    {
+        this._boundryChangedEventThrottler.schedule(dispatchEvent.bind(this));
+
+        /**
+         * @return {!Promise.<undefined>}
+         * @this {WebInspector.NetworkTimeCalculator}
+         */
+        function dispatchEvent()
+        {
+            this.dispatchEventToListeners(WebInspector.NetworkTimeCalculator.Events.BoundariesChanged);
+            return Promise.resolve();
+        }
+    },
+
+    /**
      * @param {number} eventTime
-     * @return {boolean}
      */
     updateBoundariesForEventTime: function(eventTime)
     {
         if (eventTime === -1 || this.startAtZero)
-            return false;
+            return;
 
-        if (typeof this._maximumBoundary === "undefined" || eventTime > this._maximumBoundary) {
+        if (this._maximumBoundary === undefined || eventTime > this._maximumBoundary) {
             this._maximumBoundary = eventTime;
-            return true;
+            this._boundaryChanged();
         }
-        return false;
     },
 
     /**
@@ -239,30 +316,36 @@ WebInspector.NetworkTimeCalculator.prototype = {
 
     /**
      * @param {!WebInspector.NetworkRequest} request
-     * @return {boolean}
      */
     updateBoundaries: function(request)
     {
-        var didChange = false;
-
-        var lowerBound;
-        if (this.startAtZero)
-            lowerBound = 0;
-        else
-            lowerBound = this._lowerBound(request);
-
-        if (lowerBound !== -1 && (typeof this._minimumBoundary === "undefined" || lowerBound < this._minimumBoundary)) {
-            this._minimumBoundary = lowerBound;
-            didChange = true;
-        }
-
+        var lowerBound = this._lowerBound(request);
         var upperBound = this._upperBound(request);
-        if (upperBound !== -1 && (typeof this._maximumBoundary === "undefined" || upperBound > this._maximumBoundary)) {
-            this._maximumBoundary = upperBound;
-            didChange = true;
-        }
+        var changed = false;
+        if (lowerBound !== -1 || this.startAtZero)
+            changed = this._extendBoundariesToIncludeTimestamp(this.startAtZero ? 0 : lowerBound);
+        if (upperBound !== -1)
+            changed = this._extendBoundariesToIncludeTimestamp(upperBound) || changed;
+        if (changed)
+            this._boundaryChanged();
+    },
 
-        return didChange;
+    /**
+     * @param {number} timestamp
+     * @return {boolean}
+     */
+    _extendBoundariesToIncludeTimestamp: function(timestamp)
+    {
+        var previousMinimumBoundary = this._minimumBoundary;
+        var previousMaximumBoundary = this._maximumBoundary;
+        if (typeof this._minimumBoundary === "undefined" || typeof this._maximumBoundary === "undefined") {
+            this._minimumBoundary = timestamp;
+            this._maximumBoundary = timestamp + 1;
+        } else {
+            this._minimumBoundary = Math.min(timestamp, this._minimumBoundary);
+            this._maximumBoundary = Math.max(timestamp, this._minimumBoundary + 1, this._maximumBoundary);
+        }
+        return previousMinimumBoundary !== this._minimumBoundary || previousMaximumBoundary !== this._maximumBoundary;
     },
 
     /**
@@ -281,7 +364,9 @@ WebInspector.NetworkTimeCalculator.prototype = {
     _upperBound: function(request)
     {
         return 0;
-    }
+    },
+
+    __proto__: WebInspector.Object.prototype
 }
 
 /**
@@ -302,7 +387,7 @@ WebInspector.NetworkTransferTimeCalculator.prototype = {
      */
     formatTime: function(value, precision)
     {
-        return Number.secondsToString(value - this.zeroTime());
+        return Number.secondsToString(value - this.zeroTime(), !!precision);
     },
 
     /**
@@ -312,7 +397,7 @@ WebInspector.NetworkTransferTimeCalculator.prototype = {
      */
     _lowerBound: function(request)
     {
-        return request.startTime;
+        return request.issueTime();
     },
 
     /**
@@ -346,7 +431,7 @@ WebInspector.NetworkTransferDurationCalculator.prototype = {
      */
     formatTime: function(value, precision)
     {
-        return Number.secondsToString(value);
+        return Number.secondsToString(value, !!precision);
     },
 
     /**

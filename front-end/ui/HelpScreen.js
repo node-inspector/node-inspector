@@ -46,7 +46,7 @@ WebInspector.HelpScreen = function(title)
     if (title) {
         var mainWindow = this.element.createChild("div", "help-window-main");
         var captionWindow = mainWindow.createChild("div", "help-window-caption");
-        captionWindow.appendChild(this._createCloseButton());
+        captionWindow.appendChild(this.createCloseButton());
         this.helpContentElement = mainWindow.createChild("div", "help-content");
         captionWindow.createChild("h1", "help-window-title").textContent = title;
     }
@@ -58,10 +58,13 @@ WebInspector.HelpScreen = function(title)
 WebInspector.HelpScreen._visibleScreen = null;
 
 WebInspector.HelpScreen.prototype = {
-    _createCloseButton: function()
+    /**
+     * @return {!Element}
+     */
+    createCloseButton: function()
     {
-        var closeButton = createElement("div");
-        closeButton.className = "help-close-button close-button-gray";
+        var closeButton = createElementWithClass("div", "help-close-button", "dt-close-button");
+        closeButton.gray = true;
         closeButton.addEventListener("click", this.hide.bind(this), false);
         return closeButton;
     },
