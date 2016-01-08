@@ -4,18 +4,16 @@ var expect = require('chai').expect,
     inherits = require('util').inherits,
     EventEmitter = require('events').EventEmitter,
     InjectorClient = require('../lib/InjectorClient').InjectorClient,
-    ConsoleClient = require('../lib/ConsoleClient').ConsoleClient,
     ConsoleAgent = require('../lib/ConsoleAgent').ConsoleAgent;
 
 var PROP_TYPE = semver.lt(process.version, '1.0.0') ? 1 : 0;
 
 var consoleAgent,
-    consoleClient,
     childProcess,
     debuggerClient,
     frontendClient;
 
-describe('ConsoleAgent', function() {
+describe.only('ConsoleAgent', function() {
   before(initializeConsole);
 
   it('should translate console message to frontend', function(done) {
@@ -27,13 +25,26 @@ describe('ConsoleAgent', function() {
 
   it('should translate objects', function(done) {
     frontendClient.once('Console.messageAdded', function(message) {
-      expect(message.message.parameters).to.deep.equal([{
+      expect(JSON.stringify(message.message.parameters)).to.equal(JSON.stringify([{
         type: 'object',
         subtype: undefined,
-        objectId: 'console:1:1',
+        objectId: '{"injectedScriptId":' + childProcess.pid + ',"id":1}',
         className: 'Object',
-        description: 'Object'
-      }]);
+        description: 'Object',
+        preview: {
+          type: 'object',
+          description: 'Object',
+          lossless: true,
+          overflow: false,
+          properties: [
+            {
+              name: 'a',
+              type: 'string',
+              value: 'test'
+            }
+          ]
+        }
+      }]));
       done();
     });
     childProcess.stdin.write('log object\n');
@@ -54,96 +65,6 @@ describe('ConsoleAgent', function() {
   });
 });
 
-describe('ConsoleClient', function() {
-  var _messages = [];
-
-  before(initializeConsole);
-  before(logInChildProcess);
-
-  function logInChildProcess(done) {
-    var state = 0;
-    function updateState() {
-      if (++state == 2) {
-        frontendClient.removeAllListeners();
-        done();
-      }
-    }
-
-    frontendClient.on('Console.messageAdded', function(message) {
-      _messages.push(message.message);
-      updateState();
-    });
-    childProcess.stdin.write('log object\n');
-    childProcess.stdin.write('log console\n');
-  }
-
-  it('should match only valid consoleId', function() {
-    function expectIsConsoleId(id, value) {
-      expect(consoleClient.isConsoleId(id), id).to.be.equal(value);
-    }
-
-    expectIsConsoleId('console:1:1', true);
-    expectIsConsoleId('console:1:1:1', false);
-    expectIsConsoleId('console:1:a', false);
-    expectIsConsoleId('console:1:', false);
-    expectIsConsoleId('console::', false);
-    expectIsConsoleId('consol:1:1', false);
-    expectIsConsoleId('::', false);
-    expectIsConsoleId('1', false);
-  });
-
-  it('should provide object data', function(done) {
-    consoleClient.lookupConsoleId(
-      _messages[0].parameters[0].objectId,
-      function(error, lookupBody, lookupRefs) {
-        expect(error).to.equal(null);
-        expect(lookupBody).to.deep.equal({
-          handle: 0,
-          type: 'object',
-          className: 'Object',
-          constructorFunction: { ref: 1 },
-          protoObject: { ref: 2 },
-          prototypeObject: { ref: 3 },
-          properties: [{ name: 'a', propertyType: PROP_TYPE, ref: 4}],
-          text: '#<Object>'
-        });
-        expect(lookupRefs).to.include.keys(['1', '2', '3', '4']);
-        done();
-      }
-    );
-  });
-
-  it('should provide object (with internal properties) data', function(done) {
-    consoleClient.lookupConsoleId(
-      _messages[0].parameters[0].objectId,
-      function(error, lookupBody, lookupRefs) {
-        expect(error).to.equal(null);
-        done();
-      }
-    );
-  });
-
-  it('should return error on not existed object', function(done) {
-    consoleClient.lookupConsoleId(
-      'console:1:0',
-      function(error, lookupBody, lookupRefs) {
-        expect(error).to.equal('Object #0# not found');
-        done();
-      }
-    );
-  });
-
-  it('should return error on not existed message', function(done) {
-    consoleClient.lookupConsoleId(
-      'console:2:1',
-      function(error, lookupBody, lookupRefs) {
-        expect(error).to.equal('Console message #2# not found');
-        done();
-      }
-    );
-  });
-});
-
 function initializeConsole(done) {
   launcher.runCommandlet(true, function(child, session) {
     childProcess = child;
@@ -152,9 +73,6 @@ function initializeConsole(done) {
 
     var injectorClient = new InjectorClient({}, session);
     session.injectorClient = injectorClient;
-
-    consoleClient = new ConsoleClient({}, session);
-    session.consoleClient = consoleClient;
 
     consoleAgent = new ConsoleAgent({}, session);
 
