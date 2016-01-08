@@ -2,7 +2,6 @@ var expect = require('chai').expect,
   launcher = require('./helpers/launcher.js'),
   CallFramesProvider = require('../lib/CallFramesProvider').CallFramesProvider,
   RuntimeAgent = require('../lib/RuntimeAgent.js').RuntimeAgent,
-  ConsoleClient = require('../lib/ConsoleClient').ConsoleClient,
   HeapProfilerClient = require('../lib/HeapProfilerClient').HeapProfilerClient;
 
 describe('RuntimeAgent', function() {
@@ -340,7 +339,6 @@ describe('RuntimeAgent', function() {
 });
 
 function setupRuntimeAgent(session) {
-  session.consoleClient = new ConsoleClient({}, session);
   session.heapProfilerClient = new HeapProfilerClient({}, session);
   return new RuntimeAgent({}, session);
 }
