@@ -1,7 +1,7 @@
 var expect = require('chai').expect,
   launcher = require('./helpers/launcher.js'),
   ScriptManager = require('../lib/ScriptManager.js').ScriptManager,
-  DebuggerAgent = require('../lib/DebuggerAgent.js').DebuggerAgent;
+  DebuggerAgent = require('../lib/Agents/DebuggerAgent.js').DebuggerAgent;
 
 describe('DebuggerAgent', function() {
   describe('sets variable value', function() {
