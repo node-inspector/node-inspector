@@ -2,7 +2,7 @@ var expect = require('chai').expect,
     launcher = require('./helpers/launcher.js'),
     EventEmitter = require('events').EventEmitter,
     InjectorClient = require('../lib/InjectorClient').InjectorClient,
-    ProfilerAgent = require('../lib/ProfilerAgent').ProfilerAgent;
+    ProfilerAgent = require('../lib/Agents/ProfilerAgent').ProfilerAgent;
 
 var profilerAgent,
     debuggerClient,

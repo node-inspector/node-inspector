@@ -2,7 +2,7 @@ var expect = require('chai').expect,
     launcher = require('./helpers/launcher.js'),
     EventEmitter = require('events').EventEmitter,
     InjectorClient = require('../lib/InjectorClient').InjectorClient,
-    HeapProfilerAgent = require('../lib/HeapProfilerAgent').HeapProfilerAgent;
+    HeapProfilerAgent = require('../lib/Agents/HeapProfilerAgent').HeapProfilerAgent;
 
 var heapProfilerAgent,
     debuggerClient,

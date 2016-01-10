@@ -1,7 +1,7 @@
 var expect = require('chai').expect,
   launcher = require('./helpers/launcher.js'),
   ScriptManager = require('../lib/ScriptManager.js').ScriptManager,
-  PageAgent = require('../lib/PageAgent.js').PageAgent;
+  PageAgent = require('../lib/Agents/PageAgent.js').PageAgent;
 
 describe('PageAgent', function() {
   describe('getResourceContent()', function() {

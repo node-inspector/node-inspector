@@ -4,7 +4,7 @@ var expect = require('chai').expect,
     inherits = require('util').inherits,
     EventEmitter = require('events').EventEmitter,
     InjectorClient = require('../lib/InjectorClient').InjectorClient,
-    ConsoleAgent = require('../lib/ConsoleAgent').ConsoleAgent;
+    ConsoleAgent = require('../lib/Agents/ConsoleAgent').ConsoleAgent;
 
 var PROP_TYPE = semver.lt(process.version, '1.0.0') ? 1 : 0;
 
