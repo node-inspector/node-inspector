@@ -1,5 +1,4 @@
 var expect = require('chai').expect,
-    Promise = require('promise'),
     launcher = require('./helpers/launcher.js'),
     InjectorClient = require('../lib/InjectorClient').InjectorClient,
     NetworkAgent = require('../lib/Agents/NetworkAgent.js').NetworkAgent;
