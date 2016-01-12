@@ -121,7 +121,6 @@ describe('InjectorClient', function() {
         console.log('test');
       };
 
-      debuggerClient.registerDebuggerEventHandlers('console');
       debuggerClient.once('console', function(message) {
         expect(message.level).to.equal('log');
         expect(message.message).to.equal('testtest');

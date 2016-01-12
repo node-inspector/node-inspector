@@ -24,6 +24,8 @@
   "dependencies": {
     "async": "~0.9",
     "biased-opener": "~0.2.2",
+    "bluebird": "^3.1.1",
+    "co": "^4.6.0",
     "debug": "^2.2.0",
     "express": "^4.12.3",
     "glob": "^5.0.5",
@@ -39,7 +41,6 @@
     "yargs": "^3.9.0"
   },
   "devDependencies": {
-    "promise": "^7.0.3",
     "mocha": "^1.21",
     "chai": "^2.1",
     "jshint": "^2.4.4",
@@ -48,7 +49,6 @@
   "preferGlobal": true,
   "scripts": {
     "pretest": "jshint .",
-    "test": "mocha",
-    "generate-front-end": "node --harmony tools/generate-front-end"
+    "test": "mocha"
   }
 }
