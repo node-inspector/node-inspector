@@ -1,183 +1,155 @@
-var expect = require('chai').expect,
-    InjectorClient = require('../lib/InjectorClient').InjectorClient,
-    launcher = require('./helpers/launcher.js');
+'use strict';
+
+var co = require('co');
+var expect = require('chai').expect;
+var InjectorClient = require('../lib/InjectorClient.js');
+var launcher = require('./helpers/launcher.js');
+
+var DebuggerClient = require('../lib/DebuggerClient.js');
+var ErrorNotConnected = DebuggerClient.ErrorNotConnected;
 
 describe('InjectorClient', function() {
-  describe('with inject=false', function() {
-    var injectorClient, debuggerClient, breakedObject;
 
-    function setupInjector(done) {
-      launcher.runCommandlet(false, function(childProcess, session) {
-        debuggerClient = session.debuggerClient;
-        injectorClient = new InjectorClient({inject: false}, session);
-        done();
-      });
-    }
+  describe('#injected', function() {
+    beforeEach(() => setupInjector());
+    afterEach(() => launcher.stopAllDebuggers());
 
-    before(setupInjector);
-
-    it('breaks the injection flow with injected=false', function(done) {
-      injectorClient.inject(function() {
-        expect(injectorClient._injected).to.be.equal(false);
-        done();
-      });
-    });
-  });
-
-  describe('with inject=true', function() {
-    before(setupInjector);
-    var injectorClient, debuggerClient, serverPort;
-
-    function setupInjector(done) {
-      launcher.runCommandlet(false, function(childProcess, session) {
-        debuggerClient = session.debuggerClient;
-        injectorClient = new InjectorClient({}, session);
-        done();
-      });
-    }
-
-    it('is ready to inject', function() {
-      expect(injectorClient.needsInject, 'injection is needed').to.equal(true);
-    });
-
-    it('injects server', function(done) {
-      injectorClient.inject(done);
-    });
-
-    it('does not need to inject if already injected', function() {
-      expect(injectorClient.needsInject, 'injection is not needed').to.equal(false);
-    });
-
-    it('should don`t emit `inject` event if is already injected', function(done) {
-      injectorClient.once('inject', done);
-      injectorClient.inject(done);
-    });
-
-    it('would close on "close" debuggerClient', function(done) {
-      injectorClient.once('close', function() {
-        expect(injectorClient._injected).to.equal(false);
-        expect(injectorClient._appPausedByInjector).to.equal(false);
-        done();
-      });
-      debuggerClient.close();
-    });
-
-    it('is ready to inject after close', function() {
-      expect(injectorClient.needsInject, 'injection is needed').to.equal(true);
-    });
-  });
-
-  describe('with inject=true and debug-brk flag', function() {
-    before(setupInjector);
     var injectorClient, debuggerClient;
 
-    function setupInjector(done) {
-      launcher.runCommandlet(true, function(childProcess, session) {
-        debuggerClient = session.debuggerClient;
-        injectorClient = new InjectorClient({}, session);
-        done();
-      });
+    function setupInjector() {
+      return launcher.runCommandlet(false).then(expand);
     }
 
-    it('connects to server', function(done) {
-      injectorClient.inject(done);
+    function expand(instance) {
+      debuggerClient = instance.session.debuggerClient;
+      injectorClient = new InjectorClient({}, instance.session);
+    }
+
+    it('should inject server', () => {
+      return co(function * () {
+        yield injectorClient.injected();
+      });
+    });
+
+    it('should inject server if debugger paused', () => {
+      return co(function * () {
+        yield launcher.runCommandlet(true).then(expand);
+        expect(yield debuggerClient.running()).to.equal(false);
+        yield injectorClient.injected();
+      });
+    });
+
+    it('should throw if debugger closed', () => {
+      return co(function * () {
+        yield debuggerClient.connected();
+        yield debuggerClient.close();
+        yield injectorClient.injected().then(
+          result => Promise.reject(new Error('should reject, but got ' + result)),
+          error => expect(error).to.be.instanceof(ErrorNotConnected));
+      });
+    });
+
+    it('should prevent double injection', function() {
+      expect(injectorClient.injected()).to.equal(injectorClient.injected());
+    });
+
+    it('should close on debuggerClient closing', function() {
+      return co(function * () {
+        var promise = new Promise(resolve => injectorClient.once('close', resolve));
+        yield injectorClient.injected();
+        yield debuggerClient.close();
+        yield promise;
+        expect(yield injectorClient.injected().catch(_ => false)).to.equal(false);
+      });
     });
   });
 
-  describe('works with events.', function() {
-    before(setupInjector);
+  describe('works with commands and events.', function() {
+    beforeEach(() => setupInjector());
+    afterEach(() => launcher.stopAllDebuggers());
+
     var injectorClient, debuggerClient;
 
-    function setupInjector(done) {
-      launcher.runCommandlet(true, function(childProcess, session) {
-        debuggerClient = session.debuggerClient;
-        injectorClient = new InjectorClient({}, session);
-        injectorClient.inject(function(error) {
-          if (error) return done(error);
-          debuggerClient.request('continue', null, done);
-        });
+    function setupInjector() {
+      return co(function * () {
+        yield launcher.runCommandlet(true).then(expand);
+        yield injectorClient.injected();
       });
     }
 
-    it('Register event handle in app and emits it', function(done) {
-      var injection = function(require, debug, options) {
-        debug.register('console', function(request, response) {
-          debug.commandToEvent(request, response);
-        });
+    function expand(instance) {
+      debuggerClient = instance.session.debuggerClient;
+      injectorClient = new InjectorClient({}, instance.session);
+    }
 
-        console.log = (function(fn) {
-          return function() {
-            var message = arguments[0];
+    function event(require, debug, options) {
+      console.log = (function(fn) {
+        return function() {
+          var message = arguments[0];
 
-            debug.command('console', {
-              level: 'log',
-              message: options.message + message
-            });
+          debug.emitEvent('console', {
+            level: 'log',
+            message: options.message + message
+          });
 
-            return fn && fn.apply(console, arguments);
-          };
-        })(console.log);
+          return fn && fn.apply(console, arguments);
+        };
+      })(console.log);
 
-        console.log('test');
-      };
+      console.log('test');
+    }
 
-      debuggerClient.once('console', function(message) {
-        expect(message.level).to.equal('log');
-        expect(message.message).to.equal('testtest');
-        done();
+    function command(require, debug, options) {
+      debug.register('testcommand', function(request, response) {
+        response.body = request.arguments;
       });
+    };
 
-      injectorClient.injection(
-        injection,
-        { message: 'test' },
-        function(error, result) {
-          if (error) return done(error);
-        }
-      );
+    it('Register event handle in app and emits it', function() {
+      return co(function * () {
+        yield debuggerClient.request('continue');
+        var promise = new Promise(resolve => {
+          debuggerClient.once('console', message => {
+            expect(message.level).to.equal('log');
+            expect(message.message).to.equal('testtest');
+            resolve();
+          });
+        });
+        yield injectorClient.injection(event, { message: 'test' });
+        return promise;
+      });
     });
-  });
 
-  describe('works with commands.', function() {
-    before(setupInjector);
-    var injectorClient, debuggerClient;
-
-    function setupInjector(done) {
-      launcher.runCommandlet(true, function(childProcess, session) {
-        debuggerClient = session.debuggerClient;
-        injectorClient = new InjectorClient({}, session);
-        injectorClient.inject(function(error) {
-          if (error) return done(error);
-          debuggerClient.request('continue', null, done);
+    it('Register event handle in paused app and emits it', function() {
+      return co(function * () {
+        var promise = new Promise(resolve => {
+          debuggerClient.once('console', message => {
+            expect(message.level).to.equal('log');
+            expect(message.message).to.equal('testtest');
+            resolve();
+          });
         });
+        yield injectorClient.injection(event, { message: 'test' });
+        yield debuggerClient.request('continue');
+        return promise;
       });
-    }
+    });
 
-    it('Registers command in app and responds to it', function(done) {
-      var injection = function(require, debug, options) {
-        debug.register('testcommand', function(request, response) {
-          response.body = request.arguments;
-        });
-      };
+    it('Registers command in app and responds to it', function() {
+      return co(function * () {
+        yield injectorClient.injection(command);
+        yield debuggerClient.request('continue');
+        var result = yield debuggerClient.request('testcommand', { param: 'test' });
+        expect(result).to.have.property('param', 'test');
+      });
+    });
 
-      injectorClient.injection(
-        injection,
-        {},
-        function(error, result) {
-          if (error) return done(error);
-
-          debuggerClient.request(
-            'testcommand',
-            {
-              param: 'test'
-            },
-            function(error, result) {
-              expect(error).to.equal(null);
-              expect(result).to.have.property('param', 'test');
-              done();
-            }
-          );
-        }
-      );
+    it('Registers command in paused app and responds to it', function() {
+      return co(function * () {
+        yield injectorClient.injection(command);
+        var result = yield debuggerClient.request('testcommand', { param: 'test' });
+        expect(result).to.have.property('param', 'test');
+      });
     });
   });
 });

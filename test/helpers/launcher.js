@@ -3,10 +3,11 @@ var spawn = require('child_process').spawn,
   SessionStub = require('./SessionStub'),
   DebuggerClient = require('../../lib/DebuggerClient').DebuggerClient;
 
+var co = require('co');
+var ignore = () => {};
+
 var TEST_DIR = path.dirname(__filename);
 var DEBUG_PORT = 61000;
-
-var Promise = require('promise');
 
 function bind(func) {
   var args = Array.prototype.slice.call(arguments, 1);
@@ -19,18 +20,12 @@ function expandArrayFor(func, context) {
   };
 }
 
-function expandInstanceFor(func) {
-  return function(instance) {
-    func(instance.child, instance.session);
-  };
-}
-
 var instances = [];
 function stopAllDebuggers(err) {
   if (err) console.error(err);
   var promises = instances.map(stopInstance);
   instances = [];
-  return new Promise.all(promises);
+  return Promise.all(promises);
 }
 
 function instantiate(scriptPath, breakOnStart) {
@@ -79,8 +74,7 @@ function setupScript(scriptPath, breakOnStart) {
   return Promise.resolve()
     .then(stopAllDebuggers)
     .then(instantiate(scriptPath, breakOnStart))
-    .then(setupDebugger)
-    .then(injectHelpers);
+    .then(setupDebugger);
 }
 
 function computeDebugOptions(breakOnStart) {
@@ -91,79 +85,40 @@ function setupDebugger(instance) {
   instance.session = new SessionStub();
   var debuggerClient = instance.session.debuggerClient = new DebuggerClient(DEBUG_PORT);
 
-  return new Promise(function(resolve, reject) {
-    debuggerClient.on('connect', function() {
-      resolve(instance);
-    });
-    debuggerClient.on('error', function(e) {
-      reject(new Error('Debugger connection error: ' + e));
-    });
-    debuggerClient.connect();
-  });
-}
-
-function injectHelpers(instance) {
-  instance.session.debuggerClient.fetchObjectId =
-    function(debuggerClient, expression, callback) {
-      this.request(
-        'evaluate',
-        {
-          expression: expression
-        },
-        function(err, response) {
-          if (err) throw err;
-          callback(String(response.handle));
-        }
-      );
-    };
-
-  return Promise.resolve(instance);
+  return instance;
 }
 
 function stopInstance(instance) {
-  return new Promise(function(resolve, reject) {
-    if (instance.session) {
-      instance.session.debuggerClient
-        .once('close', function() {
-          resolve();
-        })
-        .close();
-    } else {
-      process.nextTick(resolve);
-    }
+  return co(function * () {
+    if (!instance.session) return;
+
+    yield instance.session.debuggerClient.request('continue').catch(ignore);
+    yield instance.session.debuggerClient.close().catch(console.log);
     instance.child.kill();
   });
 }
 
-exports.startDebugger = function(scriptPath, breakOnStart, test) {
-  if (!test) {
-    test = breakOnStart;
-    breakOnStart = false;
-  }
+exports.stopAllDebuggers = stopAllDebuggers;
+
+exports.startDebugger = function(scriptPath, breakOnStart) {
   return setupScript(scriptPath, breakOnStart)
-    .then(expandInstanceFor(test))
     .catch(stopAllDebuggers);
 };
-exports.runOnBreakInFunction = function(test) {
+exports.runOnBreakInFunction = function() {
   return setupScript('BreakInFunction.js', false)
     .then(function(instance) {
       instance.session.debuggerClient.once('break', function() {
-        test(instance.session);
+        //test(instance.session);
       });
       instance.child.stdin.write('go!\n');
     })
     .catch(stopAllDebuggers);
 };
-exports.runCommandlet = function(breakOnStart, test) {
-  if (!test) {
-    test = breakOnStart;
-    breakOnStart = false;
-  }
+exports.runCommandlet = function(breakOnStart) {
   return setupScript('Commandlet.js', breakOnStart)
-    .then(expandInstanceFor(test))
     .catch(stopAllDebuggers);
 };
-exports.runInspectObject = function runInspectObject(test) {
+exports.runInspectObject = function runInspectObject() {
   return setupScript('InspectObject.js', false)
     .then(function(instance) {
       var session = instance.session,
@@ -184,7 +139,6 @@ exports.runInspectObject = function runInspectObject(test) {
         })
       ]);
     })
-    .then(expandArrayFor(test))
     .catch(stopAllDebuggers);
 };
 

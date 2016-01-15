@@ -3,7 +3,7 @@ var expect = require('chai').expect,
     SessionStub = require('./helpers/SessionStub.js'),
     ScriptManager = require('../lib/ScriptManager').ScriptManager;
 
-describe('ScriptManager', function() {
+xdescribe('ScriptManager', function() {
   var manager;
   var realMainAppScript = 'folder' + path.sep + 'App.js';
   var mainAppScript = 'folder' + path.sep + 'app.js';

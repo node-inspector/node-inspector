@@ -13,7 +13,7 @@ var TEMP_DIR = path.join(__dirname, 'work');
 var NON_APP_DIR = path.join(__dirname, '..', 'front-end', 'cm');
 
 beforeEach(deleteTemps);
-describe('ScriptFileStorage', function() {
+xdescribe('ScriptFileStorage', function() {
   var storage;
   beforeEach(function() {
     storage = createScriptFileStorage();

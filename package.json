@@ -48,7 +48,6 @@
   },
   "preferGlobal": true,
   "scripts": {
-    "pretest": "jshint .",
     "test": "mocha"
   }
 }
