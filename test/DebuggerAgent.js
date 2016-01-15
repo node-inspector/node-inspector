@@ -3,7 +3,7 @@ var expect = require('chai').expect,
   ScriptManager = require('../lib/ScriptManager.js').ScriptManager,
   DebuggerAgent = require('../lib/Agents/DebuggerAgent.js').DebuggerAgent;
 
-describe('DebuggerAgent', function() {
+xdescribe('DebuggerAgent', function() {
   describe('sets variable value', function() {
     before(setupDebugScenario);
 

@@ -8,7 +8,7 @@ var commandlet,
     frontendClient,
     networkAgent;
 
-describe('NetworkAgent', function() {
+xdescribe('NetworkAgent', function() {
   describe('loadResourceForFrontend', function() {
     it('should load data URLs', function(done) {
       var agent = new NetworkAgent({ inject: false }, {});

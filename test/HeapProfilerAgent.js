@@ -8,7 +8,7 @@ var heapProfilerAgent,
     debuggerClient,
     frontendClient;
 
-describe('HeapProfiler Agent', function() {
+xdescribe('HeapProfiler Agent', function() {
   before(initializeProfiler);
 
   it('should take snapshot with report progress', function(done) {

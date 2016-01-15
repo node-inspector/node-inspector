@@ -13,7 +13,7 @@ var consoleAgent,
     debuggerClient,
     frontendClient;
 
-describe.only('ConsoleAgent', function() {
+xdescribe('ConsoleAgent', function() {
   before(initializeConsole);
 
   it('should translate console message to frontend', function(done) {

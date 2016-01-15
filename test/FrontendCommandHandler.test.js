@@ -8,7 +8,7 @@ var ScriptManager = require('../lib/ScriptManager.js').ScriptManager;
 var InjectorClient = require('../lib/InjectorClient.js').InjectorClient;
 var WebSocketMock = require('./helpers/wsmock');
 
-describe('FrontendCommandHandler', function() {
+xdescribe('FrontendCommandHandler', function() {
   before(setupProcess);
 
   var session;

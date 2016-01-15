@@ -8,7 +8,7 @@ var profilerAgent,
     debuggerClient,
     frontendClient;
 
-describe('Profiler Agent', function() {
+xdescribe('Profiler Agent', function() {
   before(initializeProfiler);
 
   it('should start profiling', function(done) {
