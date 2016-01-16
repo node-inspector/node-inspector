@@ -1,34 +1,33 @@
-var expect = require('chai').expect,
-    semver = require('semver'),
-    launcher = require('./helpers/launcher.js'),
-    inherits = require('util').inherits,
-    EventEmitter = require('events').EventEmitter,
-    InjectorClient = require('../lib/InjectorClient').InjectorClient,
-    ConsoleAgent = require('../lib/Agents/ConsoleAgent').ConsoleAgent;
+'use strict';
 
-var PROP_TYPE = semver.lt(process.version, '1.0.0') ? 1 : 0;
+var co = require('co');
+var expect = require('chai').expect;
+var launcher = require('./helpers/launcher.js');
+var inherits = require('util').inherits;
+var InjectorClient = require('../lib/InjectorClient');
+var ConsoleAgent = require('../lib/Agents/ConsoleAgent');
 
-var consoleAgent,
-    childProcess,
-    debuggerClient,
-    frontendClient;
+var child;
+var session;
+var consoleAgent;
+var debuggerClient;
+var frontendClient;
+var injectorClient;
 
-xdescribe('ConsoleAgent', function() {
-  before(initializeConsole);
+describe('ConsoleAgent', () => {
+  before(() => initializeConsole());
 
-  it('should translate console message to frontend', function(done) {
-    frontendClient.once('Console.messageAdded', function(message) {
-      done();
-    });
-    childProcess.stdin.write('log simple text\n');
+  it('should translate console message to frontend', done => {
+    frontendClient.once('Console.messageAdded', message => done());
+    child.stdin.write('log simple text\n');
   });
 
-  it('should translate objects', function(done) {
-    frontendClient.once('Console.messageAdded', function(message) {
+  it('should translate objects', done => {
+    frontendClient.once('Console.messageAdded', message => {
       expect(JSON.stringify(message.message.parameters)).to.equal(JSON.stringify([{
         type: 'object',
         subtype: undefined,
-        objectId: '{"injectedScriptId":' + childProcess.pid + ',"id":1}',
+        objectId: '{"injectedScriptId":' + child.pid + ',"id":1}',
         className: 'Object',
         description: 'Object',
         preview: {
@@ -47,38 +46,37 @@ xdescribe('ConsoleAgent', function() {
       }]));
       done();
     });
-    childProcess.stdin.write('log object\n');
+    child.stdin.write('log object\n');
   });
 
-  it('should translate async console message to frontend', function(done) {
-    frontendClient.once('Console.messageAdded', function(message) {
-      done();
-    });
-    childProcess.stdin.write('log simple text async\n');
+  it('should translate async console message to frontend', done => {
+    frontendClient.once('Console.messageAdded', message => done());
+    child.stdin.write('log simple text async\n');
   });
 
-  it('should clear messages', function(done) {
-    frontendClient.on('Console.messagesCleared', function() {
-      done();
-    });
-    consoleAgent.clearMessages();
+  it('should clear messages', done => {
+    frontendClient.on('Console.messagesCleared', () => done());
+    consoleAgent.handle('Console.clearMessages');
   });
 });
 
-function initializeConsole(done) {
-  launcher.runCommandlet(true, function(child, session) {
-    childProcess = child;
-    debuggerClient = session.debuggerClient;
-    frontendClient = session.frontendClient;
+function expand(instance) {
+  child = instance.child;
+  session = instance.session;
+  debuggerClient = session.debuggerClient;
+  frontendClient = session.frontendClient;
+}
 
-    var injectorClient = new InjectorClient({}, session);
-    session.injectorClient = injectorClient;
+function fill() {
+  injectorClient = new InjectorClient({}, session);
+  session.injectorClient = injectorClient;
+  consoleAgent = new ConsoleAgent({}, session);
+}
 
-    consoleAgent = new ConsoleAgent({}, session);
-
-    injectorClient.inject(function(error) {
-      if (error) return done(error);
-      debuggerClient.request('continue', null, done);
-    });
+function initializeConsole() {
+  return co(function * () {
+    yield launcher.runCommandlet(true).then(expand).then(fill);
+    yield injectorClient.injected();
+    yield debuggerClient.request('continue');
   });
 }
