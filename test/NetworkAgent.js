@@ -1,39 +1,37 @@
-var expect = require('chai').expect,
-    launcher = require('./helpers/launcher.js'),
-    InjectorClient = require('../lib/InjectorClient').InjectorClient,
-    NetworkAgent = require('../lib/Agents/NetworkAgent.js').NetworkAgent;
+'use strict';
 
-var commandlet,
-    debuggerClient,
-    frontendClient,
-    networkAgent;
+var co = require('co');
+var expect = require('chai').expect;
+var launcher = require('./helpers/launcher.js');
+var SessionStub = require('./helpers/SessionStub.js');
+var InjectorClient = require('../lib/InjectorClient.js');
+var NetworkAgent = require('../lib/Agents/NetworkAgent.js');
 
-xdescribe('NetworkAgent', function() {
+var session;
+var commandlet;
+var debuggerClient;
+var frontendClient;
+var networkAgent;
+
+describe('NetworkAgent', () => {
   describe('loadResourceForFrontend', function() {
-    it('should load data URLs', function(done) {
-      var agent = new NetworkAgent({ inject: false }, {});
-      agent.loadResourceForFrontend(
-        {
-          url: 'data:text/plain;base64,aGVsbG8gd29ybGQ='
-        },
-        function(err, result) {
-          if (err) return done(err);
-          expect(result.content).to.equal('hello world');
-          done();
-        }
-      );
+    it('should load data URLs', () => {
+      var agent = new NetworkAgent({ inject: false }, new SessionStub());
+      return agent.handle('Network.loadResourceForFrontend', {
+        url: 'data:text/plain;base64,aGVsbG8gd29ybGQ='
+      }).then(result => expect(result.content).to.equal('hello world'));
     });
   });
 
-  describe('HTTP request wrapper', function() {
-    var requestWillBeSent,
-        responseReceived,
-        dataReceived,
-        loadingFinished,
-        loadingFailed;
+  describe('HTTP request wrapper', () => {
+    var requestWillBeSent;
+    var responseReceived;
+    var dataReceived;
+    var loadingFinished;
+    var loadingFailed;
 
-    beforeEach(initializeNetwork);
-    beforeEach(function() {
+    beforeEach(() => initializeNetwork());
+    beforeEach(() => {
       requestWillBeSent = new Promise(function(resolve, reject) {
         frontendClient.once('Network.requestWillBeSent', resolve);
       });
@@ -53,8 +51,9 @@ xdescribe('NetworkAgent', function() {
       });
     });
 
-    it('should emit `requestWillBeSent` event', function(done) {
-      requestWillBeSent.then(function(message) {
+    it('should emit `requestWillBeSent` event', () => {
+      commandlet.stdin.write('send GET request\n');
+      return requestWillBeSent.then(message => {
         expect(message.documentURL).to.match(/^http:\/\/127\.0\.0\.1:\d+\/page\?a=b$/);
 
         var host = /^http:\/\/(127\.0\.0\.1:\d+).*$/.exec(message.documentURL)[1];
@@ -73,15 +72,12 @@ xdescribe('NetworkAgent', function() {
           url: message.documentURL
         });
         expect(message.initiator).to.include.keys('type', 'stackTrace');
-      })
-      .then(done)
-      .catch(done);
-
-      commandlet.stdin.write('send GET request\n');
+      });
     });
 
-    it('should emit `responseReceived` event', function(done) {
-      responseReceived.then(function(message) {
+    it('should emit `responseReceived` event', () => {
+      commandlet.stdin.write('send GET request\n');
+      return responseReceived.then(message => {
         expect(message).to.have.property('requestId').that.is.a('string');
         expect(message).to.have.property('loaderId').that.is.a('string');
         expect(message).to.have.property('timestamp').that.is.a('number');
@@ -105,9 +101,7 @@ xdescribe('NetworkAgent', function() {
         expect(message.response.url).to.match(/127\.0\.0\.1:\d+\/page\?a=b/);
 
         var timings = ['proxy', 'dns', 'connect', 'ssl', 'serviceWorkerFetch', 'send']
-          .map(function(name) {
-            return [name + 'Start', name + 'End'];
-          });
+          .map(name => [name + 'Start', name + 'End']);
 
         expect(message.response.timing).to.have.all.keys(Array.prototype.concat.apply([
           'requestTime',
@@ -115,153 +109,126 @@ xdescribe('NetworkAgent', function() {
           'receiveHeadersEnd'
         ], timings));
 
-        timings.forEach(function(timing) {
-          var start = timing[0],
-              end = timing[1];
+        timings.forEach(timing => {
+          var start = timing[0];
+          var end = timing[1];
+
           expect(message.response.timing[start], start + ' less than or equal to ' + end)
             .to.be.at.most(message.response.timing[end]);
         });
-      })
-      .then(done)
-      .catch(done);
-
-      commandlet.stdin.write('send GET request\n');
+      });
     });
 
-    it('should emit `dataReceived` event', function(done) {
-      dataReceived.then(function(message) {
+    it('should emit `dataReceived` event', () => {
+      commandlet.stdin.write('send GET request\n');
+      return dataReceived.then(message => {
         expect(message).to.have.property('requestId').that.is.a('string');
         expect(message).to.have.property('timestamp').that.is.a('number');
         expect(message.dataLength).to.be.above(0);
         expect(message.encodedDataLength).to.be.above(0);
-      })
-      .then(done)
-      .catch(done);
-
-      commandlet.stdin.write('send GET request\n');
+      });
     });
 
-    it('should emit `loadingFinished` event', function(done) {
-      loadingFinished.then(function(message) {
+    it('should emit `loadingFinished` event', () => {
+      commandlet.stdin.write('send GET request\n');
+      return loadingFinished.then(message => {
         expect(message).to.have.property('requestId').that.is.a('string');
         expect(message).to.have.property('timestamp').that.is.a('number');
         expect(message.encodedDataLength).to.be.equal(13);
-      })
-      .then(done)
-      .catch(done);
-
-      commandlet.stdin.write('send GET request\n');
+      });
     });
 
-    it('should capture response data', function(done) {
-      loadingFinished.then(function(message) {
-        var getBody = Promise.denodeify(networkAgent.getResponseBody);
-        return getBody.call(networkAgent, {
+    it('should capture response data', () => {
+      commandlet.stdin.write('send GET request\n');
+      return co(function * () {
+        var message = yield loadingFinished;
+        var result = yield networkAgent.handle('Network.getResponseBody', {
           requestId: message.requestId
         });
-      }).then(function(result) {
         expect(result).to.deep.equal({
           body: 'RESPONSE DATA',
           base64Encoded: false
         });
-      })
-      .then(done)
-      .catch(done);
-
-      commandlet.stdin.write('send GET request\n');
-    });
-
-    it('should clean captured data', function(done) {
-      loadingFinished.then(function(message) {
-        expect(Object.keys(networkAgent._dataStorage).length).to.be.equal(1);
-        networkAgent._clearCapturedData({}, function() {});
-        expect(Object.keys(networkAgent._dataStorage).length).to.be.equal(0);
-      })
-      .then(done)
-      .catch(done);
-
-      commandlet.stdin.write('send GET request\n');
-    });
-
-    it('should stop data capturing', function(done) {
-      expect(Object.keys(networkAgent._dataStorage).length).to.be.equal(0);
-      networkAgent._setCapturingEnabled({
-        enabled: false
-      }, function() {});
-      loadingFinished.then(function() {
-        expect(Object.keys(networkAgent._dataStorage).length).to.be.equal(0);
-        networkAgent._setCapturingEnabled({ enabled: true }, done);
       });
-
-      commandlet.stdin.write('send GET request\n');
     });
 
-    it('should handle failure of request', function(done) {
-      loadingFailed.then(function(message) {
+    it('should clean captured data', () => {
+      commandlet.stdin.write('send GET request\n');
+      return co(function * () {
+        var message = yield loadingFinished;
+        expect(Object.keys(networkAgent._dataStorage).length).to.be.equal(1);
+        yield networkAgent.handle('Network._clearCapturedData');
+        expect(Object.keys(networkAgent._dataStorage).length).to.be.equal(0);
+      });
+    });
+
+    it('should stop data capturing', () => {
+      expect(Object.keys(networkAgent._dataStorage).length).to.be.equal(0);
+      commandlet.stdin.write('send GET request\n');
+      return co(function * () {
+        yield networkAgent.handle('Network._setCapturingEnabled', { enabled: false });
+        yield loadingFinished;
+        expect(Object.keys(networkAgent._dataStorage).length).to.be.equal(0);
+        yield networkAgent.handle('Network._setCapturingEnabled', { enabled: true });
+      });
+    });
+
+    it('should handle failure of request', () => {
+      commandlet.stdin.write('send GET request with handled failure\n');
+      return co(function * () {
+        var message = yield loadingFailed;
         containKeys(message, {
           errorText: 'ECONNRESET',
           type: 'XHR'
         });
-        networkAgent.getResponseBody({requestId: message.requestId}, function(error, result) {
-          containKeys(result, {
-            base64Encoded: false,
-            body: ''
-          });
-          done();
+        var result = yield networkAgent.handle('Network.getResponseBody', { requestId: message.requestId });
+        containKeys(result, {
+          base64Encoded: false,
+          body: ''
         });
       });
-
-      commandlet.stdin.write('send GET request with handled failure\n');
     });
 
-    it('should handle unhandled failure of request', function(done) {
-      loadingFailed.then(function(message) {
-        containKeys(message, {
-          errorText: '(unhandled) ECONNRESET',
-          type: 'XHR'
-        });
-        done();
-      });
-
+    it('should handle unhandled failure of request', () => {
       commandlet.stdin.write('send GET request with unhandled failure\n');
+      return loadingFailed.then(message => containKeys(message, {
+        errorText: '(unhandled) ECONNRESET',
+        type: 'XHR'
+      }));
     });
 
-    it('should handle aborted request (on creation step)', function(done) {
-      loadingFailed.then(function(message) {
-        containKeys(message, {
-          type: 'XHR',
-          canceled: true
-        });
-        done();
-      });
-
+    it('should handle aborted request (on creation step)', () => {
       commandlet.stdin.write('send GET request aborted on creation step\n');
+      return loadingFailed.then(message => containKeys(message, {
+        type: 'XHR',
+        canceled: true
+      }));
     });
 
-    it('should handle aborted request (on response step)', function(done) {
-      loadingFailed.then(function(message) {
-        containKeys(message, {
-          type: 'XHR',
-          canceled: true
-        });
-        done();
-      });
-
+    it('should handle aborted request (on response step)', () => {
       commandlet.stdin.write('send GET request aborted on response step\n');
+      return loadingFailed.then(message => containKeys(message, {
+        type: 'XHR',
+        canceled: true
+      }));
     });
   });
 
   function containKeys(obj, keys) {
-    Object.keys(keys).forEach(function(key) {
-      expect(obj[key], key + ' is equal to ' + keys[key]).to.be.equal(keys[key]);
-    });
+    Object.keys(keys).forEach(key =>
+      expect(obj[key], key + ' is equal to ' + keys[key]).to.be.equal(keys[key]));
   }
 
-  function initializeNetwork(done) {
-    launcher.runCommandlet(true, function(child, session) {
-      commandlet = child;
-      debuggerClient = session.debuggerClient;
-      frontendClient = session.frontendClient;
+  function expand(instance) {
+    commandlet = instance.child;
+    session = instance.session;
+    debuggerClient = session.debuggerClient;
+    frontendClient = session.frontendClient;
+  }
+
+  function initializeNetwork() {
+    return co(function * () {
+      yield launcher.runCommandlet(true).then(expand);
 
       commandlet.stdout.pipe(process.stdout);
 
@@ -270,10 +237,8 @@ xdescribe('NetworkAgent', function() {
 
       networkAgent = new NetworkAgent({}, session);
 
-      injectorClient.inject(function(error) {
-        if (error) return done(error);
-        debuggerClient.request('continue', null, done);
-      });
+      yield networkAgent.ready();
+      yield debuggerClient.request('continue');
     });
   }
 });
