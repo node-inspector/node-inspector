@@ -41,10 +41,11 @@
     "yargs": "^3.9.0"
   },
   "devDependencies": {
-    "mocha": "^1.21",
     "chai": "^2.1",
+    "fs-extra": "^0.26.4",
     "jshint": "^2.4.4",
-    "fs-extra": "~0.8.1"
+    "mocha": "^1.21",
+    "rimraf": "^2.5.0"
   },
   "preferGlobal": true,
   "scripts": {
