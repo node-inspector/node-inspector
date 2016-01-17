@@ -1,344 +1,365 @@
-var fs = require('fs-extra'),
-  path = require('path'),
-  expect = require('chai').expect,
-  glob = require('glob'),
-  launcher = require('./helpers/launcher.js'),
-  SessionStub = require('./helpers/SessionStub.js'),
-  ScriptFileStorage = require('../lib/ScriptFileStorage.js').ScriptFileStorage,
-  ScriptManager = require('../lib/ScriptManager.js').ScriptManager;
+'use strict';
+
+var co = require('co');
+var fs = require('fs-extra');
+var path = require('path');
+var expect = require('chai').expect;
+var rimraf = require('rimraf');
+var promisify = require('bluebird').promisify;
+var launcher = require('./helpers/launcher.js');
+var ScriptFileStorage = require('../lib/ScriptFileStorage.js');
+
+var rmrf = promisify(rimraf);
+var mkdir = promisify(fs.mkdir);
+var exists = path => new Promise(resolve => fs.exists(path, resolve));
+var unlink = promisify(fs.unlink);
+var readFile = promisify(fs.readFile);
+var writeFile = promisify(fs.writeFile);
+var relative = node => path.relative(TEMP_DIR, node);
 
 var TEMP_FILE = path.join(__dirname, 'fixtures', 'temp.js');
 var TEMP_DIR = path.join(__dirname, 'work');
-// directory that does not look like a part of a node.js application
-var NON_APP_DIR = path.join(__dirname, '..', 'front-end', 'cm');
 
-beforeEach(deleteTemps);
-xdescribe('ScriptFileStorage', function() {
-  var storage;
-  beforeEach(function() {
-    storage = createScriptFileStorage();
-  });
+var child;
+var session;
+var storage;
+var originalScript;
+var debuggerClient;
+var runtimeScript;
 
-  it('saves new content without node.js module wrapper', function(done) {
-    runLiveEdit(function(debuggerClient, originalScript, runtimeScript) {
-      var storage = createScriptFileStorage();
-      storage.save(TEMP_FILE, edited(runtimeScript), function(err) {
-        if (err) throw err;
-        var newScript = fs.readFileSync(TEMP_FILE, { encoding: 'utf-8' });
-        expect(newScript).to.equal(edited(originalScript));
-        done();
-      });
+function ScriptManagerStub() {
+  this.findScriptIdByPath = () => null;
+}
+
+describe('ScriptFileStorage', function() {
+  beforeEach(() => deleteTemps());
+
+  it('saves new content without node.js module wrapper', () => {
+    return co(function * () {
+      yield runLiveEdit();
+      var storage = new ScriptFileStorage({}, session);
+      yield storage.save(TEMP_FILE, edited(runtimeScript));
+      var newScript = yield readFile(TEMP_FILE, { encoding: 'utf-8' });
+      expect(newScript).to.equal(edited(originalScript));
     });
   });
 
-  it('preserves shebang when saving new content', function(done) {
-    runLiveEdit(
-      function(content) { return '#!/usr/bin/node\n' + content; },
-      function(debuggerClient, originalScript, runtimeScript) {
-        var storage = createScriptFileStorage();
-        storage.save(TEMP_FILE, edited(runtimeScript), function(err) {
-          if (err) throw err;
-          var newScript = fs.readFileSync(TEMP_FILE, { encoding: 'utf-8' });
-          expect(newScript).to.equal(edited(originalScript));
-          done();
-        });
-      }
-    );
+  it('preserves shebang when saving new content', () => {
+    return co(function * () {
+      yield runLiveEdit(content => `#!/usr/bin/node\n${content}`);
+      var storage = new ScriptFileStorage({}, session);
+      yield storage.save(TEMP_FILE, edited(runtimeScript));
+      var newScript = yield readFile(TEMP_FILE, { encoding: 'utf-8' });
+      expect(newScript).to.equal(edited(originalScript));
+    });
   });
 
-  it('loads content with node.js module wrapper', function(done) {
-    fs.writeFileSync(TEMP_FILE, '/* content */');
-    storage.load(TEMP_FILE, function(err, content) {
-      if (err) throw err;
+  it('loads content with node.js module wrapper', () => {
+    return co(function * () {
+      yield writeFile(TEMP_FILE, '/* content */');
+      var storage = new ScriptFileStorage({}, session);
+      var content = yield storage.load(TEMP_FILE)
       expect(content).to.match(
         /^\(function \(exports, require,.*\) \{ \/\* content \*\/\n\}\);$/);
-      done();
     });
   });
 
-  it('loads content without shebang', function(done) {
-    fs.writeFileSync(TEMP_FILE, '#!/usr/bin/env/node\n/* content */');
-    storage.load(TEMP_FILE, function(err, content) {
-      if (err) throw err;
+  it('loads content without shebang', () => {
+    return co(function * () {
+      yield writeFile(TEMP_FILE, '#!/usr/bin/env/node\n/* content */');
+      var storage = new ScriptFileStorage({}, session);
+      var content = yield storage.load(TEMP_FILE);
       expect(content).to.not.contain('#!');
       expect(content).to.contain('/* content */');
-      done();
     });
   });
 
-  it('finds application root for subdir/app.js by checking package.json file in parent',
-    function(done) {
-      givenTempFiles('subdir/', 'subdir/app.js', 'package.json');
-      storage.findApplicationRoot(
-        path.join(TEMP_DIR, 'subdir', 'app.js'),
-        expectRootToEqual.bind(this, done, TEMP_DIR)
-      );
-    }
-  );
-
-  it('finds application root for root/app.js with no package.json files around',
-    function(done) {
-      // If the parent directory of app.js does not contain package.json,
-      // it should not be considered as an application root.
-      givenTempFiles('root/', 'root/app.js');
-      storage.findApplicationRoot(
-        path.join(TEMP_DIR, 'root', 'app.js'),
-        expectRootToEqual.bind(this, done, path.join(TEMP_DIR, 'root'))
-      );
-    }
-  );
-
-  it('finds application root for root/app.js by checking package.json file in root/',
-    function(done) {
-      givenTempFiles('root/', 'root/app.js', 'root/package.json', 'package.json');
-      storage.findApplicationRoot(
-        path.join(TEMP_DIR, 'root', 'app.js'),
-        expectRootToEqual.bind(this, done, path.join(TEMP_DIR, 'root'))
-      );
-    }
-  );
-
-  it('finds also files in start directory', function(done) {
-    var expectedFiles = givenTempFiles(
-      // Globally installed module, e.g. mocha
-      'global/',
-      'global/runner.js',
-      'global/lib/', 'global/lib/module.js',
-      // Local application we are developing
-      'local/',
-      'local/app.js',
-      'local/test/', 'local/test/app.js',
-      // Other files in a place close to globally installed modules
-      'unrelated/',
-      'unrelated/file.js'
-    );
-
-    givenTempFiles('global/package.json', 'local/package.json');
-
-    // remove unrelated/file.js
-    expect(expectedFiles.pop()).to.match(/unrelated[\/\\]file.js$/);
-
-    storage.findAllApplicationScripts(
-      path.join(TEMP_DIR, 'local'),
-      path.join(TEMP_DIR, 'global', 'runner.js'),
-      function(err, files) {
-        if (err) throw err;
-        expect(files.map(relativeToTemp))
-          .to.have.members(expectedFiles.map(relativeToTemp));
-        done();
-      }
-    );
+  it('finds application root for subdir/app.js by checking package.json file in parent', () => {
+    return co(function * () {
+      yield tree(TEMP_DIR, {
+        'subdir': {
+          'app.js': true
+        },
+        'package.json': true
+      });
+      var storage = new ScriptFileStorage({}, session);
+      var root = yield storage.findApplicationRoot(path.join(TEMP_DIR, 'subdir', 'app.js'));
+      expect(root).to.equal(TEMP_DIR);
+    });
   });
 
-  it('lists only well-known subdirectories when package.json is missing', function(done) {
-    var expectedFiles = givenTempFiles(
-      'app.js',
-      'root.js',
-      'lib/helper.js',
-      'test/unit.js',
-      'node_modules/module/index.js'
-    );
-
-    givenTempFiles(
-      'extra/file.js'
-    );
-
-    storage.findAllApplicationScripts(
-      path.join(TEMP_DIR),
-      path.join(TEMP_DIR, 'app.js'),
-      function(err, files) {
-        if (err) throw err;
-        expect(files.map(relativeToTemp))
-          .to.have.members(expectedFiles.map(relativeToTemp));
-        done();
-      }
-    );
+  it('finds application root for root/app.js with no package.json files around', () => {
+    return co(function * () {
+      yield tree(TEMP_DIR, {
+        'root': {
+          'app.js': true
+        }
+      });
+      var storage = new ScriptFileStorage({}, session);
+      var root = yield storage.findApplicationRoot(path.join(TEMP_DIR, 'root', 'app.js'));
+      expect(root).to.equal(undefined);
+    });
   });
 
-  it('lists all subdirectories when package.json is present', function(done) {
-    var expectedFiles = givenTempFiles(
-      'app.js',
-      'root.js',
-      'lib/helper.js',
-      'test/unit.js',
-      'node_modules/module/index.js',
-      'extra/file.js'
-    );
-
-    givenTempFiles('package.json');
-
-    storage.findAllApplicationScripts(
-      path.join(TEMP_DIR),
-      path.join(TEMP_DIR, 'app.js'),
-      function(err, files) {
-        if (err) throw err;
-        expect(files.map(relativeToTemp))
-          .to.have.members(expectedFiles.map(relativeToTemp));
-        done();
-      }
-    );
+  it('finds application root for root/app.js by checking package.json file in root/', () => {
+    return co(function * () {
+      yield tree(TEMP_DIR, {
+        'root': {
+          'app.js': true,
+          'package.json': true,
+        },
+        'package.json': true
+      });
+      var storage = new ScriptFileStorage({}, session);
+      var root = yield storage.findApplicationRoot(path.join(TEMP_DIR, 'root', 'app.js'));
+      expect(root).to.equal(path.join(TEMP_DIR, 'root'));
+    });
   });
 
-  it('removes duplicate entries from files found', function(done) {
-    var expectedFiles = givenTempFiles('app.js');
+  it('finds also files in start directory', () => {
+    return co(function * () {
+      yield tree(TEMP_DIR, {
+        // Globally installed module, e.g. mocha
+        'global': {
+          'runner.js': true,
+          'package.json': true,
+          'lib': {
+            'module.js': true
+          }
+        },
+        // Local application we are developing
+        'local': {
+          'app.js': true,
+          'package.json': true,
+          'test': {
+            'app.js': true
+          }
+        },
+        // Other files in a place close to globally installed modules
+        'unrelated': {
+          'file.js': true
+        }
+      });
 
-    storage.findAllApplicationScripts(
-      TEMP_DIR,
-      path.join(TEMP_DIR, 'app.js'),
-      function(err, files) {
-        if (err) throw err;
-        expect(files.map(relativeToTemp))
-          .to.have.members(expectedFiles.map(relativeToTemp));
-        expect(files).to.have.length(expectedFiles.length);
-        done();
-      }
-    );
+      var expected = [
+        'global/runner.js',
+        'global/lib/module.js',
+        'local/app.js',
+        'local/test/app.js'
+      ];
+
+      var storage = new ScriptFileStorage({}, session);
+      var files = yield storage.findAllApplicationScripts(
+        path.join(TEMP_DIR, 'local'),
+        path.join(TEMP_DIR, 'global', 'runner.js'));
+
+      expect(files.map(relative)).to.have.members(expected);
+    });
   });
 
-  it('excludes files to hide', function(done) {
-    var expectedFiles = givenTempFiles('app.js', 'mod.js').slice(0, 1);
-    storage = createScriptFileStorage({hidden: [/mod.js/i]});
-    storage.findAllApplicationScripts(
-      TEMP_DIR,
-      path.join(TEMP_DIR, 'app.js'),
-      function(err, files) {
-        if (err) throw err;
-        expect(files.map(relativeToTemp))
-          .to.have.members(expectedFiles.map(relativeToTemp));
-        expect(files).to.have.length(expectedFiles.length);
-        done();
-      }
-    );
+  it('lists only well-known subdirectories when package.json is missing', () => {
+    return co(function * () {
+      yield tree(TEMP_DIR, {
+        'app.js': true,
+        'root.js': true,
+        'lib': {
+          'helper.js': true
+        },
+        'test': {
+          'unit.js': true
+        },
+        'node_modules': {
+          'module': {
+            'index.js': true
+          }
+        },
+        'extra': {
+          'file.js': true
+        }
+      });
+
+      var expected = [
+        'app.js',
+        'root.js',
+        'lib/helper.js',
+        'test/unit.js',
+        'node_modules/module/index.js'
+      ];
+
+      var storage = new ScriptFileStorage({}, session);
+      var files = yield storage.findAllApplicationScripts(
+        path.join(TEMP_DIR),
+        path.join(TEMP_DIR, 'app.js'));
+
+      expect(files.map(relative)).to.have.members(expected);
+    });
+  });
+
+  it('lists all subdirectories when package.json is present', () => {
+    return co(function * () {
+      yield tree(TEMP_DIR, {
+        'app.js': true,
+        'root.js': true,
+        'lib': {
+          'helper.js': true
+        },
+        'test': {
+          'unit.js': true
+        },
+        'node_modules': {
+          'module': {
+            'index.js': true
+          }
+        },
+        'extra': {
+          'file.js': true
+        },
+        'package.json': true
+      });
+
+      var expected = [
+        'app.js',
+        'root.js',
+        'lib/helper.js',
+        'test/unit.js',
+        'node_modules/module/index.js',
+        'extra/file.js'
+      ];
+
+      var storage = new ScriptFileStorage({}, session);
+      var files = yield storage.findAllApplicationScripts(
+        path.join(TEMP_DIR),
+        path.join(TEMP_DIR, 'app.js'));
+
+      expect(files.map(relative)).to.have.members(expected);
+    });
+  });
+
+  it('removes duplicate entries from files found', () => {
+    return co(function * () {
+      yield tree(TEMP_DIR, {
+        'app.js': true,
+        'package.json': true
+      });
+
+      var expected = ['app.js'];
+
+      var storage = new ScriptFileStorage({}, session);
+      var files = yield storage.findAllApplicationScripts(
+        path.join(TEMP_DIR),
+        path.join(TEMP_DIR, 'app.js'));
+
+      expect(files.map(relative)).to.have.members(expected);
+      expect(files).to.have.length(expected.length);
+    });
+  });
+
+  it('excludes files to hide', () => {
+    return co(function * () {
+      yield tree(TEMP_DIR, {
+        'app.js': true,
+        'mod.js': true,
+        'test': {
+          'hidden.js': true
+        },
+        'package.json': true
+      });
+
+      var expected = ['app.js'];
+
+      var storage = new ScriptFileStorage({hidden: [/mod\.js/i, /test/i]}, session);
+      var files = yield storage.findAllApplicationScripts(
+        path.join(TEMP_DIR),
+        path.join(TEMP_DIR, 'app.js'));
+
+      expect(files.map(relative)).to.have.members(expected);
+      expect(files).to.have.length(expected.length);
+    });
   });
 
 
-  it('disables preloading files', function(done) {
-    givenTempFiles('app.js', 'mod.js');
-    storage = createScriptFileStorage({preload: false});
+  it('disables preloading files', () => {
+    return co(function * () {
+      yield tree(TEMP_DIR, {
+        'app.js': true,
+        'mod.js': true,
+        'package.json': true
+      });
 
-    storage.findAllApplicationScripts(
-      TEMP_DIR,
-      path.join(TEMP_DIR, 'app.js'),
-      function(err, files) {
-        if (err) throw err;
-        expect(files).to.have.length(0);
-        done();
-      }
-    );
+      var storage = new ScriptFileStorage({preload: false}, session);
+      var files = yield storage.findAllApplicationScripts(
+        path.join(TEMP_DIR),
+        path.join(TEMP_DIR, 'app.js'));
+
+      expect(files).to.have.length(0);
+    });
+  });
+});
+
+function edited(source) {
+  return source.replace(';', '; /* edited */');
+}
+
+function tree(name, root) {
+  var folders = [[name, root]];
+  return co(function * () {
+    while (folders.length) yield _tree.apply(null, folders.pop());
   });
 
-  function relativeToTemp(p) {
-    return path.relative(TEMP_DIR, p);
-  }
-
-  function expectRootToEqual(done, expected, err, root) {
-    if (err) throw err;
-    expect(root).to.equal(expected);
-    done();
-  }
-
-  function edited(source) {
-    return source.replace(';', '; /* edited */');
-  }
-
-  function runLiveEdit(transformSource, callback) {
-    if (!callback) {
-      callback = transformSource;
-      transformSource = null;
-    }
-
-    var originalScript = createTempFileAsCopyOf('LiveEdit.js', transformSource);
-    launcher.startDebugger(TEMP_FILE, function(childProcess, session) {
-      getScriptSourceByName(session.debuggerClient, TEMP_FILE, function(source) {
-        callback(session.debuggerClient, originalScript, source);
+  function _tree(name, node) {
+    return co(function * () {
+      yield mkdir(name);
+      yield Object.keys(node).map(key => {
+        if (node[key] === true) return writeFile(`${name}/${key}`, '', 'utf-8');
+        if (typeof node[key] === 'object') folders.push([`${name}/${key}`, node[key]]);
       });
     });
   }
+}
 
-  function createTempFileAsCopyOf(fixture, transform) {
+function expand(instance) {
+  child = instance.child;
+  session = instance.session;
+  debuggerClient = session.debuggerClient;
+}
+
+function runLiveEdit(transform) {
+  return co(function * () {
+    originalScript = yield copyInTempFile('LiveEdit.js', transform);
+
+    yield launcher.startDebugger(TEMP_FILE).then(expand);
+    session.scriptManager = new ScriptManagerStub();
+    runtimeScript = yield getScriptSourceByName(TEMP_FILE);
+  });
+}
+
+function copyInTempFile(fixture, transform) {
+  return co(function * () {
     var sourcePath = path.join(__dirname, 'fixtures', fixture);
-    var content = fs.readFileSync(sourcePath, { encoding: 'utf-8' });
+    var content = yield readFile(sourcePath, { encoding: 'utf-8' });
     if (transform) content = transform(content);
-    fs.writeFileSync(TEMP_FILE, content);
+    yield writeFile(TEMP_FILE, content);
     return content;
-  }
-
-  function givenTempFiles() {
-    var files = [];
-    if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR);
-    Array.prototype.forEach.call(arguments, function(f) {
-      f = path.join(TEMP_DIR, globPathToNative(f));
-      if (isDir(f)) {
-        fs.mkdirSync(f);
-      } else {
-        fs.mkdirpSync(path.dirname(f));
-        fs.writeFileSync(f, '');
-        files.push(f);
-      }
-    });
-    return files;
-  }
-});
-
-function createScriptFileStorage(config) {
-  var session = new SessionStub();
-  session.scriptManager = new ScriptManager(config, session);
-  var storage = new ScriptFileStorage(config, session);
-
-  return storage;
+  });
 }
 
-function globPathToNative(p) {
-  return p.split('/').join(path.sep);
-}
-
-function getScriptSourceByName(debuggerClient, scriptName, callback) {
-  debuggerClient.request(
-    'scripts',
-    {
+function getScriptSourceByName(scriptName, callback) {
+  return co(function * () {
+    var result = yield debuggerClient.request('scripts', {
       includeSource: true,
       types: 4,
       filter: scriptName
-    },
-    function(err, result) {
-      if (err) throw err;
-      callback(result[0].source);
-    }
-  );
-}
-
-function isDir(path) {
-  return path.match(/[\/\\]$/);
+    });
+    return result[0].source;
+  });
 }
 
 function deleteTemps() {
-  if (fs.existsSync(TEMP_FILE)) {
-    fs.unlinkSync(TEMP_FILE);
-  }
+  return co(function * () {
+    if (yield exists(TEMP_FILE))
+      yield unlink(TEMP_FILE);
 
-  if (fs.existsSync(TEMP_DIR)) {
-    var entries = glob.sync(
-      '**',
-      {
-        cwd: TEMP_DIR,
-        dot: true,
-        mark: true
-      }
-    );
-
-    entries = entries
-      .map(function(f) {
-        return path.join(TEMP_DIR, globPathToNative(f));
-      })
-      .sort()
-      .reverse();
-
-    entries.forEach(function(f) {
-      if (isDir(f)) {
-        fs.rmdirSync(f);
-      } else {
-        fs.unlinkSync(f);
-      }
-    });
-  }
+    if (yield exists(TEMP_DIR))
+      yield rmrf(TEMP_DIR);
+  });
 }
