@@ -1,107 +1,115 @@
-var expect = require('chai').expect,
-    launcher = require('./helpers/launcher.js'),
-    EventEmitter = require('events').EventEmitter,
-    InjectorClient = require('../lib/InjectorClient').InjectorClient,
-    HeapProfilerAgent = require('../lib/Agents/HeapProfilerAgent').HeapProfilerAgent;
+'use strict';
 
-var heapProfilerAgent,
-    debuggerClient,
-    frontendClient;
+var co = require('co');
+var expect = require('chai').expect;
+var launcher = require('./helpers/launcher.js');
+var InjectorClient = require('../lib/InjectorClient');
+var HeapProfilerAgent = require('../lib/Agents/HeapProfilerAgent');
 
-xdescribe('HeapProfiler Agent', function() {
-  before(initializeProfiler);
+var child;
+var session;
+var heapProfilerAgent;
+var debuggerClient;
+var frontendClient;
 
-  it('should take snapshot with report progress', function(done) {
-    var progress,
-        total,
-        state = 0,
-        data = '';
+describe('HeapProfiler Agent', function() {
+  before(() => initializeProfiler());
 
-    function updateState() {
-      if (++state == 2) {
-        frontendClient.off('HeapProfiler.reportHeapSnapshotProgress', onReportHeapSnapshotProgress);
-        frontendClient.off('HeapProfiler.addHeapSnapshotChunk', onAddHeapSnapshotChunk);
-        done();
+  it('should take snapshot with report progress', () => {
+    return co(function * () {
+      var state = 0;
+      var finished;
+
+      var promise = new Promise(resolve => finished = resolve);
+
+      function updateState() {
+        if (++state == 2) {
+          frontendClient.off('HeapProfiler.reportHeapSnapshotProgress', onReportHeapSnapshotProgress);
+          frontendClient.off('HeapProfiler.addHeapSnapshotChunk', onAddHeapSnapshotChunk);
+          finished();
+        }
       }
-    }
 
-    function onReportHeapSnapshotProgress(message) {
-      expect(message).to.have.keys(['done', 'total', 'finished']);
-      if (message.finished) updateState();
-    }
+      function onReportHeapSnapshotProgress(message) {
+        expect(message).to.have.keys(['done', 'total', 'finished']);
+        if (message.finished) updateState();
+      }
 
-    function onAddHeapSnapshotChunk(message) {
-      expect(message).to.have.keys(['chunk']);
-      data += message.chunk;
-    }
+      function onAddHeapSnapshotChunk(message) {
+        expect(message).to.have.keys(['chunk']);
+      }
 
-    frontendClient.on('HeapProfiler.reportHeapSnapshotProgress', onReportHeapSnapshotProgress);
-    frontendClient.on('HeapProfiler.addHeapSnapshotChunk', onAddHeapSnapshotChunk);
+      frontendClient.on('HeapProfiler.reportHeapSnapshotProgress', onReportHeapSnapshotProgress);
+      frontendClient.on('HeapProfiler.addHeapSnapshotChunk', onAddHeapSnapshotChunk);
 
-    heapProfilerAgent.takeHeapSnapshot(
-      {
+      var result = yield heapProfilerAgent.handle('HeapProfiler.takeHeapSnapshot', {
         reportProgress: true
-      },
-      function(error, result){
-        expect(error).to.equal(null);
-        expect(result).to.equal(undefined);
-        updateState();
-      }
-    );
-  });
+      });
 
-  it('should start tracking', function(done) {
-    var state = {
-      heapStatsUpdate: false,
-      lastSeenObjectId: false
-    };
-    function updateState(name) {
-      expect(state[name]).to.equal(false);
-      state[name] = true;
-      if (state.heapStatsUpdate && state.lastSeenObjectId) done();
-    }
-
-    frontendClient.once('HeapProfiler.heapStatsUpdate', function(message) {
-      expect(message).to.have.keys(['statsUpdate']);
-      updateState('heapStatsUpdate');
-    });
-
-    frontendClient.once('HeapProfiler.lastSeenObjectId', function(message) {
-      expect(message).to.have.keys(['lastSeenObjectId', 'timestamp']);
-      updateState('lastSeenObjectId');
-    });
-
-    heapProfilerAgent.startTrackingHeapObjects({}, function(error, result) {
-      expect(error).to.equal(null);
       expect(result).to.equal(undefined);
+      updateState();
+
+      yield promise;
     });
   });
 
-  it('should stop tracking', function(done) {
-    heapProfilerAgent.startTrackingHeapObjects({}, function(error, result) {
-      expect(error).to.be.equal(null);
+  it('should start tracking', () => {
+    return co(function * () {
+      var finished;
+      var state = {
+        heapStatsUpdate: false,
+        lastSeenObjectId: false
+      };
+      function updateState(name) {
+        expect(state[name]).to.equal(false);
+        state[name] = true;
+        if (state.heapStatsUpdate && state.lastSeenObjectId) finished();
+      }
+
+      var promise = new Promise(resolve => finished = resolve);
+
+      frontendClient.once('HeapProfiler.heapStatsUpdate', message => {
+        expect(message).to.have.keys(['statsUpdate']);
+        updateState('heapStatsUpdate');
+      });
+
+      frontendClient.once('HeapProfiler.lastSeenObjectId', message => {
+        expect(message).to.have.keys(['lastSeenObjectId', 'timestamp']);
+        updateState('lastSeenObjectId');
+      });
+
+      var result = yield heapProfilerAgent.handle('HeapProfiler.startTrackingHeapObjects');
+      expect(result).to.equal(undefined);
+      yield promise;
+    });
+  });
+
+  it('should stop tracking', () => {
+    return co(function * () {
+      var result = yield heapProfilerAgent.handle('HeapProfiler.startTrackingHeapObjects');
       expect(result).to.be.equal(undefined);
-      done();
     });
   });
 });
 
-function initializeProfiler(done) {
-  launcher.runCommandlet(true, function(childProcess, session) {
-    debuggerClient = session.debuggerClient;
-    frontendClient = session.frontendClient;
+function expand(instance) {
+  child = instance.child;
+  session = instance.session;
+  debuggerClient = session.debuggerClient;
+  frontendClient = session.frontendClient;
+}
+
+function initializeProfiler() {
+  return co(function * () {
+    yield launcher.runCommandlet(true).then(expand);
 
     var injectorClient = new InjectorClient({}, session);
     session.injectorClient = injectorClient;
 
     heapProfilerAgent = new HeapProfilerAgent({}, session);
 
-    injectorClient.inject(function(error) {
-      if (error) return done(error);
-      debuggerClient.request('continue', null, function() {
-        childProcess.stdin.write('log loop\n');
-        done();
-      });
-    });
+    yield injectorClient.injected();
+    yield debuggerClient.request('continue');
+    child.stdin.write('log loop\n');
   });
 }
