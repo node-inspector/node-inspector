@@ -17,6 +17,8 @@ WebInspector.NodeInspectorOverrides = function() {
   this._openMainScriptOnStartup();
 
   this._enableDebuggerUINotifications();
+
+  this._loadCachedResourceTree();
 };
 
 WebInspector.NodeInspectorOverrides.prototype = {
@@ -34,10 +36,11 @@ WebInspector.NodeInspectorOverrides.prototype = {
 
     WebInspector.ResourceTreeModel.prototype._createResourceFromFramePayload =
       function(frame, url, type, mimeType) {
+        //debugger;
         // Force Script type for all node frames.
         // Front-end assigns Document type (i.e. HTML) to our main script file.
         if (frame._isNodeInspectorScript) {
-          type = WebInspector.resourceTypes.Script;
+          //type = WebInspector.resourceTypes.Script;
         }
 
         return this.orig_createResourceFromFramePayload(frame, url, type, mimeType);
@@ -86,6 +89,39 @@ WebInspector.NodeInspectorOverrides.prototype = {
       WebInspector.ResourceTreeModel,
       WebInspector.ResourceTreeModel.EventTypes.CachedResourcesLoaded,
       showMainAppFile
+    );
+  },
+
+  _loadCachedResourceTree: function() {
+    WebInspector.targetManager.addModelListener(
+      WebInspector.ResourceTreeModel,
+      WebInspector.ResourceTreeModel.EventTypes.CachedResourcesLoaded,
+      function() {
+        var project = WebInspector.workspace.project('1:file://');
+        var projectDelegate = project._projectDelegate;
+        var frames = WebInspector.ResourceTreeModel.frames();
+        var frame = frames.filter(function(frame) {
+          return frame.id === 'ni-top-frame';
+        })[0];
+
+        if (!frame) return;
+
+        var resources = frame.resources();
+        resources.forEach(function(contentProvider) {
+          var url = contentProvider.url;
+
+          var splitURL = WebInspector.ParsedURL.splitURLIntoPathComponents(url);
+          var projectURL = splitURL[0];
+          var parentPath = splitURL.slice(1, -1).join("/");
+          var name = splitURL.peekLast() || "";
+          var path = projectDelegate.addFile(parentPath, name, url, contentProvider);
+          var uiSourceCode = /** @type {!WebInspector.UISourceCode} */ (project._workspace.uiSourceCode(projectDelegate.id(), path));
+          console.assert(uiSourceCode);
+          return uiSourceCode;
+
+          //projectDelegate.addFileForURL(resource.url, resource, true);
+        });
+      }
     );
   },
 
