@@ -2,6 +2,7 @@
 
 var co = require('co');
 var fs = require('fs-extra');
+var tree = require('./helpers/fs-tree');
 var path = require('path');
 var expect = require('chai').expect;
 var rimraf = require('rimraf');
@@ -32,7 +33,7 @@ function ScriptManagerStub() {
 }
 
 describe('ScriptFileStorage', function() {
-  beforeEach(() => deleteTemps());
+  afterEach(() => deleteTemps());
 
   it('saves new content without node.js module wrapper', () => {
     return co(function * () {
@@ -298,23 +299,6 @@ describe('ScriptFileStorage', function() {
 
 function edited(source) {
   return source.replace(';', '; /* edited */');
-}
-
-function tree(name, root) {
-  var folders = [[name, root]];
-  return co(function * () {
-    while (folders.length) yield _tree.apply(null, folders.pop());
-  });
-
-  function _tree(name, node) {
-    return co(function * () {
-      yield mkdir(name);
-      yield Object.keys(node).map(key => {
-        if (node[key] === true) return writeFile(`${name}/${key}`, '', 'utf-8');
-        if (typeof node[key] === 'object') folders.push([`${name}/${key}`, node[key]]);
-      });
-    });
-  }
 }
 
 function expand(instance) {
