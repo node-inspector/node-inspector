@@ -17,7 +17,7 @@ describe('NetworkAgent', () => {
   describe('loadResourceForFrontend', function() {
     it('should load data URLs', () => {
       var agent = new NetworkAgent({ inject: false }, new SessionStub());
-      return agent.handle('Network.loadResourceForFrontend', {
+      return agent.handle('loadResourceForFrontend', {
         url: 'data:text/plain;base64,aGVsbG8gd29ybGQ='
       }).then(result => expect(result.content).to.equal('hello world'));
     });
@@ -142,7 +142,7 @@ describe('NetworkAgent', () => {
       commandlet.stdin.write('send GET request\n');
       return co(function * () {
         var message = yield loadingFinished;
-        var result = yield networkAgent.handle('Network.getResponseBody', {
+        var result = yield networkAgent.handle('getResponseBody', {
           requestId: message.requestId
         });
         expect(result).to.deep.equal({
@@ -157,7 +157,7 @@ describe('NetworkAgent', () => {
       return co(function * () {
         var message = yield loadingFinished;
         expect(Object.keys(networkAgent._dataStorage).length).to.be.equal(1);
-        yield networkAgent.handle('Network._clearCapturedData');
+        yield networkAgent.handle('_clearCapturedData');
         expect(Object.keys(networkAgent._dataStorage).length).to.be.equal(0);
       });
     });
@@ -166,10 +166,10 @@ describe('NetworkAgent', () => {
       expect(Object.keys(networkAgent._dataStorage).length).to.be.equal(0);
       commandlet.stdin.write('send GET request\n');
       return co(function * () {
-        yield networkAgent.handle('Network._setCapturingEnabled', { enabled: false });
+        yield networkAgent.handle('_setCapturingEnabled', { enabled: false });
         yield loadingFinished;
         expect(Object.keys(networkAgent._dataStorage).length).to.be.equal(0);
-        yield networkAgent.handle('Network._setCapturingEnabled', { enabled: true });
+        yield networkAgent.handle('_setCapturingEnabled', { enabled: true });
       });
     });
 
@@ -181,7 +181,7 @@ describe('NetworkAgent', () => {
           errorText: 'ECONNRESET',
           type: 'XHR'
         });
-        var result = yield networkAgent.handle('Network.getResponseBody', { requestId: message.requestId });
+        var result = yield networkAgent.handle('getResponseBody', { requestId: message.requestId });
         containKeys(result, {
           base64Encoded: false,
           body: ''

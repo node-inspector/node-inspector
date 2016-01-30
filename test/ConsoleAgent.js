@@ -56,7 +56,7 @@ describe('ConsoleAgent', () => {
 
   it('should clear messages', done => {
     frontendClient.on('Console.messagesCleared', () => done());
-    consoleAgent.handle('Console.clearMessages');
+    consoleAgent.handle('clearMessages');
   });
 });
 

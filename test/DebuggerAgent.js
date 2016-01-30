@@ -1,7 +1,156 @@
-var expect = require('chai').expect,
-  launcher = require('./helpers/launcher.js'),
-  ScriptManager = require('../lib/ScriptManager.js').ScriptManager,
-  DebuggerAgent = require('../lib/Agents/DebuggerAgent.js').DebuggerAgent;
+var co = require('co');
+var expect = require('chai').expect;
+var launcher = require('./helpers/launcher.js');
+var ScriptManager = require('../lib/ScriptManager.js');
+var InjectorClient = require('../lib/InjectorClient');
+var DebuggerAgent = require('../lib/Agents/DebuggerAgent.js');
+
+var child;
+var session;
+var debuggerAgent;
+var debuggerClient;
+var frontendClient;
+var injectorClient;
+
+describe('DebuggerAgent', () => {
+  beforeEach(() => initializeDebugger());
+  afterEach(() => launcher.stopAllDebuggers());
+
+  describe('#resume', () => {
+    it('should resume paused app', () => {
+      return co(function * () {
+        expect(yield debuggerClient.running()).to.be.equal(false);
+        yield debuggerAgent.handle('resume');
+        expect(yield debuggerClient.running()).to.be.equal(true);
+      });
+    });
+  });
+
+  describe('#pause', () => {
+    it('should pause working app', () => {
+      return co(function * () {
+        expect(yield debuggerClient.running()).to.be.equal(false);
+        yield debuggerAgent.handle('resume');
+
+        expect(yield debuggerClient.running()).to.be.equal(true);
+        yield debuggerAgent.handle('pause');
+
+        yield yield debuggerClient.break();
+        expect(yield debuggerClient.running()).to.be.equal(false);
+      });
+    });
+  });
+
+  describe('#stepInto', () => {
+    it('should stepin in paused app', () => {
+      return co(function * () {
+        expect(yield debuggerClient.running()).to.be.equal(false);
+        yield debuggerAgent.handle('resume');
+
+        expect(yield debuggerClient.running()).to.be.equal(true);
+
+        child.stdin.write('steps\n');
+        var brk1 = yield debuggerClient.break();
+        yield debuggerAgent.handle('stepInto');
+        var brk2 = yield debuggerClient.break();
+        expect(brk2.sourceLine - brk1.sourceLine).to.be.equal(1);
+        expect(/var a/.test(brk2.sourceLineText)).to.be.equal(true);
+      });
+    });
+  });
+
+  describe('#stepOver', () => {
+    it('should stepOver in paused app', () => {
+      return co(function * () {
+        expect(yield debuggerClient.running()).to.be.equal(false);
+        yield debuggerAgent.handle('resume');
+
+        expect(yield debuggerClient.running()).to.be.equal(true);
+
+        child.stdin.write('steps\n');
+        var brk1 = yield debuggerClient.break();
+
+        yield debuggerAgent.handle('stepInto');
+        yield debuggerAgent.handle('stepInto');
+        yield debuggerAgent.handle('stepOver');
+        var brk2 = yield debuggerClient.break();
+        expect(brk2.sourceLine - brk1.sourceLine).to.be.equal(3);
+        expect(/var e/.test(brk2.sourceLineText)).to.be.equal(true);
+      });
+    });
+  });
+
+  describe('#stepOut', () => {
+    it('should stepOut in paused app', () => {
+      return co(function * () {
+        expect(yield debuggerClient.running()).to.be.equal(false);
+        yield debuggerAgent.handle('resume');
+
+        expect(yield debuggerClient.running()).to.be.equal(true);
+
+        child.stdin.write('steps\n');
+        var brk1 = yield debuggerClient.break();
+        yield debuggerAgent.handle('stepInto');
+        yield debuggerAgent.handle('stepInto');
+        yield debuggerAgent.handle('stepInto');
+        yield debuggerClient.break();
+
+        yield debuggerAgent.handle('stepOut');
+        var brk2 = yield debuggerClient.break();
+
+        expect(brk2.sourceLine - brk1.sourceLine).to.be.equal(3);
+        expect(/var e/.test(brk2.sourceLineText)).to.be.equal(true);
+      });
+    });
+  });
+
+  describe('#restartFrame', () => {
+    it('should restart and go on top of target frame', () => {
+      return co(function * () {
+        expect(yield debuggerClient.running()).to.be.equal(false);
+        yield debuggerAgent.handle('resume');
+
+        expect(yield debuggerClient.running()).to.be.equal(true);
+
+        child.stdin.write('steps\n');
+        var brk1 = yield debuggerClient.break();
+        yield debuggerAgent.handle('stepInto');
+        yield debuggerAgent.handle('stepInto');
+        yield debuggerAgent.handle('stepInto');
+        yield debuggerClient.break();
+        var backtrace = yield debuggerAgent.handle('getBacktrace');
+        var callFrameId = backtrace[1].callFrameId;
+
+        var stack = yield debuggerAgent.handle('restartFrame', {callFrameId: callFrameId});
+        yield debuggerAgent.handle('stepInto');
+        var brk2 = yield debuggerClient.break();
+
+        expect(brk1).to.deep.equal(brk2);
+      });
+    });
+  });
+});
+
+function expand(instance) {
+  child = instance.child;
+  session = instance.session;
+  debuggerClient = session.debuggerClient;
+  frontendClient = session.frontendClient;
+}
+
+function fill() {
+  injectorClient = new InjectorClient({}, session);
+  session.injectorClient = injectorClient;
+  debuggerAgent = new DebuggerAgent({}, session);
+}
+
+function initializeDebugger() {
+  return co(function * () {
+    yield launcher.runCommandlet(true).then(expand).then(fill);
+    yield injectorClient.injected();
+  });
+}
+
 
 xdescribe('DebuggerAgent', function() {
   describe('sets variable value', function() {

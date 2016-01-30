@@ -42,7 +42,7 @@ describe('HeapProfiler Agent', function() {
       frontendClient.on('HeapProfiler.reportHeapSnapshotProgress', onReportHeapSnapshotProgress);
       frontendClient.on('HeapProfiler.addHeapSnapshotChunk', onAddHeapSnapshotChunk);
 
-      var result = yield heapProfilerAgent.handle('HeapProfiler.takeHeapSnapshot', {
+      var result = yield heapProfilerAgent.handle('takeHeapSnapshot', {
         reportProgress: true
       });
 
@@ -78,7 +78,7 @@ describe('HeapProfiler Agent', function() {
         updateState('lastSeenObjectId');
       });
 
-      var result = yield heapProfilerAgent.handle('HeapProfiler.startTrackingHeapObjects');
+      var result = yield heapProfilerAgent.handle('startTrackingHeapObjects');
       expect(result).to.equal(undefined);
       yield promise;
     });
@@ -86,7 +86,7 @@ describe('HeapProfiler Agent', function() {
 
   it('should stop tracking', () => {
     return co(function * () {
-      var result = yield heapProfilerAgent.handle('HeapProfiler.startTrackingHeapObjects');
+      var result = yield heapProfilerAgent.handle('startTrackingHeapObjects');
       expect(result).to.be.equal(undefined);
     });
   });

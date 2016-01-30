@@ -1,7 +1,7 @@
 # Node Inspector
 
 [![Build Status](https://travis-ci.org/node-inspector/node-inspector.png?branch=master)](https://travis-ci.org/node-inspector/node-inspector)
-[![NPM version](https://badge.fury.io/js/node-inspector.png)](http://badge.fury.io/js/node-inspector)
+[![npm version](https://badge.fury.io/js/node-inspector.svg)](https://badge.fury.io/js/node-inspector)
 [![Bountysource](https://www.bountysource.com/badge/tracker?tracker_id=195817)](https://www.bountysource.com/trackers/195817-node-inspector?utm_source=195817&utm_medium=shield&utm_campaign=TRACKER_BADGE)
 
 [![Join the chat at https://gitter.im/node-inspector/node-inspector](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/node-inspector/node-inspector?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)

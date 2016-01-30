@@ -70,6 +70,7 @@ describe('ScriptManager', () => {
         var result = yield manager.resolveScriptById('unknown-id');
 
         expect(result).to.deep.equal({
+          isInternalScript: true,
           scriptId: '3',
           url: 'required-id',
           startLine: 1,

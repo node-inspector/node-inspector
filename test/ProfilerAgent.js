@@ -16,14 +16,14 @@ describe('Profiler Agent', function() {
 
   it('should start profiling', () => {
     return co(function * () {
-      var result = yield profilerAgent.handle('Profile.start');
+      var result = yield profilerAgent.handle('start');
       expect(result).to.equal(undefined);
     });
   });
 
   it('should stop profiling', () => {
     return co(function * () {
-      var result = yield profilerAgent.handle('Profile.stop');
+      var result = yield profilerAgent.handle('stop');
       expect(result).to.have.property('profile');
     });
   });
