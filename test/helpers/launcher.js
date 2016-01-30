@@ -94,7 +94,7 @@ function stopInstance(instance) {
 
     yield instance.session.debuggerClient.request('continue').catch(ignore);
     yield instance.session.debuggerClient.close().catch(console.log);
-    instance.child.kill();
+    instance.child.kill('SIGKILL');
   });
 }
 
@@ -104,44 +104,12 @@ exports.startDebugger = function(scriptPath, breakOnStart) {
   return setupScript(scriptPath, breakOnStart)
     .catch(stopAllDebuggers);
 };
-exports.runOnBreakInFunction = function() {
-  return setupScript('BreakInFunction.js', false)
-    .then(function(instance) {
-      instance.session.debuggerClient.once('break', function() {
-        //test(instance.session);
-      });
-      instance.child.stdin.write('go!\n');
-    })
-    .catch(stopAllDebuggers);
-};
+
 exports.runCommandlet = function(breakOnStart) {
   return setupScript('Commandlet.js', breakOnStart)
     .catch(stopAllDebuggers);
 };
-exports.runInspectObject = function runInspectObject() {
-  return setupScript('InspectObject.js', false)
-    .then(function(instance) {
-      var session = instance.session,
-          debuggerClient = session.debuggerClient;
 
-      return Promise.all([
-        session,
-        new Promise(function(resolve, reject) {
-          session.debuggerClient.once('break', function() {
-            session.debuggerClient.fetchObjectId(
-              session.debuggerClient,
-              'inspectedObject',
-              resolve
-            );
-          });
-
-          instance.child.stdin.write('go!\n');
-        })
-      ]);
-    })
-    .catch(stopAllDebuggers);
-};
-
-process.on('exit', function() {
+process.on('beforeExit', function() {
   stopAllDebuggers();
 });

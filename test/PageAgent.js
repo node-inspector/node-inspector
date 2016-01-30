@@ -11,8 +11,9 @@ var agent;
 var session;
 var debuggerClient;
 var scriptManager;
+var scriptStorage;
 
-describe.only('PageAgent', () => {
+describe('PageAgent', () => {
   beforeEach(() => initializePage());
 
   describe('getResourceTree()', () => {

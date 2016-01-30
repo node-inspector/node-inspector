@@ -36,6 +36,7 @@ describe('InjectorClient', function() {
         yield launcher.runCommandlet(true).then(expand);
         expect(yield debuggerClient.running()).to.equal(false);
         yield injectorClient.injected();
+        expect(yield debuggerClient.running()).to.equal(false);
       });
     });
 
