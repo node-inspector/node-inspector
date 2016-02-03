@@ -5,7 +5,7 @@
     "scripts": [
         "SettingsScreenOverrides.js"
     ],
-    "stylesheets": [
+    "resources": [
         "SettingsScreenOverrides.css"
     ]
 }

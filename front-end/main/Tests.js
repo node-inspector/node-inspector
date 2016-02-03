@@ -40,144 +40,17 @@
 function createTestSuite(domAutomationController)
 {
 
-var ___interactiveUiTestsMode = true;
-
 /**
  * Test suite for interactive UI tests.
  * @constructor
  */
 function TestSuite()
 {
-    this.controlTaken_ = false;
-    this.timerId_ = -1;
+    WebInspector.TestBase.call(this, domAutomationController);
 };
 
-
-/**
- * Reports test failure.
- * @param {string} message Failure description.
- */
-TestSuite.prototype.fail = function(message)
-{
-    if (this.controlTaken_)
-        this.reportFailure_(message);
-    else
-        throw message;
-};
-
-
-/**
- * Equals assertion tests that expected === actual.
- * @param {!Object} expected Expected object.
- * @param {!Object} actual Actual object.
- * @param {string} opt_message User message to print if the test fails.
- */
-TestSuite.prototype.assertEquals = function(expected, actual, opt_message)
-{
-    if (expected !== actual) {
-        var message = "Expected: '" + expected + "', but was '" + actual + "'";
-        if (opt_message)
-            message = opt_message + "(" + message + ")";
-        this.fail(message);
-    }
-};
-
-/**
- * True assertion tests that value == true.
- * @param {!Object} value Actual object.
- * @param {string} opt_message User message to print if the test fails.
- */
-TestSuite.prototype.assertTrue = function(value, opt_message)
-{
-    this.assertEquals(true, !!value, opt_message);
-};
-
-
-/**
- * HasKey assertion tests that object has given key.
- * @param {!Object} object
- * @param {string} key
- */
-TestSuite.prototype.assertHasKey = function(object, key)
-{
-    if (!object.hasOwnProperty(key))
-        this.fail("Expected object to contain key '" + key + "'");
-};
-
-
-/**
- * Contains assertion tests that string contains substring.
- * @param {string} string Outer.
- * @param {string} substring Inner.
- */
-TestSuite.prototype.assertContains = function(string, substring)
-{
-    if (string.indexOf(substring) === -1)
-        this.fail("Expected to: '" + string + "' to contain '" + substring + "'");
-};
-
-
-/**
- * Takes control over execution.
- */
-TestSuite.prototype.takeControl = function()
-{
-    this.controlTaken_ = true;
-    // Set up guard timer.
-    var self = this;
-    this.timerId_ = setTimeout(function() {
-        self.reportFailure_("Timeout exceeded: 20 sec");
-    }, 20000);
-};
-
-
-/**
- * Releases control over execution.
- */
-TestSuite.prototype.releaseControl = function()
-{
-    if (this.timerId_ !== -1) {
-        clearTimeout(this.timerId_);
-        this.timerId_ = -1;
-    }
-    this.reportOk_();
-};
-
-
-/**
- * Async tests use this one to report that they are completed.
- */
-TestSuite.prototype.reportOk_ = function()
-{
-    domAutomationController.send("[OK]");
-};
-
-
-/**
- * Async tests use this one to report failures.
- */
-TestSuite.prototype.reportFailure_ = function(error)
-{
-    if (this.timerId_ !== -1) {
-        clearTimeout(this.timerId_);
-        this.timerId_ = -1;
-    }
-    domAutomationController.send("[FAILED] " + error);
-};
-
-
-/**
- * Runs all global functions starting with "test" as unit tests.
- */
-TestSuite.prototype.runTest = function(testName)
-{
-    try {
-        this[testName]();
-        if (!this.controlTaken_)
-            this.reportOk_();
-    } catch (e) {
-        this.reportFailure_(e);
-    }
+TestSuite.prototype = {
+    __proto__: WebInspector.TestBase.prototype
 };
 
 
@@ -187,75 +60,6 @@ TestSuite.prototype.runTest = function(testName)
 TestSuite.prototype.showPanel = function(panelName)
 {
     return WebInspector.inspectorView.showPanel(panelName);
-};
-
-
-/**
- * Overrides the method with specified name until it's called first time.
- * @param {!Object} receiver An object whose method to override.
- * @param {string} methodName Name of the method to override.
- * @param {!Function} override A function that should be called right after the
- *     overridden method returns.
- * @param {boolean} opt_sticky Whether restore original method after first run
- *     or not.
- */
-TestSuite.prototype.addSniffer = function(receiver, methodName, override, opt_sticky)
-{
-    var orig = receiver[methodName];
-    if (typeof orig !== "function")
-        this.fail("Cannot find method to override: " + methodName);
-    var test = this;
-    receiver[methodName] = function(var_args) {
-        try {
-            var result = orig.apply(this, arguments);
-        } finally {
-            if (!opt_sticky)
-                receiver[methodName] = orig;
-        }
-        // In case of exception the override won't be called.
-        try {
-            override.apply(this, arguments);
-        } catch (e) {
-            test.fail("Exception in overriden method '" + methodName + "': " + e);
-        }
-        return result;
-    };
-};
-
-/**
- * Waits for current throttler invocations, if any.
- * @param {!WebInspector.Throttler} throttler
- * @param {function} callback
- */
-TestSuite.prototype.waitForThrottler = function(throttler, callback)
-{
-    var test = this;
-    var scheduleShouldFail = true;
-    test.addSniffer(throttler, "schedule", onSchedule);
-
-    function hasSomethingScheduled()
-    {
-        return throttler._isRunningProcess || throttler._process;
-    }
-
-    function checkState()
-    {
-        if (!hasSomethingScheduled()) {
-            scheduleShouldFail = false;
-            callback();
-            return;
-        }
-
-        test.addSniffer(throttler, "_processCompletedForTests", checkState);
-    }
-
-    function onSchedule()
-    {
-        if (scheduleShouldFail)
-            test.fail("Unexpected Throttler.schedule");
-    }
-
-    checkState();
 };
 
 // UI Tests
@@ -287,7 +91,8 @@ TestSuite.prototype.testShowScriptsTab = function()
 TestSuite.prototype.testScriptsTabIsPopulatedOnInspectedPageRefresh = function()
 {
     var test = this;
-    WebInspector.debuggerModel.addEventListener(WebInspector.DebuggerModel.Events.GlobalObjectCleared, waitUntilScriptIsParsed);
+    var debuggerModel = WebInspector.DebuggerModel.fromTarget(WebInspector.targetManager.mainTarget());
+    debuggerModel.addEventListener(WebInspector.DebuggerModel.Events.GlobalObjectCleared, waitUntilScriptIsParsed);
 
     this.showPanel("elements").then(function() {
         // Reload inspected page. It will reset the debugger agent.
@@ -296,7 +101,7 @@ TestSuite.prototype.testScriptsTabIsPopulatedOnInspectedPageRefresh = function()
 
     function waitUntilScriptIsParsed()
     {
-        WebInspector.debuggerModel.removeEventListener(WebInspector.DebuggerModel.Events.GlobalObjectCleared, waitUntilScriptIsParsed);
+        debuggerModel.removeEventListener(WebInspector.DebuggerModel.Events.GlobalObjectCleared, waitUntilScriptIsParsed);
         test.showPanel("sources").then(function() {
             test._waitUntilScriptsAreParsed(["debugger_test_page.html"],
                 function() {
@@ -363,9 +168,9 @@ TestSuite.prototype.testNoScriptDuplicatesOnPanelSwitch = function()
     function checkNoDuplicates() {
         var uiSourceCodes = test.nonAnonymousUISourceCodes_();
         for (var i = 0; i < uiSourceCodes.length; i++) {
-            var scriptName = uiSourceCodes[i].url;
+            var scriptName = WebInspector.networkMapping.networkURL(uiSourceCodes[i]);
             for (var j = i + 1; j < uiSourceCodes.length; j++)
-                test.assertTrue(scriptName !== uiSourceCodes[j].url, "Found script duplicates: " + test.uiSourceCodesToString_(uiSourceCodes));
+                test.assertTrue(scriptName !== WebInspector.networkMapping.networkURL(uiSourceCodes[j]), "Found script duplicates: " + test.uiSourceCodesToString_(uiSourceCodes));
         }
     }
 
@@ -387,7 +192,8 @@ TestSuite.prototype.testNoScriptDuplicatesOnPanelSwitch = function()
 // frontend is being loaded.
 TestSuite.prototype.testPauseWhenLoadingDevTools = function()
 {
-    if (WebInspector.debuggerModel.debuggerPausedDetails)
+    var debuggerModel = WebInspector.DebuggerModel.fromTarget(WebInspector.targetManager.mainTarget());
+    if (debuggerModel.debuggerPausedDetails)
         return;
 
     this.showPanel("sources").then(function() {
@@ -567,9 +373,10 @@ TestSuite.prototype.testConsoleOnNavigateBack = function()
 
 TestSuite.prototype.testReattachAfterCrash = function()
 {
-    PageAgent.navigate("about:crash");
-    PageAgent.navigate("about:blank");
-    WebInspector.runtimeModel.addEventListener(WebInspector.RuntimeModel.Events.ExecutionContextCreated, this.releaseControl, this);
+    var target = WebInspector.targetManager.mainTarget();
+    target.pageAgent().navigate("about:crash");
+    target.pageAgent().navigate("about:blank");
+    target.runtimeModel.addEventListener(WebInspector.RuntimeModel.Events.ExecutionContextCreated, this.releaseControl, this);
 };
 
 
@@ -609,7 +416,8 @@ TestSuite.prototype.testPauseInSharedWorkerInitialization1 = function()
 
 TestSuite.prototype.testPauseInSharedWorkerInitialization2 = function()
 {
-    if (WebInspector.debuggerModel.isPaused())
+    var debuggerModel = WebInspector.DebuggerModel.fromTarget(WebInspector.targetManager.mainTarget());
+    if (debuggerModel.isPaused())
         return;
     this._waitForScriptPause(this.releaseControl.bind(this));
     this.takeControl();
@@ -617,7 +425,7 @@ TestSuite.prototype.testPauseInSharedWorkerInitialization2 = function()
 
 TestSuite.prototype.enableTouchEmulation = function()
 {
-    WebInspector.targetManager.mainTarget().domModel.emulateTouchEventObjects(true, "mobile");
+    WebInspector.overridesSupport._emulateTouchEventsInTarget(WebInspector.targetManager.mainTarget(), true, "mobile");
 };
 
 
@@ -637,7 +445,7 @@ TestSuite.prototype.testDeviceMetricsOverrides = function()
 
     function testOverrides(params, metrics, callback)
     {
-        PageAgent.invoke_setDeviceMetricsOverride(params, getMetrics);
+        WebInspector.targetManager.mainTarget().emulationAgent().invoke_setDeviceMetricsOverride(params, getMetrics);
 
         function getMetrics()
         {
@@ -681,6 +489,138 @@ TestSuite.prototype.testDeviceMetricsOverrides = function()
     this.waitForThrottler(WebInspector.overridesSupport._deviceMetricsThrottler, step1);
 };
 
+TestSuite.prototype.testScreenshotRecording = function()
+{
+    var test = this;
+
+    function performActionsInPage(callback)
+    {
+        var count = 0;
+        var div = document.createElement("div");
+        div.setAttribute("style", "left: 0px; top: 0px; width: 100px; height: 100px; position: absolute;");
+        document.body.appendChild(div);
+        requestAnimationFrame(frame);
+        function frame()
+        {
+            var color = [0, 0, 0];
+            color[count % 3] = 255;
+            div.style.backgroundColor = "rgb(" + color.join(",") + ")";
+            if (++count > 10)
+                requestAnimationFrame(callback);
+            else
+                requestAnimationFrame(frame);
+        }
+    }
+
+    var captureFilmStripSetting = WebInspector.settings.createSetting("timelineCaptureFilmStrip", false);
+    captureFilmStripSetting.set(true);
+    test.evaluateInConsole_(performActionsInPage.toString(), function() {});
+    test.invokeAsyncWithTimeline_("performActionsInPage", onTimelineDone);
+
+    function onTimelineDone()
+    {
+        captureFilmStripSetting.set(false);
+        var filmStripModel = new WebInspector.FilmStripModel(WebInspector.panels.timeline._tracingModel);
+        var frames = filmStripModel.frames();
+        test.assertTrue(frames.length > 4 && typeof frames.length === "number");
+        loadFrameImages(frames);
+    }
+
+    function loadFrameImages(frames)
+    {
+        var readyImages = [];
+        for (var frame of frames)
+            frame.imageDataPromise().then(onGotImageData)
+
+        function onGotImageData(data)
+        {
+            var image = new Image();
+            test.assertTrue(!!data, "No image data for frame");
+            image.addEventListener("load", onLoad);
+            image.src = "data:image/jpg;base64," + data;
+        }
+
+        function onLoad(event)
+        {
+            readyImages.push(event.target);
+            if (readyImages.length === frames.length)
+                validateImagesAndCompleteTest(readyImages);
+        }
+    }
+
+    function validateImagesAndCompleteTest(images)
+    {
+        var redString = [255, 0, 0, 255].join(",");
+        var greenString = [0, 255, 0, 255].join(",");
+        var blueString = [0, 0, 255, 255].join(",");
+        var redCount = 0;
+        var greenCount = 0;
+        var blueCount = 0;
+
+        var canvas = document.createElement("canvas");
+        var ctx = canvas.getContext("2d");
+        for (var image of images) {
+            test.assertTrue(image.naturalWidth > 10);
+            test.assertTrue(image.naturalHeight > 10);
+            canvas.width = image.naturalWidth;
+            canvas.height = image.naturalHeight;
+            ctx.drawImage(image, 0, 0);
+            var data = ctx.getImageData(0, 0, 1, 1);
+            var color = Array.prototype.join.call(data.data, ",");
+            if (color === redString)
+                redCount++;
+            else if (color === greenString)
+                greenCount++;
+            else if (color === blueString)
+                blueCount++;
+            else
+                test.fail("Unexpected color: " + color);
+        }
+        test.assertTrue(redCount && greenCount && blueCount, "Color sanity check failed");
+        test.releaseControl();
+    }
+
+    test.takeControl();
+}
+
+TestSuite.prototype.testSettings = function()
+{
+    var test = this;
+
+    createSettings();
+    test.takeControl();
+    setTimeout(reset, 0);
+
+    function createSettings()
+    {
+        var localSetting = WebInspector.settings.createSetting("local", undefined, true);
+        localSetting.set({s: "local", n: 1 });
+        var globalSetting = WebInspector.settings.createSetting("global", undefined, false);
+        globalSetting.set({s: "global", n: 2 });
+    }
+
+    function reset()
+    {
+        Runtime.experiments.clearForTest();
+        InspectorFrontendHost.getPreferences(gotPreferences);
+    }
+
+    function gotPreferences(prefs)
+    {
+        WebInspector.Main._instanceForTest._createSettings(prefs);
+
+        var localSetting = WebInspector.settings.createSetting("local", undefined, true);
+        test.assertEquals("object", typeof localSetting.get());
+        test.assertEquals("local", localSetting.get().s);
+        test.assertEquals(1, localSetting.get().n);
+        var globalSetting = WebInspector.settings.createSetting("global", undefined, false);
+        test.assertEquals("object", typeof globalSetting.get());
+        test.assertEquals("global", globalSetting.get().s);
+        test.assertEquals(2, globalSetting.get().n);
+        test.releaseControl();
+    }
+}
+
 TestSuite.prototype.waitForTestResultsInConsole = function()
 {
     var messages = WebInspector.multitargetConsoleModel.messages();
@@ -705,49 +645,41 @@ TestSuite.prototype.waitForTestResultsInConsole = function()
     this.takeControl();
 };
 
-TestSuite.prototype.checkLogAndErrorMessages = function()
+TestSuite.prototype.invokeAsyncWithTimeline_ = function(functionName, callback)
 {
-    var messages = WebInspector.multitargetConsoleModel.messages();
+    var test = this;
+    test.showPanel("timeline").then(function() {
+        WebInspector.panels.timeline._model.addEventListener(WebInspector.TimelineModel.Events.RecordingStarted, onRecordingStarted);
+        WebInspector.panels.timeline.toggleTimelineButton.element.click();
+    });
 
-    var matchesCount = 0;
-    function validMessage(message)
+    function onRecordingStarted()
     {
-        if (message.text === "log" && message.level === WebInspector.ConsoleMessage.MessageLevel.Log) {
-            ++matchesCount;
-            return true;
-        }
-
-        if (message.text === "error" && message.level === WebInspector.ConsoleMessage.MessageLevel.Error) {
-            ++matchesCount;
-            return true;
-        }
-        return false;
+        WebInspector.panels.timeline._model.removeEventListener(WebInspector.TimelineModel.Events.RecordingStarted, onRecordingStarted);
+        test.evaluateInConsole_(functionName + "(function() { console.log('DONE'); });", function() {});
+        WebInspector.multitargetConsoleModel.addEventListener(WebInspector.ConsoleModel.Events.MessageAdded, onConsoleMessage);
     }
 
-    for (var i = 0; i < messages.length; ++i) {
-        if (validMessage(messages[i]))
-            continue;
-        this.fail(messages[i].text + ":" + messages[i].level); // This will throw.
-    }
-
-    if (matchesCount === 2)
-        return;
-
-    // Wait for more messages.
     function onConsoleMessage(event)
     {
-        var message = event.data;
-        if (validMessage(message)) {
-            if (matchesCount === 2) {
-                this.releaseControl();
-                return;
-            }
-        } else
-            this.fail(message.text + ":" + messages[i].level);
+        var text = event.data.messageText;
+        if (text === "DONE") {
+            WebInspector.multitargetConsoleModel.removeEventListener(WebInspector.ConsoleModel.Events.MessageAdded, onConsoleMessage);
+            pageActionsDone();
+        }
     }
 
-    WebInspector.multitargetConsoleModel.addEventListener(WebInspector.ConsoleModel.Events.MessageAdded, onConsoleMessage, this);
-    this.takeControl();
+    function pageActionsDone()
+    {
+        WebInspector.panels.timeline._model.addEventListener(WebInspector.TimelineModel.Events.RecordingStopped, onRecordingStopped);
+        WebInspector.panels.timeline.toggleTimelineButton.element.click();
+    }
+
+    function onRecordingStopped()
+    {
+        WebInspector.panels.timeline._model.removeEventListener(WebInspector.TimelineModel.Events.RecordingStopped, onRecordingStopped);
+        callback();
+    }
 };
 
 /**
@@ -759,7 +691,7 @@ TestSuite.prototype.uiSourceCodesToString_ = function(uiSourceCodes)
 {
     var names = [];
     for (var i = 0; i < uiSourceCodes.length; i++)
-        names.push('"' + uiSourceCodes[i].url + '"');
+        names.push('"' + WebInspector.networkMapping.networkURL(uiSourceCodes[i]) + '"');
     return names.join(",");
 };
 
@@ -772,7 +704,7 @@ TestSuite.prototype.nonAnonymousUISourceCodes_ = function()
 {
     function filterOutAnonymous(uiSourceCode)
     {
-        return !!uiSourceCode.url;
+        return !!WebInspector.networkMapping.networkURL(uiSourceCode);
     }
 
     function filterOutService(uiSourceCode)
@@ -798,12 +730,12 @@ TestSuite.prototype.evaluateInConsole_ = function(code, callback)
     {
         WebInspector.context.removeFlavorChangeListener(WebInspector.ExecutionContext, showConsoleAndEvaluate, this);
         var consoleView = WebInspector.ConsolePanel._view();
-        consoleView._prompt.text = code;
+        consoleView._prompt.setText(code);
         consoleView._promptElement.dispatchEvent(TestSuite.createKeyEvent("Enter"));
 
         this.addSniffer(WebInspector.ConsoleView.prototype, "_consoleMessageAddedForTest",
             function(viewMessage) {
-                callback(viewMessage.toMessageElement().textContent);
+                callback(viewMessage.toMessageElement().deepTextContent());
             }.bind(this));
     }
 
@@ -855,28 +787,6 @@ TestSuite.prototype._waitForScriptPause = function(callback)
 
 
 /**
- * Waits until all the scripts are parsed and asynchronously executes the code
- * in the inspected page.
- */
-TestSuite.prototype._executeCodeWhenScriptsAreParsed = function(code, expectedScripts)
-{
-    var test = this;
-
-    function executeFunctionInInspectedPage() {
-        // Since breakpoints are ignored in evals' calculate() function is
-        // execute after zero-timeout so that the breakpoint is hit.
-        test.evaluateInConsole_(
-            'setTimeout("' + code + '" , 0)',
-            function(resultText) {
-                test.assertTrue(!isNaN(resultText), "Failed to get timer id: " + resultText + ". Code: " + code);
-            });
-    }
-
-    test._waitUntilScriptsAreParsed(expectedScripts, executeFunctionInInspectedPage);
-};
-
-
-/**
  * Waits until all the scripts are parsed and invokes the callback.
  */
 TestSuite.prototype._waitUntilScriptsAreParsed = function(expectedScripts, callback)
@@ -904,46 +814,34 @@ TestSuite.createKeyEvent = function(keyIdentifier)
     return evt;
 };
 
-
 /**
- * Run each test from the test suit on a fresh instance of the suite.
- */
-TestSuite._runAllTests = function()
-{
-    // For debugging purposes.
-    for (var name in TestSuite.prototype) {
-        if (name.substring(0, 4) === "test" && typeof TestSuite.prototype[name] === "function")
-            TestSuite._runTest(name);
-    }
-};
-
-
-/**
- * Run specified test on a fresh instance of the test suite.
+ * Run specified test.
  * @param {string} name Name of a test method from TestSuite class.
+ * @override
  */
-TestSuite._runTest = function(name)
+TestSuite.prototype.runTest = function(name)
 {
+    var test = WebInspector.TestBase.prototype.runTest.bind(this, name);
     if (TestSuite._populatedInterface)
-        new TestSuite().runTest(name);
+        test();
     else
-        TestSuite._pendingTestName = name;
+        TestSuite._pendingTest = test;
 };
 
 function runTests()
 {
     TestSuite._populatedInterface = true;
-    var name = TestSuite._pendingTestName;
-    delete TestSuite._pendingTestName;
-    if (name)
-        new TestSuite().runTest(name);
+    var test = TestSuite._pendingTest;
+    delete TestSuite._pendingTest;
+    if (test)
+        test();
 }
 
 WebInspector.notifications.addEventListener(WebInspector.NotificationService.Events.InspectorAgentEnabledForTests, runTests);
 
-return TestSuite;
+return new TestSuite();
 
 }
 
-if (window.parent && window.parent.uiTests)
-    window.parent.uiTests.testSuiteReady(createTestSuite);
+if (window.uiTests)
+    window.uiTests.testSuiteReady(createTestSuite, WebInspector.TestBase);

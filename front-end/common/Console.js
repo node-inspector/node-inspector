@@ -112,7 +112,7 @@ WebInspector.Console.prototype = {
 
     show: function()
     {
-        this.showPromise().done();
+        this.showPromise();
     },
 
     /**

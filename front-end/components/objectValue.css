@@ -1,0 +1,117 @@
+/*
+ * Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.object-value-scientific-notation-exponent {
+    flex-shrink: 0;
+}
+
+.object-value-scientific-notation-mantissa {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 1;
+    min-width: 1ex;
+}
+
+.object-value-scientific-notation-number {
+    display: flex !important;
+}
+
+.object-value-node:hover {
+    background-color: rgba(56, 121, 217, 0.1);
+}
+
+.object-value-function::before {
+    content: "function";
+    color: rgb(170, 13, 145);
+    padding-right: 5px;
+}
+
+.object-value-function {
+    font-style: italic;
+}
+
+.object-value-function.linkified:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+}
+
+.object-value-object,
+.object-value-map,
+.object-value-set,
+.object-value-iterator,
+.object-value-generator,
+.object-value-node,
+.object-value-array {
+    position: relative;
+    vertical-align: top;
+    color: inherit;
+    display: inline-block;
+}
+
+.object-value-number,
+.object-value-boolean {
+    color: rgb(28, 0, 207);
+}
+
+.object-value-string,
+.object-value-regexp,
+.object-value-symbol {
+    color: rgb(196, 26, 22);
+    white-space: pre;
+    unicode-bidi: -webkit-isolate;
+}
+
+.object-value-node {
+    color: rgb(136, 18, 128);
+}
+
+.object-value-null,
+.object-value-undefined {
+    color: rgb(128, 128, 128);
+}
+
+.object-value {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    -webkit-user-select: text;
+}
+
+.object-value-calculate-value-button:hover {
+    text-decoration: underline;
+}
+
+.object-value-object .section,
+.object-formatted-map .section,
+.object-value-set .section,
+.object-value-iterator .section,
+.object-value-generator .section,
+.object-value-node .section,
+.object-value-array .section {
+    position: static;
+}
+.object-value-object .section > .header::before {
+    margin-top: 0;
+}
+
+
+.object-value-object .properties-tree,
+.object-value-map .properties-tree,
+.object-value-set .properties-tree,
+.object-value-iterator .properties-tree,
+.object-value-generator .properties-tree,
+.object-value-node .properties-tree {
+    padding-left: 0 !important;
+}
+
+.object-value-preview-node,
+.section .object-value-node {
+    color: rgb(136, 18, 128);
+}
+
+.object-properties-section-custom-section {
+    display: inline-flex;
+    flex-direction: column;
+}

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="48px"
+   height="48px"
+   viewBox="0 0 48 48"
+   version="1.1"
+   id="svg2"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="securityPropertyWarning.svg">
+  <metadata
+     id="metadata14">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1487"
+     inkscape:window-height="840"
+     id="namedview12"
+     showgrid="true"
+     inkscape:zoom="7.4692757"
+     inkscape:cx="21.565556"
+     inkscape:cy="24"
+     inkscape:window-x="1232"
+     inkscape:window-y="751"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg2">
+    <inkscape:grid
+       type="xygrid"
+       id="grid4142" />
+  </sodipodi:namedview>
+  <defs
+     id="defs4" />
+  <g
+     id="Page-1"
+     stroke="none"
+     stroke-width="1"
+     fill="none"
+     fill-rule="evenodd">
+    <g
+       id="Material"
+       transform="translate(-64.000000, 0.000000)">
+      <g
+         id="ic_change_history_black_48px"
+         transform="translate(64.000000, 0.000000)">
+        <path
+           d="m 24,11.818633 -15.2267073,24.362734 30.4534143,0 L 24,11.818633 Z"
+           id="Shape"
+           inkscape:connector-curvature="0"
+           style="fill:#ffb003"
+           sodipodi:nodetypes="ccccc" />
+        <path
+           d="M0,0 L48,0 L48,48 L0,48 L0,0 L0,0 Z"
+           id="path10" />
+      </g>
+    </g>
+  </g>
+</svg>

@@ -9,6 +9,18 @@
     flex: 1 1;
 }
 
+.promises > .toolbar {
+    border-bottom: 1px solid #dadada;
+}
+
+.promises .promise-gc {
+    opacity: 0.6;
+}
+
+.promises .data-grid th:hover {
+    background-color: inherit !important;
+}
+
 .promises .data-grid .odd {
     background-color: #eee;
 }
@@ -18,7 +30,7 @@
 }
 
 .promises .data-grid .data-container {
-    top: 30px;
+    top: 29px;
 }
 
 .promises .data-grid table.data {
@@ -26,8 +38,6 @@
 }
 
 .promises .data-grid th {
-    border-bottom: none;
-    border-left: 1px solid rgb(205, 205, 205);
     background-color: white;
 }
 
@@ -35,21 +45,51 @@
     line-height: 17px;
     height: 24px;
     vertical-align: middle;
+}
+
+.promises .data-grid th,
+.promises .data-grid td {
     border-bottom: 1px solid rgb(205, 205, 205);
     border-left: 1px solid rgb(205, 205, 205);
 }
 
 .promises .status {
-    border-radius: 25px;
-    width: 54px;
-    text-align: center;
-    color: white;
+    -webkit-mask-image: url(Images/toolbarButtonGlyphs.png);
+    -webkit-mask-size: 352px 168px;
+    -webkit-mask-position: -294px -26px;
+    background-color: #bbb;
+    height: 20px;
+    width: 20px;
 }
 
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+.promises .status {
+    -webkit-mask-image: url(Images/toolbarButtonGlyphs_2x.png);
+}
+} /* media */
+
 .promises .status.rejected {
-    background-color: #f66;
+    background-color: rgb(216, 0, 0);
 }
 
 .promises .status.resolved {
     background-color: #696;
+}
+
+.promises-filters-header {
+    flex: 0 0 23px;
+    overflow: hidden;
+}
+
+.promises-filter-status {
+    flex: 0 0 23px;
+    padding-left: 18px;
+    color: rgb(128, 128, 128);
+    font-style: italic;
+}
+.promises-filter-status .link:hover {
+    color: rgb(15%, 15%, 15%);
+}
+.promises-filter-status .link {
+    color: rgb(33%, 33%, 33%);
 }

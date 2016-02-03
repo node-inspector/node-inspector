@@ -120,7 +120,7 @@ WebInspector.ProfileDataGridNode.prototype = {
         }
         function formatPercent(value)
         {
-            return WebInspector.UIString("%.2f\u2009%", value);
+            return WebInspector.UIString("%.2f\u2009%%", value);
         }
 
         var functionName;
@@ -141,6 +141,10 @@ WebInspector.ProfileDataGridNode.prototype = {
             "total-percent": formatPercent(this.totalPercent),
             "total": formatMilliseconds(this.totalTime),
         };
+        if (this.profileNode === this.tree.profileView.profile.idleNode) {
+            this.data['self-percent'] = undefined;
+            this.data['total-percent'] = undefined
+        }
     },
 
     select: function(supressSelectedEvent)
@@ -197,6 +201,7 @@ WebInspector.ProfileDataGridNode.prototype = {
     },
 
     /**
+     * @override
      * @param {!WebInspector.DataGridNode} profileDataGridNode
      * @param {number} index
      */
@@ -208,6 +213,7 @@ WebInspector.ProfileDataGridNode.prototype = {
     },
 
     /**
+     * @override
      * @param {!WebInspector.DataGridNode} profileDataGridNode
      */
     removeChild: function(profileDataGridNode)
@@ -374,7 +380,8 @@ WebInspector.ProfileDataGridTree = function(profileView, rootProfileNode)
 
     this.profileView = profileView;
 
-    this.totalTime = rootProfileNode.totalTime;
+    var idleNode = profileView.profile.idleNode;
+    this.totalTime = rootProfileNode.totalTime - (idleNode ? idleNode.totalTime : 0);
     this.lastComparator = null;
 
     this.childrenByCallUID = {};
@@ -440,6 +447,7 @@ WebInspector.ProfileDataGridTree.prototype = {
     },
 
     /**
+     * @override
      * @param {!WebInspector.SearchableView.SearchConfig} searchConfig
      * @param {boolean} shouldJump
      * @param {boolean=} jumpBackwards
@@ -546,6 +554,9 @@ WebInspector.ProfileDataGridTree.prototype = {
         return this._searchResults.length;
     },
 
+    /**
+     * @override
+     */
     searchCanceled: function()
     {
         if (this._searchResults) {
@@ -562,6 +573,9 @@ WebInspector.ProfileDataGridTree.prototype = {
         this._searchResultIndex = -1;
     },
 
+    /**
+     * @override
+     */
     jumpToNextSearchResult: function()
     {
         if (!this._searchResults || !this._searchResults.length)
@@ -570,6 +584,9 @@ WebInspector.ProfileDataGridTree.prototype = {
         this._jumpToSearchResult(this._searchResultIndex);
     },
 
+    /**
+     * @override
+     */
     jumpToPreviousSearchResult: function()
     {
         if (!this._searchResults || !this._searchResults.length)
@@ -579,6 +596,7 @@ WebInspector.ProfileDataGridTree.prototype = {
     },
 
     /**
+     * @override
      * @return {number}
      */
     currentSearchResultIndex: function()
@@ -619,7 +637,7 @@ WebInspector.ProfileDataGridTree.propertyComparator = function(property, isAscen
                     return 1;
 
                 return 0;
-            }
+            };
         } else {
             comparator = function(lhs, rhs)
             {
@@ -630,7 +648,7 @@ WebInspector.ProfileDataGridTree.propertyComparator = function(property, isAscen
                     return 1;
 
                 return 0;
-            }
+            };
         }
 
         WebInspector.ProfileDataGridTree.propertyComparators[(isAscending ? 1 : 0)][property] = comparator;

@@ -6,8 +6,6 @@ module.exports = SessionStub;
 function SessionStub() {
   this.debuggerClient = new DebuggerClientStub();
   this.frontendClient = new FrontendClientStub();
-
-  this.resourceTreeResolved = true;
 }
 inherits(SessionStub, EventEmitter);
 
@@ -21,7 +19,7 @@ DebuggerClientStub.prototype.close = function() {
 function FrontendClientStub() {}
 inherits(FrontendClientStub, EventEmitter);
 
-FrontendClientStub.prototype.sendEvent = function(event, message) {
+FrontendClientStub.prototype.emitEvent = function(event, message) {
   this.emit(event, message);
 };
 FrontendClientStub.prototype.sendLogToConsole = function(type, message) {

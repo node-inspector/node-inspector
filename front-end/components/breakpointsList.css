@@ -27,7 +27,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-.sidebar-pane > .body .breakpoint-condition {
+.sidebar-pane .breakpoint-condition {
     display: block;
     margin-top: 4px;
     margin-bottom: 4px;
@@ -68,16 +68,7 @@ ol.breakpoint-list {
 }
 
 .breakpoint-list li:hover {
-    background-color: rgba(56, 121, 217, 0.2);
-}
-
-.breakpoint-list .checkbox-elem {
-    font-size: 10px;
-    margin: 0 4px;
-    vertical-align: top;
-    position: relative;
-    z-index: 1;
-    top: 3px;
+    background-color: #eee;
 }
 
 .breakpoint-list .source-text {
@@ -101,19 +92,80 @@ li.breakpoint-hit .breakpoint-hit-marker {
     z-index: -1;
 }
 
-.event-listener-breakpoints.properties-tree li {
-    height: 16px;
-    padding-top: 3px;
+.event-listener-breakpoints {
+    margin-top: 0;
+    padding: 2px 6px;
+    list-style: none;
+    min-height: 18px;
 }
 
-.event-listener-breakpoints.properties-tree .children li {
+.event-listener-breakpoints ol {
+    display: none;
+    margin: 0;
+    -webkit-padding-start: 12px;
+    list-style: none;
+}
+
+.event-listener-breakpoints ol.expanded {
+    display: block;
+}
+
+.event-listener-breakpoints li {
     margin-left: 12px;
-    height: 16px;
+    text-overflow: ellipsis;
+    -webkit-user-select: text;
+    cursor: default;
 }
 
-.event-listener-breakpoints .checkbox-elem {
+.event-listener-breakpoints li.parent {
+    margin-left: 1px;
+}
+
+.event-listener-breakpoints li.parent::before {
+    -webkit-user-select: none;
+    background-image: url(Images/toolbarButtonGlyphs.png);
+    background-size: 352px 168px;
+    opacity: 0.5;
+    content: "a";
+    width: 8px;
     float: left;
-    position: relative;
-    top: 1px;
-    font-size: 10px;
+    margin: 2px 2px 0 -2px;
+    color: transparent;
+    text-shadow: none;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+.event-listener-breakpoints li.parent::before {
+    background-image: url(Images/toolbarButtonGlyphs_2x.png);
+}
+} /* media */
+
+.event-listener-breakpoints li.parent::before {
+    background-position: -4px -96px;
+}
+
+.event-listener-breakpoints li.parent.expanded::before {
+    background-position: -20px -96px;
+}
+
+.event-listener-breakpoints .children li {
+    margin-left: 12px;
+}
+
+.async-operations li > label {
+    float: left;
+}
+
+.async-operations li > div {
+    float: right;
+    margin: 2px 3px 0 2px;
+}
+
+.dom-breakpoints-list > li {
+    display: flex;
+}
+
+.dom-breakpoints-list .dom-breakpoint > div {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }

@@ -33,29 +33,16 @@
     position: relative;
 }
 
-#sources-editor-container-tabbed-pane {
-    flex: auto;
-}
-
-#sources-editor-container-tabbed-pane .tabbed-pane-header-tab {
-    border-bottom: 1px solid #BBB;
-}
-
-#sources-panel-sources-view .tabbed-pane-header {
-    background-color: #eee;
-}
-
-#sources-panel-sources-view .sources-status-bar {
+#sources-panel-sources-view .sources-toolbar {
     display: flex;
-    position: relative;
-    flex: 0 0 20px;
-    background-color: #eee;
-    border-top: 1px solid rgb(196,196,196);
+    flex: 0 0 27px;
+    background-color: #f3f3f3;
+    border-top: 1px solid #dadada;
     overflow: hidden;
 }
 
-#sources-panel-sources-view .sources-status-bar .status-bar {
-    margin-top: -2px;
+.sources-toolbar .toolbar {
+    cursor: default;
 }
 
 .source-frame-debugger-script {
@@ -66,31 +53,10 @@
     background-color: rgba(255, 225, 205, 0.40);
 }
 
-.editor-container-unsaved-committed-changes-icon {
-    background-image: url(Images/statusbarButtonGlyphs.png);
-    background-size: 320px 144px;
-    background-position: -202px -107px;
-}
-
 .source-frame-infobar {
-    border-bottom: 1px solid rgb(187, 187, 187);
+    flex: none;
     display: flex;
-    flex-direction: column;
-    flex: 0 1 auto;
     -webkit-user-select: text;
-}
-
-.source-frame-infobar-info {
-    background-color: rgb(255, 255, 255);
-}
-
-.source-frame-infobar-warning,
-.source-frame-infobar-error {
-    background-color: rgb(255, 255, 194);
-}
-
-.source-frame-infobar {
-    margin-top: 0;
 }
 
 .source-frame-infobar-animation {
@@ -101,55 +67,26 @@
     to { margin-top: 0; }
 }
 
-.source-frame-infobar-icon {
-    background-image: url(Images/statusbarButtonGlyphs.png);
-    background-size: 320px 144px;
-    width: 11px;
-    height: 10px;
-    margin-right: 4px;
-    display: inline-block;
-    margin-top: 1px;
-    flex: none;
-}
-
-.source-frame-infobar-info .source-frame-infobar-icon {
-    background-position: -212px -107px;
-}
-
-.source-frame-infobar-warning .source-frame-infobar-icon {
-    background-position: -202px -107px;
-}
-
-.source-frame-infobar-error .source-frame-infobar-icon {
-    background-position: -202px -96px;
-}
-
 .source-frame-infobar-main-row {
     display: flex;
-    min-height: 17px;
+    flex-direction: row;
+    flex: auto;
     overflow: hidden;
-    margin: 5px 10px 0px;
 }
 
 .source-frame-infobar-details-container {
     display: flex;
     flex-direction: column;
-    padding: 5px 0;
 }
 
 .source-frame-infobar-details-row {
     display: flex;
     flex: none;
-    margin: 0px 10px;
+    margin-top: 2px;
 }
 
 .source-frame-infobar-row-message {
-    flex: 0 1 auto;
-    margin-bottom: 4px;
-}
-
-.source-frame-infobar-main-row .close-button {
-    flex: none;
+    overflow: hidden;
 }
 
 .source-frame-infobar-toggle {
@@ -160,4 +97,24 @@
 
 .source-frame-infobar-details-url {
     flex: 0 1000 auto;
+}
+
+@-webkit-keyframes source-frame-value-update-highlight-animation {
+    from {
+        background-color: inherit;
+        color: inherit;
+    }
+    10% {
+        background-color: rgb(158, 54, 153);
+        color: white;
+    }
+    to {
+        background-color: inherit;
+        color: inherit;
+    }
+}
+
+.source-frame-value-update-highlight {
+    -webkit-animation: source-frame-value-update-highlight-animation 0.8s 1 cubic-bezier(0, 0, 0.2, 1);
+    border-radius: 2px;
 }

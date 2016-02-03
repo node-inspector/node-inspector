@@ -8,10 +8,11 @@
 }
 
 .CodeMirror .source-frame-eval-expression {
-  outline: 0px;
+  outline: 0;
   border: 1px solid rgb(163, 41, 34);
-  border-left-width: 0px;
-  border-right-width: 0px;
+  border-left-width: 0;
+  border-right-width: 0;
+  background-color: rgb(255, 255, 194);
 }
 
 .CodeMirror .source-frame-eval-expression-end {
@@ -61,7 +62,7 @@
   color: white;
   border-width: 1px 4px 1px 1px !important;
   -webkit-border-image: url(Images/breakpoint.png) 1 4 1 1;
-  margin: 0px 0px 0px 3px !important;
+  margin: 0 0 0 3px !important;
   padding-right: 3px;
   padding-left: 1px;
   height: 11px;
@@ -69,7 +70,7 @@
 }
 
 .cm-line-without-source-mapping {
-  background-color: #eee;
+  background-color: #fafafa;
 }
 
 .cm-breakpoint.cm-breakpoint-conditional .CodeMirror-linenumber {
@@ -132,8 +133,12 @@
 }
 
 .cm-execution-line {
-    background-color: rgb(171, 191, 254);
+    background-color: rgb(230, 236, 255);
     outline: 1px solid rgb(64, 115, 244);
+}
+
+.cm-execution-line-tail {
+    background-color: rgb(171, 191, 254);
 }
 
 .cm-execution-line .CodeMirror-linenumber {
@@ -148,10 +153,10 @@
     position: absolute;
     border: 1px solid gray;
     border-radius: 3px;
-    top: 0px;
+    top: 0;
     bottom: -1px;
-    left: 0px;
-    right: 0px;
+    left: 0;
+    right: 0;
     content: "";
 }
 
@@ -172,9 +177,9 @@
     border-top-width: 1px;
     border-bottom-width: 1px;
     top: -1px;
-    bottom: 0px;
-    left: 0px;
-    right: 0px;
+    bottom: 0;
+    left: 0;
+    right: 0;
     content: "";
 }
 
@@ -220,39 +225,54 @@
 }
 
 .CodeMirror .text-editor-line-decoration {
-  position: absolute;
+    position: absolute;
 }
 
 .CodeMirror .text-editor-line-decoration-wave {
-  position: absolute;
-  top: -2px;
-  cursor: pointer;
-  height: 4px;
+    position: absolute;
+    top: -2px;
+    cursor: pointer;
+    height: 4px;
+}
+
+.CodeMirror .text-editor-value-decoration {
+    position: absolute;
+    bottom: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 1000px;
+    opacity: 0.8;
+    background-color: #FFE3C7;
+    margin-left: 10px;
+    padding-left: 5px;
+    color: #222;
+    -webkit-user-select: text;
+}
+
+.CodeMirror .cm-execution-line .text-editor-value-decoration {
+    background-color: transparent;
+    opacity: 0.5;
 }
 
 .text-editor-messages-description-container {
-  display: inline-block;
+    display: inline-block;
 }
 
 .text-editor-row-message:first-child {
-  border-top-width: 0px;
+    border-top-width: 0;
 }
 
 .text-editor-row-message {
-  border-top: 1px solid rgb(215, 215, 215);
-  line-height: 1.2;
-  white-space: nowrap;
-  display: flex;
+    border-top: 1px solid rgb(215, 215, 215);
+    line-height: 1.2;
+    white-space: nowrap;
+    display: flex;
 }
 
 .text-editor-row-message .bubble-repeat-count {
-  margin-right: 1ex;
-  margin-top: -1px;
-}
-
-.text-editor-row-message-icon {
-  margin-right: 1ex;
-  margin-top: 2px;
+    margin-right: 1ex;
+    margin-top: -1px;
 }
 
 .CodeMirror .text-editor-line-decoration-icon {
@@ -285,4 +305,16 @@
 /** @see crbug.com/358161 */
 .CodeMirror .CodeMirror-vscrollbar, .CodeMirror .CodeMirror-hscrollbar {
   transform: translateZ(0);
+}
+
+.CodeMirror .CodeMirror-activeline-background {
+  background-color: transparent;
+}
+
+.cm-trailing-whitespace {
+    background-color: rgba(255, 0, 0, 0.05);
+}
+
+.CodeMirror-activeline .cm-trailing-whitespace {
+    background-color: transparent;
 }

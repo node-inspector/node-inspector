@@ -51,7 +51,7 @@ WebInspector.ShortcutsScreen.prototype = {
     },
 
     /**
-     * @return {!WebInspector.View}
+     * @return {!WebInspector.Widget}
      */
     createShortcutsTabView: function()
     {
@@ -64,20 +64,20 @@ WebInspector.ShortcutsScreen.prototype = {
         }
         orderedSections.sort(compareSections);
 
-        var view = new WebInspector.View();
+        var widget = new WebInspector.Widget();
 
-        view.element.className = "settings-tab-container"; // Override
-        view.element.createChild("header").createChild("h3").createTextChild(WebInspector.UIString("Shortcuts"));
-        var scrollPane = view.element.createChild("div", "help-container-wrapper");
+        widget.element.className = "settings-tab-container"; // Override
+        widget.element.createChild("header").createChild("h3").createTextChild(WebInspector.UIString("Shortcuts"));
+        var scrollPane = widget.element.createChild("div", "help-container-wrapper");
         var container = scrollPane.createChild("div");
         container.className = "help-content help-container";
         for (var i = 0; i < orderedSections.length; ++i)
             orderedSections[i].renderSection(container);
 
         var note = scrollPane.createChild("p", "help-footnote");
-        note.appendChild(WebInspector.createDocumentationAnchor("shortcuts", WebInspector.UIString("Full list of keyboard shortcuts and gestures")));
+        note.appendChild(WebInspector.linkifyDocumentationURLAsNode("iterate/inspect-styles/shortcuts", WebInspector.UIString("Full list of DevTools keyboard shortcuts and gestures")));
 
-        return view;
+        return widget;
     }
 }
 
@@ -134,7 +134,7 @@ WebInspector.ShortcutsSection.prototype = {
      */
     _addLine: function(keyElement, description)
     {
-        this._lines.push({ key: keyElement, text: description })
+        this._lines.push({ key: keyElement, text: description });
     },
 
     /**
@@ -245,10 +245,12 @@ WebInspector.ShortcutsScreen.registerShortcuts = function()
     // Debugger
     var section = WebInspector.shortcutsScreen.section(WebInspector.UIString("Debugger"));
 
-    section.addAlternateKeys(WebInspector.shortcutRegistry.shortcutDescriptorsForAction("debugger.toggle-pause"), WebInspector.UIString("Pause/Continue"));
-    section.addAlternateKeys(WebInspector.ShortcutsScreen.SourcesPanelShortcuts.StepOver, WebInspector.UIString("Step over"));
-    section.addAlternateKeys(WebInspector.ShortcutsScreen.SourcesPanelShortcuts.StepInto, WebInspector.UIString("Step into"));
-    section.addAlternateKeys(WebInspector.ShortcutsScreen.SourcesPanelShortcuts.StepOut, WebInspector.UIString("Step out"));
+    section.addAlternateKeys(WebInspector.shortcutRegistry.shortcutDescriptorsForAction("debugger.toggle-pause"), WebInspector.UIString("Pause/ Continue"));
+    section.addAlternateKeys(WebInspector.shortcutRegistry.shortcutDescriptorsForAction("debugger.step-over"), WebInspector.UIString("Step over"));
+    section.addAlternateKeys(WebInspector.shortcutRegistry.shortcutDescriptorsForAction("debugger.step-into"), WebInspector.UIString("Step into"));
+    section.addAlternateKeys(WebInspector.shortcutRegistry.shortcutDescriptorsForAction("debugger.step-out"), WebInspector.UIString("Step out"));
+    if (Runtime.experiments.isEnabled("stepIntoAsync"))
+        section.addAlternateKeys(WebInspector.shortcutRegistry.shortcutDescriptorsForAction("debugger.step-into"), WebInspector.UIString("Step into"));
 
     var nextAndPrevFrameKeys = WebInspector.ShortcutsScreen.SourcesPanelShortcuts.NextCallFrame.concat(WebInspector.ShortcutsScreen.SourcesPanelShortcuts.PrevCallFrame);
     section.addRelatedKeys(nextAndPrevFrameKeys, WebInspector.UIString("Next/previous call frame"));
@@ -278,8 +280,10 @@ WebInspector.ShortcutsScreen.registerShortcuts = function()
     // Timeline panel
     section = WebInspector.shortcutsScreen.section(WebInspector.UIString("Timeline Panel"));
     section.addAlternateKeys(WebInspector.ShortcutsScreen.TimelinePanelShortcuts.StartStopRecording, WebInspector.UIString("Start/stop recording"));
+    section.addAlternateKeys(WebInspector.ShortcutsScreen.TimelinePanelShortcuts.RecordPageReload, WebInspector.UIString("Record page reload"));
     section.addAlternateKeys(WebInspector.ShortcutsScreen.TimelinePanelShortcuts.SaveToFile, WebInspector.UIString("Save timeline data"));
     section.addAlternateKeys(WebInspector.ShortcutsScreen.TimelinePanelShortcuts.LoadFromFile, WebInspector.UIString("Load timeline data"));
+    section.addRelatedKeys(WebInspector.ShortcutsScreen.TimelinePanelShortcuts.JumpToPreviousFrame.concat(WebInspector.ShortcutsScreen.TimelinePanelShortcuts.JumpToNextFrame), WebInspector.UIString("Jump to previous/next frame"));
 
 
     // Profiles panel
@@ -404,26 +408,6 @@ WebInspector.ShortcutsScreen.SourcesPanelShortcuts = {
     DecreaseCSSUnitByTen: [
         WebInspector.KeyboardShortcut.makeDescriptor(WebInspector.KeyboardShortcut.Keys.PageDown, WebInspector.KeyboardShortcut.Modifiers.Alt)
     ],
-
-    RunSnippet: [
-        WebInspector.KeyboardShortcut.makeDescriptor(WebInspector.KeyboardShortcut.Keys.Enter, WebInspector.KeyboardShortcut.Modifiers.CtrlOrMeta)
-    ],
-
-    StepOver: [
-        WebInspector.KeyboardShortcut.makeDescriptor(WebInspector.KeyboardShortcut.Keys.F10),
-        WebInspector.KeyboardShortcut.makeDescriptor(WebInspector.KeyboardShortcut.Keys.SingleQuote, WebInspector.KeyboardShortcut.Modifiers.CtrlOrMeta)
-    ],
-
-    StepInto: [
-        WebInspector.KeyboardShortcut.makeDescriptor(WebInspector.KeyboardShortcut.Keys.F11),
-        WebInspector.KeyboardShortcut.makeDescriptor(WebInspector.KeyboardShortcut.Keys.Semicolon, WebInspector.KeyboardShortcut.Modifiers.CtrlOrMeta)
-    ],
-
-    StepOut: [
-        WebInspector.KeyboardShortcut.makeDescriptor(WebInspector.KeyboardShortcut.Keys.F11, WebInspector.KeyboardShortcut.Modifiers.Shift),
-        WebInspector.KeyboardShortcut.makeDescriptor(WebInspector.KeyboardShortcut.Keys.Semicolon, WebInspector.KeyboardShortcut.Modifiers.Shift | WebInspector.KeyboardShortcut.Modifiers.CtrlOrMeta)
-    ],
-
     EvaluateSelectionInConsole: [
         WebInspector.KeyboardShortcut.makeDescriptor("e", WebInspector.KeyboardShortcut.Modifiers.Shift | WebInspector.KeyboardShortcut.Modifiers.Ctrl)
     ],
@@ -482,12 +466,24 @@ WebInspector.ShortcutsScreen.TimelinePanelShortcuts = {
         WebInspector.KeyboardShortcut.makeDescriptor("e", WebInspector.KeyboardShortcut.Modifiers.CtrlOrMeta)
     ],
 
+    RecordPageReload: [
+        WebInspector.KeyboardShortcut.makeDescriptor("r", WebInspector.KeyboardShortcut.Modifiers.CtrlOrMeta)
+    ],
+
     SaveToFile: [
         WebInspector.KeyboardShortcut.makeDescriptor("s", WebInspector.KeyboardShortcut.Modifiers.CtrlOrMeta)
     ],
 
     LoadFromFile: [
         WebInspector.KeyboardShortcut.makeDescriptor("o", WebInspector.KeyboardShortcut.Modifiers.CtrlOrMeta)
+    ],
+
+    JumpToPreviousFrame: [
+        WebInspector.KeyboardShortcut.makeDescriptor(WebInspector.KeyboardShortcut.Keys.LeftSquareBracket)
+    ],
+
+    JumpToNextFrame: [
+        WebInspector.KeyboardShortcut.makeDescriptor(WebInspector.KeyboardShortcut.Keys.RightSquareBracket)
     ]
 };
 

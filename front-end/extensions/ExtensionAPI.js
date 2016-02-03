@@ -38,15 +38,6 @@ function defineCommonExtensionSymbols(apiPrivate)
         Severe: "severe"
     };
 
-    if (!apiPrivate.console)
-        apiPrivate.console = {};
-    apiPrivate.console.Severity = {
-        Debug: "debug",
-        Log: "log",
-        Warning: "warning",
-        Error: "error"
-    };
-
     if (!apiPrivate.panels)
         apiPrivate.panels = {};
     apiPrivate.panels.SearchAction = {
@@ -59,7 +50,6 @@ function defineCommonExtensionSymbols(apiPrivate)
     apiPrivate.Events = {
         AuditStarted: "audit-started-",
         ButtonClicked: "button-clicked-",
-        ConsoleMessageAdded: "console-message-added",
         PanelObjectSelected: "panel-objectSelected-",
         NetworkRequestFinished: "network-request-finished",
         OpenResource: "open-resource",
@@ -73,15 +63,13 @@ function defineCommonExtensionSymbols(apiPrivate)
     apiPrivate.Commands = {
         AddAuditCategory: "addAuditCategory",
         AddAuditResult: "addAuditResult",
-        AddConsoleMessage: "addConsoleMessage",
         AddRequestHeaders: "addRequestHeaders",
         ApplyStyleSheet: "applyStyleSheet",
         CreatePanel: "createPanel",
         CreateSidebarPane: "createSidebarPane",
-        CreateStatusBarButton: "createStatusBarButton",
+        CreateToolbarButton: "createToolbarButton",
         EvaluateOnInspectedPage: "evaluateOnInspectedPage",
         ForwardKeyboardEvent: "_forwardKeyboardEvent",
-        GetConsoleMessages: "getConsoleMessages",
         GetHAR: "getHAR",
         GetPageResources: "getPageResources",
         GetRequestContent: "getRequestContent",
@@ -189,32 +177,6 @@ function InspectorExtensionAPI()
     this.panels = new Panels();
     this.network = new Network();
     defineDeprecatedProperty(this, "webInspector", "resources", "network");
-    this.console = new ConsoleAPI();
-}
-
-/**
- * @constructor
- */
-function ConsoleAPI()
-{
-    this.onMessageAdded = new EventSink(events.ConsoleMessageAdded);
-}
-
-ConsoleAPI.prototype = {
-    getMessages: function(callback)
-    {
-        extensionServer.sendRequest({ command: commands.GetConsoleMessages }, callback);
-    },
-
-    addMessage: function(severity, text, url, line)
-    {
-        extensionServer.sendRequest({ command: commands.AddConsoleMessage, severity: severity, text: text, url: url, line: line });
-    },
-
-    get Severity()
-    {
-        return apiPrivate.console.Severity;
-    }
 }
 
 /**
@@ -409,7 +371,7 @@ function declareInterfaceClass(implConstructor)
         var impl = { __proto__: implConstructor.prototype };
         implConstructor.apply(impl, arguments);
         populateInterfaceClass(this, impl);
-    }
+    };
 }
 
 function defineDeprecatedProperty(object, className, oldName, newName)
@@ -486,7 +448,7 @@ ExtensionPanelImpl.prototype = {
     {
         var id = "button-" + extensionServer.nextObjectId();
         var request = {
-            command: commands.CreateStatusBarButton,
+            command: commands.CreateToolbarButton,
             panel: this._id,
             id: id,
             icon: iconPath,
@@ -639,7 +601,7 @@ AuditResultImpl.prototype = {
     {
         // shorthand for specifying details directly in addResult().
         if (details && !(details instanceof AuditResultNode))
-            details = new AuditResultNode(details instanceof Array ? details : [details]);
+            details = new AuditResultNode(Array.isArray(details) ? details : [details]);
 
         var request = {
             command: commands.AddAuditResult,
@@ -752,9 +714,9 @@ InspectedWindow.prototype = {
     reload: function(optionsOrUserAgent)
     {
         var options = null;
-        if (typeof optionsOrUserAgent === "object")
+        if (typeof optionsOrUserAgent === "object") {
             options = optionsOrUserAgent;
-        else if (typeof optionsOrUserAgent === "string") {
+        } else if (typeof optionsOrUserAgent === "string") {
             options = { userAgent: optionsOrUserAgent };
             console.warn("Passing userAgent as string parameter to inspectedWindow.reload() is deprecated. " +
                          "Use inspectedWindow.reload({ userAgent: value}) instead.");
@@ -804,7 +766,7 @@ InspectedWindow.prototype = {
  */
 function ResourceImpl(resourceData)
 {
-    this._url = resourceData.url
+    this._url = resourceData.url;
     this._type = resourceData.type;
 }
 
@@ -927,7 +889,7 @@ ExtensionServerClient.prototype = {
      */
     nextObjectId: function()
     {
-        return injectedScriptId + "_" + ++this._lastObjectId;
+        return injectedScriptId.toString() + "_" + ++this._lastObjectId;
     },
 
     _registerCallback: function(callback)

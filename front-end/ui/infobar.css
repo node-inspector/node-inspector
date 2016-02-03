@@ -1,0 +1,45 @@
+/*
+ * Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.infobar {
+    color: rgb(34, 34, 34);
+    padding: 4px 6px;
+    white-space: nowrap;
+    display: flex;
+    align-items: flex-start;
+    flex: auto;
+    border-bottom: 1px solid rgb(171, 171, 171);
+}
+
+.infobar-warning {
+    background-color: rgb(253, 242, 192);
+}
+
+.infobar-info {
+    background-color: rgb(255, 255, 255);
+}
+
+.infobar .icon {
+    flex: none;
+}
+
+.infobar .content {
+    flex: auto;
+    padding-left: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.infobar .close-button {
+    flex: none;
+}
+
+.infobar .disable-button {
+    flex: none;
+    margin-right: 5px;
+    text-decoration: underline;
+    cursor: pointer;
+}

@@ -81,29 +81,3 @@
     word-break: break-word;
     margin: 0 0 5px 20px;
 }
-
-.panel-enabler-view input[type="radio"] {
-    height: 17px;
-    width: 17px;
-    min-width: 17px;
-    border: 1px solid rgb(165, 165, 165);
-    background-image: linear-gradient(to bottom, rgb(252, 252, 252), rgb(223, 223, 223));
-    border-radius: 8px;
-    -webkit-appearance: none;
-    vertical-align: middle;
-    margin: 0 5px 5px 0;
-}
-
-.panel-enabler-view input[type="radio"]:active:not(:disabled) {
-    background-image: linear-gradient(to bottom, rgb(194, 194, 194), rgb(239, 239, 239));
-}
-
-.panel-enabler-view input[type="radio"]:checked {
-    background: url(Images/radioDot.png) center no-repeat,
-                linear-gradient(to bottom, rgb(252, 252, 252), rgb(223, 223, 223));
-}
-
-.panel-enabler-view input[type="radio"]:checked:active {
-    background: url(Images/radioDot.png) center no-repeat,
-                linear-gradient(to bottom, rgb(194, 194, 194), rgb(239, 239, 239));
-}

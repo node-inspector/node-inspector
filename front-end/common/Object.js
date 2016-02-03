@@ -32,6 +32,7 @@ WebInspector.Object = function() {
 
 WebInspector.Object.prototype = {
     /**
+     * @override
      * @param {string} eventType
      * @param {function(!WebInspector.Event)} listener
      * @param {!Object=} thisObject
@@ -49,6 +50,7 @@ WebInspector.Object.prototype = {
     },
 
     /**
+     * @override
      * @param {string} eventType
      * @param {function(!WebInspector.Event)} listener
      * @param {!Object=} thisObject
@@ -69,12 +71,16 @@ WebInspector.Object.prototype = {
             this._listeners.delete(eventType);
     },
 
+    /**
+     * @override
+     */
     removeAllListeners: function()
     {
         delete this._listeners;
     },
 
     /**
+     * @override
      * @param {string} eventType
      * @return {boolean}
      */
@@ -86,6 +92,7 @@ WebInspector.Object.prototype = {
     },
 
     /**
+     * @override
      * @param {string} eventType
      * @param {*=} eventData
      * @return {boolean}

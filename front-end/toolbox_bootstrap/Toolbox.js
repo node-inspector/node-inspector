@@ -12,7 +12,8 @@ function toolboxLoaded()
 {
     if (!window.opener)
         return;
-    window.opener.WebInspector["app"]["toolboxLoaded"](document);
+    var app = window.opener.WebInspector["AdvancedApp"]["_instance"]();
+    app["toolboxLoaded"](document);
 }
 
 runOnWindowLoad(toolboxLoaded);

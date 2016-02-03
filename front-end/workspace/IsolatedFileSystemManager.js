@@ -39,6 +39,7 @@ WebInspector.IsolatedFileSystemManager = function()
     /** @type {!Object.<string, !Array.<function(?DOMFileSystem)>>} */
     this._pendingFileSystemRequests = {};
     this._fileSystemMapping = new WebInspector.FileSystemMapping();
+    this._excludedFolderManager = new WebInspector.ExcludedFolderManager();
     this._requestFileSystems();
 
     InspectorFrontendHost.events.addEventListener(InspectorFrontendHostAPI.Events.FileSystemsLoaded, this._onFileSystemsLoaded, this);
@@ -61,6 +62,14 @@ WebInspector.IsolatedFileSystemManager.prototype = {
     mapping: function()
     {
         return this._fileSystemMapping;
+    },
+
+    /**
+     * @return {!WebInspector.ExcludedFolderManager}
+     */
+    excludedFolderManager: function()
+    {
+        return this._excludedFolderManager;
     },
 
     _requestFileSystems: function()
@@ -132,14 +141,11 @@ WebInspector.IsolatedFileSystemManager.prototype = {
     _onFileSystemAdded: function(event)
     {
         var errorMessage = /** @type {string} */ (event.data["errorMessage"]);
-        var fileSystem = /** @type {!WebInspector.IsolatedFileSystemManager.FileSystem} */ (event.data["fileSystem"]);
-        var fileSystemPath;
-        if (errorMessage) {
+        var fileSystem = /** @type {?WebInspector.IsolatedFileSystemManager.FileSystem} */ (event.data["fileSystem"]);
+        if (errorMessage)
             WebInspector.console.error(errorMessage, true);
-        } else {
+        else if (fileSystem)
             this._innerAddFileSystem(fileSystem);
-            fileSystemPath = fileSystem.fileSystemPath;
-        }
     },
 
     /**
@@ -156,6 +162,7 @@ WebInspector.IsolatedFileSystemManager.prototype = {
     _fileSystemRemoved: function(fileSystemPath)
     {
         this._fileSystemMapping.removeFileSystem(fileSystemPath);
+        this._excludedFolderManager.removeFileSystem(fileSystemPath);
         var isolatedFileSystem = this._fileSystems[fileSystemPath];
         delete this._fileSystems[fileSystemPath];
         if (isolatedFileSystem)

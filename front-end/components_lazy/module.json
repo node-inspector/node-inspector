@@ -1,0 +1,16 @@
+{
+    "dependencies": [
+        "sdk",
+        "ui",
+        "ui_lazy"
+    ],
+    "scripts": [
+        "CookiesTable.js",
+        "FilmStripModel.js",
+        "FilmStripView.js"
+    ],
+    "resources": [
+        "filmStripDialog.css",
+        "filmStripView.css"
+    ]
+}

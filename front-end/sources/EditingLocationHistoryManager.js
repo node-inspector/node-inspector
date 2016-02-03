@@ -174,6 +174,7 @@ WebInspector.EditingLocationHistoryEntry.prototype = {
     },
 
     /**
+     * @override
      * @return {boolean}
      */
     valid: function()
@@ -183,6 +184,9 @@ WebInspector.EditingLocationHistoryEntry.prototype = {
         return !!(position && uiSourceCode);
     },
 
+    /**
+     * @override
+     */
     reveal: function()
     {
         var position = this._positionHandle.resolve();
@@ -193,4 +197,4 @@ WebInspector.EditingLocationHistoryEntry.prototype = {
         this._editingLocationManager.updateCurrentState();
         this._sourcesView.showSourceLocation(uiSourceCode, position.lineNumber, position.columnNumber);
     }
-};
+}

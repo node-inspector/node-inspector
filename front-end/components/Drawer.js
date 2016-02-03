@@ -30,40 +30,28 @@
 /**
  * @constructor
  * @extends {WebInspector.VBox}
- * @param {!WebInspector.SplitView} splitView
+ * @param {!WebInspector.SplitWidget} splitWidget
  */
-WebInspector.Drawer = function(splitView)
+WebInspector.Drawer = function(splitWidget)
 {
     WebInspector.VBox.call(this);
     this.element.id = "drawer-contents";
 
-    this._splitView = splitView;
-    splitView.hideDefaultResizer();
-    splitView.setSidebarView(this);
-
-    this._toggleDrawerButton = new WebInspector.StatusBarButton(WebInspector.UIString("Show drawer."), "console-status-bar-item");
-    this._toggleDrawerButton.addEventListener("click", this.toggle, this);
+    this._splitWidget = splitWidget;
+    splitWidget.hideDefaultResizer();
+    splitWidget.setSidebarWidget(this);
 
     this._tabbedPane = new WebInspector.TabbedPane();
     this._tabbedPane.element.id = "drawer-tabbed-pane";
-    this._tabbedPane.closeableTabs = false;
     this._tabbedPane.addEventListener(WebInspector.TabbedPane.EventTypes.TabSelected, this._tabSelected, this);
     new WebInspector.ExtensibleTabbedPaneController(this._tabbedPane, "drawer-view");
 
-    splitView.installResizer(this._tabbedPane.headerElement());
+    splitWidget.installResizer(this._tabbedPane.headerElement());
     this._lastSelectedViewSetting = WebInspector.settings.createSetting("WebInspector.Drawer.lastSelectedView", "console");
     this._tabbedPane.show(this.element);
 }
 
 WebInspector.Drawer.prototype = {
-    /**
-     * @return {!WebInspector.StatusBarButton}
-     */
-    toggleButton: function()
-    {
-        return this._toggleDrawerButton;
-    },
-
     /**
      * @param {string} id
      */
@@ -92,7 +80,7 @@ WebInspector.Drawer.prototype = {
     /**
      * @param {string} id
      * @param {string} title
-     * @param {!WebInspector.View} view
+     * @param {!WebInspector.Widget} view
      */
     showCloseableView: function(id, title, view)
     {
@@ -104,6 +92,7 @@ WebInspector.Drawer.prototype = {
         }
         this._innerShow();
         this._tabbedPane.selectTab(id, true);
+        this._lastSelectedViewSetting.set(id);
     },
 
     showDrawer: function()
@@ -114,14 +103,10 @@ WebInspector.Drawer.prototype = {
     wasShown: function()
     {
         this.showView(this._lastSelectedViewSetting.get());
-        this._toggleDrawerButton.setToggled(true);
-        this._toggleDrawerButton.setTitle(WebInspector.UIString("Hide drawer."));
     },
 
     willHide: function()
     {
-        this._toggleDrawerButton.setToggled(false);
-        this._toggleDrawerButton.setTitle(WebInspector.UIString("Show drawer."));
     },
 
     /**
@@ -132,7 +117,7 @@ WebInspector.Drawer.prototype = {
         if (this.isShowing())
             return;
 
-        this._splitView.showBoth(!immediate);
+        this._splitWidget.showBoth(!immediate);
 
         if (this._visibleView())
             this._visibleView().focus();
@@ -144,11 +129,11 @@ WebInspector.Drawer.prototype = {
             return;
 
         WebInspector.restoreFocusFromElement(this.element);
-        this._splitView.hideSidebar(true);
+        this._splitWidget.hideSidebar(true);
     },
 
     /**
-     * @return {?WebInspector.View} view
+     * @return {?WebInspector.Widget} view
      */
     _visibleView: function()
     {
@@ -165,22 +150,6 @@ WebInspector.Drawer.prototype = {
             this._lastSelectedViewSetting.set(tabId);
     },
 
-    toggle: function()
-    {
-        if (this._toggleDrawerButton.toggled())
-            this.closeDrawer();
-        else
-            this.showDrawer();
-    },
-
-    /**
-     * @return {boolean}
-     */
-    visible: function()
-    {
-        return this._toggleDrawerButton.toggled();
-    },
-
     /**
      * @return {?string}
      */
@@ -195,41 +164,4 @@ WebInspector.Drawer.prototype = {
     },
 
     __proto__: WebInspector.VBox.prototype
-}
-
-/**
- * @interface
- */
-WebInspector.Drawer.ViewFactory = function()
-{
-}
-
-WebInspector.Drawer.ViewFactory.prototype = {
-    /**
-     * @return {!WebInspector.View}
-     */
-    createView: function() {}
-}
-
-/**
- * @constructor
- * @implements {WebInspector.Drawer.ViewFactory}
- * @param {function(new:T)} constructor
- * @template T
- */
-WebInspector.Drawer.SingletonViewFactory = function(constructor)
-{
-    this._constructor = constructor;
-}
-
-WebInspector.Drawer.SingletonViewFactory.prototype = {
-    /**
-     * @return {!WebInspector.View}
-     */
-    createView: function()
-    {
-        if (!this._instance)
-            this._instance = /** @type {!WebInspector.View} */(new this._constructor());
-        return this._instance;
-    }
 }

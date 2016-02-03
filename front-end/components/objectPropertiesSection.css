@@ -1,0 +1,49 @@
+/*
+ * Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.object-properties-section .name {
+    color: rgb(136, 19, 145);
+    flex-shrink: 0;
+}
+
+.object-properties-section-separator {
+    flex-shrink: 0;
+}
+
+.object-properties-section-dimmed {
+    opacity: 0.6;
+}
+
+.object-properties-section {
+    padding: 0 0 0px 0px;
+    color: rgb(33,33,33) !important;
+}
+
+.object-properties-section li {
+    min-height: inherit;
+    line-height: 12px;
+    -webkit-user-select: text;
+}
+
+.object-properties-section li::before {
+    top: -1px;
+}
+
+.object-properties-section li.editing-sub-part {
+    padding: 3px 6px 8px;
+    margin: -1px -6px -8px -6px;
+    text-overflow: clip;
+}
+
+.object-properties-section li.editing {
+    margin-left: 10px;
+    text-overflow: clip;
+}
+
+.tree-outline ol.title-less-mode {
+    padding-left: 0px;
+}
+

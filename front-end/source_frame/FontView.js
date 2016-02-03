@@ -27,16 +27,20 @@
  */
 
 /**
- * @extends {WebInspector.VBox}
  * @constructor
+ * @extends {WebInspector.VBox}
  * @param {string} url
+ * @param {string} mimeType
+ * @param {!WebInspector.ContentProvider} contentProvider
  */
-WebInspector.FontView = function(url)
+WebInspector.FontView = function(url, mimeType, contentProvider)
 {
     WebInspector.VBox.call(this);
     this.registerRequiredCSS("source_frame/fontView.css");
     this.element.classList.add("font-view");
-    this._url = url
+    this._url = url;
+    this._mimeType = mimeType;
+    this._contentProvider = contentProvider;
 }
 
 WebInspector.FontView._fontPreviewLines = [ "ABCDEFGHIJKLM", "NOPQRSTUVWXYZ", "abcdefghijklm", "nopqrstuvwxyz", "1234567890" ];
@@ -46,6 +50,16 @@ WebInspector.FontView._fontId = 0;
 WebInspector.FontView._measureFontSize = 50;
 
 WebInspector.FontView.prototype = {
+    /**
+     * @param {string} uniqueFontName
+     * @param {?string} content
+     */
+    _onFontContentLoaded: function(uniqueFontName, content)
+    {
+        var url = content ? WebInspector.Resource.contentAsDataURL(content, this._mimeType, true) : this._url;
+        this.fontStyleElement.textContent = String.sprintf("@font-face { font-family: \"%s\"; src: url(%s); }", uniqueFontName, url);
+    },
+
     _createContentIfNeeded: function()
     {
         if (this.fontPreviewElement)
@@ -54,8 +68,8 @@ WebInspector.FontView.prototype = {
         var uniqueFontName = "WebInspectorFontPreview" + (++WebInspector.FontView._fontId);
 
         this.fontStyleElement = createElement("style");
-        this.fontStyleElement.textContent = "@font-face { font-family: \"" + uniqueFontName + "\"; src: url(" + this._url + "); }";
-        this.element.ownerDocument.head.appendChild(this.fontStyleElement);
+        this._contentProvider.requestContent(this._onFontContentLoaded.bind(this, uniqueFontName));
+        this.element.appendChild(this.fontStyleElement);
 
         var fontPreview = createElement("div");
         for (var i = 0; i < WebInspector.FontView._fontPreviewLines.length; ++i) {

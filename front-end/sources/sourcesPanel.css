@@ -31,24 +31,24 @@
     position: absolute;
     top: 0;
     width: 100%;
-    background-color: #eee;
-    border-bottom: 1px solid rgb(163, 163, 163);
-}
-
-.scripts-debug-toolbar /deep/ .status-bar-shadow {
-    margin-top: -1px;
-    height: 23px;
+    background-color: #f3f3f3;
+    border-bottom: 1px solid #ccc;
+    overflow: hidden;
 }
 
 .scripts-debug-toolbar-drawer {
-    flex: 0 0 46px;
+    flex: 0 0 52px;
     -webkit-transition: margin-top 0.1s ease-in-out;
-    margin-top: -23px;
-    line-height: 23px;
-    padding-top: 22px;
-    border-bottom: 1px solid rgb(202, 202, 202);
+    margin-top: -26px;
+    padding-top: 25px;
     background-color: white;
     overflow: hidden;
+}
+
+.material .scripts-debug-toolbar-drawer {
+    flex: 0 0 54px;
+    margin-top: -28px;
+    padding-top: 26px;
 }
 
 .scripts-debug-toolbar-drawer.expanded {
@@ -58,54 +58,15 @@
 .scripts-debug-toolbar-drawer > label {
     display: flex;
     padding-left: 3px;
-    border-top: 1px solid rgb(196,196,196);
-    height: 24px;
+    height: 28px;
 }
 
-#scripts-editor-toolbar {
-    position: relative;
-    margin-top: -1px;
-    height: 24px;
+.sources-editor-tabstrip-left {
+    width: 22px;
 }
 
-#shared-workers-list {
-    margin: 5px 0 5px 20px;
-    font-style:italic;
-}
-
-#pause-workers-checkbox > input {
-    position: relative;
-    top: 2px;
-}
-
-.panel.sources #sources-editor-container-tabbed-pane .tabbed-pane-header-contents {
-    margin-left: 22px;
-    margin-right: 36px;
-}
-
-.panel.sources .split-view /deep/ button.scripts-debugger-show-hide-button.right-sidebar-show-hide-button.toggled-hide {
-    margin-right: 15px;
-}
-
-.dock-to-right .panel.sources .split-view #scripts-debug-sidebar-resizer-widget {
-    transform: rotate(90deg);
-    right: 17px;
-    bottom: 4px;
-    top: auto;
-    height: 10px;
-    width: 18px;
-}
-
-.panel.sources .split-view.hbox #scripts-debug-sidebar-resizer-widget {
-    bottom: 0;
-}
-
-.panel.sources /deep/ .scripts-debugger-show-hide-button {
-    display: block;
-}
-
-.panel.sources .navigator-tabbed-pane .tabbed-pane-header {
-    background-color: #eee;
+.sources-editor-tabstrip-right {
+    width: 36px;
 }
 
 .function-location-link {
@@ -127,27 +88,167 @@
     overflow: auto;
 }
 
-#targets-toolbar {
-    background: rgb(236, 236, 236);
-    border-bottom: 1px solid rgb(189, 189, 189);
-    border-top: 1px solid rgb(189, 189, 189);
-    margin-right: 0px;
-    padding-right: 6px;
-    margin-top: -1px;
+.source-frame-breakpoint-condition {
+    z-index: 30;
+    padding: 4px;
+    background-color: rgb(203, 226, 255);
+    border-radius: 7px;
+    border: 2px solid rgb(169, 172, 203);
+    width: 90%;
+    pointer-events: auto;
 }
 
-.panel.sources .drag-mask {
-    background-color: rgba(255,255,255,0.8);
-    z-index: 1000;
+.source-frame-breakpoint-message {
+    background-color: transparent;
+    font-weight: normal;
+    font-size: 11px;
+    text-align: left;
+    text-shadow: none;
+    color: rgb(85, 85, 85);
+    cursor: default;
+    margin: 0 0 2px 0;
 }
 
-.panel.sources .drag-mask-inner {
-    font-size: 30px;
-    color: #999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 20px;
-    border: 4px dashed #ddd;
+#source-frame-breakpoint-condition {
+    margin: 0;
+    border: 1px inset rgb(190, 190, 190) !important;
+    width: 100%;
+    box-shadow: none !important;
+    outline: none !important;
+    -webkit-user-modify: read-write;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.cursor-auto {
+    cursor: auto;
+}
+
+.callstack-info {
+    text-align: center;
+    font-style: italic;
+    font-size: 90%;
+    padding: 6px;
+    color: #888;
     pointer-events: none;
+}
+
+.callstack-info.status {
+    border-top: 1px solid rgb(189, 189, 189);
+    background-color: rgb(255, 255, 194);
+}
+
+.watch-expression-delete-button {
+    width: 10px;
+    height: 10px;
+    background-image: url(Images/deleteIcon.png);
+    background-position: 0 0;
+    background-color: transparent;
+    background-repeat: no-repeat;
+    border: 0 none transparent;
+    position: absolute;
+    right: 3px;
+    display: none;
+}
+
+.watch-expression-header:hover .watch-expression-delete-button {
+    display: inline;
+}
+
+.watch-expressions {
+    overflow-x: hidden;
+    padding: 3px 6px 6px 0px;
+}
+
+.watch-expressions .dimmed {
+    opacity: 0.6;
+}
+
+.watch-expression-title {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    line-height: 12px;
+    margin-left: 11px;
+}
+
+.watch-expression {
+    position: relative;
+    padding: 1px 0px 1px 6px;
+}
+
+.watch-expressions .name {
+    color: rgb(136, 19, 145);
+    flex: none;
+    white-space: nowrap;
+    text-overflow: ellipsis ;
+    overflow: hidden;
+}
+
+.watch-expressions-separator {
+    flex: none;
+}
+
+.watch-expressions .value {
+    white-space: nowrap;
+    display: inline;
+}
+
+.watch-expression .text-prompt {
+    text-overflow: clip;
+    overflow: hidden;
+    white-space: nowrap;
+    padding-left: 4px;
+    -webkit-user-select: text;
+}
+
+.watch-expression-text-prompt-proxy {
+    margin-left: 12px;
+}
+
+.watch-expression-header:hover {
+    background-color: #F0F0F0;
+    padding-right: 14px;
+}
+
+.sidebar-pane-stack .watch-expressions {
+    margin-top: 0px;
+}
+
+.scope-chain-sidebar-pane-section-subtitle {
+    float: right;
+    margin-left: 5px;
+    max-width: 55%;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.scope-chain-sidebar-pane-section-title {
+    font-weight: normal;
+    word-wrap: break-word;
+    white-space: normal;
+}
+
+.scope-chain-sidebar-pane-section {
+    padding: 2px 4px 2px 4px;
+}
+
+.scope-chain-sidebar-pane-section-subtitle {
+    float: right;
+    margin-left: 5px;
+    max-width: 55%;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.scope-chain-sidebar-pane-section-title {
+    font-weight: normal;
+    word-wrap: break-word;
+    white-space: normal;
+}
+
+.scope-chain-sidebar-pane-section {
+    padding: 2px 4px 2px 4px;
 }

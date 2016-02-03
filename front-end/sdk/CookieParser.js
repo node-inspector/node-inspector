@@ -37,9 +37,11 @@
 
 /**
  * @constructor
+ * @param {!WebInspector.Target} target
  */
-WebInspector.CookieParser = function()
+WebInspector.CookieParser = function(target)
 {
+    this._target = target;
 }
 
 /**
@@ -171,39 +173,43 @@ WebInspector.CookieParser.prototype = {
             this._lastCookie.setSize(keyValue.position - this._lastCookiePosition);
         // Mozilla bug 169091: Mozilla, IE and Chrome treat single token (w/o "=") as
         // specifying a value for a cookie with empty name.
-        this._lastCookie = typeof keyValue.value === "string" ? new WebInspector.Cookie(keyValue.key, keyValue.value, type) :
-            new WebInspector.Cookie("", keyValue.key, type);
+        this._lastCookie = typeof keyValue.value === "string" ? new WebInspector.Cookie(this._target, keyValue.key, keyValue.value, type) :
+            new WebInspector.Cookie(this._target, "", keyValue.key, type);
         this._lastCookiePosition = keyValue.position;
         this._cookies.push(this._lastCookie);
     }
 };
 
 /**
+ * @param {!WebInspector.Target} target
  * @param {string|undefined} header
  * @return {?Array.<!WebInspector.Cookie>}
  */
-WebInspector.CookieParser.parseCookie = function(header)
+WebInspector.CookieParser.parseCookie = function(target, header)
 {
-    return (new WebInspector.CookieParser()).parseCookie(header);
+    return (new WebInspector.CookieParser(target)).parseCookie(header);
 }
 
 /**
+ * @param {!WebInspector.Target} target
  * @param {string|undefined} header
  * @return {?Array.<!WebInspector.Cookie>}
  */
-WebInspector.CookieParser.parseSetCookie = function(header)
+WebInspector.CookieParser.parseSetCookie = function(target, header)
 {
-    return (new WebInspector.CookieParser()).parseSetCookie(header);
+    return (new WebInspector.CookieParser(target)).parseSetCookie(header);
 }
 
 /**
  * @constructor
+ * @param {!WebInspector.Target} target
  * @param {string} name
  * @param {string} value
  * @param {?WebInspector.Cookie.Type} type
  */
-WebInspector.Cookie = function(name, value, type)
+WebInspector.Cookie = function(target, name, value, type)
 {
+    this._target = target;
     this._name = name;
     this._value = value;
     this._type = type;
@@ -249,6 +255,14 @@ WebInspector.Cookie.prototype = {
     secure: function()
     {
         return "secure" in this._attributes;
+    },
+
+    /**
+     * @return {boolean}
+     */
+    firstPartyOnly: function ()
+    {
+        return "first-party-only" in this._attributes;
     },
 
     /**
@@ -356,7 +370,7 @@ WebInspector.Cookie.prototype = {
      */
     remove: function(callback)
     {
-        PageAgent.deleteCookie(this.name(), (this.secure() ? "https://" : "http://") + this.domain() + this.path(), callback);
+        this._target.networkAgent().deleteCookie(this.name(), (this.secure() ? "https://" : "http://") + this.domain() + this.path(), callback);
     }
 }
 
@@ -375,27 +389,36 @@ WebInspector.Cookies = {}
  */
 WebInspector.Cookies.getCookiesAsync = function(callback)
 {
+    var allCookies = [];
     /**
+     * @param {!WebInspector.Target} target
      * @param {?Protocol.Error} error
-     * @param {!Array.<!PageAgent.Cookie>} cookies
+     * @param {!Array.<!NetworkAgent.Cookie>} cookies
      */
-    function mycallback(error, cookies)
+    function mycallback(target, error, cookies)
     {
-        if (error)
+        if (error) {
+            console.error(error);
             return;
-        callback(cookies.map(WebInspector.Cookies.buildCookieProtocolObject));
+        }
+        for (var i = 0; i < cookies.length; ++i)
+            allCookies.push(WebInspector.Cookies._parseProtocolCookie(target, cookies[i]));
     }
 
-    PageAgent.getCookies(mycallback);
+    var barrier = new CallbackBarrier();
+    for (var target of WebInspector.targetManager.targets(WebInspector.Target.Type.Page))
+        target.networkAgent().getCookies(barrier.createCallback(mycallback.bind(null, target)));
+    barrier.callWhenDone(callback.bind(null, allCookies));
 }
 
 /**
- * @param {!PageAgent.Cookie} protocolCookie
+ * @param {!WebInspector.Target} target
+ * @param {!NetworkAgent.Cookie} protocolCookie
  * @return {!WebInspector.Cookie}
  */
-WebInspector.Cookies.buildCookieProtocolObject = function(protocolCookie)
+WebInspector.Cookies._parseProtocolCookie = function(target, protocolCookie)
 {
-    var cookie = new WebInspector.Cookie(protocolCookie.name, protocolCookie.value, null);
+    var cookie = new WebInspector.Cookie(target, protocolCookie.name, protocolCookie.value, null);
     cookie.addAttribute("domain", protocolCookie["domain"]);
     cookie.addAttribute("path", protocolCookie["path"]);
     cookie.addAttribute("port", protocolCookie["port"]);
@@ -405,6 +428,8 @@ WebInspector.Cookies.buildCookieProtocolObject = function(protocolCookie)
         cookie.addAttribute("httpOnly");
     if (protocolCookie["secure"])
         cookie.addAttribute("secure");
+    if (protocolCookie["firstPartyOnly"])
+        cookie.addAttribute("first-party-only");
     cookie.setSize(protocolCookie["size"]);
     return cookie;
 }

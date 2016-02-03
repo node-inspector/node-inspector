@@ -39,11 +39,6 @@
 
 .heap-snapshot-view {
     overflow: hidden;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
 }
 
 .heap-snapshot-view .data-grid {
@@ -59,8 +54,8 @@
     width: 32px;
 }
 
-.heap-snapshot-view .console-formatted-object,
-.console-formatted-node {
+.heap-snapshot-view .object-value-object,
+.object-value-node {
     display: inline;
     position: static;
 }
@@ -69,17 +64,12 @@
     background-color: #FF9999;
 }
 
-.heap-snapshot-view .console-formatted-string {
+.heap-snapshot-view .object-value-string {
     white-space: nowrap;
 }
 
-.heap-snapshot-view tr:not(.selected) .console-formatted-id {
+.heap-snapshot-view tr:not(.selected) .object-value-id {
     color: grey;
-}
-
-.heap-snapshot-view .delimiter {
-    height: 24px;
-    background-color: #d6dde5;
 }
 
 .heap-snapshot-view .data-grid {
@@ -96,7 +86,7 @@
 }
 
 .heap-snapshot-view .heap-snapshot-view-resizer {
-    background-image: url(Images/statusbarResizerVertical.png);
+    background-image: url(Images/toolbarResizerVertical.png);
     background-color: #eee;
     border-bottom: 1px solid rgb(179, 179, 179);
     background-repeat: no-repeat;

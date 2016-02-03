@@ -64,12 +64,16 @@
     color: inherit;
 }
 
-.profiles-status-bar {
+.profiles-toolbar {
     display: flex;
-    background-color: #eee;
+    background-color: #f3f3f3;
     flex: 0 0 25px;
     flex-direction: row;
     border-bottom: 1px solid rgb(202, 202, 202);
+}
+
+.material .profiles-toolbar {
+    flex: 0 0 29px;
 }
 
 .profile-launcher-view-tree-item > .icon {
@@ -110,17 +114,8 @@
 }
 
 .cpu-profile-view {
-    display: none;
-    overflow: hidden;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-}
-
-.cpu-profile-view.visible {
     display: flex;
+    overflow: hidden;
 }
 
 .cpu-profile-view .data-grid {
@@ -128,10 +123,7 @@
     flex: auto;
 }
 
-.cpu-profile-view .data-grid th.self-column {
-    text-align: center;
-}
-
+.cpu-profile-view .data-grid th.self-column,
 .cpu-profile-view .data-grid th.total-column {
     text-align: center;
 }
@@ -142,8 +134,8 @@
 }
 
 .profile-warn-marker {
-    background-image: url(Images/statusbarButtonGlyphs.png);
-    background-size: 320px 144px;
+    background-image: url(Images/toolbarButtonGlyphs.png);
+    background-size: 352px 168px;
     background-position: -202px -107px;
     width: 10px;
     height: 10px;
@@ -198,7 +190,7 @@
     color: hsl(0, 100%, 42%);
 }
 
-body.inactive .profile-launcher-view-content button.running:not(.status-bar-item) {
+body.inactive .profile-launcher-view-content button.running:not(.toolbar-item) {
     color: rgb(220, 130, 130);
 }
 
@@ -211,7 +203,7 @@ body.inactive .profile-launcher-view-content button.running:not(.status-bar-item
     to { background-color: rgba(255, 255, 120, 0); }
 }
 
-.profile-canvas-decoration .warning-icon-small {
+.profile-canvas-decoration label[is=dt-icon-label] {
     margin-right: 4px;
 }
 
@@ -232,14 +224,14 @@ body.inactive .profile-launcher-view-content button.running:not(.status-bar-item
     margin-right: 10px;
 }
 
-.text-button.load-profile {
+button.load-profile {
     margin-left: 20px;
 }
 
-.text-button.load-profile.multi-target {
+button.load-profile.multi-target {
     display: block;
     margin-top: 14px;
-    margin-left: 0px;
+    margin-left: 0;
 }
 
 .cpu-profile-flame-chart-overview-container {

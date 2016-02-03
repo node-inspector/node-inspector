@@ -35,8 +35,7 @@ WebInspector.UISourceCodeFrame = function(uiSourceCode)
 {
     this._uiSourceCode = uiSourceCode;
     WebInspector.SourceFrame.call(this, this._uiSourceCode);
-    WebInspector.settings.textEditorAutocompletion.addChangeListener(this._enableAutocompletionIfNeeded, this);
-    this._enableAutocompletionIfNeeded();
+    this.textEditor.setAutocompleteDelegate(new WebInspector.SimpleAutocompleteDelegate());
 
     this._uiSourceCode.addEventListener(WebInspector.UISourceCode.Events.WorkingCopyChanged, this._onWorkingCopyChanged, this);
     this._uiSourceCode.addEventListener(WebInspector.UISourceCode.Events.WorkingCopyCommitted, this._onWorkingCopyCommitted, this);
@@ -51,11 +50,6 @@ WebInspector.UISourceCodeFrame.prototype = {
     uiSourceCode: function()
     {
         return this._uiSourceCode;
-    },
-
-    _enableAutocompletionIfNeeded: function()
-    {
-        this.textEditor.setCompletionDictionary(WebInspector.settings.textEditorAutocompletion.get() ? new WebInspector.SampleCompletionDictionary() : null);
     },
 
     wasShown: function()
@@ -75,6 +69,7 @@ WebInspector.UISourceCodeFrame.prototype = {
     },
 
     /**
+     * @override
      * @return {boolean}
      */
     canEditSource: function()
@@ -144,10 +139,6 @@ WebInspector.UISourceCodeFrame.prototype = {
         }
         this._textEditor.markClean();
         this._updateStyle();
-        WebInspector.notifications.dispatchEventToListeners(WebInspector.UserMetrics.UserAction, {
-            action: WebInspector.UserMetrics.UserActionNames.FileSaved,
-            url: this._uiSourceCode.url
-        });
     },
 
     /**
@@ -177,10 +168,11 @@ WebInspector.UISourceCodeFrame.prototype = {
         delete this._isSettingContent;
     },
 
-    populateTextAreaContextMenu: function(contextMenu, lineNumber)
+    populateTextAreaContextMenu: function(contextMenu, lineNumber, columnNumber)
     {
-        WebInspector.SourceFrame.prototype.populateTextAreaContextMenu.call(this, contextMenu, lineNumber);
+        WebInspector.SourceFrame.prototype.populateTextAreaContextMenu.call(this, contextMenu, lineNumber, columnNumber);
         contextMenu.appendApplicableItems(this._uiSourceCode);
+        contextMenu.appendApplicableItems(new WebInspector.UILocation(this._uiSourceCode, lineNumber, columnNumber));
         contextMenu.appendSeparator();
     },
 
@@ -201,7 +193,6 @@ WebInspector.UISourceCodeFrame.prototype = {
 
     dispose: function()
     {
-        WebInspector.settings.textEditorAutocompletion.removeChangeListener(this._enableAutocompletionIfNeeded, this);
         this._textEditor.dispose();
         this.detach();
     },
@@ -211,37 +202,26 @@ WebInspector.UISourceCodeFrame.prototype = {
 
 /**
  * @constructor
- * @param {!WebInspector.UISourceCodeFrame.Infobar.Level} level
+ * @extends {WebInspector.Infobar}
+ * @param {!WebInspector.Infobar.Type} type
  * @param {string} message
- * @param {function()=} onDispose
+ * @param {!WebInspector.Setting=} disableSetting
  */
-WebInspector.UISourceCodeFrame.Infobar = function(level, message, onDispose)
+WebInspector.UISourceCodeFrame.Infobar = function(type, message, disableSetting)
 {
-    this.element = createElementWithClass("div", "source-frame-infobar source-frame-infobar-" + level);
-    this._mainRow = this.element.createChild("div", "source-frame-infobar-main-row");
-    this._detailsContainer = this.element.createChild("span", "source-frame-infobar-details-container");
+    WebInspector.Infobar.call(this, type, disableSetting);
+    this.setCloseCallback(this.dispose.bind(this));
+    this.element.classList.add("source-frame-infobar");
+    this._rows = this.element.createChild("div", "source-frame-infobar-rows");
 
-    this._mainRow.createChild("span", "source-frame-infobar-icon");
+    this._mainRow = this._rows.createChild("div", "source-frame-infobar-main-row");
     this._mainRow.createChild("span", "source-frame-infobar-row-message").textContent = message;
 
     this._toggleElement = this._mainRow.createChild("div", "source-frame-infobar-toggle link");
     this._toggleElement.addEventListener("click", this._onToggleDetails.bind(this), false);
-
-    this._closeElement = this._mainRow.createChild("div", "close-button");
-    this._closeElement.addEventListener("click", this._onClose.bind(this), false);
-    this._onDispose = onDispose;
-
+    this._detailsContainer = this._rows.createChild("div", "source-frame-infobar-details-container");
     this._updateToggleElement();
 }
-
-/**
- * @enum {string}
- */
-WebInspector.UISourceCodeFrame.Infobar.Level = {
-    Info: "info",
-    Warning: "warning",
-    Error: "error",
-};
 
 WebInspector.UISourceCodeFrame.Infobar.prototype = {
     _onResize: function()
@@ -257,11 +237,6 @@ WebInspector.UISourceCodeFrame.Infobar.prototype = {
         this._onResize();
     },
 
-    _onClose: function()
-    {
-        this.dispose();
-    },
-
     _updateToggleElement: function()
     {
         this._toggleElement.textContent = this._toggled ? WebInspector.UIString("less") : WebInspector.UIString("more");
@@ -274,6 +249,7 @@ WebInspector.UISourceCodeFrame.Infobar.prototype = {
     _attached: function(uiSourceCodeFrame)
     {
         this._uiSourceCodeFrame = uiSourceCodeFrame;
+        this.setVisible(true);
     },
 
     /**
@@ -293,7 +269,7 @@ WebInspector.UISourceCodeFrame.Infobar.prototype = {
         this.element.remove();
         this._onResize();
         delete this._uiSourceCodeFrame;
-        if (this._onDispose)
-            this._onDispose();
-    }
+    },
+
+    __proto__: WebInspector.Infobar.prototype
 }

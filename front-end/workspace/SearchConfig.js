@@ -31,6 +31,7 @@ WebInspector.SearchConfig.fromPlainObject = function(object)
 
 WebInspector.SearchConfig.prototype = {
     /**
+     * @override
      * @return {string}
      */
     query: function()
@@ -39,6 +40,7 @@ WebInspector.SearchConfig.prototype = {
     },
 
     /**
+     * @override
      * @return {boolean}
      */
     ignoreCase: function()
@@ -47,6 +49,7 @@ WebInspector.SearchConfig.prototype = {
     },
 
     /**
+     * @override
      * @return {boolean}
      */
     isRegex: function()
@@ -108,6 +111,7 @@ WebInspector.SearchConfig.prototype = {
     },
 
     /**
+     * @override
      * @param {string} filePath
      * @return {boolean}
      */
@@ -123,6 +127,7 @@ WebInspector.SearchConfig.prototype = {
     },
 
     /**
+     * @override
      * @return {!Array.<string>}
      */
     queries: function()

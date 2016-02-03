@@ -5,35 +5,34 @@
 
 .popover {
     position: absolute;
-    -webkit-border-image: url(Images/popoverBackground.png) 25 25 25 25;
-    border-width: 25px;
     z-index: 600;
     pointer-events: none;
+    display: flex;
+    background-color: white;
+    box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.3), 0 2px 2px 0 rgba(0, 0, 0, 0.2), 0 1px 4px 0 rgba(0, 0, 0, 0.37);
+    border-radius: 2px;
 }
 
 .popover .content {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
     pointer-events: auto;
     overflow: auto;
     -webkit-user-select: text;
     line-height: 11px;
+    flex: auto;
+    margin: 6px;
 }
 
-.popover .content.fixed-height {
+.popover .content.no-margin {
+    margin: 0;
     overflow: hidden;
-} 
+}
 
 .popover .arrow {
     position: absolute;
     background-image: url(Images/popoverArrows.png);
     width: 19px;
     height: 19px;
-    margin-left: 15px;
-    margin-top: -24px;
+    margin-top: -19px;
     top: 0;
     left: 0;
 }
@@ -43,7 +42,7 @@
 }
 
 .popover.top-right-arrow .arrow {
-    right: 24px;
+    right: 19px;
     left: auto;
 }
 
@@ -51,7 +50,7 @@
     top: auto;
     bottom: 0;
     margin-top: 0;
-    margin-bottom: -24px;
+    margin-bottom: -19px;
     background-position: 0 -19px;
 }
 
@@ -61,6 +60,123 @@
     top: auto;
     bottom: 0;
     margin-top: 0;
-    margin-bottom: -24px;
+    margin-bottom: -19px;
     background-position: 0 -19px;
+}
+
+.source-frame-popover-title {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    font-weight: bold;
+    padding-left: 18px;
+}
+
+.source-frame-popover-tree {
+    border-top: 1px solid rgb(184, 184, 184);
+    overflow: auto;
+    position: relative;
+    top: 5px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin-top: 1px;
+}
+
+/* Custom popup scrollers */
+
+.custom-popup-horizontal-scroll ::-webkit-scrollbar,
+.custom-popup-vertical-scroll ::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+}
+
+.custom-popup-horizontal-scroll ::-webkit-scrollbar-corner,
+.custom-popup-vertical-scroll ::-webkit-scrollbar-corner {
+    display: none;
+}
+
+.custom-popup-horizontal-scroll ::-webkit-resizer,
+.custom-popup-vertical-scroll ::-webkit-resizer {
+    display: none;
+}
+
+.custom-popup-horizontal-scroll ::-webkit-scrollbar-button,
+.custom-popup-vertical-scroll ::-webkit-scrollbar-button {
+    display: none;
+}
+
+/* Custom Horizontal Scrollbar Styles */
+
+.custom-popup-horizontal-scroll ::-webkit-scrollbar:horizontal:corner-present {
+    border-right-width: 0;
+}
+
+.custom-popup-horizontal-scroll ::-webkit-scrollbar-thumb:horizontal {
+    -webkit-border-image: url(Images/thumbHoriz.png) 0 11 0 11;
+    border-color: transparent;
+    border-width: 0 11px;
+    min-width: 20px;
+}
+
+.custom-popup-horizontal-scroll ::-webkit-scrollbar-thumb:horizontal:hover {
+    -webkit-border-image: url(Images/thumbHoverHoriz.png) 0 11 0 11;
+}
+
+.custom-popup-horizontal-scroll ::-webkit-scrollbar-thumb:horizontal:active {
+    -webkit-border-image: url(Images/thumbActiveHoriz.png) 0 11 0 11;
+}
+
+.custom-popup-horizontal-scroll ::-webkit-scrollbar-track-piece:horizontal:start {
+    margin-left: 5px;
+}
+
+.custom-popup-horizontal-scroll ::-webkit-scrollbar-track-piece:horizontal:end {
+    margin-right: 5px;
+}
+
+.custom-popup-horizontal-scroll ::-webkit-scrollbar-track-piece:horizontal:end:corner-present {
+    margin-right: 4px;
+}
+
+.custom-popup-horizontal-scroll ::-webkit-scrollbar-track-piece:horizontal:decrement {
+    -webkit-border-image: url(Images/thumbHoriz.png) 0 11 0 11;
+    border-color: transparent;
+    border-width: 0 0 0 11px;
+}
+
+.custom-popup-horizontal-scroll ::-webkit-scrollbar-track-piece:horizontal:increment {
+    -webkit-border-image: url(Images/thumbHoriz.png) 0 11 0 11;
+    border-color: transparent;
+    border-width: 0 11px 0 0;
+}
+
+/* Custom Vertical Scrollbar Styles */
+
+.custom-popup-vertical-scroll ::-webkit-scrollbar:vertical:corner-present {
+    border-bottom-width: 0;
+}
+
+.custom-popup-vertical-scroll ::-webkit-scrollbar-thumb:vertical {
+    -webkit-border-image: url(Images/thumbVert.png) 11 0 11 0;
+    border-color: transparent;
+    border-width: 11px 0;
+    min-height: 20px;
+}
+
+.custom-popup-vertical-scroll ::-webkit-scrollbar-thumb:vertical:hover {
+    -webkit-border-image: url(Images/thumbHoverVert.png) 11 0 11 0;
+}
+
+.custom-popup-vertical-scroll ::-webkit-scrollbar-thumb:vertical:active {
+    -webkit-border-image: url(Images/thumbActiveVert.png) 11 0 11 0;
+}
+
+.custom-popup-vertical-scroll ::-webkit-scrollbar-track-piece:vertical:decrement {
+}
+
+.custom-popup-vertical-scroll ::-webkit-scrollbar-track:vertical {
+    background: linear-gradient(to right, rgb(80, 80, 80), rgb(192, 192, 192) 25%, rgb(192, 192, 192));
+    border-radius: 5px;
+    margin: 5px;
 }

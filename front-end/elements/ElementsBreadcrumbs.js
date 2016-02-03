@@ -14,6 +14,7 @@ WebInspector.ElementsBreadcrumbs = function()
     this.crumbsElement = this.contentElement.createChild("div", "crumbs");
     this.crumbsElement.addEventListener("mousemove", this._mouseMovedInCrumbs.bind(this), false);
     this.crumbsElement.addEventListener("mouseleave", this._mouseMovedOutOfCrumbs.bind(this), false);
+    this._nodeSymbol = Symbol("node");
 }
 
 /** @enum {string} */
@@ -37,7 +38,7 @@ WebInspector.ElementsBreadcrumbs.prototype = {
 
         var crumbs = this.crumbsElement;
         for (var crumb = crumbs.firstChild; crumb; crumb = crumb.nextSibling) {
-            if (nodes.indexOf(crumb.representedObject) !== -1) {
+            if (nodes.indexOf(crumb[this._nodeSymbol]) !== -1) {
                 this.update(true);
                 return;
             }
@@ -57,7 +58,7 @@ WebInspector.ElementsBreadcrumbs.prototype = {
     {
         var nodeUnderMouse = event.target;
         var crumbElement = nodeUnderMouse.enclosingNodeOrSelfWithClass("crumb");
-        var node = /** @type {?WebInspector.DOMNode} */ (crumbElement ? crumbElement.representedObject : null);
+        var node = /** @type {?WebInspector.DOMNode} */ (crumbElement ? crumbElement[this._nodeSymbol] : null);
         if (node)
             node.highlight();
     },
@@ -65,7 +66,7 @@ WebInspector.ElementsBreadcrumbs.prototype = {
     _mouseMovedOutOfCrumbs: function(event)
     {
         if (this._currentDOMNode)
-            this._currentDOMNode.domModel().hideDOMNodeHighlight();
+            WebInspector.DOMModel.hideDOMNodeHighlight();
     },
 
     /**
@@ -82,7 +83,7 @@ WebInspector.ElementsBreadcrumbs.prototype = {
         var handled = false;
         var crumb = crumbs.firstChild;
         while (crumb) {
-            if (crumb.representedObject === currentDOMNode) {
+            if (crumb[this._nodeSymbol] === currentDOMNode) {
                 crumb.classList.add("selected");
                 handled = true;
             } else {
@@ -112,7 +113,7 @@ WebInspector.ElementsBreadcrumbs.prototype = {
             event.preventDefault();
             var crumb = /** @type {!Element} */ (event.currentTarget);
             if (!crumb.classList.contains("collapsed")) {
-                this.dispatchEventToListeners(WebInspector.ElementsBreadcrumbs.Events.NodeSelected, crumb.representedObject);
+                this.dispatchEventToListeners(WebInspector.ElementsBreadcrumbs.Events.NodeSelected, crumb[this._nodeSymbol]);
                 return;
             }
 
@@ -140,7 +141,7 @@ WebInspector.ElementsBreadcrumbs.prototype = {
                 continue;
 
             crumb = createElementWithClass("span", "crumb");
-            crumb.representedObject = current;
+            crumb[this._nodeSymbol] = current;
             crumb.addEventListener("mousedown", boundSelectCrumb, false);
 
             var crumbTitle = "";
@@ -356,8 +357,9 @@ WebInspector.ElementsBreadcrumbs.prototype = {
                         newEndNeeded = false;
                         crumb.classList.add("end");
                     }
-                } else
+                } else {
                     collapsedRun = true;
+                }
                 crumb = crumb.nextSibling;
             }
 

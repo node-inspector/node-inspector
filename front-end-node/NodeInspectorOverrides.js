@@ -10,13 +10,15 @@ WebInspector.NodeInspectorOverrides = function() {
   this._overrideUIStrings();
   this._overrideWebSocketCreate();
 
-  this._setWorkerTitle();
+  //this._setWorkerTitle();
 
   this._mergeConnectionQueryParams();
 
   this._openMainScriptOnStartup();
 
   this._enableDebuggerUINotifications();
+
+  this._loadCachedResourceTree();
 };
 
 WebInspector.NodeInspectorOverrides.prototype = {
@@ -27,16 +29,18 @@ WebInspector.NodeInspectorOverrides.prototype = {
         return this.orig_loadFromJSONIfNeeded('protocol.json');
     };
   },
+
   _overrideMainScriptType: function() {
     WebInspector.ResourceTreeModel.prototype.orig_createResourceFromFramePayload =
       WebInspector.ResourceTreeModel.prototype._createResourceFromFramePayload;
 
     WebInspector.ResourceTreeModel.prototype._createResourceFromFramePayload =
       function(frame, url, type, mimeType) {
+        //debugger;
         // Force Script type for all node frames.
         // Front-end assigns Document type (i.e. HTML) to our main script file.
         if (frame._isNodeInspectorScript) {
-          type = WebInspector.resourceTypes.Script;
+          //type = WebInspector.resourceTypes.Script;
         }
 
         return this.orig_createResourceFromFramePayload(frame, url, type, mimeType);
@@ -51,6 +55,8 @@ WebInspector.NodeInspectorOverrides.prototype = {
       args[0] = overridenStrings[string] || string;
       return this.orig_UIString.apply(this, args);
     };
+
+    WebInspector.UIString.__proto__ = WebInspector.orig_UIString;
   },
 
   _overrideWebSocketCreate: function() {
@@ -82,8 +88,40 @@ WebInspector.NodeInspectorOverrides.prototype = {
     WebInspector.targetManager.addModelListener(
       WebInspector.ResourceTreeModel,
       WebInspector.ResourceTreeModel.EventTypes.CachedResourcesLoaded,
-      showMainAppFile,
-      null
+      showMainAppFile
+    );
+  },
+
+  _loadCachedResourceTree: function() {
+    WebInspector.targetManager.addModelListener(
+      WebInspector.ResourceTreeModel,
+      WebInspector.ResourceTreeModel.EventTypes.CachedResourcesLoaded,
+      function() {
+        var project = WebInspector.workspace.project('1:file://');
+        var projectDelegate = project._projectDelegate;
+        var frames = WebInspector.ResourceTreeModel.frames();
+        var frame = frames.filter(function(frame) {
+          return frame.id === 'ni-top-frame';
+        })[0];
+
+        if (!frame) return;
+
+        var resources = frame.resources();
+        resources.forEach(function(contentProvider) {
+          var url = contentProvider.url;
+
+          var splitURL = WebInspector.ParsedURL.splitURLIntoPathComponents(url);
+          var projectURL = splitURL[0];
+          var parentPath = splitURL.slice(1, -1).join("/");
+          var name = splitURL.peekLast() || "";
+          var path = projectDelegate.addFile(parentPath, name, url, contentProvider);
+          var uiSourceCode = /** @type {!WebInspector.UISourceCode} */ (project._workspace.uiSourceCode(projectDelegate.id(), path));
+          console.assert(uiSourceCode);
+          return uiSourceCode;
+
+          //projectDelegate.addFileForURL(resource.url, resource, true);
+        });
+      }
     );
   },
 
@@ -227,31 +265,24 @@ function showMainAppFile() {
       return;
     }
 
-    var uiSourceCodes = getAllUiSourceCodes();
-    var uriToShow = WebInspector.inspectedPageURL;
+    setTimeout(() => {
+      var uiSourceCodes = getAllUiSourceCodes();
+      var uriToShow = WebInspector.targetManager.inspectedPageURL();
 
-    for (var i in uiSourceCodes) {
-      if (uiSourceCodes[i].url !== uriToShow) continue;
-      panel.showUISourceCode(uiSourceCodes[i]);
-      return true;
-    }
+      for (var i in uiSourceCodes) {
+        if (uiSourceCodes[i].originURL() !== uriToShow) continue;
+        panel.showUISourceCode(uiSourceCodes[i]);
+        return true;
+      }
 
-    console.error('Cannot show the main application file ', uriToShow);
+      console.error('Cannot show the main application file ', uriToShow);
+    }, 10);
   });
 }
 
 function getAllUiSourceCodes() {
-  // Based on FilteredItemSectionDialog.js > SelectUISourceCodeDialog()
-  var projects = WebInspector.workspace.projects();
-  var uiSourceCodes = [];
-  var projectFiles;
-
-  for (var i = 0; i < projects.length; ++i) {
-    projectFiles = projects[i]
-      .uiSourceCodes()
-      .filter(nameIsNotEmpty);
-    uiSourceCodes = uiSourceCodes.concat(projectFiles);
-  }
+  var project = WebInspector.workspace.project('1:file://');
+  var uiSourceCodes = project.uiSourceCodes().filter(nameIsNotEmpty);;
 
   return uiSourceCodes;
 

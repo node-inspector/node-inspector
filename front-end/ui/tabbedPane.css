@@ -1,0 +1,259 @@
+/*
+ * Copyright (C) 2006, 2007, 2008 Apple Inc.  All rights reserved.
+ * Copyright (C) 2009 Anthony Ricaud <rik@webkit.org>
+ * Copyright (C) 2011 Google Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY GOOGLE INC. AND ITS CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GOOGLE INC.
+ * OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+.tabbed-pane {
+    flex: auto;
+    overflow: hidden;
+}
+
+.tabbed-pane-content {
+    position: relative;
+    overflow: auto;
+    flex: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.tabbed-pane-content.has-no-tabs {
+    background-color: lightgray;
+}
+
+.tabbed-pane-placeholder {
+    font-size: 14px;
+    text-align: center;
+    margin-top: 20px;
+    text-shadow: rgba(255, 255, 255, 0.75) 0 1px 0;
+}
+
+.tabbed-pane-header {
+    display: flex;
+    flex: 0 0 27px;
+    border-bottom: 1px solid #ccc;
+    overflow: hidden;
+    width: 100%;
+    background-color: #f3f3f3;
+}
+
+.tabbed-pane-header-contents {
+    flex: auto;
+    pointer-events: none;
+    margin-left: 5px;
+    position: relative;
+}
+
+.tabbed-pane-header-contents > * {
+    pointer-events: initial;
+}
+
+.tabbed-pane-header-tab-icon {
+    margin-right: 2px;
+}
+
+.tabbed-pane-header-tab {
+    float: left;
+    margin-top: 2px;
+    padding: 2px 4px 2px 4px;
+    height: 24px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    line-height: 15px;
+    white-space: nowrap;
+    cursor: default;
+    display: flex;
+    align-items: center;
+    color: #5a5a5a;
+}
+
+.tabbed-pane-header-tab:hover {
+    color: #333;
+}
+
+.tabbed-pane-header-tab-title {
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.tabbed-pane-header-tab.measuring {
+    visibility: hidden;
+}
+
+.tabbed-pane-header-tab.selected {
+    border: 1px solid #ccc;
+    border-bottom: none;
+    color: #333;
+}
+
+.tabbed-pane-header-tab.selected {
+    background: white;
+    border-top-color: #ccc;
+}
+
+.tabbed-pane-header-tab.dragging {
+    position: relative;
+}
+
+.tabbed-pane-header-tab .tabbed-pane-close-button {
+    display: inline-block;
+    position: relative;
+    top: 2px;
+    left: 1px;
+    margin-left: 2px;
+    margin-top: -3px;
+    visibility: hidden;
+}
+
+.tabbed-pane-header-tab:hover .tabbed-pane-close-button,
+.tabbed-pane-header-tab.selected .tabbed-pane-close-button {
+    visibility: visible;
+}
+
+.tabbed-pane-header-tabs-drop-down-container {
+    float: left;
+    position: relative;
+    vertical-align: bottom;
+    line-height: 24px;
+    opacity: 0.8;
+    color: inherit;
+    font-size: 133%;
+    cursor: pointer;
+}
+
+.tabbed-pane-header-tabs-drop-down-container > .glyph {
+    height: 26px;
+    background-color: hsla(0,0%,20%,1);
+    -webkit-mask-image: url(Images/toolbarButtonGlyphs.png);
+    -webkit-mask-position: -68px -143px;
+    -webkit-mask-size: 352px 168px;
+    width: 24px;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+.tabbed-pane-header-tabs-drop-down-container > .glyph {
+    -webkit-mask-image: url(Images/toolbarButtonGlyphs_2x.png);
+}
+} /* media */
+
+.tabbed-pane-header-tabs-drop-down-container:hover {
+    background-color: rgb(229, 229, 229);
+}
+
+.tabbed-pane-header-tabs-drop-down-container.measuring {
+    visibility: hidden;
+}
+
+.tabbed-pane-header-tabs-drop-down-container:hover {
+    opacity: 1.0;
+}
+
+.tabbed-pane-header-tabs-drop-down-container:active {
+    opacity: 0.8;
+}
+
+/* Web page style */
+
+.tabbed-pane-shadow.vertical-tab-layout {
+    flex-direction: row !important;
+}
+
+.tabbed-pane-shadow.vertical-tab-layout .tabbed-pane-header {
+    background-color: transparent;
+    border: none transparent !important;
+    width: auto;
+    flex: 0 0 auto;
+    flex-direction: column;
+    padding-top: 10px;
+}
+
+.tabbed-pane-shadow.vertical-tab-layout .tabbed-pane-content {
+    padding: 10px 10px 10px 0;
+    overflow-x: hidden;
+}
+
+.tabbed-pane-shadow.vertical-tab-layout .tabbed-pane-header-contents {
+    margin: 0;
+    flex: none;
+}
+
+.tabbed-pane-shadow.vertical-tab-layout .tabbed-pane-header-tabs {
+    display: flex;
+    flex-direction: column;
+    width: 120px;
+}
+
+.tabbed-pane-shadow.vertical-tab-layout .tabbed-pane-header-tab {
+    background-color: transparent;
+    border: none transparent;
+    font-weight: normal;
+    text-shadow: none;
+    color: #777;
+    height: 26px;
+    padding-left: 10px;
+    border-left: 6px solid transparent;
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.tabbed-pane-shadow.vertical-tab-layout .tabbed-pane-header-tab:not(.selected) {
+    cursor: pointer !important;
+}
+
+.tabbed-pane-shadow.vertical-tab-layout .tabbed-pane-header-tab.selected {
+    color: inherit;
+    border: none transparent;
+    border-left: 6px solid #666;
+}
+
+.tabbed-pane-tab-slider {
+    height: 2px;
+    position: absolute;
+    bottom: -1px;
+    background-color: #3E82F7;
+    left: 0;
+    z-index: 50;
+    transform-origin: 0 100%;
+    transition: transform 150ms cubic-bezier(0, 0, 0.2, 1);
+    visibility: hidden;
+    border-top: 1px solid hsl(218, 82%, 78%);
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+    .tabbed-pane-tab-slider {
+        border-top: none;
+    }
+}
+
+.tabbed-pane-tab-slider.enabled {
+    visibility: visible;
+}
+
+.tabbed-pane-header.tabbed-pane-no-header-background {
+    background-color: transparent;
+}

@@ -41,6 +41,33 @@ WebInspector.UIString = function(string, vararg)
 
 /**
  * @param {string} string
+ * @param {...*} vararg
+ * @return {string}
+ */
+WebInspector.UIString.capitalize = function(string, vararg)
+{
+    if (WebInspector._useLowerCaseMenuTitles === undefined)
+        throw "WebInspector.setLocalizationPlatform() has not been called";
+
+    var localized = WebInspector.localize(string);
+    var capitalized;
+    if (WebInspector._useLowerCaseMenuTitles)
+        capitalized = localized.replace(/\^(.)/g, "$1");
+    else
+        capitalized = localized.replace(/\^(.)/g, function(str, char) { return char.toUpperCase(); });
+    return String.vsprintf(capitalized, Array.prototype.slice.call(arguments, 1));
+}
+
+/**
+ * @param {string} platform
+ */
+WebInspector.setLocalizationPlatform = function(platform)
+{
+    WebInspector._useLowerCaseMenuTitles = platform === "windows";
+}
+
+/**
+ * @param {string} string
  * @return {string}
  */
 WebInspector.localize = function(string)

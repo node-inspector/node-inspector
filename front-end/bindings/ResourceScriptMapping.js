@@ -33,15 +33,17 @@
  * @implements {WebInspector.DebuggerSourceMapping}
  * @param {!WebInspector.DebuggerModel} debuggerModel
  * @param {!WebInspector.Workspace} workspace
+ * @param {!WebInspector.NetworkMapping} networkMapping
  * @param {!WebInspector.DebuggerWorkspaceBinding} debuggerWorkspaceBinding
  */
-WebInspector.ResourceScriptMapping = function(debuggerModel, workspace, debuggerWorkspaceBinding)
+WebInspector.ResourceScriptMapping = function(debuggerModel, workspace, networkMapping, debuggerWorkspaceBinding)
 {
     this._target = debuggerModel.target();
     this._debuggerModel = debuggerModel;
     this._workspace = workspace;
     this._workspace.addEventListener(WebInspector.Workspace.Events.UISourceCodeAdded, this._uiSourceCodeAdded, this);
     this._workspace.addEventListener(WebInspector.Workspace.Events.UISourceCodeRemoved, this._uiSourceCodeRemoved, this);
+    this._networkMapping = networkMapping;
     this._debuggerWorkspaceBinding = debuggerWorkspaceBinding;
     /** @type {!Set.<string>} */
     this._boundURLs = new Set();
@@ -54,6 +56,7 @@ WebInspector.ResourceScriptMapping = function(debuggerModel, workspace, debugger
 
 WebInspector.ResourceScriptMapping.prototype = {
     /**
+     * @override
      * @param {!WebInspector.DebuggerModel.Location} rawLocation
      * @return {?WebInspector.UILocation}
      */
@@ -75,6 +78,7 @@ WebInspector.ResourceScriptMapping.prototype = {
     },
 
     /**
+     * @override
      * @param {!WebInspector.UISourceCode} uiSourceCode
      * @param {number} lineNumber
      * @param {number} columnNumber
@@ -107,6 +111,7 @@ WebInspector.ResourceScriptMapping.prototype = {
     },
 
     /**
+     * @override
      * @return {boolean}
      */
     isIdentity: function()
@@ -115,6 +120,7 @@ WebInspector.ResourceScriptMapping.prototype = {
     },
 
     /**
+     * @override
      * @param {!WebInspector.UISourceCode} uiSourceCode
      * @param {number} lineNumber
      * @return {boolean}
@@ -151,7 +157,7 @@ WebInspector.ResourceScriptMapping.prototype = {
     _uiSourceCodeAdded: function(event)
     {
         var uiSourceCode = /** @type {!WebInspector.UISourceCode} */ (event.data);
-        if (!uiSourceCode.url)
+        if (!this._networkMapping.networkURL(uiSourceCode))
             return;
         if (uiSourceCode.project().isServiceProject())
             return;
@@ -169,7 +175,7 @@ WebInspector.ResourceScriptMapping.prototype = {
     _uiSourceCodeRemoved: function(event)
     {
         var uiSourceCode = /** @type {!WebInspector.UISourceCode} */ (event.data);
-        if (!uiSourceCode.url)
+        if (!this._networkMapping.networkURL(uiSourceCode))
             return;
         if (uiSourceCode.project().isServiceProject())
             return;
@@ -209,7 +215,7 @@ WebInspector.ResourceScriptMapping.prototype = {
     {
         if (script.isAnonymousScript())
             return null;
-        return this._workspace.uiSourceCodeForURL(script.sourceURL);
+        return this._networkMapping.uiSourceCodeForURL(script.sourceURL, this._target);
     },
 
     /**
@@ -218,9 +224,12 @@ WebInspector.ResourceScriptMapping.prototype = {
      */
     _scriptsForUISourceCode: function(uiSourceCode)
     {
-        if (!uiSourceCode.url)
+        var target = WebInspector.NetworkProject.targetForUISourceCode(uiSourceCode);
+        if (target && target !== this._debuggerModel.target())
             return [];
-        return this._debuggerModel.scriptsForSourceURL(uiSourceCode.url);
+        if (!this._networkMapping.networkURL(uiSourceCode))
+            return [];
+        return this._debuggerModel.scriptsForSourceURL(this._networkMapping.networkURL(uiSourceCode));
     },
 
     /**
@@ -230,12 +239,18 @@ WebInspector.ResourceScriptMapping.prototype = {
     _bindUISourceCodeToScripts: function(uiSourceCode, scripts)
     {
         console.assert(scripts.length);
+        // Due to different listeners order, a script file could be created just before uiSourceCode
+        // for the corresponding script was created. Check that we don't create scriptFile twice.
+        var boundScriptFile = this.scriptFile(uiSourceCode);
+        if (boundScriptFile && boundScriptFile.hasScripts(scripts))
+            return;
+
         var scriptFile = new WebInspector.ResourceScriptFile(this, uiSourceCode, scripts);
         this._setScriptFile(uiSourceCode, scriptFile);
         for (var i = 0; i < scripts.length; ++i)
             this._debuggerWorkspaceBinding.updateLocations(scripts[i]);
         this._debuggerWorkspaceBinding.setSourceMapping(this._target, uiSourceCode, this);
-        this._boundURLs.add(uiSourceCode.url);
+        this._boundURLs.add(this._networkMapping.networkURL(uiSourceCode));
     },
 
     /**
@@ -256,7 +271,7 @@ WebInspector.ResourceScriptMapping.prototype = {
         var boundURLs = this._boundURLs.valuesArray();
         for (var i = 0; i < boundURLs.length; ++i)
         {
-            var uiSourceCode = this._workspace.uiSourceCodeForURL(boundURLs[i]);
+            var uiSourceCode = this._networkMapping.uiSourceCodeForURL(boundURLs[i], this._target);
             if (!uiSourceCode)
                 continue;
             this._unbindUISourceCode(uiSourceCode);
@@ -291,7 +306,6 @@ WebInspector.ResourceScriptFile = function(resourceScriptMapping, uiSourceCode, 
         this._script = scripts[0];
 
     this._uiSourceCode.addEventListener(WebInspector.UISourceCode.Events.WorkingCopyChanged, this._workingCopyChanged, this);
-    this._update();
 }
 
 WebInspector.ResourceScriptFile.Events = {
@@ -301,11 +315,19 @@ WebInspector.ResourceScriptFile.Events = {
 
 WebInspector.ResourceScriptFile.prototype = {
     /**
+     * @param {!Array.<!WebInspector.Script>} scripts
+     * @return {boolean}
+     */
+    hasScripts: function(scripts)
+    {
+        return this._script && this._script === scripts[0];
+    },
+
+    /**
      * @param {function(?string,!DebuggerAgent.SetScriptSourceError=,!WebInspector.Script=)=} callback
      */
     commitLiveEdit: function(callback)
     {
-        var target = this._resourceScriptMapping._target;
         /**
          * @param {?string} error
          * @param {!DebuggerAgent.SetScriptSourceError=} errorData
@@ -321,8 +343,9 @@ WebInspector.ResourceScriptFile.prototype = {
         }
         if (!this._script)
             return;
+        var debuggerModel = this._resourceScriptMapping._debuggerModel;
         var source = this._uiSourceCode.workingCopy();
-        target.debuggerModel.setScriptSource(this._script.scriptId, source, innerCallback.bind(this));
+        debuggerModel.setScriptSource(this._script.scriptId, source, innerCallback.bind(this));
     },
 
     /**

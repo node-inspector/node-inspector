@@ -28,14 +28,14 @@ WebInspector.ResourceWebSocketFrameView = function(request)
     this.element.classList.add("websocket-frame-view");
     this._request = request;
 
-    this._splitView = new WebInspector.SplitView(false, true, "resourceWebSocketFrameSplitViewState");
-    this._splitView.show(this.element);
+    this._splitWidget = new WebInspector.SplitWidget(false, true, "resourceWebSocketFrameSplitViewState");
+    this._splitWidget.show(this.element);
 
     var columns = [
         {id: "data", title: WebInspector.UIString("Data"), sortable: false, weight: 88},
         {id: "length", title: WebInspector.UIString("Length"), sortable: false, align: WebInspector.DataGrid.Align.Right, weight: 5},
         {id: "time", title: WebInspector.UIString("Time"), sortable: true, weight: 7}
-    ]
+    ];
 
     this._dataGrid = new WebInspector.SortableDataGrid(columns, undefined, undefined, undefined, this._onContextMenu.bind(this));
     this._dataGrid.setStickToBottom(true);
@@ -47,10 +47,10 @@ WebInspector.ResourceWebSocketFrameView = function(request)
 
     this._dataGrid.setName("ResourceWebSocketFrameView");
     this._dataGrid.addEventListener(WebInspector.DataGrid.Events.SelectedNode, this._onFrameSelected, this);
-    this._splitView.setMainView(this._dataGrid);
+    this._splitWidget.setMainWidget(this._dataGrid);
 
-    this._messageView = new WebInspector.EmptyView("Select frame to browse its content.");
-    this._splitView.setSidebarView(this._messageView);
+    this._messageView = new WebInspector.EmptyWidget("Select frame to browse its content.");
+    this._splitWidget.setSidebarWidget(this._messageView);
 }
 
 /** @enum {number} */
@@ -121,7 +121,7 @@ WebInspector.ResourceWebSocketFrameView.prototype = {
         if (this._dataView)
             this._dataView.detach();
         this._dataView = new WebInspector.ResourceSourceFrame(selectedNode.contentProvider());
-        this._splitView.setSidebarView(this._dataView);
+        this._splitWidget.setSidebarWidget(this._dataView);
     },
 
     refresh: function()
@@ -138,7 +138,7 @@ WebInspector.ResourceWebSocketFrameView.prototype = {
      */
     _onContextMenu: function(contextMenu, node)
     {
-        contextMenu.appendItem(WebInspector.UIString(WebInspector.useLowerCaseMenuTitles() ? "Copy message" : "Copy Message"), this._copyMessage.bind(this, node.data));
+        contextMenu.appendItem(WebInspector.UIString.capitalize("Copy ^message"), this._copyMessage.bind(this, node.data));
     },
 
     /**
@@ -181,7 +181,9 @@ WebInspector.ResourceWebSocketFrameNode = function(frame)
 }
 
 WebInspector.ResourceWebSocketFrameNode.prototype = {
-    /** override */
+    /**
+     * @override
+     */
     createCells: function()
     {
         var element = this._element;

@@ -84,7 +84,7 @@ WebInspector.DOMSyntaxHighlighter.prototype = {
                     node.createTextChild(plainText);
                 }
                 if (i < lines.length - 1)
-                    node.createChild("br");
+                    node.createTextChild("\n");
             }
         }
 

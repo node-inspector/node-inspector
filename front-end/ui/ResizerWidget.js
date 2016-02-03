@@ -11,9 +11,9 @@ WebInspector.ResizerWidget = function()
     WebInspector.Object.call(this);
 
     this._isEnabled = true;
-    this._isVertical = true;
     this._elements = [];
     this._installDragOnMouseDownBound = this._installDragOnMouseDown.bind(this);
+    this._cursor = "nwse-resize";
 };
 
 WebInspector.ResizerWidget.Events = {
@@ -37,25 +37,7 @@ WebInspector.ResizerWidget.prototype = {
     setEnabled: function(enabled)
     {
         this._isEnabled = enabled;
-        this._updateElementCursors();
-    },
-
-    /**
-     * @return {boolean}
-     */
-    isVertical: function()
-    {
-        return this._isVertical;
-    },
-
-    /**
-     * Vertical widget resizes height (along y-axis).
-     * @param {boolean} vertical
-     */
-    setVertical: function(vertical)
-    {
-        this._isVertical = vertical;
-        this._updateElementCursors();
+        this.updateElementCursors();
     },
 
     /**
@@ -92,7 +74,7 @@ WebInspector.ResizerWidget.prototype = {
         element.style.removeProperty("cursor");
     },
 
-    _updateElementCursors: function()
+    updateElementCursors: function()
     {
         this._elements.forEach(this._updateElementCursor.bind(this));
     },
@@ -103,9 +85,26 @@ WebInspector.ResizerWidget.prototype = {
     _updateElementCursor: function(element)
     {
         if (this._isEnabled)
-            element.style.setProperty("cursor", this._isVertical ? "ns-resize" : "ew-resize");
+            element.style.setProperty("cursor", this.cursor());
         else
             element.style.removeProperty("cursor");
+    },
+
+    /**
+     * @return {string}
+     */
+    cursor: function()
+    {
+        return this._cursor;
+    },
+
+    /**
+     * @param {string} cursor
+     */
+    setCursor: function(cursor)
+    {
+        this._cursor = cursor;
+        this.updateElementCursors();
     },
 
     /**
@@ -116,7 +115,7 @@ WebInspector.ResizerWidget.prototype = {
         // Only handle drags of the nodes specified.
         if (this._elements.indexOf(event.target) === -1)
             return false;
-        WebInspector.elementDragStart(this._dragStart.bind(this), this._drag.bind(this), this._dragEnd.bind(this), this._isVertical ? "ns-resize" : "ew-resize", event);
+        WebInspector.elementDragStart(this._dragStart.bind(this), this._drag.bind(this), this._dragEnd.bind(this), this.cursor(), event);
     },
 
     /**
@@ -127,9 +126,19 @@ WebInspector.ResizerWidget.prototype = {
     {
         if (!this._isEnabled)
             return false;
-        this._startPosition = this._isVertical ? event.pageY : event.pageX;
-        this.dispatchEventToListeners(WebInspector.ResizerWidget.Events.ResizeStart, { startPosition: this._startPosition, currentPosition: this._startPosition });
+        this._startX = event.pageX;
+        this._startY = event.pageY;
+        this.sendDragStart(this._startX, this._startY);
         return true;
+    },
+
+    /**
+     * @param {number} x
+     * @param {number} y
+     */
+    sendDragStart: function(x, y)
+    {
+        this.dispatchEventToListeners(WebInspector.ResizerWidget.Events.ResizeStart, { startX: x, currentX: x, startY: y, currentY: y });
     },
 
     /**
@@ -143,10 +152,21 @@ WebInspector.ResizerWidget.prototype = {
             return true;  // Cancel drag.
         }
 
-        var position = this._isVertical ? event.pageY : event.pageX;
-        this.dispatchEventToListeners(WebInspector.ResizerWidget.Events.ResizeUpdate, { startPosition: this._startPosition, currentPosition: position, shiftKey: event.shiftKey });
+        this.sendDragMove(this._startX, event.pageX, this._startY, event.pageY, event.shiftKey);
         event.preventDefault();
         return false;  // Continue drag.
+    },
+
+    /**
+     * @param {number} startX
+     * @param {number} currentX
+     * @param {number} startY
+     * @param {number} currentY
+     * @param {boolean} shiftKey
+     */
+    sendDragMove: function(startX, currentX, startY, currentY, shiftKey)
+    {
+        this.dispatchEventToListeners(WebInspector.ResizerWidget.Events.ResizeUpdate, { startX: startX, currentX: currentX, startY: startY, currentY: currentY, shiftKey: shiftKey });
     },
 
     /**
@@ -155,8 +175,77 @@ WebInspector.ResizerWidget.prototype = {
     _dragEnd: function(event)
     {
         this.dispatchEventToListeners(WebInspector.ResizerWidget.Events.ResizeEnd);
-        delete this._startPosition;
+        delete this._startX;
+        delete this._startY;
     },
 
     __proto__: WebInspector.Object.prototype
+};
+
+/**
+ * @constructor
+ * @extends {WebInspector.ResizerWidget}
+ */
+WebInspector.SimpleResizerWidget = function()
+{
+    WebInspector.ResizerWidget.call(this);
+    this._isVertical = true;
+};
+
+WebInspector.SimpleResizerWidget.prototype = {
+    /**
+     * @return {boolean}
+     */
+    isVertical: function()
+    {
+        return this._isVertical;
+    },
+
+    /**
+     * Vertical widget resizes height (along y-axis).
+     * @param {boolean} vertical
+     */
+    setVertical: function(vertical)
+    {
+        this._isVertical = vertical;
+        this.updateElementCursors();
+    },
+
+    /**
+     * @override
+     * @return {string}
+     */
+    cursor: function()
+    {
+        return this._isVertical ? "ns-resize" : "ew-resize";
+    },
+
+    /**
+     * @override
+     * @param {number} x
+     * @param {number} y
+     */
+    sendDragStart: function(x, y)
+    {
+        var position = this._isVertical ? y : x;
+        this.dispatchEventToListeners(WebInspector.ResizerWidget.Events.ResizeStart, { startPosition: position, currentPosition: position });
+    },
+
+    /**
+     * @override
+     * @param {number} startX
+     * @param {number} currentX
+     * @param {number} startY
+     * @param {number} currentY
+     * @param {boolean} shiftKey
+     */
+    sendDragMove: function(startX, currentX, startY, currentY, shiftKey)
+    {
+        if (this._isVertical)
+            this.dispatchEventToListeners(WebInspector.ResizerWidget.Events.ResizeUpdate, { startPosition: startY, currentPosition: currentY, shiftKey: shiftKey });
+        else
+            this.dispatchEventToListeners(WebInspector.ResizerWidget.Events.ResizeUpdate, { startPosition: startX, currentPosition: currentX, shiftKey: shiftKey });
+    },
+
+    __proto__: WebInspector.ResizerWidget.prototype
 };

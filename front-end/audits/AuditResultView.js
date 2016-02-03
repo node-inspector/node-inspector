@@ -37,7 +37,7 @@ WebInspector.AuditResultView = function(categoryResults)
 {
     WebInspector.SidebarPaneStack.call(this);
     this.setMinimumSize(100, 25);
-    this.element.classList.add("audit-result-view", "fill");
+    this.element.classList.add("audit-result-view");
 
     function categorySorter(a, b) {
         return (a.title || "").localeCompare(b.title || "");
@@ -59,11 +59,10 @@ WebInspector.AuditResultView.prototype = {
 WebInspector.AuditCategoryResultPane = function(categoryResult)
 {
     WebInspector.SidebarPane.call(this, categoryResult.title);
-    var treeOutlineElement = createElement("ol");
-    this.bodyElement.classList.add("audit-result-tree");
-    this.bodyElement.appendChild(treeOutlineElement);
-
-    this._treeOutline = new TreeOutline(treeOutlineElement);
+    this._treeOutline = new TreeOutlineInShadow();
+    this._treeOutline.registerRequiredCSS("audits/auditResultTree.css");
+    this._treeOutline.element.classList.add("audit-result-tree");
+    this.element.appendChild(this._treeOutline.element);
     this._treeOutline.expandTreeElementsWhenArrowing = true;
 
     function ruleSorter(a, b)
@@ -78,7 +77,7 @@ WebInspector.AuditCategoryResultPane = function(categoryResult)
 
     for (var i = 0; i < categoryResult.ruleResults.length; ++i) {
         var ruleResult = categoryResult.ruleResults[i];
-        var treeElement = this._appendResult(this._treeOutline, ruleResult, ruleResult.severity);
+        var treeElement = this._appendResult(this._treeOutline.rootElement(), ruleResult, ruleResult.severity);
         treeElement.listItemElement.classList.add("audit-result");
     }
     this.expand();
@@ -86,11 +85,11 @@ WebInspector.AuditCategoryResultPane = function(categoryResult)
 
 WebInspector.AuditCategoryResultPane.prototype = {
     /**
-     * @param {(!TreeOutline|!TreeElement)} parentTreeElement
+     * @param {!TreeElement} parentTreeNode
      * @param {!WebInspector.AuditRuleResult} result
      * @param {?WebInspector.AuditRule.Severity=} severity
      */
-    _appendResult: function(parentTreeElement, result, severity)
+    _appendResult: function(parentTreeNode, result, severity)
     {
         var title = "";
 
@@ -108,8 +107,9 @@ WebInspector.AuditCategoryResultPane.prototype = {
         }
         titleFragment.createTextChild(title);
 
-        var treeElement = new TreeElement(titleFragment, null, !!result.children);
-        parentTreeElement.appendChild(treeElement);
+        var treeElement = new TreeElement(titleFragment, !!result.children);
+        treeElement.selectable = false;
+        parentTreeNode.appendChild(treeElement);
 
         if (result.className)
             treeElement.listItemElement.classList.add(result.className);

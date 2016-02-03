@@ -1,0 +1,110 @@
+/*
+ * Copyright (c) 2014 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.properties-tree {
+    margin: 0;
+    padding: 0 6px 2px;
+    list-style: none;
+    min-height: 18px;
+}
+
+.properties-tree ol {
+    display: none;
+    margin: 0;
+    -webkit-padding-start: 12px;
+    list-style: none;
+}
+
+.properties-tree ol.expanded {
+    display: block;
+}
+
+.properties-tree li {
+    margin-left: 12px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    -webkit-user-select: text;
+    cursor: default;
+    padding-top: 2px;
+    line-height: 12px;
+}
+
+.properties-tree li.parent {
+    margin-left: 1px;
+}
+
+.properties-tree li.parent::before {
+    -webkit-user-select: none;
+    background-image: url(Images/toolbarButtonGlyphs.png);
+    background-size: 352px 168px;
+    opacity: 0.5;
+    content: "a";
+    width: 8px;
+    float: left;
+    margin-right: 4px;
+    color: transparent;
+    text-shadow: none;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+.properties-tree li.parent::before {
+    background-image: url(Images/toolbarButtonGlyphs_2x.png);
+}
+} /* media */
+
+.properties-tree li.parent::before {
+    background-position: -4px -96px;
+}
+
+.properties-tree li.parent.expanded::before {
+    background-position: -20px -96px;
+}
+
+.properties-tree li .info {
+    padding-top: 4px;
+    padding-bottom: 3px;
+}
+
+.properties-tree li.editing {
+    margin-left: 10px;
+    text-overflow: clip;
+}
+
+.properties-tree li.editing-sub-part {
+    padding: 3px 6px 8px 18px;
+    margin: -1px -6px -8px -6px;
+    text-overflow: clip;
+}
+
+.properties-tree .name {
+    color: rgb(136, 19, 145);
+    flex-shrink: 0;
+}
+
+.properties-tree .separator {
+    flex-shrink: 0;
+}
+
+.properties-tree .dimmed {
+    opacity: 0.6;
+}
+
+.properties-tree .value.error {
+    color: red;
+}
+
+.properties-tree .number {
+    color: blue;
+}
+
+.properties-tree .keyword {
+    color: rgb(136, 19, 79);
+}
+
+.properties-tree .color {
+    color: rgb(118, 15, 21);
+}

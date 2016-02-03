@@ -39,8 +39,11 @@ WebInspector.ConsoleModel = function(target)
 
     /** @type {!Array.<!WebInspector.ConsoleMessage>} */
     this._messages = [];
-    this.warnings = 0;
-    this.errors = 0;
+    /** @type {!Map<number, !WebInspector.ConsoleMessage>} */
+    this._messageById = new Map();
+    this._warnings = 0;
+    this._errors = 0;
+    this._revokedErrors = 0;
     this._consoleAgent = target.consoleAgent();
     target.registerConsoleDispatcher(new WebInspector.ConsoleDispatcher(this));
     this._enableAgent();
@@ -49,15 +52,13 @@ WebInspector.ConsoleModel = function(target)
 WebInspector.ConsoleModel.Events = {
     ConsoleCleared: "ConsoleCleared",
     MessageAdded: "MessageAdded",
+    MessageUpdated: "MessageUpdated",
     CommandEvaluated: "CommandEvaluated",
 }
 
 WebInspector.ConsoleModel.prototype = {
     _enableAgent: function()
     {
-        if (WebInspector.settings.monitoringXHREnabled.get())
-            this._consoleAgent.setMonitoringXHREnabled(true);
-
         this._enablingConsole = true;
 
         /**
@@ -71,25 +72,25 @@ WebInspector.ConsoleModel.prototype = {
     },
 
     /**
-     * @return {boolean}
-     */
-    enablingConsole: function()
-    {
-        return !!this._enablingConsole;
-    },
-
-    /**
      * @param {!WebInspector.ConsoleMessage} msg
      */
     addMessage: function(msg)
     {
-        if (WebInspector.NetworkManager.hasDevToolsRequestHeader(msg.request))
+        if (msg.level === WebInspector.ConsoleMessage.MessageLevel.RevokedError && msg._relatedMessageId) {
+            var relatedMessage = this._messageById.get(msg._relatedMessageId);
+            if (!relatedMessage)
+                return;
+            this._errors--;
+            this._revokedErrors++;
+            relatedMessage.level = WebInspector.ConsoleMessage.MessageLevel.RevokedError;
+            this.dispatchEventToListeners(WebInspector.ConsoleModel.Events.MessageUpdated, relatedMessage);
             return;
+        }
 
-        msg.index = this._messages.length;
         this._messages.push(msg);
+        if (msg._messageId)
+            this._messageById.set(msg._messageId, msg);
         this._incrementErrorWarningCount(msg);
-
         this.dispatchEventToListeners(WebInspector.ConsoleModel.Events.MessageAdded, msg);
     },
 
@@ -100,10 +101,13 @@ WebInspector.ConsoleModel.prototype = {
     {
         switch (msg.level) {
             case WebInspector.ConsoleMessage.MessageLevel.Warning:
-                this.warnings++;
+                this._warnings++;
                 break;
             case WebInspector.ConsoleMessage.MessageLevel.Error:
-                this.errors++;
+                this._errors++;
+                break;
+            case WebInspector.ConsoleMessage.MessageLevel.RevokedError:
+                this._revokedErrors++;
                 break;
         }
     },
@@ -125,9 +129,35 @@ WebInspector.ConsoleModel.prototype = {
     _messagesCleared: function()
     {
         this._messages = [];
-        this.errors = 0;
-        this.warnings = 0;
+        this._messageById.clear();
+        this._errors = 0;
+        this._revokedErrors = 0;
+        this._warnings = 0;
         this.dispatchEventToListeners(WebInspector.ConsoleModel.Events.ConsoleCleared);
+    },
+
+    /**
+     * @return {number}
+     */
+    errors: function()
+    {
+        return this._errors;
+    },
+
+    /**
+     * @return {number}
+     */
+    revokedErrors: function()
+    {
+        return this._revokedErrors;
+    },
+
+    /**
+     * @return {number}
+     */
+    warnings: function()
+    {
+        return this._warnings;
     },
 
     __proto__: WebInspector.SDKModel.prototype
@@ -158,7 +188,7 @@ WebInspector.ConsoleModel.evaluateCommandInConsole = function(executionContext, 
         if (!result)
             return;
 
-        WebInspector.console.showPromise().then(reportUponEvaluation).done();
+        WebInspector.console.showPromise().then(reportUponEvaluation);
         function reportUponEvaluation()
         {
             target.consoleModel.dispatchEventToListeners(WebInspector.ConsoleModel.Events.CommandEvaluated, {result: result, wasThrown: wasThrown, text: text, commandMessage: commandMessage, exceptionDetails: exceptionDetails});
@@ -168,6 +198,13 @@ WebInspector.ConsoleModel.evaluateCommandInConsole = function(executionContext, 
     executionContext.evaluate(text, "console", useCommandLineAPI, false, false, true, printResult);
 
     WebInspector.userMetrics.ConsoleEvaluated.record();
+}
+
+WebInspector.ConsoleModel.clearConsole = function()
+{
+    var targets = WebInspector.targetManager.targets();
+    for (var i = 0; i < targets.length; ++i)
+        targets[i].consoleModel.requestClearMessages();
 }
 
 
@@ -185,12 +222,13 @@ WebInspector.ConsoleModel.evaluateCommandInConsole = function(executionContext, 
  * @param {!Array.<!RuntimeAgent.RemoteObject>=} parameters
  * @param {!Array.<!ConsoleAgent.CallFrame>=} stackTrace
  * @param {number=} timestamp
- * @param {boolean=} isOutdated
  * @param {!RuntimeAgent.ExecutionContextId=} executionContextId
  * @param {!ConsoleAgent.AsyncStackTrace=} asyncStackTrace
  * @param {?string=} scriptId
+ * @param {number=} messageId
+ * @param {number=} relatedMessageId
  */
-WebInspector.ConsoleMessage = function(target, source, level, messageText, type, url, line, column, requestId, parameters, stackTrace, timestamp, isOutdated, executionContextId, asyncStackTrace, scriptId)
+WebInspector.ConsoleMessage = function(target, source, level, messageText, type, url, line, column, requestId, parameters, stackTrace, timestamp, executionContextId, asyncStackTrace, scriptId, messageId, relatedMessageId)
 {
     this._target = target;
     this.source = source;
@@ -207,10 +245,11 @@ WebInspector.ConsoleMessage = function(target, source, level, messageText, type,
     /** @type {!Array.<!ConsoleAgent.CallFrame>|undefined} */
     this.stackTrace = stackTrace;
     this.timestamp = timestamp || Date.now();
-    this.isOutdated = isOutdated;
     this.executionContextId = executionContextId || 0;
     this.asyncStackTrace = asyncStackTrace;
     this.scriptId = scriptId || null;
+    this._messageId = messageId || 0;
+    this._relatedMessageId = relatedMessageId || 0;
 
     this.request = requestId ? target.networkLog.requestForId(requestId) : null;
 
@@ -289,36 +328,17 @@ WebInspector.ConsoleMessage.prototype = {
     },
 
     /**
-     * @return {!WebInspector.ConsoleMessage}
-     */
-    clone: function()
-    {
-        return new WebInspector.ConsoleMessage(
-            this.target(),
-            this.source,
-            this.level,
-            this.messageText,
-            this.type,
-            this.url,
-            this.line,
-            this.column,
-            this.request ? this.request.requestId : undefined,
-            this.parameters,
-            this.stackTrace,
-            this.timestamp,
-            this.isOutdated,
-            this.executionContextId,
-            this.asyncStackTrace,
-            this.scriptId);
-    },
-
-    /**
      * @param {?WebInspector.ConsoleMessage} msg
      * @return {boolean}
      */
     isEqual: function(msg)
     {
         if (!msg)
+            return false;
+
+        if (this._messageId || msg._messageId)
+            return false;
+        if (this._relatedMessageId || msg._relatedMessageId)
             return false;
 
         if (!this._isEqualStackTraces(this.stackTrace, msg.stackTrace))
@@ -428,26 +448,9 @@ WebInspector.ConsoleMessage.MessageLevel = {
     Info: "info",
     Warning: "warning",
     Error: "error",
-    Debug: "debug"
+    Debug: "debug",
+    RevokedError: "revokedError"
 };
-
-WebInspector.ConsoleMessage._messageLevelPriority = {
-    "debug": 0,
-    "log": 1,
-    "info": 2,
-    "warning": 3,
-    "error": 4
-};
-
-/**
- * @param {!WebInspector.ConsoleMessage} a
- * @param {!WebInspector.ConsoleMessage} b
- * @return {number}
- */
-WebInspector.ConsoleMessage.messageLevelComparator = function(a, b)
-{
-    return WebInspector.ConsoleMessage._messageLevelPriority[a.level] - WebInspector.ConsoleMessage._messageLevelPriority[b.level];
-}
 
 /**
  * @param {!WebInspector.ConsoleMessage} a
@@ -471,6 +474,7 @@ WebInspector.ConsoleDispatcher = function(console)
 
 WebInspector.ConsoleDispatcher.prototype = {
     /**
+     * @override
      * @param {!ConsoleAgent.ConsoleMessage} payload
      */
     messageAdded: function(payload)
@@ -488,23 +492,28 @@ WebInspector.ConsoleDispatcher.prototype = {
             payload.parameters,
             payload.stackTrace,
             payload.timestamp * 1000, // Convert to ms.
-            this._console._enablingConsole,
             payload.executionContextId,
             payload.asyncStackTrace,
-            payload.scriptId);
+            payload.scriptId,
+            payload.messageId,
+            payload.relatedMessageId);
         this._console.addMessage(consoleMessage);
     },
 
     /**
+     * @override
      * @param {number} count
      */
     messageRepeatCountUpdated: function(count)
     {
     },
 
+    /**
+     * @override
+     */
     messagesCleared: function()
     {
-        if (!WebInspector.settings.preserveConsoleLog.get())
+        if (!WebInspector.moduleSetting("preserveConsoleLog").get())
             this._console._messagesCleared();
     }
 }
@@ -518,11 +527,13 @@ WebInspector.MultitargetConsoleModel = function()
 {
     WebInspector.targetManager.observeTargets(this);
     WebInspector.targetManager.addModelListener(WebInspector.ConsoleModel, WebInspector.ConsoleModel.Events.MessageAdded, this._consoleMessageAdded, this);
+    WebInspector.targetManager.addModelListener(WebInspector.ConsoleModel, WebInspector.ConsoleModel.Events.MessageUpdated, this._consoleMessageUpdated, this);
     WebInspector.targetManager.addModelListener(WebInspector.ConsoleModel, WebInspector.ConsoleModel.Events.CommandEvaluated, this._commandEvaluated, this);
 }
 
 WebInspector.MultitargetConsoleModel.prototype = {
     /**
+     * @override
      * @param {!WebInspector.Target} target
      */
     targetAdded: function(target)
@@ -534,6 +545,7 @@ WebInspector.MultitargetConsoleModel.prototype = {
     },
 
     /**
+     * @override
      * @param {!WebInspector.Target} target
      */
     targetRemoved: function(target)
@@ -567,6 +579,14 @@ WebInspector.MultitargetConsoleModel.prototype = {
     _consoleMessageAdded: function(event)
     {
         this.dispatchEventToListeners(WebInspector.ConsoleModel.Events.MessageAdded, event.data);
+    },
+
+    /**
+     * @param {!WebInspector.Event} event
+     */
+    _consoleMessageUpdated: function(event)
+    {
+        this.dispatchEventToListeners(WebInspector.ConsoleModel.Events.MessageUpdated, event.data);
     },
 
     /**

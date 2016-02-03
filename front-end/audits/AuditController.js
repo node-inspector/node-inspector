@@ -37,6 +37,7 @@ WebInspector.AuditController = function(auditsPanel)
 {
     this._auditsPanel = auditsPanel;
     WebInspector.targetManager.addEventListener(WebInspector.TargetManager.Events.Load, this._didMainResourceLoad, this);
+    WebInspector.targetManager.addModelListener(WebInspector.NetworkManager, WebInspector.NetworkManager.EventTypes.RequestFinished, this._didLoadResource, this);
 }
 
 WebInspector.AuditController.prototype = {
@@ -52,55 +53,50 @@ WebInspector.AuditController.prototype = {
         /**
          * @param {!WebInspector.AuditCategoryResult} categoryResult
          * @param {!WebInspector.AuditRuleResult} ruleResult
-         * @this {WebInspector.AuditController}
          */
         function ruleResultReadyCallback(categoryResult, ruleResult)
         {
             if (ruleResult && ruleResult.children)
                 categoryResult.addRuleResult(ruleResult);
-
-            if (this._progress.isCanceled())
-                this._progress.done();
         }
 
         var results = [];
         var mainResourceURL = target.resourceTreeModel.inspectedPageURL();
         var categoriesDone = 0;
 
-        /**
-         * @this {WebInspector.AuditController}
-         */
         function categoryDoneCallback()
         {
             if (++categoriesDone !== categories.length)
                 return;
-            this._progress.done();
-            resultCallback(mainResourceURL, results)
+            resultCallback(mainResourceURL, results);
         }
 
-        var requests = target.networkLog.requests.slice();
+        var requests = target.networkLog.requests().slice();
         var compositeProgress = new WebInspector.CompositeProgress(this._progress);
         var subprogresses = [];
         for (var i = 0; i < categories.length; ++i)
-            subprogresses.push(compositeProgress.createSubProgress());
+            subprogresses.push(new WebInspector.ProgressProxy(compositeProgress.createSubProgress(), categoryDoneCallback));
         for (var i = 0; i < categories.length; ++i) {
+            if (this._progress.isCanceled()) {
+                subprogresses[i].done();
+                continue;
+            }
             var category = categories[i];
             var result = new WebInspector.AuditCategoryResult(category);
             results.push(result);
-            category.run(target, requests, ruleResultReadyCallback.bind(this, result), categoryDoneCallback.bind(this), subprogresses[i]);
+            category.run(target, requests, ruleResultReadyCallback.bind(null, result), subprogresses[i]);
         }
     },
 
     /**
-     * @param {function()} launcherCallback
      * @param {string} mainResourceURL
      * @param {!Array.<!WebInspector.AuditCategoryResult>} results
      */
-    _auditFinishedCallback: function(launcherCallback, mainResourceURL, results)
+    _auditFinishedCallback: function(mainResourceURL, results)
     {
-        this._auditsPanel.auditFinishedCallback(mainResourceURL, results);
         if (!this._progress.isCanceled())
-            launcherCallback();
+            this._auditsPanel.auditFinishedCallback(mainResourceURL, results);
+        this._progress.done();
     },
 
     /**
@@ -108,9 +104,8 @@ WebInspector.AuditController.prototype = {
      * @param {!WebInspector.Progress} progress
      * @param {boolean} runImmediately
      * @param {function()} startedCallback
-     * @param {function()} finishedCallback
      */
-    initiateAudit: function(categoryIds, progress, runImmediately, startedCallback, finishedCallback)
+    initiateAudit: function(categoryIds, progress, runImmediately, startedCallback)
     {
         var target = /** @type {!WebInspector.Target} */ (WebInspector.targetManager.mainTarget());
         if (!categoryIds || !categoryIds.length || !target)
@@ -127,8 +122,12 @@ WebInspector.AuditController.prototype = {
          */
         function startAuditWhenResourcesReady()
         {
+            if (this._progress.isCanceled()) {
+                this._progress.done();
+                return;
+            }
             startedCallback();
-            this._executeAudit(target, categories, this._auditFinishedCallback.bind(this, finishedCallback));
+            this._executeAudit(target, categories, this._auditFinishedCallback.bind(this));
         }
 
         if (runImmediately)
@@ -146,6 +145,12 @@ WebInspector.AuditController.prototype = {
     {
         this._pageReloadCallback = callback;
         WebInspector.targetManager.reloadPage();
+    },
+
+    _didLoadResource: function()
+    {
+        if (this._pageReloadCallback && this._progress && this._progress.isCanceled())
+            this._pageReloadCallback();
     },
 
     _didMainResourceLoad: function()

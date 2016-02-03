@@ -4,7 +4,7 @@
             "type": "@WebInspector.PanelFactory",
             "name": "resources",
             "title": "Resources",
-            "order": 5,
+            "order": 70,
             "className": "WebInspector.ResourcesPanelFactory"
         },
         {
@@ -13,21 +13,29 @@
             "className": "WebInspector.ResourcesPanel.ResourceRevealer"
         }
     ],
-    "dependencies": ["source_frame"],
+    "dependencies": ["source_frame", "ui_lazy", "components_lazy"],
     "scripts": [
         "ApplicationCacheItemsView.js",
         "CookieItemsView.js",
+        "DatabaseModel.js",
+        "DOMStorageModel.js",
         "DOMStorageItemsView.js",
         "DatabaseQueryView.js",
         "DatabaseTableView.js",
         "DirectoryContentView.js",
+        "IndexedDBModel.js",
         "IndexedDBViews.js",
         "FileContentView.js",
+        "FileSystemModel.js",
         "FileSystemView.js",
-        "ResourcesPanel.js"
+        "ResourcesPanel.js",
+        "ServiceWorkerCacheViews.js",
+        "ServiceWorkersView.js"
     ],
-    "stylesheets": [
+    "resources": [
         "indexedDBViews.css",
-        "resourcesPanel.css"
+        "resourcesPanel.css",
+        "serviceWorkerCacheViews.css",
+        "serviceWorkersView.css"
     ]
 }

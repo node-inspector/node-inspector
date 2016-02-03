@@ -53,8 +53,10 @@
 }
 
 .navigator > ol {
+    min-width: 100%;
     min-height: 100%;
     display: inline-block;
+    position: relative
 }
 
 .navigator li {
@@ -75,6 +77,9 @@
     background-color: rgb(56, 121, 217);
 }
 
+.navigator > ol.being-edited li.selected {
+    overflow: visible;
+}
 
 .navigator .icon {
     width: 16px;
@@ -96,20 +101,7 @@
     flex: auto;
 }
 
-.navigator-tabbed-pane .tabbed-pane-content {
-    overflow: hidden;
-}
-
-.navigator-tabbed-pane .navigator-container {
-    overflow: auto;
-    transform: translateZ(0);
-}
-
 .navigator-tabbed-pane .navigator {
     padding-left: 0;
     transform: translateZ(0);
-}
-
-.navigator-tabbed-pane .tabbed-pane-header-contents {
-    margin-left: 2px;
 }

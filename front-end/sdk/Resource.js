@@ -251,6 +251,7 @@ WebInspector.Resource.prototype = {
     },
 
     /**
+     * @override
      * @return {string}
      */
     contentURL: function()
@@ -259,14 +260,18 @@ WebInspector.Resource.prototype = {
     },
 
     /**
+     * @override
      * @return {!WebInspector.ResourceType}
      */
     contentType: function()
     {
+        if (this.resourceType() === WebInspector.resourceTypes.Document && this.mimeType.indexOf("javascript") !== -1)
+            return WebInspector.resourceTypes.Script;
         return this.resourceType();
     },
 
     /**
+     * @override
      * @param {function(?string)} callback
      */
     requestContent: function(callback)
@@ -286,10 +291,11 @@ WebInspector.Resource.prototype = {
      */
     canonicalMimeType: function()
     {
-        return this.resourceType().canonicalMimeType() || this.mimeType;
+        return this.contentType().canonicalMimeType() || this.mimeType;
     },
 
     /**
+     * @override
      * @param {string} query
      * @param {boolean} caseSensitive
      * @param {boolean} isRegex
@@ -299,16 +305,11 @@ WebInspector.Resource.prototype = {
     {
         /**
          * @param {?Protocol.Error} error
-         * @param {!Array.<!PageAgent.SearchMatch>} searchMatches
+         * @param {!Array.<!DebuggerAgent.SearchMatch>} searchMatches
          */
         function callbackWrapper(error, searchMatches)
         {
             callback(searchMatches || []);
-        }
-
-        if (this.resourceType() === WebInspector.resourceTypes.Document) {
-            callback([]);
-            return;
         }
 
         if (this.frameId)

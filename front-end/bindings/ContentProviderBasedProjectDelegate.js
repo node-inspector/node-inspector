@@ -30,6 +30,7 @@
 
  /**
  * @constructor
+ * @extends {WebInspector.Object}
  * @implements {WebInspector.ProjectDelegate}
  * @param {!WebInspector.Workspace} workspace
  * @param {string} id
@@ -37,16 +38,18 @@
  */
 WebInspector.ContentProviderBasedProjectDelegate = function(workspace, id, type)
 {
+    WebInspector.Object.call(this);
     this._type = type;
     /** @type {!Object.<string, !WebInspector.ContentProvider>} */
     this._contentProviders = {};
     this._workspace = workspace;
     this._id = id;
-    this._projectStore = workspace.addProject(id, this);
+    workspace.addProject(id, this);
 }
 
 WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     /**
+     * @override
      * @return {string}
      */
     type: function()
@@ -55,24 +58,27 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     },
 
     /**
+     * @override
      * @return {string}
      */
     displayName: function()
     {
-        // Overriddden by subclasses
+        // Overridden by subclasses
         return "";
     },
 
     /**
+     * @override
      * @return {string}
      */
     url: function()
     {
-        // Overriddden by subclasses
+        // Overridden by subclasses
         return "";
     },
 
     /**
+     * @override
      * @param {string} path
      * @param {function(?Date, ?number)} callback
      */
@@ -82,6 +88,7 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     },
 
     /**
+     * @override
      * @param {string} path
      * @param {function(?string)} callback
      */
@@ -102,6 +109,7 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     },
 
     /**
+     * @override
      * @return {boolean}
      */
     canSetFileContent: function()
@@ -110,6 +118,7 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     },
 
     /**
+     * @override
      * @param {string} path
      * @param {string} newContent
      * @param {function(?string)} callback
@@ -120,6 +129,7 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     },
 
     /**
+     * @override
      * @return {boolean}
      */
     canRename: function()
@@ -128,6 +138,7 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     },
 
     /**
+     * @override
      * @param {string} path
      * @param {string} newName
      * @param {function(boolean, string=, string=, string=, !WebInspector.ResourceType=)} callback
@@ -150,6 +161,7 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     },
 
     /**
+     * @override
      * @param {string} path
      * @param {function()=} callback
      */
@@ -160,6 +172,7 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     },
 
     /**
+     * @override
      * @param {string} path
      */
     excludeFolder: function(path)
@@ -167,6 +180,7 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     },
 
     /**
+     * @override
      * @param {string} path
      * @param {?string} name
      * @param {string} content
@@ -177,12 +191,16 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     },
 
     /**
+     * @override
      * @param {string} path
      */
     deleteFile: function(path)
     {
     },
 
+    /**
+     * @override
+     */
     remove: function()
     {
     },
@@ -212,6 +230,7 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     },
 
     /**
+     * @override
      * @param {string} path
      * @param {string} query
      * @param {boolean} caseSensitive
@@ -225,6 +244,7 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     },
 
     /**
+     * @override
      * @param {!WebInspector.ProjectSearchConfig} searchConfig
      * @param {!Array.<string>} filesMathingFileQuery
      * @param {!WebInspector.Progress} progress
@@ -303,6 +323,7 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     },
 
     /**
+     * @override
      * @param {!WebInspector.Progress} progress
      */
     indexContent: function(progress)
@@ -325,7 +346,7 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
             return path;
         var fileDescriptor = new WebInspector.FileDescriptor(parentPath, name, originURL, url, contentProvider.contentType());
         this._contentProviders[path] = contentProvider;
-        this._projectStore.addFile(fileDescriptor);
+        this.dispatchEventToListeners(WebInspector.ProjectDelegate.Events.FileAdded, fileDescriptor);
         return path;
     },
 
@@ -335,7 +356,7 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     removeFile: function(path)
     {
         delete this._contentProviders[path];
-        this._projectStore.removeFile(path);
+        this.dispatchEventToListeners(WebInspector.ProjectDelegate.Events.FileRemoved, path);
     },
 
     /**
@@ -350,6 +371,8 @@ WebInspector.ContentProviderBasedProjectDelegate.prototype = {
     {
         this._contentProviders = {};
         this._workspace.removeProject(this._id);
-        this._projectStore = this._workspace.addProject(this._id, this);
-    }
+        this._workspace.addProject(this._id, this);
+    },
+
+    __proto__: WebInspector.Object.prototype
 }

@@ -1,6 +1,5 @@
 {
     "scripts": [
-        "../platform/Promise.js",
         "../platform/utilities.js",
         "../common/WebInspector.js",
         "../common/UIString.js",

@@ -8,16 +8,12 @@
             "className": "WebInspector.PromisePane"
         }
     ],
-    "dependencies": [
-        "bindings",
-        "platform",
-        "ui"
-    ],
+    "dependencies": ["components", "ui_lazy"],
     "experiment": "promiseTracker",
     "scripts": [
         "PromisePane.js"
     ],
-    "stylesheets": [
+    "resources": [
         "promisePane.css"
     ]
 }
