@@ -88,7 +88,7 @@ function main() {
 
 function startInspector (config) {
   return new Promise((resolve, reject) => {
-    const inspectorProcess = fork(require.resolve('./inspector'), config.args, { silent: false });
+    const inspectorProcess = fork(require.resolve('./inspector'), config.args, { silent: true });
 
     inspectorProcess.once('message', msg => {
       switch (msg.event) {
