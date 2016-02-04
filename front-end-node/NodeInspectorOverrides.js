@@ -258,6 +258,10 @@ new WebInspector.NodeInspectorOverrides();
 
 function showMainAppFile() {
   WebInspector.inspectorView.showPanel('sources').then(function(panel) {
+    if (!panel) {
+      return;
+    }
+
     var fileTabs = panel._sourcesView._editorContainer._files;
 
     if (Object.keys(fileTabs).length > 0){
