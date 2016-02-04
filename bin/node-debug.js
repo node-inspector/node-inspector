@@ -49,7 +49,6 @@ function main() {
   }
 
   process.on('SIGINT', () => {
-    console.log('Interrupted');
     process.exit();
   });
 
