@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 
+'use strict';
+
 var Config = require('../lib/config');
 var fork = require('child_process').fork;
 var fs = require('fs');
 var path = require('path');
 var util = require('util');
-var open = require('biased-opener');
+var co = require('co');
+var promisify = require('bluebird').promisify;
+var open = promisify(require('biased-opener'));
 var whichSync = require('which').sync;
-var inspector = require('..');
 
 var WIN_CMD_LINK_MATCHER = /node  "%~dp0\\(.*?)"/;
 var NODE_DEBUG_MODE = true;
@@ -15,15 +18,10 @@ var NODE_DEBUG_MODE = true;
 module.exports = main;
 module.exports.createConfig = createConfig;
 
-var inspectorProcess;
-var debuggedProcess;
-
 if (require.main == module)
   main();
 
 //-- Implementation --
-
-var config;
 
 /**
  * By default:
@@ -36,7 +34,7 @@ var config;
  * or when an error occured.
  */
 function main() {
-  config = createConfig(process.argv.slice(2));
+  const config = createConfig(process.argv.slice(2));
 
   if (config.options.help) {
     config.options.showHelp(NODE_DEBUG_MODE);
@@ -50,50 +48,113 @@ function main() {
 
   process.on('SIGINT', () => process.exit());
 
-  startInspectorProcess(function(error, result) {
-    if (error) {
-      console.error(formatNodeInspectorError(error));
-      process.exit(1);
-    }
+  co(function * () {
 
-    var url = result.address.url;
-    var isUnixSocket = result.address.isUnixSocket;
+    var address = yield startInspectorProcess(config.inspector);
+    yield startDebuggedProcess(config.subproc);
 
-    startDebuggedProcess(function(error) {
-      if (error) {
-        console.error('Cannot start %s: %s', config.subproc.script, error.message || error);
-        process.exit(2);
-      }
+    const url = address.url;
+    const isUnixSocket = address.isUnixSocket;
 
-      openBrowserAndPrintInfo(url, isUnixSocket);
+    if (config.printScript)
+      console.log('Debugging `%s`\n', config.subproc.script);
+
+    if (config.options.cli) return;
+
+    // try to launch the URL in one of those browsers in the defined order
+    // (but if one of them is default browser, then it takes priority)
+    open(url, { preferredBrowsers : ['chrome', 'chromium', 'opera'] }).catch(err => {
+      // unable to launch one of preferred browsers for some reason
+      console.warn(err.message);
+      console.warn('Please open the URL manually in Chrome/Chromium/Opera or similar browser');
     });
+
+  }).catch(error => {
+
+    let reason = error.message || error.code || error;
+    if (error.code === 'EADDRINUSE') {
+      reason += `\nThere is another process already listening at ${config.inspector.host}:${config.inspector.port}.`;
+      reason += `\nRun '${getCmd()} -p {port}' to use a different port.`;
+    }
+    console.error(util.format('Cannot start Node Inspector:', reason));
+
   });
 }
 
+function startInspectorProcess(config) {
+  return new Promise((resolve, reject) => {
+    const inspectorProcess = fork(require.resolve('./inspector'), config.args, { silent: false });
+
+    inspectorProcess.once('message', msg => {
+      switch (msg.event) {
+      case 'SERVER.LISTENING':
+        return resolve(msg.address);
+      case 'SERVER.ERROR':
+        return reject(msg);
+      default:
+        console.warn('Unknown Node Inspector event: %s', msg.event);
+      }
+    });
+
+    process.on('exit', () => inspectorProcess.kill('SIGINT'));
+    inspectorProcess.on('exit', () => process.exit());
+  });
+}
+
+function startDebuggedProcess(config) {
+  return Promise.resolve().then(() => {
+    let script = path.resolve(process.cwd(), config.script);
+
+    if (!fs.existsSync(script)) {
+      script = whichSync(config.script);
+      script = checkWinCmdFiles(script);
+    }
+
+    const debuggedProcess = fork(script, config.args, { execArgv: config.execArgs });
+
+    process.on('exit', () => debuggedProcess.kill('SIGINT'));
+    debuggedProcess.on('exit', () => process.exit());
+  });
+}
+
+function getCmd() {
+  return process.env.CMD || path.basename(process.argv[1]);
+}
+
+function checkWinCmdFiles(script) {
+  if (process.platform === 'win32' && path.extname(script).toLowerCase() === '.cmd') {
+    const cmdContent = fs.readFileSync(script, 'utf-8');
+    const link = (WIN_CMD_LINK_MATCHER.exec(cmdContent) || [])[1];
+    if (link) {
+      return path.resolve(path.dirname(script), link);
+    }
+  }
+  return script;
+}
+
 function createConfig(argv) {
-  var options = new Config(argv, NODE_DEBUG_MODE);
-  var script = options._[0];
-  var printScript = true;
+  const options = new Config(argv, NODE_DEBUG_MODE);
+  const script = options._[0] || require.resolve('./run-repl');
+  const printScript = !!options._[0];
 
-  var subprocArgs;
+  let subprocArgs = [];
 
-  if (script) {
+  if (printScript) {
     // We want to pass along subarguments, but re-parse our arguments.
     subprocArgs = argv.splice(argv.indexOf(script) + 1);
   } else {
-    script = require.resolve('./run-repl');
-    subprocArgs = [];
-    printScript = false;
     process.env.CMD = process.env.CMD || process.argv[1];
   }
 
-  var inspectorArgs = Config.serializeOptions(
+  const inspectorArgs = Config.serializeOptions(
     Config.filterDefaultValues(
-      Config.filterNodeDebugOptions(options)),
-    {_: true, $0: true });
+      Config.filterNodeDebugOptions(options)
+    ), { _: true, $0: true }
+  );
 
-  var subprocDebugOption = (options.debugBrk ? '--debug-brk' : '--debug') + '=' + options.debugPort;
-  var subprocExecArgs = options.nodejs.concat(subprocDebugOption);
+  const brk = options.debugBrk;
+  const subprocDebugOption = `--debug${brk ? '-brk' : ''}=${options.debugPort}`;
+  const subprocExecArgs = options.nodejs.concat(subprocDebugOption);
 
   return {
     printScript: printScript,
@@ -101,7 +162,7 @@ function createConfig(argv) {
     subproc: {
       script: script,
       args: subprocArgs,
-      execArgs:  subprocExecArgs,
+      execArgs: subprocExecArgs,
       debugPort: options.debugPort
     },
     inspector: {
@@ -110,94 +171,4 @@ function createConfig(argv) {
       args: inspectorArgs
     }
   };
-}
-
-function getCmd() {
-  return process.env.CMD || path.basename(process.argv[1]);
-}
-
-function startInspectorProcess(callback) {
-  inspectorProcess = fork(
-    require.resolve('./inspector'),
-    config.inspector.args,
-    { silent: false }
-  );
-
-  inspectorProcess.once('message', function(msg) {
-    switch (msg.event) {
-    case 'SERVER.LISTENING':
-      return callback(null, msg);
-    case 'SERVER.ERROR':
-      return callback(msg.error);
-    default:
-      return callback(new Error('Unknown Node Inspector event: ' + msg.event));
-    }
-  });
-
-  process.on('exit', function() {
-    inspectorProcess.kill('SIGINT');
-  });
-}
-
-function formatNodeInspectorError(err) {
-  var reason = err.message || err.code || err;
-  if (err.code === 'EADDRINUSE') {
-    reason += '\nThere is another process already listening at ' +
-      config.inspector.host + ':' +
-      config.inspector.port + '.\n' +
-      'Run `' + getCmd() + ' -p {port}` to use a different port.';
-  }
-
-  return util.format('Cannot start Node Inspector:', reason);
-}
-
-function startDebuggedProcess(callback) {
-  var script = path.resolve(process.cwd(), config.subproc.script);
-  if (!fs.existsSync(script)) {
-    try {
-      script = whichSync(config.subproc.script);
-      script = checkWinCmdFiles(script);
-    } catch (err) {
-      return  callback(err);
-    }
-  }
-
-  debuggedProcess = fork(
-    script,
-    config.subproc.args,
-    {
-      execArgv: config.subproc.execArgs
-    }
-  );
-  debuggedProcess.on('exit', function() { process.exit(); });
-  callback();
-}
-
-function checkWinCmdFiles(script) {
-  if (process.platform == 'win32' && path.extname(script).toLowerCase() == '.cmd') {
-    var cmdContent = '' + fs.readFileSync(script);
-    var link = (WIN_CMD_LINK_MATCHER.exec(cmdContent) || [])[1];
-
-    if (link) script = path.resolve(path.dirname(script), link);
-  }
-  return script;
-}
-
-function openBrowserAndPrintInfo(url, isUnixSocket) {
-  if (!config.options.cli && !isUnixSocket) {
-    // try to launch the URL in one of those browsers in the defined order
-    // (but if one of them is default browser, then it takes priority)
-    open(url, {
-      preferredBrowsers : ['chrome', 'chromium', 'opera']
-    }, function(err, okMsg) {
-      if (err) {
-         // unable to launch one of preferred browsers for some reason
-         console.log(err.message);
-         console.log('Please open the URL manually in Chrome/Chromium/Opera or similar browser');
-      }
-    });
-  }
-
-  if (config.printScript)
-    console.log('Debugging `%s`\n', config.subproc.script);
 }
