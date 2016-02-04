@@ -45,6 +45,10 @@ function main() {
     process.exit();
   }
 
+  process.on('SIGINT', () => {
+    process.exit();
+  });
+
   startInspector(function(err) {
     if (err) {
       console.error(formatNodeInspectorError(err));
@@ -197,13 +201,13 @@ function openBrowserAndPrintInfo() {
     // try to launch the URL in one of those browsers in the defined order
     // (but if one of them is default browser, then it takes priority)
     open(url, {
-        preferredBrowsers : ['chrome', 'chromium', 'opera']
-      }, function(err, okMsg) {
-        if (err) {
-           // unable to launch one of preferred browsers for some reason
-           console.log(err.message);
-           console.log('Please open the URL manually in Chrome/Chromium/Opera or similar browser');
-        }
+      preferredBrowsers : ['chrome', 'chromium', 'opera']
+    }, function(err, okMsg) {
+      if (err) {
+         // unable to launch one of preferred browsers for some reason
+         console.log(err.message);
+         console.log('Please open the URL manually in Chrome/Chromium/Opera or similar browser');
+      }
     });
   }
 
