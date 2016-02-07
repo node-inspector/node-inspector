@@ -1,6 +1,6 @@
 {
   "name": "node-inspector",
-  "version": "0.12.5",
+  "version": "0.12.3",
   "description": "Web Inspector based nodeJS debugger",
   "homepage": "http://github.com/node-inspector/node-inspector",
   "author": "Danny Coates <dannycoates@gmail.com>",
@@ -32,8 +32,8 @@
     "semver": "^4.3.4",
     "serve-favicon": "^2.1.1",
     "strong-data-uri": "^1.0.0",
-    "v8-debug": "~0.7.0",
-    "v8-profiler": "~5.5.0",
+    "v8-debug": "~0.5.0",
+    "v8-profiler": "~5.3.0",
     "which": "^1.1.1",
     "ws": "^0.8.0",
     "yargs": "^3.9.0"
