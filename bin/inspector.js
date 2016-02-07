@@ -4,8 +4,7 @@ var DebugServer = require('../lib/debug-server').DebugServer,
     fs = require('fs'),
     path = require('path'),
     Config = require('../lib/config'),
-    packageJson = require('../package.json'),
-    notifyParentProcess = getNotifyParentProcessFn();
+    packageJson = require('../package.json');
 
 var config = new Config(process.argv.slice(2));
 
@@ -18,6 +17,10 @@ if (config.version) {
   config.showVersion();
   process.exit();
 }
+
+process.on('SIGINT', function() {
+   process.exit();
+});
 
 console.log('Node Inspector v%s', packageJson.version);
 
@@ -60,12 +63,8 @@ function onListening() {
   });
 }
 
-function getNotifyParentProcessFn() {
-  if (!process.send) {
-    return function(msg) {};
-  }
+function notifyParentProcess(msg) {
+  if (!process.send) return;
 
-  return function(msg) {
-    process.send(msg);
-  };
+  process.send(msg);
 }

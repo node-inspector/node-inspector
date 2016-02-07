@@ -16,7 +16,7 @@ describe('node-debug', function() {
         },
         inspector: {
           host: '127.0.0.1',
-          port: 8080,
+          port: '8080',
           args: ['--web-host=127.0.0.1']
         }
       });
@@ -39,7 +39,7 @@ describe('node-debug', function() {
       });
       expect(config.inspector).to.eql({
         host: '127.0.0.2',
-        port: 10,
+        port: '10',
         args: ['--web-port=10', '--web-host=127.0.0.2', '--debug-port=20']
       });
     });
@@ -62,20 +62,20 @@ describe('node-debug', function() {
         execArgs: ['--debug-brk=5858'],
         debugPort: 5858
       });
-      expect(config.inspector.port, 'inspector.port').to.eql(8080);
+      expect(config.inspector.port, 'inspector.port').to.eql('8080');
     });
 
     it('supports slc-debug argument names', function() {
       var config = cli.createConfig(argv('--suspend --port=10 --debug-port=20'));
       expect(config.subproc.execArgs).to.contain('--debug-brk=20');
       expect(config.subproc.debugPort, 'subproc.debugPort').to.equal(20);
-      expect(config.inspector.port, 'inspector.port').to.equal(10);
+      expect(config.inspector.port, 'inspector.port').to.equal('10');
     });
 
     it('supports node-inspector argument names', function() {
       var config = cli.createConfig(argv('--web-port=10 --debug-port=20 app.js'));
       expect(config.subproc.debugPort, 'subproc.debugPort').to.equal(20);
-      expect(config.inspector.port, 'inspector.port').to.equal(10);
+      expect(config.inspector.port, 'inspector.port').to.equal('10');
     });
 
     it('forwards unknown options to node-inspector', function() {

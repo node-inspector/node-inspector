@@ -1,5 +1,6 @@
 // Public API for node-inspector embedders
 var url = require('url');
+var path = require('path');
 
 exports.buildInspectorUrl = buildInspectorUrl;
 exports.buildWebSocketUrl = buildWebSocketUrl;
@@ -12,12 +13,22 @@ exports.buildWebSocketUrl = buildWebSocketUrl;
  */
 function buildInspectorUrl(inspectorHost, inspectorPort, debugPort, fileToShow, isHttps) {
   var host = inspectorHost == '0.0.0.0' ? '127.0.0.1' : inspectorHost;
+  var port = inspectorPort;
+  var protocol = isHttps ? 'https' : 'http';
+
+  var isUnixSocket = !/^\d+$/.test(port);
+  if (isUnixSocket) {
+    host = path.resolve(__dirname, inspectorPort);
+    port = null;
+    protocol = 'unix';
+  }
+
   var parts = {
-    protocol: isHttps ? 'https' : 'http',
+    protocol: protocol,
     hostname: host,
-    port: inspectorPort,
+    port: port,
     pathname: '/',
-    search: '?ws=' + host + (inspectorPort ? ':' + inspectorPort : '') + '&port=' + debugPort
+    search: '?ws=' + host + (port ? ':' + port : '') + '&port=' + debugPort
   };
 
   return url.format(parts);

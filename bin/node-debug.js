@@ -15,6 +15,9 @@ var NODE_DEBUG_MODE = true;
 module.exports = main;
 module.exports.createConfig = createConfig;
 
+var inspectorProcess;
+var debuggedProcess;
+
 if (require.main == module)
   main();
 
@@ -45,23 +48,26 @@ function main() {
     process.exit();
   }
 
-  startInspector(function(err) {
-    if (err) {
-      console.error(formatNodeInspectorError(err));
+  process.on('SIGINT', function() {
+     process.exit();
+  });
+
+  startInspectorProcess(function(error, result) {
+    if (error) {
+      console.error(formatNodeInspectorError(error));
       process.exit(1);
     }
 
-    startDebuggedProcess(function(err) {
-      if (err) {
-        console.error(
-          'Cannot start %s: %s',
-          config.subproc.script,
-          err.message || err
-        );
+    var url = result.address.url;
+    var isUnixSocket = result.address.isUnixSocket;
+
+    startDebuggedProcess(function(error) {
+      if (error) {
+        console.error('Cannot start %s: %s', config.subproc.script, error.message || error);
         process.exit(2);
       }
 
-      openBrowserAndPrintInfo();
+      openBrowserAndPrintInfo(url, isUnixSocket);
     });
   });
 }
@@ -112,33 +118,26 @@ function getCmd() {
   return process.env.CMD || path.basename(process.argv[1]);
 }
 
-function startInspector(callback) {
-  var inspectorProcess = fork(
+function startInspectorProcess(callback) {
+  inspectorProcess = fork(
     require.resolve('./inspector'),
     config.inspector.args,
-    { silent: true }
+    { silent: false }
   );
 
   inspectorProcess.once('message', function(msg) {
     switch (msg.event) {
     case 'SERVER.LISTENING':
-      return callback(null, msg.address);
+      return callback(null, msg);
     case 'SERVER.ERROR':
       return callback(msg.error);
     default:
-      console.warn('Unknown Node Inspector event: %s', msg.event);
-      return callback(
-        null,
-        {
-          address: config.inspector.host,
-          port: config.inspector.port
-        }
-      );
+      return callback(new Error('Unknown Node Inspector event: ' + msg.event));
     }
   });
 
   process.on('exit', function() {
-    inspectorProcess.kill();
+    inspectorProcess.kill('SIGINT');
   });
 }
 
@@ -165,7 +164,7 @@ function startDebuggedProcess(callback) {
     }
   }
 
-  var debuggedProcess = fork(
+  debuggedProcess = fork(
     script,
     config.subproc.args,
     {
@@ -186,14 +185,8 @@ function checkWinCmdFiles(script) {
   return script;
 }
 
-function openBrowserAndPrintInfo() {
-  var url = inspector.buildInspectorUrl(
-    config.inspector.host,
-    config.inspector.port,
-    config.subproc.debugPort
-  );
-
-  if (!config.options.cli) {
+function openBrowserAndPrintInfo(url, isUnixSocket) {
+  if (!config.options.cli && !isUnixSocket) {
     // try to launch the URL in one of those browsers in the defined order
     // (but if one of them is default browser, then it takes priority)
     open(url, {
@@ -207,7 +200,6 @@ function openBrowserAndPrintInfo() {
     });
   }
 
-  console.log('Node Inspector is now available from %s', url);
   if (config.printScript)
     console.log('Debugging `%s`\n', config.subproc.script);
 }
