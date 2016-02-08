@@ -97,9 +97,6 @@ Node Inspector supports almost all of the debugging features of DevTools, includ
 
 ## Known Issues
 
-* If there are symlink cycles then the [glob](https://github.com/isaacs/node-glob)
-  module may take a long time to return results causing long delays at startup.
-  The workaround is to disable preloading of scripts with `--no-preload`.
 * Be careful about viewing the contents of Buffer objects,
   each byte is displayed as an individual array element;
   for most Buffers this will take too long to render.
