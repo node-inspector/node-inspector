@@ -688,6 +688,21 @@ InspectorBackendClass.WebSocketConnection.prototype = {
     {
         var data = /** @type {string} */ (message.data)
         this.dispatch(data);
+
+        /* 
+         *  This section is a part of a proof-of-concept for displaying a sources loading bar to the
+         *  user. When files are received through the message service (id: 8), the loading text is removed.
+         *  A time to load files is also logged out to the console.
+         */
+        if (JSON.parse(message.data).id === 8) {
+            console.timeEnd('time to get resource tree');
+            var loadingMessage = document.getElementById('loading-message');
+            var preloadMessage = document.getElementById('no-preload-message')
+            clearInterval(loadingMessage.dataset.interval);
+            clearInterval(loadingMessage.dataset.timeout);
+            loadingMessage.parentNode.removeChild(preloadMessage);
+            loadingMessage.parentNode.removeChild(loadingMessage);
+        }
     },
 
     /**
@@ -787,6 +802,42 @@ InspectorBackendClass.AgentPrototype.prototype = {
         {
             var params = Array.prototype.slice.call(arguments);
             InspectorBackendClass.AgentPrototype.prototype._sendMessageToBackend.call(this, domainAndMethod, signature, params);
+
+            /* 
+             *  This section is a part of a proof-of-concept for displaying a sources loading bar to the
+             *  user. When a message is sent to the backend to load source files (getResourceTree), loading 
+             *  text is displayed to the user in the navigator panel. If sources don't load after 5 seconds,
+             *  a recommendation to use the --no-preload flag is presented. A console timer is also started 
+             *  to determine the time that it takes resources to load.
+             */
+            if (domainAndMethod === 'Page.getResourceTree') {
+                var loadingMessage = document.createElement('div');
+                loadingMessage.id = 'loading-message';
+                loadingMessage.textContent = 'Loading files';
+                loadingMessage.style.marginLeft = '35%';
+                var navigator = document.getElementsByClassName('navigator-container')[0]
+                navigator.appendChild(loadingMessage);
+                
+                var interval = setInterval(function(){
+                    var message = loadingMessage.textContent;
+                    loadingMessage.textContent = message.length === 18 ? 'Loading files.' : message + '.';
+                }, 250)
+
+                var timeout = setTimeout(function() {
+                    var preloadMessage = document.createElement('div');
+                    preloadMessage.id = 'no-preload-message';
+                    preloadMessage.innerHTML = '<br><i>(for faster loading, use --no-preload flag)</i>';
+                    preloadMessage.style.color = '#888';
+                    preloadMessage.style.fontSize = '.8em';
+                    preloadMessage.style.margin = '0 auto';
+                    navigator.appendChild(preloadMessage);
+                }, 5000);
+
+                loadingMessage.dataset.interval = interval;
+                loadingMessage.dataset.timeout = timeout;
+                console.time('time to get resource tree');
+            }
+
         }
 
         /**
