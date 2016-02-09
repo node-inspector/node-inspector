@@ -10,10 +10,9 @@ describe('index', function() {
         'example.com',
         '2223',
         '7863',
-        null,
         false
       );
-      expect(url).to.equal('http://example.com:2223/?ws=example.com:2223&port=7863');
+      expect(url).to.equal('http://example.com:2223/?port=7863');
     });
 
     it('should build an http URL', function() {
@@ -21,10 +20,9 @@ describe('index', function() {
         'example.com',
         '2223',
         '7863',
-        null,
         true
       );
-      expect(url).to.equal('https://example.com:2223/?ws=example.com:2223&port=7863');
+      expect(url).to.equal('https://example.com:2223/?port=7863');
     });
   });
 
@@ -34,7 +32,6 @@ describe('index', function() {
         'example.com',
         '2223',
         '7863',
-        null,
         false
       );
       expect(url).to.equal('ws://example.com:2223/?port=7863');
@@ -45,7 +42,6 @@ describe('index', function() {
         'example.com',
         '2223',
         '7863',
-        null,
         true
       );
       expect(url).to.equal('wss://example.com:2223/?port=7863');

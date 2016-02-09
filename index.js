@@ -10,8 +10,9 @@ exports.buildWebSocketUrl = buildWebSocketUrl;
  * @param {string|undefined} inspectorHost as configured via --web-host
  * @param {number} inspectorPort as configured via --web-port
  * @param {number} debugPort as configured via --debug in the debugged app
+ * @param {number} isHttps as configured via --ssl-cert and --ssl-key in the debugged app
  */
-function buildInspectorUrl(inspectorHost, inspectorPort, debugPort, fileToShow, isHttps) {
+function buildInspectorUrl(inspectorHost, inspectorPort, debugPort, isHttps) {
   var host = inspectorHost == '0.0.0.0' ? '127.0.0.1' : inspectorHost;
   var port = inspectorPort;
   var protocol = isHttps ? 'https' : 'http';
@@ -28,7 +29,7 @@ function buildInspectorUrl(inspectorHost, inspectorPort, debugPort, fileToShow, 
     hostname: host,
     port: port,
     pathname: '/',
-    search: '?ws=' + host + (port ? ':' + port : '') + '&port=' + debugPort
+    search: '?port=' + debugPort
   };
 
   return url.format(parts);
@@ -39,8 +40,9 @@ function buildInspectorUrl(inspectorHost, inspectorPort, debugPort, fileToShow, 
  * @param {string|undefined} inspectorHost as configured via --web-host
  * @param {number} inspectorPort as configured via --web-port
  * @param {number} debugPort as configured via --debug in the debugged app
+ * @param {number} isHttps as configured via --ssl-cert and --ssl-key in the debugged app
  */
-function buildWebSocketUrl(inspectorHost, inspectorPort, debugPort, fileToShow, isSecure) {
+function buildWebSocketUrl(inspectorHost, inspectorPort, debugPort, isSecure) {
   var parts = {
     protocol: isSecure ? 'wss:' : 'ws:',
     hostname: inspectorHost == '0.0.0.0' ? '127.0.0.1' : inspectorHost,
