@@ -1,3 +1,24 @@
+## 2016-02-09, Version 0.12.6
+
+ * deps up (Yury Puzynya)
+
+ * Fixed buildInspectorUrl (Yury Puzynya)
+
+ * Fix readme (Yury Puzynya)
+
+ * Aviod params duplication in querystring (Yury Puzynya)
+
+ * Support listening on unix socket (Yury Puzynya)
+
+ * Fix node-inspector redirecting with invalid ws url if no port is specified (Cain Cresswell-Miley)
+
+ * New resource tree resolver (Yury Puzynya)
+
+ * Added manifest.override prop for inspector.json. Allows finer-grained control over existing plugins and modules. (Eric Lawless)
+
+ * Added --plugin-path argument for specifying root plugin path. (Eric Lawless)
+
+
 ## 2015-12-06, Version 0.12.5
 
  * Bump dependencies (Yury Puzynya)
