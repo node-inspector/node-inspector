@@ -1,4 +1,6 @@
 var co = require('co');
+var fs = require('fs');
+var path = require('path');
 var expect = require('chai').expect;
 var launcher = require('./helpers/launcher.js');
 var ScriptManager = require('../lib/ScriptManager.js');
@@ -129,6 +131,173 @@ describe('DebuggerAgent', () => {
       });
     });
   });
+
+  describe('#setVariableValue', () => {
+    var id;
+
+    function getValue(name) {
+      return debuggerAgent.handle('evaluateOnCallFrame', {
+        callFrameId: id,
+        expression: name,
+        returnByValue: true
+      }).then(result => result.result.value);
+    }
+
+    function getRef(name) {
+      return debuggerAgent.handle('evaluateOnCallFrame', {
+        callFrameId: id,
+        expression: name
+      }).then(result => result.result.objectId);
+    }
+
+    function setValue(name, value) {
+      return debuggerAgent.handle('setVariableValue', {
+        scopeNumber: 0,
+        variableName: name,
+        newValue: value,
+        callFrameId: id
+      });
+    }
+
+    beforeEach(() => {
+      return co(function * () {
+        yield debuggerAgent.handle('resume');
+        child.stdin.write('set-variable-value-frame\n');
+        yield debuggerClient.break();
+
+        id = (yield debuggerAgent.handle('getBacktrace'))[0].callFrameId;
+      });
+    });
+
+    it('should set primitive variable value in frame', () => {
+      return co(function * () {
+        expect(yield getValue('a')).to.be.equal(10);
+        yield setValue('a', {value: 20});
+        expect(yield getValue('a')).to.be.equal(20);
+      });
+    });
+
+    it('should set complex variable value in frame', () => {
+      return co(function * () {
+        expect(yield getValue('b')).to.be.deep.equal({c: 20});
+        yield setValue('b', {value: {c: 40}});
+        expect(yield getValue('b')).to.be.deep.equal({c: 40});
+      });
+    });
+
+    it('should set complex variable value by id in frame', () => {
+      return co(function * () {
+        expect(yield getValue('a')).to.be.deep.equal(10);
+        setValue('a', {objectId: yield getRef('b')});
+        expect(yield getValue('a')).to.be.deep.equal({c: 20});
+      });
+    });
+  });
+
+  describe('#setScriptSource', () => {
+    var frameId;
+    var scriptId;
+    var watermark;
+    var source;
+
+    function getWatermark(backtrace) {
+      return co(function * () {
+        var frameId = backtrace[0].callFrameId;
+        var watermark = yield debuggerAgent.handle('evaluateOnCallFrame', {
+          callFrameId: frameId,
+          expression: '__watermark__',
+          returnByValue: true
+        });
+
+        return watermark.result.value;
+      });
+    }
+
+    function getSource(backtrace) {
+      return co(function * () {
+        var source = yield debuggerClient.request('scripts', {
+          includeSource: true,
+          filter: scriptId
+        });
+        return source[0].source;
+      });
+    }
+
+    function updateState() {
+      return co(function * () {
+        yield debuggerAgent.handle('resume');
+        child.stdin.write('set-script-source\n');
+        yield debuggerClient.break();
+
+        backtrace = yield debuggerAgent.handle('getBacktrace');
+        scriptId = backtrace[0].location.scriptId;
+
+        source = yield getSource(backtrace);
+        watermark = yield getWatermark(backtrace);
+      });
+    }
+
+    beforeEach(updateState);
+
+    it('should set script source in paused process', () => {
+      return co(function * () {
+        expect(watermark).to.be.equal('1');
+        var newSource = source.replace(/(__watermark__.*?)(\d+)/, '$12');
+        yield debuggerAgent.handle('setScriptSource', {
+          scriptId: scriptId,
+          scriptSource: newSource
+        });
+        yield updateState();
+        expect(source).to.be.equal(newSource);
+        expect(watermark).to.be.equal('2');
+      });
+    });
+
+    it('should set script source in running process', () => {
+      return co(function * () {
+        expect(watermark).to.be.equal('1');
+        var newSource = source.replace(/(__watermark__.*?)(\d+)/, '$12');
+        yield debuggerAgent.handle('resume');
+        yield debuggerAgent.handle('setScriptSource', {
+          scriptId: scriptId,
+          scriptSource: newSource
+        });
+        yield updateState();
+        expect(source).to.be.equal(newSource);
+        expect(watermark).to.be.equal('2');
+      });
+    });
+
+    it('should rethrow an error', () => {
+      return co(function * () {
+        expect(watermark).to.be.equal('1');
+        var oldSource = source;
+        var newSource = source.replace(/(__watermark__.*?)(\d+)/, '$1\'>');
+        yield debuggerAgent.handle('resume');
+        try {
+          var result = yield debuggerAgent.handle('setScriptSource', {
+            scriptId: scriptId,
+            scriptSource: newSource
+          });
+        } catch (e) {
+          expect(e).to.deep.equal({
+            message: 'LiveEdit Failure: Failed to compile new version of script: SyntaxError: Unexpected token ILLEGAL',
+            data: {
+              compileError: {
+                message: 'Unexpected token ILLEGAL',
+                lineNumber: 26,
+                columnNumber: 30
+              }
+            }
+          });
+        }
+
+        yield updateState();
+        expect(source).to.be.equal(oldSource);
+        expect(watermark).to.be.equal('1');
+      });
+    });
+  });
 });
 
 function expand(instance) {
@@ -150,264 +319,3 @@ function initializeDebugger() {
     yield injectorClient.injected();
   });
 }
-
-
-xdescribe('DebuggerAgent', function() {
-  describe('sets variable value', function() {
-    before(setupDebugScenario);
-
-    toValueType(
-      'a string',
-      { value: 'string-value' },
-      { type: 'string', value: 'string-value', description: 'string-value' }
-    );
-
-    toValueType(
-      'a number',
-      { value: 10 },
-      { type: 'number', value: 10, description: '10' }
-    );
-
-    toValueType(
-      'null',
-      { value: null },
-      { type: 'null', subtype: 'null', value: null, description: 'null'}
-    );
-
-    toValueType(
-      'undefined',
-      { },
-      { type: 'undefined', description: 'undefined' }
-    );
-
-    toRefType(
-      'an object',
-      'console',
-      function(valueId) {
-        return {
-          type: 'object',
-          objectId: valueId,
-          className: 'Object',
-          description: 'Console'
-        };
-      }
-    );
-
-    toRefType(
-      'a function',
-      'console.log',
-      function(valueId) {
-        return {
-          type: 'function',
-          objectId: valueId,
-          className: 'Function',
-          description: 'function () { [native code] }'
-        };
-      }
-    );
-
-    // helpers (implementation details) below this line
-
-    var debuggerClient, agent;
-
-    function setupDebugScenario(done) {
-      launcher.runOnBreakInFunction(function(session) {
-        debuggerClient = session.debuggerClient;
-        agent = new DebuggerAgent({}, session);
-        done();
-      });
-    }
-
-    function to(type, test) {
-      it('to ' + type, test);
-    }
-
-    function toValueType(type, newValue, expectedResult) {
-      to(type, function(done) {
-        verifyVariableSetter(
-          agent,
-          newValue,
-          expectedResult,
-          done
-        );
-      });
-    }
-
-    function toRefType(type, newValueExpression, expectedResultCb) {
-      to(type, function(done) {
-        debuggerClient.fetchObjectId(agent, newValueExpression, function(valueId) {
-          verifyVariableSetter(
-            agent,
-            { objectId: '' + valueId },
-            expectedResultCb(valueId),
-            done
-          );
-        });
-      });
-    }
-
-    function verifyVariableSetter(agent, newValue, expectedResult, done) {
-      agent.setVariableValue(
-        {
-          scopeNumber: '0',
-          callFrameId: '0',
-          variableName: 'meta',
-          newValue: newValue
-        },
-        function(err, result) {
-          if (!DebuggerAgent.nodeVersionHasSetVariableValue(process.version)) {
-            expect(err)
-              .to.have.string('does not support setting variable value');
-            done();
-            return;
-          }
-
-          if (err) throw err;
-
-          verifyVariableValue(
-            agent,
-            'meta',
-            expectedResult,
-            done);
-        }
-      );
-    }
-
-    function verifyVariableValue(agent,
-                                 name,
-                                 expectedValue,
-                                 callback) {
-      agent.evaluateOnCallFrame(
-        {
-          callFrameId: 0,
-          expression: name
-        },
-        function(err, result) {
-          if (err) throw err;
-
-          expect(JSON.stringify(result.result), name)
-            .to.equal(JSON.stringify(expectedValue));
-          callback();
-        }
-      );
-    }
-  });
-
-  describe('nodeVersionHasSetVariableValue', function() {
-    it('returns false for v0.8.20', function(done) {
-      expect(DebuggerAgent.nodeVersionHasSetVariableValue('v0.8.20'))
-        .to.equal(false);
-      done();
-    });
-
-    it('returns false for v0.10.11', function(done) {
-      expect(DebuggerAgent.nodeVersionHasSetVariableValue('v0.10.11'))
-        .to.equal(false);
-      done();
-    });
-
-    it('returns true for v0.10.12', function(done) {
-      expect(DebuggerAgent.nodeVersionHasSetVariableValue('v0.10.12'))
-        .to.equal(true);
-      done();
-    });
-
-    it('returns false for v0.11.1', function(done) {
-      expect(DebuggerAgent.nodeVersionHasSetVariableValue('v0.11.1'))
-        .to.equal(false);
-      done();
-    });
-
-    it('returns true for v0.11.2', function(done) {
-      expect(DebuggerAgent.nodeVersionHasSetVariableValue('v0.11.2'))
-        .to.equal(true);
-      done();
-    });
-
-    it('returns true for v0.12.0', function(done) {
-      expect(DebuggerAgent.nodeVersionHasSetVariableValue('v0.12.0'))
-        .to.equal(true);
-      done();
-    });
-
-    it('returns true for v1.0.0', function(done) {
-      expect(DebuggerAgent.nodeVersionHasSetVariableValue('v1.0.0'))
-        .to.equal(true);
-      done();
-    });
-  });
-
-  describe('evaluateOnCallFrame', function() {
-    before(setupDebugScenario);
-
-    it('truncates String values at 10,000 characters', function(done) {
-      var testExpression = 'Array(10000).join("a");';
-      var expectedValue = new Array(10000).join('a');
-
-      agent.evaluateOnCallFrame(
-        {
-          callFrameId: 0,
-          expression: testExpression
-        },
-        function(err, data) {
-          if (err) throw err;
-
-          expect(data.result.value)
-            .to.equal(expectedValue);
-
-          done();
-        }
-      );
-    });
-
-    var agent;
-
-    function setupDebugScenario(done) {
-      launcher.runOnBreakInFunction(function(session) {
-        agent = new DebuggerAgent({}, session);
-        done();
-      });
-    }
-  });
-
-  describe('resume()', function() {
-    before(setupDebugScenario);
-
-    it('does not throw an error', function(done) {
-      expect(function() { agent.resume({}, done); })
-        .to.not.throw();
-    });
-
-    var agent;
-
-    function setupDebugScenario(done) {
-      launcher.runOnBreakInFunction(function(session) {
-        agent = new DebuggerAgent({}, session);
-        done();
-      });
-    }
-  });
-
-  describe('setBreakpointByUrl()', function() {
-    before(setupDebugScenario);
-
-    it('does not throw an error', function(done) {
-      expect(function() { agent.setBreakpointByUrl({
-        url: 'folder/app.js',
-        line: 0,
-        column: 0,
-        condition: ''
-      }, done); }).to.not.throw();
-    });
-
-    var agent;
-
-    function setupDebugScenario(done) {
-      launcher.runOnBreakInFunction(function(session) {
-        session.scriptManager = new ScriptManager({}, session);
-        agent = new DebuggerAgent({}, session);
-        done();
-      });
-    }
-  });
-});

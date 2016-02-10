@@ -16,6 +16,15 @@ module.exports = function(commands) {
         var d = 'test';
         return 'test';
       }
+    },
+    'set-variable-value-frame': function() {
+      var a = 10;
+      var b = {c: 20};
+      debugger;
+    },
+    'set-script-source': function() {
+      var __watermark__ = '1';
+      debugger;
     }
   });
 };
