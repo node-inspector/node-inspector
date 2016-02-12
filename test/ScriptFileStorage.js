@@ -29,7 +29,7 @@ var debuggerClient;
 var runtimeScript;
 
 function ScriptManagerStub() {
-  this.findScriptIdByPath = () => null;
+  this.find = () => null;
 }
 
 describe('ScriptFileStorage', function() {

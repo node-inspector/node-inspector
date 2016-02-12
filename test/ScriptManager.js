@@ -30,19 +30,19 @@ describe('ScriptManager', () => {
   describe('findSourceByID()', () => {
     it('returns stored source', () => {
       manager._sources['id'] = 'a-source';
-      expect(manager.findScriptByID('id')).to.equal('a-source');
+      expect(manager.get('id')).to.equal('a-source');
     });
 
     it('returns undefined for unknown id', () => {
-      expect(manager.findScriptByID('unknown-id')).to.equal(undefined);
+      expect(manager.get('unknown-id')).to.equal(undefined);
     });
   });
 
-  describe('resolveScriptById()', () => {
+  describe('resolve()', () => {
     it('returns stored source', () => {
       return co(function * () {
         manager._sources['id'] = 'a-source';
-        var result = yield manager.resolveScriptById('id')
+        var result = yield manager.resolve('id')
 
         expect(result).to.equal('a-source');
       });
@@ -67,7 +67,7 @@ describe('ScriptManager', () => {
           });
         };
 
-        var result = yield manager.resolveScriptById('unknown-id');
+        var result = yield manager.resolve('unknown-id');
 
         expect(result).to.deep.equal({
           isInternalScript: true,
@@ -84,7 +84,7 @@ describe('ScriptManager', () => {
     it('removes all stored scripts', () => {
       manager._sources['id'] = 'a-source';
       manager.reset();
-      expect(manager.findScriptByID('id')).to.equal(undefined);
+      expect(manager.get('id')).to.equal(undefined);
     });
   });
 
