@@ -48,7 +48,7 @@ function main() {
 
   process.on('SIGINT', () => process.exit());
 
-  co(function * () {
+  return co(function * () {
 
     var address = yield startInspectorProcess(config.inspector);
     yield startDebuggedProcess(config.subproc);
@@ -63,7 +63,7 @@ function main() {
 
     // try to launch the URL in one of those browsers in the defined order
     // (but if one of them is default browser, then it takes priority)
-    open(url, { preferredBrowsers : ['chrome', 'chromium', 'opera'] }).catch(err => {
+    yield open(url, { preferredBrowsers : ['chrome', 'chromium', 'opera'] }).catch(err => {
       // unable to launch one of preferred browsers for some reason
       console.warn(err.message);
       console.warn('Please open the URL manually in Chrome/Chromium/Opera or similar browser');

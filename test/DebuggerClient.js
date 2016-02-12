@@ -13,7 +13,7 @@ describe('DebuggerClient', () => {
 
   describe('#connected', () => {
     it('should reject error if there is no connection', () => {
-      var debuggerClient = new DebuggerClient(5858);
+      var debuggerClient = new DebuggerClient({}, {port: 5858});
 
       return debuggerClient.connected().then(
         result => Promise.reject('should reject, but got ' + result),

@@ -83,7 +83,7 @@ function computeDebugOptions(breakOnStart) {
 
 function setupDebugger(instance) {
   instance.session = new SessionStub();
-  var debuggerClient = instance.session.debuggerClient = new DebuggerClient(DEBUG_PORT);
+  instance.session.debuggerClient = new DebuggerClient({}, {port: DEBUG_PORT});
 
   return instance;
 }
