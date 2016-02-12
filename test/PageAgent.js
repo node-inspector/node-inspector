@@ -4,7 +4,6 @@ var co = require('co');
 var expect = require('chai').expect;
 var launcher = require('./helpers/launcher.js');
 var ScriptManager = require('../lib/ScriptManager.js');
-var ScriptFileStorage = require('../lib/ScriptFileStorage.js');
 var PageAgent = require('../lib/Agents/PageAgent.js');
 
 var agent;
@@ -159,7 +158,7 @@ function initializePage() {
   return co(function * () {
     yield launcher.runCommandlet().then(expand);
     scriptManager = session.scriptManager = new ScriptManager({}, session);
-    scriptStorage = session.scriptStorage = new ScriptFileStorage({}, session);
+    scriptStorage = scriptManager._scriptStorage;
     agent = new PageAgent({}, session);
   });
 }
