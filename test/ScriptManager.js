@@ -17,20 +17,103 @@ var exists = path => new Promise(resolve => fs.exists(path, resolve));
 
 describe('ScriptManager', () => {
   var manager;
+  var debuggerClient;
   var realMainAppScript = 'folder' + path.sep + 'App.js';
   var mainAppScript = 'folder' + path.sep + 'app.js';
 
   beforeEach(() => {
-    manager = new ScriptManager({}, new SessionStub());
+    var session = new SessionStub()
+    manager = new ScriptManager({}, session);
+    debuggerClient = session.debuggerClient;
   });
 
   afterEach(() => deleteTemps());
 
+  describe('add()', () => {
+    var _internal = {
+      name: 'test.js',
+      id: 32,
+      lineOffset: 1,
+      columnOffset: 2,
+      source: 'a'
+    };
 
-  describe('findSourceByID()', () => {
+    var _external = {
+      name: '/test.js',
+      id: 32,
+      lineOffset: 1,
+      columnOffset: 2,
+      source: 'a'
+    };
+
+    var base = {
+      scriptId: '32',
+      startLine: 1,
+      startColumn: 2,
+      sourceMapURL: null
+    };
+
+    var external = Object.assign({
+      name: '/test.js',
+      url: 'file:///test.js',
+      isInternalScript: false
+    }, base);
+
+    var internal = Object.assign({
+      name: 'test.js',
+      url: 'test.js',
+      isInternalScript: true
+    }, base);
+
+    it('should add new internal script to cache', () => {
+      debuggerClient.target = () => Promise.resolve({});
+      return co(function * () {
+        yield manager.add(_internal);
+
+        expect(manager.get('32')).to.have.keys(internal);
+        expect(manager.find('test.js')).to.have.keys(internal);
+      });
+    });
+
+    it('should add new external script to cache', () => {
+      debuggerClient.target = () => Promise.resolve({});
+      return co(function * () {
+        yield manager.add(_external);
+
+        expect(manager.get('32')).to.have.keys(external);
+        expect(manager.find('file:///test.js')).to.have.keys(external);
+      });
+    });
+
+    it('should not add hidden script to cache', () => {
+      debuggerClient.target = () => Promise.resolve({});
+      manager.config.hidden = [/test/];
+      return co(function * () {
+        yield manager.add(_external);
+
+        expect(manager.get('32')).to.equal(undefined);
+        expect(manager.find('file:///test.js')).to.equal(undefined);
+      });
+    });
+
+    it('should add hidden main script to cache', () => {
+      debuggerClient.target = () => Promise.resolve({
+        filename: '/test.js'
+      });
+      manager._hidden = [/test/];
+      return co(function * () {
+        yield manager.add(_external);
+
+        expect(manager.get('32')).to.have.keys(external);
+        expect(manager.find('file:///test.js')).to.have.keys(external);
+      });
+    });
+  });
+
+  describe('get()', () => {
     it('returns stored source', () => {
-      manager._sources['id'] = 'a-source';
-      expect(manager.get('id')).to.equal('a-source');
+      manager._scripts.set(23, 'a-source');
+      expect(manager.get('23')).to.equal('a-source');
     });
 
     it('returns undefined for unknown id', () => {
@@ -38,59 +121,17 @@ describe('ScriptManager', () => {
     });
   });
 
-  describe('resolve()', () => {
-    it('returns stored source', () => {
-      return co(function * () {
-        manager._sources['id'] = 'a-source';
-        var result = yield manager.resolve('id')
-
-        expect(result).to.equal('a-source');
-      });
-    });
-
-    it('requires script from app for unknown id', () => {
-      manager._debuggerClient.target = () => Promise.resolve({
-        filename: `${TEMP_DIR}/test`
-      });
-
-      return co(function * () {
-        manager._debuggerClient.request = function(command, attributes) {
-          return new Promise(resolve => {
-            if (command == 'scripts' && attributes.filter == 'unknown-id') {
-              resolve([{
-                id: 3,
-                name:'required-id',
-                lineOffset: 1,
-                columnOffset: 1
-              }]);
-            }
-          });
-        };
-
-        var result = yield manager.resolve('unknown-id');
-
-        expect(result).to.deep.equal({
-          isInternalScript: true,
-          scriptId: '3',
-          url: 'required-id',
-          startLine: 1,
-          startColumn: 1
-        });
-      });
-    });
-  });
-
   describe('reset()', () => {
     it('removes all stored scripts', () => {
-      manager._sources['id'] = 'a-source';
+      manager._scripts.set(23, 'a-source');
       manager.reset();
-      expect(manager.get('id')).to.equal(undefined);
+      expect(manager.get('23')).to.equal(undefined);
     });
   });
 
   describe('mainAppScript()', () => {
     it('should return "" if there is no filename', () => {
-      manager._debuggerClient.target = () => Promise.resolve({});
+      debuggerClient.target = () => Promise.resolve({});
       return co(function * () {
         var name = yield manager.mainAppScript();
         expect(name).to.be.equal('');
@@ -98,7 +139,7 @@ describe('ScriptManager', () => {
     });
 
     it('should return name if file exists', () => {
-      manager._debuggerClient.target = () => Promise.resolve({
+      debuggerClient.target = () => Promise.resolve({
         filename: `${TEMP_DIR}/test`
       });
       return co(function * () {
@@ -109,7 +150,7 @@ describe('ScriptManager', () => {
     });
 
     it('should return name.js if file doesn`t exists and doesn`t finishes on ".js"', () => {
-      manager._debuggerClient.target = () => Promise.resolve({
+      debuggerClient.target = () => Promise.resolve({
         filename: `${TEMP_DIR}/test`
       });
       return co(function * () {
@@ -122,7 +163,7 @@ describe('ScriptManager', () => {
   describe('realMainAppScript()', () => {
     if (process.platform == 'win32') {
       it('should return case sensitive name on Windows', () => {
-        manager._debuggerClient.target = () => Promise.resolve({
+        debuggerClient.target = () => Promise.resolve({
           filename: `${TEMP_DIR}/test`
         });
 
@@ -134,7 +175,7 @@ describe('ScriptManager', () => {
       });
     } else {
       it('should be equal to mainAppScript on Linux', () => {
-        manager._debuggerClient.target = () => Promise.resolve({
+        debuggerClient.target = () => Promise.resolve({
           filename: `${TEMP_DIR}/test`
         });
 
@@ -146,41 +187,6 @@ describe('ScriptManager', () => {
         });
       });
     }
-  });
-
-  describe('normalizeName()', () => {
-    if (process.platform == 'win32') {
-      it('returns case sensitive name for main script on Windows', () => {
-        manager._debuggerClient.target = () => Promise.resolve({
-          filename: `${TEMP_DIR}/Test.js`
-        });
-        return co(function * () {
-          var normalized_name = yield manager.normalizeName(`${TEMP_DIR}/test.js`);
-          expect(normalized_name).to.equal(`${TEMP_DIR}/Test.js`);
-        });
-      });
-    } else {
-      it('returns unchanged name for main script on Linux', () => {
-        manager._debuggerClient.target = () => Promise.resolve({
-          filename: `${TEMP_DIR}/test.js`
-        });
-        return co(function * () {
-          var name = yield manager.normalizeName(`file://${TEMP_DIR}/test.js`);
-          expect(name).to.equal(`file://${TEMP_DIR}/test.js`);
-        });
-      });
-    }
-
-    it('returns unchanged name for not main scripts', () => {
-      manager._debuggerClient.target = () => Promise.resolve({
-        filename: `${TEMP_DIR}/test.js`
-      });
-      return co(function * () {
-        var name = 'file:///folder/app1.js';
-        var normalized_name = yield manager.normalizeName(name);
-        expect(normalized_name).to.equal(name);
-      });
-    });
   });
 });
 

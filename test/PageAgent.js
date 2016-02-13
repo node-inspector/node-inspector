@@ -122,19 +122,16 @@ describe('PageAgent', () => {
     });
 
     it('should rethrow scriptManager errors', () => {
-      scriptManager.normalizeName = () => Promise.reject(new Error('ScriptManagerError'));
-
       return co(function * () {
         try {
           var result = yield agent.getResourceContent({});
         } catch (e) {
-          expect(e.message).to.be.equal('ScriptManagerError');
+          expect(e.message).to.be.equal('Unexpected empty url');
         }
       });
     });
 
     it('should rethrow scriptStorage errors', () => {
-      scriptManager.normalizeName = url => Promise.resolve(url);
       scriptStorage.load = () => Promise.reject(new Error('ScriptStorageError'));
 
       return co(function * () {
@@ -158,7 +155,7 @@ function initializePage() {
   return co(function * () {
     yield launcher.runCommandlet().then(expand);
     scriptManager = session.scriptManager = new ScriptManager({}, session);
-    scriptStorage = scriptManager._scriptStorage;
+    scriptStorage = scriptManager.fs;
     agent = new PageAgent({}, session);
   });
 }
