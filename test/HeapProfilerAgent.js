@@ -3,8 +3,8 @@
 var co = require('co');
 var expect = require('chai').expect;
 var launcher = require('./helpers/launcher.js');
-var InjectorClient = require('../lib/InjectorClient');
-var HeapProfilerAgent = require('../lib/Agents/HeapProfilerAgent');
+var InjectorClient = require('../lib/InjectorClient.js');
+var HeapProfilerAgent = require('../lib/Agents/HeapProfiler/HeapProfilerAgent.js');
 
 var child;
 var session;

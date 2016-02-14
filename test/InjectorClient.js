@@ -83,29 +83,6 @@ describe('InjectorClient', function() {
       injectorClient = new InjectorClient({}, instance.session);
     }
 
-    function event(require, debug, options) {
-      console.log = (function(fn) {
-        return function() {
-          var message = arguments[0];
-
-          debug.emitEvent('console', {
-            level: 'log',
-            message: options.message + message
-          });
-
-          return fn && fn.apply(console, arguments);
-        };
-      })(console.log);
-
-      console.log('test');
-    }
-
-    function command(require, debug, options) {
-      debug.register('testcommand', function(request, response) {
-        response.body = request.arguments;
-      });
-    };
-
     it('Register event handle in app and emits it', function() {
       return co(function * () {
         yield debuggerClient.request('continue');
@@ -116,7 +93,10 @@ describe('InjectorClient', function() {
             resolve();
           });
         });
-        yield injectorClient.injection(event, { message: 'test' });
+        yield injectorClient.inject({
+          injection: require.resolve('./fixtures/console-injection.js'),
+          message: 'test'
+        });
         return promise;
       });
     });
@@ -130,7 +110,10 @@ describe('InjectorClient', function() {
             resolve();
           });
         });
-        yield injectorClient.injection(event, { message: 'test' });
+        yield injectorClient.inject({
+          injection: require.resolve('./fixtures/console-injection.js'),
+          message: 'test'
+        });
         yield debuggerClient.request('continue');
         return promise;
       });
@@ -138,7 +121,9 @@ describe('InjectorClient', function() {
 
     it('Registers command in app and responds to it', function() {
       return co(function * () {
-        yield injectorClient.injection(command);
+        yield injectorClient.inject({
+          injection: require.resolve('./fixtures/console-injection.js')
+        });
         yield debuggerClient.request('continue');
         var result = yield debuggerClient.request('testcommand', { param: 'test' });
         expect(result).to.have.property('param', 'test');
@@ -147,7 +132,9 @@ describe('InjectorClient', function() {
 
     it('Registers command in paused app and responds to it', function() {
       return co(function * () {
-        yield injectorClient.injection(command);
+        yield injectorClient.inject({
+          injection: require.resolve('./fixtures/console-injection.js')
+        }).catch(console.log);
         var result = yield debuggerClient.request('testcommand', { param: 'test' });
         expect(result).to.have.property('param', 'test');
       });

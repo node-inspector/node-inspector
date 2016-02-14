@@ -4,7 +4,7 @@ var co = require('co');
 var expect = require('chai').expect;
 var launcher = require('./helpers/launcher.js');
 var ScriptManager = require('../lib/ScriptManager.js');
-var PageAgent = require('../lib/Agents/PageAgent.js');
+var PageAgent = require('../lib/Agents/Page/PageAgent.js');
 
 var agent;
 var session;

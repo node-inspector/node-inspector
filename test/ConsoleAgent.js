@@ -5,7 +5,7 @@ var expect = require('chai').expect;
 var launcher = require('./helpers/launcher.js');
 var inherits = require('util').inherits;
 var InjectorClient = require('../lib/InjectorClient');
-var ConsoleAgent = require('../lib/Agents/ConsoleAgent');
+var ConsoleAgent = require('../lib/Agents/Console/ConsoleAgent.js');
 
 var child;
 var session;

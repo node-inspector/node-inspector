@@ -1,4 +1,5 @@
-var EventEmitter = require('events').EventEmitter,
+var Session = require('../../lib/session.js'),
+    EventEmitter = require('events').EventEmitter,
     inherits = require('util').inherits;
 
 module.exports = SessionStub;
@@ -7,7 +8,9 @@ function SessionStub() {
   this.debuggerClient = new DebuggerClientStub();
   this.frontendClient = new FrontendClientStub();
 }
-inherits(SessionStub, EventEmitter);
+inherits(SessionStub, Session);
+
+SessionStub.prototype.inject
 
 function DebuggerClientStub() {}
 inherits(DebuggerClientStub, EventEmitter);

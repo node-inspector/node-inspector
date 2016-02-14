@@ -5,7 +5,7 @@ var expect = require('chai').expect;
 var launcher = require('./helpers/launcher.js');
 var SessionStub = require('./helpers/SessionStub.js');
 var InjectorClient = require('../lib/InjectorClient.js');
-var NetworkAgent = require('../lib/Agents/NetworkAgent.js');
+var NetworkAgent = require('../lib/Agents/Network/NetworkAgent.js');
 
 var session;
 var commandlet;
