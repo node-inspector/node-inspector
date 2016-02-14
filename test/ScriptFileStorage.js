@@ -300,7 +300,7 @@ function edited(source) {
 function expand(instance) {
   child = instance.child;
   session = instance.session;
-  debuggerClient = session.debuggerClient;
+  debuggerClient = session.debugger;
 }
 
 function runLiveEdit(transform) {
@@ -308,7 +308,7 @@ function runLiveEdit(transform) {
     originalScript = yield copyInTempFile('LiveEdit.js', transform);
 
     yield launcher.startDebugger(TEMP_FILE).then(expand);
-    session.scriptManager = new ScriptManagerStub();
+    session.scripts = new ScriptManagerStub();
     runtimeScript = yield getScriptSourceByName(TEMP_FILE);
   });
 }

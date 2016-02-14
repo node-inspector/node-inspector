@@ -95,8 +95,8 @@ describe('HeapProfiler Agent', function() {
 function expand(instance) {
   child = instance.child;
   session = instance.session;
-  debuggerClient = session.debuggerClient;
-  frontendClient = session.frontendClient;
+  debuggerClient = session.debugger;
+  frontendClient = session.frontend;
 }
 
 function initializeProfiler() {
@@ -104,7 +104,7 @@ function initializeProfiler() {
     yield launcher.runCommandlet(true).then(expand);
 
     var injectorClient = new InjectorClient({}, session);
-    session.injectorClient = injectorClient;
+    session.injector = injectorClient;
 
     heapProfilerAgent = new HeapProfilerAgent({}, session);
 

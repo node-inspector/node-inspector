@@ -24,7 +24,7 @@ describe('ScriptManager', () => {
   beforeEach(() => {
     var session = new SessionStub()
     manager = new ScriptManager({}, session);
-    debuggerClient = session.debuggerClient;
+    debuggerClient = session.debugger;
   });
 
   afterEach(() => deleteTemps());

@@ -349,15 +349,15 @@ function command(text) {
 function expand(instance) {
   child = instance.child;
   session = instance.session;
-  debuggerClient = session.debuggerClient;
-  frontendClient = session.frontendClient;
+  debuggerClient = session.debugger;
+  frontendClient = session.frontend;
 }
 
 function fill() {
   injectorClient = new InjectorClient({}, session);
-  session.injectorClient = injectorClient;
+  session.injector = injectorClient;
   scriptManager = new ScriptManager({}, session);
-  session.scriptManager = scriptManager;
+  session.scripts = scriptManager;
   debuggerAgent = new DebuggerAgent({}, session);
 }
 

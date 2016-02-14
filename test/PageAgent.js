@@ -148,13 +148,13 @@ describe('PageAgent', () => {
 
 function expand(instance) {
   session = instance.session;
-  debuggerClient = session.debuggerClient;
+  debuggerClient = session.debugger;
 }
 
 function initializePage() {
   return co(function * () {
     yield launcher.runCommandlet().then(expand);
-    scriptManager = session.scriptManager = new ScriptManager({}, session);
+    scriptManager = session.scripts = new ScriptManager({}, session);
     scriptStorage = scriptManager.fs;
     agent = new PageAgent({}, session);
   });

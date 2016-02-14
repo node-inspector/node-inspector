@@ -21,7 +21,7 @@ describe('InjectorClient', function() {
     }
 
     function expand(instance) {
-      debuggerClient = instance.session.debuggerClient;
+      debuggerClient = instance.session.debugger;
       injectorClient = new InjectorClient({}, instance.session);
     }
 
@@ -79,7 +79,7 @@ describe('InjectorClient', function() {
     }
 
     function expand(instance) {
-      debuggerClient = instance.session.debuggerClient;
+      debuggerClient = instance.session.debugger;
       injectorClient = new InjectorClient({}, instance.session);
     }
 

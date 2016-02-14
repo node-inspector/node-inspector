@@ -203,6 +203,6 @@ describe('DebuggerClient', () => {
   function expand(result) {
     client = result.child;
     session = result.session;
-    debuggerClient = session.debuggerClient;
+    debuggerClient = session.debugger;
   }
 });

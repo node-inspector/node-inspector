@@ -63,13 +63,13 @@ describe('ConsoleAgent', () => {
 function expand(instance) {
   child = instance.child;
   session = instance.session;
-  debuggerClient = session.debuggerClient;
-  frontendClient = session.frontendClient;
+  debuggerClient = session.debugger;
+  frontendClient = session.frontend;
 }
 
 function fill() {
   injectorClient = new InjectorClient({}, session);
-  session.injectorClient = injectorClient;
+  session.injector = injectorClient;
   consoleAgent = new ConsoleAgent({}, session);
 }
 

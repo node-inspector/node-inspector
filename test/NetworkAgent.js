@@ -222,8 +222,8 @@ describe('NetworkAgent', () => {
   function expand(instance) {
     commandlet = instance.child;
     session = instance.session;
-    debuggerClient = session.debuggerClient;
-    frontendClient = session.frontendClient;
+    debuggerClient = session.debugger;
+    frontendClient = session.frontend;
   }
 
   function initializeNetwork() {
@@ -233,7 +233,7 @@ describe('NetworkAgent', () => {
       commandlet.stdout.pipe(process.stdout);
 
       var injectorClient = new InjectorClient({}, session);
-      session.injectorClient = injectorClient;
+      session.injector = injectorClient;
 
       networkAgent = new NetworkAgent({}, session);
 

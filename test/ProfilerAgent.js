@@ -31,8 +31,8 @@ describe('Profiler Agent', function() {
 
 function expand(instance) {
   session = instance.session;
-  debuggerClient = session.debuggerClient;
-  frontendClient = session.frontendClient;
+  debuggerClient = session.debugger;
+  frontendClient = session.frontend;
 }
 
 function initializeProfiler() {
@@ -40,7 +40,7 @@ function initializeProfiler() {
     yield launcher.runCommandlet(true).then(expand);
 
     var injectorClient = new InjectorClient({}, session);
-    session.injectorClient = injectorClient;
+    session.injector = injectorClient;
 
     profilerAgent = new ProfilerAgent({}, session);
 

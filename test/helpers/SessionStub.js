@@ -5,8 +5,8 @@ var Session = require('../../lib/session.js'),
 module.exports = SessionStub;
 
 function SessionStub() {
-  this.debuggerClient = new DebuggerClientStub();
-  this.frontendClient = new FrontendClientStub();
+  this.debugger = new DebuggerClientStub();
+  this.frontend = new FrontendClientStub();
 }
 inherits(SessionStub, Session);
 

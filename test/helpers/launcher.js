@@ -83,7 +83,7 @@ function computeDebugOptions(breakOnStart) {
 
 function setupDebugger(instance) {
   instance.session = new SessionStub();
-  instance.session.debuggerClient = new DebuggerClient({}, {port: DEBUG_PORT});
+  instance.session.debugger = new DebuggerClient({}, {port: DEBUG_PORT});
 
   return instance;
 }
@@ -92,8 +92,8 @@ function stopInstance(instance) {
   return co(function * () {
     if (!instance.session) return;
 
-    yield instance.session.debuggerClient.request('continue').catch(ignore);
-    yield instance.session.debuggerClient.close().catch(console.log);
+    yield instance.session.debugger.request('continue').catch(ignore);
+    yield instance.session.debugger.close().catch(console.log);
     instance.child.kill('SIGKILL');
   });
 }
