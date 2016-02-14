@@ -15,14 +15,13 @@
     "url": "http://github.com/node-inspector/node-inspector.git"
   },
   "engines": {
-    "node": ">=0.8.0"
+    "node": ">=4.0.0"
   },
   "bin": {
     "node-inspector": "./bin/inspector.js",
     "node-debug": "./bin/node-debug.js"
   },
   "dependencies": {
-    "async": "~0.9",
     "biased-opener": "~0.2.2",
     "bluebird": "^3.1.1",
     "co": "^4.6.0",
@@ -30,12 +29,11 @@
     "express": "^4.12.3",
     "glob": "^5.0.5",
     "mz": "^2.3.1",
-    "path-is-absolute": "^1.0.0",
     "rc": "^1.0.1",
     "semver": "^4.3.4",
     "serve-favicon": "^2.1.1",
     "strong-data-uri": "^1.0.0",
-    "v8-debug": "~0.7.1",
+    "v8-debug": "git://github.com/node-inspector/v8-debug#2bc6a2b8830d4c56118dde22a96a04a3a5e09055",
     "v8-profiler": "~5.6.0",
     "which": "^1.1.1",
     "ws": "^0.8.0",

@@ -1,9 +1,8 @@
 'use strict';
 
 var co = require('co');
-var fs = require('fs');
+var fs = require('mz/fs');
 var rimraf = require('rimraf');
-var promisify = require('bluebird').promisify;
 var expect = require('chai').expect;
 var path = require('path');
 var tree = require('./helpers/fs-tree');
@@ -12,8 +11,9 @@ var ScriptManager = require('../lib/ScriptManager');
 
 var TEMP_DIR = path.join(__dirname, 'work');
 
-var rmrf = promisify(rimraf);
-var exists = path => new Promise(resolve => fs.exists(path, resolve));
+var rmrf = (dir) => new Promise((resolve, reject) =>
+                    rimraf(dir, (error, result) =>
+                    (error ? reject(error) : resolve(result))));
 
 describe('ScriptManager', () => {
   var manager;
@@ -193,7 +193,7 @@ describe('ScriptManager', () => {
 
 function deleteTemps() {
   return co(function * () {
-    if (yield exists(TEMP_DIR))
+    if (yield fs.exists(TEMP_DIR))
       yield rmrf(TEMP_DIR);
   });
 }

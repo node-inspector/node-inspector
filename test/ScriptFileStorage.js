@@ -1,21 +1,17 @@
 'use strict';
 
 var co = require('co');
-var fs = require('fs-extra');
+var fs = require('mz/fs');
 var tree = require('./helpers/fs-tree');
 var path = require('path');
 var expect = require('chai').expect;
 var rimraf = require('rimraf');
-var promisify = require('bluebird').promisify;
 var launcher = require('./helpers/launcher.js');
 var ScriptFileStorage = require('../lib/ScriptFileStorage.js');
 
-var rmrf = promisify(rimraf);
-var mkdir = promisify(fs.mkdir);
-var exists = path => new Promise(resolve => fs.exists(path, resolve));
-var unlink = promisify(fs.unlink);
-var readFile = promisify(fs.readFile);
-var writeFile = promisify(fs.writeFile);
+var rmrf = (dir) => new Promise((resolve, reject) =>
+                    rimraf(dir, (error, result) =>
+                    error ? reject(error) : resolve(result)));
 var relative = node => path.relative(TEMP_DIR, node);
 
 var TEMP_FILE = path.join(__dirname, 'fixtures', 'temp.js');
@@ -40,7 +36,7 @@ describe('ScriptFileStorage', function() {
       yield runLiveEdit();
       var storage = new ScriptFileStorage({}, session);
       yield storage.save(TEMP_FILE, edited(runtimeScript));
-      var newScript = yield readFile(TEMP_FILE, { encoding: 'utf-8' });
+      var newScript = yield fs.readFile(TEMP_FILE, { encoding: 'utf-8' });
       expect(newScript).to.equal(edited(originalScript));
     });
   });
@@ -50,14 +46,14 @@ describe('ScriptFileStorage', function() {
       yield runLiveEdit(content => `#!/usr/bin/node\n${content}`);
       var storage = new ScriptFileStorage({}, session);
       yield storage.save(TEMP_FILE, edited(runtimeScript));
-      var newScript = yield readFile(TEMP_FILE, { encoding: 'utf-8' });
+      var newScript = yield fs.readFile(TEMP_FILE, { encoding: 'utf-8' });
       expect(newScript).to.equal(edited(originalScript));
     });
   });
 
   it('loads content with node.js module wrapper', () => {
     return co(function * () {
-      yield writeFile(TEMP_FILE, '/* content */');
+      yield fs.writeFile(TEMP_FILE, '/* content */');
       var storage = new ScriptFileStorage({}, session);
       var content = yield storage.load(TEMP_FILE)
       expect(content).to.match(
@@ -67,7 +63,7 @@ describe('ScriptFileStorage', function() {
 
   it('loads content without shebang', () => {
     return co(function * () {
-      yield writeFile(TEMP_FILE, '#!/usr/bin/env/node\n/* content */');
+      yield fs.writeFile(TEMP_FILE, '#!/usr/bin/env/node\n/* content */');
       var storage = new ScriptFileStorage({}, session);
       var content = yield storage.load(TEMP_FILE);
       expect(content).to.not.contain('#!');
@@ -320,9 +316,9 @@ function runLiveEdit(transform) {
 function copyInTempFile(fixture, transform) {
   return co(function * () {
     var sourcePath = path.join(__dirname, 'fixtures', fixture);
-    var content = yield readFile(sourcePath, { encoding: 'utf-8' });
+    var content = yield fs.readFile(sourcePath, { encoding: 'utf-8' });
     if (transform) content = transform(content);
-    yield writeFile(TEMP_FILE, content);
+    yield fs.writeFile(TEMP_FILE, content);
     return content;
   });
 }
@@ -340,10 +336,10 @@ function getScriptSourceByName(scriptName, callback) {
 
 function deleteTemps() {
   return co(function * () {
-    if (yield exists(TEMP_FILE))
-      yield unlink(TEMP_FILE);
+    if (yield fs.exists(TEMP_FILE))
+      yield fs.unlink(TEMP_FILE);
 
-    if (yield exists(TEMP_DIR))
+    if (yield fs.exists(TEMP_DIR))
       yield rmrf(TEMP_DIR);
   });
 }

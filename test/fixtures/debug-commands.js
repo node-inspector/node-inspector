@@ -25,6 +25,21 @@ module.exports = function(commands) {
     'set-script-source': function() {
       var __watermark__ = '1';
       debugger;
-    }
+    },
+    'throw-caught-exception': function() {
+      try {
+        throw new Error('caught exception');
+      } catch (e) {}
+    },
+    'throw-uncaught-exception': function() {
+      process.once('uncaughtException', function() {});
+      throw new Error('uncaught exception');
+    },
+    'ignore-exception': function() {
+      try {
+        throw new Error('caught exception');
+      } catch (e) {}
+      debugger;
+    },
   });
 };
