@@ -7,7 +7,7 @@ var path = require('path');
 var expect = require('chai').expect;
 var rimraf = require('rimraf');
 var launcher = require('./helpers/launcher.js');
-var ScriptFileStorage = require('../lib/ScriptFileStorage.js');
+var FileStorage = require('../lib/ScriptManager/FileStorage.js');
 
 var rmrf = (dir) => new Promise((resolve, reject) =>
                     rimraf(dir, (error, result) =>
@@ -28,13 +28,13 @@ function ScriptManagerStub() {
   this.find = () => null;
 }
 
-describe('ScriptFileStorage', function() {
+describe.only('FileStorage', function() {
   afterEach(() => deleteTemps());
 
   it('saves new content without node.js module wrapper', () => {
     return co(function * () {
       yield runLiveEdit();
-      var storage = new ScriptFileStorage({}, session);
+      var storage = new FileStorage({}, session);
       yield storage.save(TEMP_FILE, edited(runtimeScript));
       var newScript = yield fs.readFile(TEMP_FILE, { encoding: 'utf-8' });
       expect(newScript).to.equal(edited(originalScript));
@@ -44,7 +44,7 @@ describe('ScriptFileStorage', function() {
   it('preserves shebang when saving new content', () => {
     return co(function * () {
       yield runLiveEdit(content => `#!/usr/bin/node\n${content}`);
-      var storage = new ScriptFileStorage({}, session);
+      var storage = new FileStorage({}, session);
       yield storage.save(TEMP_FILE, edited(runtimeScript));
       var newScript = yield fs.readFile(TEMP_FILE, { encoding: 'utf-8' });
       expect(newScript).to.equal(edited(originalScript));
@@ -54,7 +54,7 @@ describe('ScriptFileStorage', function() {
   it('loads content with node.js module wrapper', () => {
     return co(function * () {
       yield fs.writeFile(TEMP_FILE, '/* content */');
-      var storage = new ScriptFileStorage({}, session);
+      var storage = new FileStorage({}, session);
       var content = yield storage.load(TEMP_FILE)
       expect(content).to.match(
         /^\(function \(exports, require,.*\) \{ \/\* content \*\/\n\}\);$/);
@@ -64,7 +64,7 @@ describe('ScriptFileStorage', function() {
   it('loads content without shebang', () => {
     return co(function * () {
       yield fs.writeFile(TEMP_FILE, '#!/usr/bin/env/node\n/* content */');
-      var storage = new ScriptFileStorage({}, session);
+      var storage = new FileStorage({}, session);
       var content = yield storage.load(TEMP_FILE);
       expect(content).to.not.contain('#!');
       expect(content).to.contain('/* content */');
@@ -79,8 +79,8 @@ describe('ScriptFileStorage', function() {
         },
         'package.json': true
       });
-      var storage = new ScriptFileStorage({}, session);
-      var root = yield storage.findApplicationRoot(path.join(TEMP_DIR, 'subdir', 'app.js'));
+      var storage = new FileStorage({}, session);
+      var root = yield storage.root(path.join(TEMP_DIR, 'subdir', 'app.js'));
       expect(root).to.equal(TEMP_DIR);
     });
   });
@@ -92,8 +92,8 @@ describe('ScriptFileStorage', function() {
           'app.js': true
         }
       });
-      var storage = new ScriptFileStorage({}, session);
-      var root = yield storage.findApplicationRoot(path.join(TEMP_DIR, 'root', 'app.js'));
+      var storage = new FileStorage({}, session);
+      var root = yield storage.root(path.join(TEMP_DIR, 'root', 'app.js'));
       expect(root).to.equal(undefined);
     });
   });
@@ -107,13 +107,13 @@ describe('ScriptFileStorage', function() {
         },
         'package.json': true
       });
-      var storage = new ScriptFileStorage({}, session);
-      var root = yield storage.findApplicationRoot(path.join(TEMP_DIR, 'root', 'app.js'));
+      var storage = new FileStorage({}, session);
+      var root = yield storage.root(path.join(TEMP_DIR, 'root', 'app.js'));
       expect(root).to.equal(path.join(TEMP_DIR, 'root'));
     });
   });
 
-  it('finds also files in start directory', () => {
+  it('finds files in start directory', () => {
     return co(function * () {
       yield tree(TEMP_DIR, {
         // Globally installed module, e.g. mocha
@@ -145,8 +145,8 @@ describe('ScriptFileStorage', function() {
         'local/test/app.js'
       ];
 
-      var storage = new ScriptFileStorage({}, session);
-      var files = yield storage.findAllApplicationScripts(
+      var storage = new FileStorage({}, session);
+      var files = yield storage.list(
         path.join(TEMP_DIR, 'local'),
         path.join(TEMP_DIR, 'global', 'runner.js'));
 
@@ -183,8 +183,8 @@ describe('ScriptFileStorage', function() {
         'node_modules/module/index.js'
       ];
 
-      var storage = new ScriptFileStorage({}, session);
-      var files = yield storage.findAllApplicationScripts(
+      var storage = new FileStorage({}, session);
+      var files = yield storage.list(
         path.join(TEMP_DIR),
         path.join(TEMP_DIR, 'app.js'));
 
@@ -223,8 +223,8 @@ describe('ScriptFileStorage', function() {
         'extra/file.js'
       ];
 
-      var storage = new ScriptFileStorage({}, session);
-      var files = yield storage.findAllApplicationScripts(
+      var storage = new FileStorage({}, session);
+      var files = yield storage.list(
         path.join(TEMP_DIR),
         path.join(TEMP_DIR, 'app.js'));
 
@@ -241,8 +241,8 @@ describe('ScriptFileStorage', function() {
 
       var expected = ['app.js'];
 
-      var storage = new ScriptFileStorage({}, session);
-      var files = yield storage.findAllApplicationScripts(
+      var storage = new FileStorage({}, session);
+      var files = yield storage.list(
         path.join(TEMP_DIR),
         path.join(TEMP_DIR, 'app.js'));
 
@@ -264,8 +264,8 @@ describe('ScriptFileStorage', function() {
 
       var expected = ['app.js'];
 
-      var storage = new ScriptFileStorage({hidden: [/mod\.js/i, /test/i]}, session);
-      var files = yield storage.findAllApplicationScripts(
+      var storage = new FileStorage({hidden: [/mod\.js/i, /test/i]}, session);
+      var files = yield storage.list(
         path.join(TEMP_DIR),
         path.join(TEMP_DIR, 'app.js'));
 
@@ -283,8 +283,8 @@ describe('ScriptFileStorage', function() {
         'package.json': true
       });
 
-      var storage = new ScriptFileStorage({preload: false}, session);
-      var files = yield storage.findAllApplicationScripts(
+      var storage = new FileStorage({preload: false}, session);
+      var files = yield storage.list(
         path.join(TEMP_DIR),
         path.join(TEMP_DIR, 'app.js'));
 

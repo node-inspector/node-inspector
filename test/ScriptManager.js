@@ -7,7 +7,7 @@ var expect = require('chai').expect;
 var path = require('path');
 var tree = require('./helpers/fs-tree');
 var SessionStub = require('./helpers/SessionStub.js');
-var ScriptManager = require('../lib/ScriptManager.js');
+var ScriptManager = require('../lib/ScriptManager/ScriptManager.js');
 
 var TEMP_DIR = path.join(__dirname, 'work');
 

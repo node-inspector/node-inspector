@@ -3,7 +3,7 @@
 var co = require('co');
 var expect = require('chai').expect;
 var launcher = require('./helpers/launcher.js');
-var ScriptManager = require('../lib/ScriptManager.js');
+var ScriptManager = require('../lib/ScriptManager/ScriptManager.js');
 var PageAgent = require('../lib/Agents/Page/PageAgent.js');
 
 var agent;
@@ -19,7 +19,7 @@ describe('PageAgent', () => {
     it('should return valide structure', () => {
       debuggerClient.target = () => Promise.resolve({cwd: 'temp', pid: 123});
       scriptManager.realMainAppScript = () => Promise.resolve('/usr/test.js');
-      scriptStorage.findAllApplicationScripts = () => Promise.resolve([
+      scriptStorage.list = () => Promise.resolve([
         '/usr/bin/script.js',
         '\\\\UNC\\test.js',
         'D:\\temp\\app.js'
@@ -84,7 +84,7 @@ describe('PageAgent', () => {
     it('should rethrow scriptStorage errors', () => {
       debuggerClient.target = () => Promise.resolve({cwd: 'temp', pid: 123});
       scriptManager.realMainAppScript = () => Promise.resolve('/usr/test.js');
-      scriptStorage.findAllApplicationScripts = () => Promise.reject(new Error('ScriptStorageError'));
+      scriptStorage.list = () => Promise.reject(new Error('ScriptStorageError'));
 
       return co(function * () {
         try {
