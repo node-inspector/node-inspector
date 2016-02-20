@@ -1,7 +1,7 @@
 var co = require('co');
 var expect = require('chai').expect;
 var launcher = require('./helpers/launcher.js');
-var DebuggerClient = require('../lib/DebuggerClient.js');
+var DebuggerClient = require('../lib/DebuggerClient/DebuggerClient.js');
 var ErrorNotConnected = DebuggerClient.ErrorNotConnected;
 
 describe('DebuggerClient', () => {
@@ -42,7 +42,7 @@ describe('DebuggerClient', () => {
         result => Promise.reject('should reject, but got ' + result),
         error => {
           expect(error).to.be.instanceof(DebuggerClient.ErrorNotConnected);
-          expect(error.message.toString()).to.be.equal('Debugged process exited.');
+          expect(error.message.toString()).to.be.equal('Debugger is not connected to process.');
           return Promise.resolve();
         }
       );
@@ -61,7 +61,7 @@ describe('DebuggerClient', () => {
         result => Promise.reject('should reject, but got ' + result),
         error => {
           expect(error).to.be.instanceof(DebuggerClient.ErrorNotConnected);
-          expect(error.message.toString()).to.be.equal('Debugged process exited.');
+          expect(error.message.toString()).to.be.equal('Debugger is not connected to process.');
           return Promise.resolve();
         }
       );

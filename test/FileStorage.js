@@ -28,7 +28,7 @@ function ScriptManagerStub() {
   this.find = () => null;
 }
 
-describe.only('FileStorage', function() {
+describe('FileStorage', function() {
   afterEach(() => deleteTemps());
 
   it('saves new content without node.js module wrapper', () => {

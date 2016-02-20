@@ -1,4 +1,5 @@
 var co = require('co');
+var on = require('promonce');
 var fs = require('fs');
 var path = require('path');
 var expect = require('chai').expect;
@@ -38,7 +39,7 @@ describe('DebuggerAgent', () => {
         expect(yield debuggerClient.running()).to.be.equal(true);
         yield debuggerAgent.handle('pause');
 
-        yield debuggerClient.break();
+        yield on(debuggerClient, 'break', 'error');
         expect(yield debuggerClient.running()).to.be.equal(false);
       });
     });
@@ -53,9 +54,9 @@ describe('DebuggerAgent', () => {
         expect(yield debuggerClient.running()).to.be.equal(true);
 
         command('steps\n');
-        var brk1 = yield debuggerClient.break();
+        var brk1 = yield on(debuggerClient, 'break', 'error');
         yield debuggerAgent.handle('stepInto');
-        var brk2 = yield debuggerClient.break();
+        var brk2 = yield on(debuggerClient, 'break', 'error');
         expect(brk2.sourceLine - brk1.sourceLine).to.be.equal(1);
         expect(/var a/.test(brk2.sourceLineText)).to.be.equal(true);
       });
@@ -71,12 +72,12 @@ describe('DebuggerAgent', () => {
         expect(yield debuggerClient.running()).to.be.equal(true);
 
         command('steps\n');
-        var brk1 = yield debuggerClient.break();
+        var brk1 = yield on(debuggerClient, 'break', 'error');
 
         yield debuggerAgent.handle('stepInto');
         yield debuggerAgent.handle('stepInto');
         yield debuggerAgent.handle('stepOver');
-        var brk2 = yield debuggerClient.break();
+        var brk2 = yield on(debuggerClient, 'break', 'error');
         expect(brk2.sourceLine - brk1.sourceLine).to.be.equal(3);
         expect(/var e/.test(brk2.sourceLineText)).to.be.equal(true);
       });
@@ -92,14 +93,14 @@ describe('DebuggerAgent', () => {
         expect(yield debuggerClient.running()).to.be.equal(true);
 
         command('steps\n');
-        var brk1 = yield debuggerClient.break();
+        var brk1 = yield on(debuggerClient, 'break', 'error');
         yield debuggerAgent.handle('stepInto');
         yield debuggerAgent.handle('stepInto');
         yield debuggerAgent.handle('stepInto');
-        yield debuggerClient.break();
+        yield on(debuggerClient, 'break', 'error');
 
         yield debuggerAgent.handle('stepOut');
-        var brk2 = yield debuggerClient.break();
+        var brk2 = yield on(debuggerClient, 'break', 'error');
 
         expect(brk2.sourceLine - brk1.sourceLine).to.be.equal(3);
         expect(/var e/.test(brk2.sourceLineText)).to.be.equal(true);
@@ -116,17 +117,17 @@ describe('DebuggerAgent', () => {
         expect(yield debuggerClient.running()).to.be.equal(true);
 
         command('steps\n');
-        var brk1 = yield debuggerClient.break();
+        var brk1 = yield on(debuggerClient, 'break', 'error');
         yield debuggerAgent.handle('stepInto');
         yield debuggerAgent.handle('stepInto');
         yield debuggerAgent.handle('stepInto');
-        yield debuggerClient.break();
+        yield on(debuggerClient, 'break', 'error');
         var backtrace = yield debuggerAgent.handle('getBacktrace');
         var callFrameId = backtrace[1].callFrameId;
 
         var stack = yield debuggerAgent.handle('restartFrame', {callFrameId: callFrameId});
         yield debuggerAgent.handle('stepInto');
-        var brk2 = yield debuggerClient.break();
+        var brk2 = yield on(debuggerClient, 'break', 'error');
 
         expect(brk1).to.deep.equal(brk2);
       });
@@ -164,7 +165,7 @@ describe('DebuggerAgent', () => {
       return co(function * () {
         yield debuggerAgent.handle('resume');
         command('set-variable-value-frame\n');
-        yield debuggerClient.break();
+        yield on(debuggerClient, 'break', 'error');
 
         id = (yield debuggerAgent.handle('getBacktrace'))[0].callFrameId;
       });
@@ -201,7 +202,7 @@ describe('DebuggerAgent', () => {
         yield debuggerClient.request('continue');
         yield debuggerAgent.handle('setPauseOnExceptions', { state: 'uncaught' });
         command('throw-uncaught-exception\n');
-        var event = yield debuggerClient.exception();
+        var event = yield on(debuggerClient, 'exception', 'error');
         expect(/uncaught/.test(event.sourceLineText)).to.be.equal(true);
       });
     });
@@ -211,7 +212,7 @@ describe('DebuggerAgent', () => {
         yield debuggerClient.request('continue');
         yield debuggerAgent.handle('setPauseOnExceptions', { state: 'all' });
         command('throw-caught-exception\n');
-        var event = yield debuggerClient.exception();
+        var event = yield on(debuggerClient, 'exception', 'error');
         expect(/[^un]caught/.test(event.sourceLineText)).to.be.equal(true);
       });
     });
@@ -222,14 +223,14 @@ describe('DebuggerAgent', () => {
 
         yield debuggerAgent.handle('setPauseOnExceptions', { state: 'all' });
         command('throw-caught-exception\n');
-        var event = yield debuggerClient.exception();
+        var event = yield on(debuggerClient, 'exception', 'error');
         expect(/[^un]caught/.test(event.sourceLineText)).to.be.equal(true);
 
         yield debuggerClient.request('continue');
 
         yield debuggerAgent.handle('setPauseOnExceptions', { state: 'none' });
         command('ignore-exception\n');
-        event = yield Promise.race([debuggerClient.exception(), debuggerClient.break()]);
+        event = yield Promise.race([on(debuggerClient, 'exception', 'error'), on(debuggerClient, 'break', 'error')]);
         expect(/debugger/.test(event.sourceLineText)).to.be.equal(true);
       });
     });
@@ -269,7 +270,7 @@ describe('DebuggerAgent', () => {
         scriptManager.get = () => ({});
         yield debuggerAgent.handle('resume');
         command('set-script-source\n');
-        yield debuggerClient.break();
+        yield on(debuggerClient, 'break', 'error');
 
         backtrace = yield debuggerAgent.handle('getBacktrace');
         scriptId = backtrace[0].location.scriptId;

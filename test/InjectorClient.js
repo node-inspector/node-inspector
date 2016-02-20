@@ -5,7 +5,7 @@ var expect = require('chai').expect;
 var InjectorClient = require('../lib/InjectorClient.js');
 var launcher = require('./helpers/launcher.js');
 
-var DebuggerClient = require('../lib/DebuggerClient.js');
+var DebuggerClient = require('../lib/DebuggerClient/DebuggerClient.js');
 var ErrorNotConnected = DebuggerClient.ErrorNotConnected;
 
 describe('InjectorClient', function() {

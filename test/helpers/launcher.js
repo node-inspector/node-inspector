@@ -1,7 +1,7 @@
 var spawn = require('child_process').spawn,
   path = require('path'),
   SessionStub = require('./SessionStub'),
-  DebuggerClient = require('../../lib/DebuggerClient').DebuggerClient;
+  DebuggerClient = require('../../lib/DebuggerClient/DebuggerClient.js');
 
 var co = require('co');
 var ignore = () => {};
