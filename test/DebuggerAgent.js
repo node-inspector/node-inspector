@@ -5,7 +5,7 @@ var path = require('path');
 var expect = require('chai').expect;
 var launcher = require('./helpers/launcher.js');
 var ScriptManager = require('../lib/ScriptManager/ScriptManager.js');
-var InjectorClient = require('../lib/InjectorClient.js');
+var InjectorClient = require('../lib/InjectorClient/InjectorClient.js');
 var DebuggerAgent = require('../lib/Agents/Debugger/DebuggerAgent.js');
 
 var child;

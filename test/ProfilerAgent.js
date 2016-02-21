@@ -3,8 +3,8 @@
 var co = require('co');
 var expect = require('chai').expect;
 var launcher = require('./helpers/launcher.js');
-var InjectorClient = require('../lib/InjectorClient');
-var ProfilerAgent = require('../lib/Agents/Profiler/ProfilerAgent');
+var InjectorClient = require('../lib/InjectorClient/InjectorClient.js');
+var ProfilerAgent = require('../lib/Agents/Profiler/ProfilerAgent.js');
 
 var session;
 var profilerAgent;

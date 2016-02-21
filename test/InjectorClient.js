@@ -2,7 +2,7 @@
 
 var co = require('co');
 var expect = require('chai').expect;
-var InjectorClient = require('../lib/InjectorClient.js');
+var InjectorClient = require('../lib/InjectorClient/InjectorClient.js');
 var launcher = require('./helpers/launcher.js');
 
 var DebuggerClient = require('../lib/DebuggerClient/DebuggerClient.js');
