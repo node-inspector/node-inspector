@@ -3,7 +3,6 @@
 WebInspector.MainOverrides = function() {
   this._unregisterShortcuts();
   this._allowToSaveModifiedFiles();
-  this._reloadOnDetach();
   this._exposeSourceMaps();
   this._avoidSourceMapFetchWhenInline();
 };
@@ -28,16 +27,6 @@ WebInspector.MainOverrides.prototype = {
         }
       }
     );
-  },
-
-  _reloadOnDetach: function() {
-    var oldDetached = WebInspector.Main.prototype.detached;
-    WebInspector.Main.prototype.detached = function () {
-      oldDetached.apply(this, arguments);
-      setTimeout(function () {
-        location.reload();
-      }, 400);
-    };
   },
 
   _exposeSourceMaps: function() {

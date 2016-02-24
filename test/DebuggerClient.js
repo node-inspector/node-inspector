@@ -42,7 +42,7 @@ describe('DebuggerClient', () => {
         result => Promise.reject('should reject, but got ' + result),
         error => {
           expect(error).to.be.instanceof(DebuggerClient.ErrorNotConnected);
-          expect(error.message.toString()).to.be.equal('Debugger is not connected to process.');
+          expect(error.message.toString()).to.be.equal('Debugged process exited.');
           return Promise.resolve();
         }
       );
@@ -61,7 +61,7 @@ describe('DebuggerClient', () => {
         result => Promise.reject('should reject, but got ' + result),
         error => {
           expect(error).to.be.instanceof(DebuggerClient.ErrorNotConnected);
-          expect(error.message.toString()).to.be.equal('Debugger is not connected to process.');
+          expect(error.message.toString()).to.be.equal('Debugged process exited.');
           return Promise.resolve();
         }
       );
