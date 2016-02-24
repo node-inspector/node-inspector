@@ -5,31 +5,44 @@
 /**
  * @constructor
  * @extends {WebInspector.Object}
+ * @param {!Element} element
  */
-WebInspector.DropDownMenu = function()
+WebInspector.DropDownMenu = function(element)
 {
-    this.element = createElementWithClass("select", "drop-down-menu");
-    this.element.addEventListener("mousedown", this._onBeforeMouseDown.bind(this), true);
-    this.element.addEventListener("mousedown", consumeEvent, false);
-    this.element.addEventListener("change", this._onChange.bind(this), false);
+    /** @type {!Array.<!WebInspector.DropDownMenu.Item>} */
+    this._items = [];
+
+    element.addEventListener("mousedown", this._onMouseDown.bind(this));
 }
 
+/** @typedef {{id: string, title: string}} */
+WebInspector.DropDownMenu.Item;
+
+/** @enum {string} */
 WebInspector.DropDownMenu.Events = {
-    BeforeShow: "BeforeShow",
     ItemSelected: "ItemSelected"
 }
 
 WebInspector.DropDownMenu.prototype = {
-    _onBeforeMouseDown: function()
+    /**
+     * @param {!Event} event
+     */
+    _onMouseDown: function(event)
     {
-        this.dispatchEventToListeners(WebInspector.DropDownMenu.Events.BeforeShow, null);
+        if (event.which !== 1)
+            return;
+        var menu = new WebInspector.ContextMenu(event);
+        for (var item of this._items)
+            menu.appendCheckboxItem(item.title, this._itemHandler.bind(this, item.id), item.id === this._selectedItemId);
+        menu.show();
     },
 
-    _onChange: function()
+    /**
+     * @param {string} id
+     */
+    _itemHandler: function(id)
     {
-        var options = this.element.options;
-        var selectedOption = options[this.element.selectedIndex];
-        this.dispatchEventToListeners(WebInspector.DropDownMenu.Events.ItemSelected, selectedOption.id);
+        this.dispatchEventToListeners(WebInspector.DropDownMenu.Events.ItemSelected, id);
     },
 
     /**
@@ -38,30 +51,21 @@ WebInspector.DropDownMenu.prototype = {
      */
     addItem: function(id, title)
     {
-        var option = new Option(title);
-        option.id = id;
-        this.element.appendChild(option);
+        this._items.push({id: id, title: title});
     },
 
     /**
-     * @param {?string} id
+     * @param {string} id
      */
     selectItem: function(id)
     {
-        var children = this.element.children;
-        for (var i = 0; i < children.length; ++i) {
-            var child = children[i];
-            if (child.id === id) {
-                this.element.selectedIndex = i;
-                return;
-            }
-        }
-        this.element.selectedIndex = -1;
+        this._selectedItemId = id;
     },
 
     clear: function()
     {
-        this.element.removeChildren();
+        this._items = [];
+        delete this._selectedItemId;
     },
 
     __proto__: WebInspector.Object.prototype

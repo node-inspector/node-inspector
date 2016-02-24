@@ -24,7 +24,7 @@ WebInspector.Renderer.prototype = {
 WebInspector.Renderer.renderPromise = function(object)
 {
     if (!object)
-        return Promise.rejectWithError("Can't render " + object);
+        return Promise.reject(new Error("Can't render " + object));
 
     return self.runtime.instancePromise(WebInspector.Renderer, object).then(render);
 
@@ -50,7 +50,7 @@ WebInspector.Revealer = function()
  */
 WebInspector.Revealer.reveal = function(revealable, lineNumber)
 {
-    WebInspector.Revealer.revealPromise(revealable, lineNumber).done();
+    WebInspector.Revealer.revealPromise(revealable, lineNumber);
 }
 
 /**
@@ -61,8 +61,7 @@ WebInspector.Revealer.reveal = function(revealable, lineNumber)
 WebInspector.Revealer.revealPromise = function(revealable, lineNumber)
 {
     if (!revealable)
-        return Promise.rejectWithError("Can't reveal " + revealable);
-
+        return Promise.reject(new Error("Can't reveal " + revealable));
     return self.runtime.instancesPromise(WebInspector.Revealer, revealable).then(reveal);
 
     /**
@@ -85,4 +84,46 @@ WebInspector.Revealer.prototype = {
      * @return {!Promise}
      */
     reveal: function(object, lineNumber) {}
+}
+
+/**
+ * @interface
+ */
+WebInspector.App = function()
+{
+}
+
+WebInspector.App.prototype = {
+    /**
+     * @param {!Document} document
+     */
+    presentUI: function(document) { }
+}
+
+/**
+ * @interface
+ */
+WebInspector.AppProvider = function()
+{
+}
+
+WebInspector.AppProvider.prototype = {
+    /**
+     * @return {!WebInspector.App}
+     */
+    createApp: function() { }
+}
+
+/**
+ * @interface
+ */
+WebInspector.QueryParamHandler = function()
+{
+}
+
+WebInspector.QueryParamHandler.prototype = {
+    /**
+     * @param {string} value
+     */
+    handleQueryParam: function(value) { }
 }

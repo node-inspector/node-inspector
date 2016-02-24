@@ -1,0 +1,186 @@
+/*
+ * Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+* {
+    /* This is required for correct sizing of flex items because we rely
+     * on an old version of the flexbox spec.
+     * Longer-term we should remove this, see crbug.com/473625 */
+    min-width: 0;
+    min-height: 0;
+}
+
+:host-context(.platform-mac) .monospace,
+:host-context(.platform-mac) .source-code,
+.platform-mac .monospace,
+.platform-mac .source-code {
+    font-size: 11px !important;
+    font-family: Menlo, monospace;
+}
+
+:host-context(.platform-windows) .monospace,
+:host-context(.platform-windows) .source-code,
+.platform-windows .monospace,
+.platform-windows .source-code {
+    font-size: 12px !important;
+    font-family: Consolas, Lucida Console, monospace;
+}
+
+:host-context(.platform-linux) .monospace,
+:host-context(.platform-linux) .source-code,
+.platform-linux .monospace,
+.platform-linux .source-code {
+    font-size: 11px !important;
+    font-family: dejavu sans mono, monospace;
+}
+
+.source-code {
+    font-family: monospace;
+    font-size: 11px !important;
+    white-space: pre-wrap;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+:focus {
+    outline: none;
+}
+
+img {
+    -webkit-user-drag: none;
+}
+
+iframe,
+a img {
+    border: none;
+}
+
+.fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+iframe.fill {
+    width: 100%;
+    height: 100%;
+}
+
+.widget {
+    position: relative;
+    flex: auto;
+}
+
+.hbox {
+    display: flex;
+    flex-direction: row !important;
+    position: relative;
+}
+
+.vbox {
+    display: flex;
+    flex-direction: column !important;
+    position: relative;
+}
+
+.flex-auto {
+    flex: auto;
+}
+
+.flex-auto-important {
+    flex: auto !important;
+}
+
+.flex-none {
+    flex: none;
+}
+
+.flex-centered {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+iframe.widget {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.monospace {
+    font-size: 10px !important;
+    font-family: monospace;
+}
+
+.highlighted-search-result {
+    border-radius: 1px;
+    padding: 1px;
+    margin: -1px;
+    background-color: rgba(255, 255, 0, 0.8);
+}
+
+.link {
+    cursor: pointer;
+    text-decoration: underline;
+    color: rgb(17, 85, 204);
+}
+
+button,
+input,
+select {
+    font-family: inherit;
+    font-size: inherit;
+}
+
+input[type="search"]:focus,
+input[type="text"]:focus {
+    outline: auto 5px -webkit-focus-ring-color;
+}
+
+
+.highlighted-search-result.current-search-result {
+    border-radius: 1px;
+    padding: 1px;
+    margin: -1px;
+    background-color: rgba(255, 127, 0, 0.8);
+}
+
+.dimmed {
+    opacity: 0.6;
+}
+
+.editing {
+    -webkit-user-select: text;
+    box-shadow: rgba(0, 0, 0, .5) 3px 3px 4px;
+    outline: 1px solid rgb(66%, 66%, 66%) !important;
+    background-color: white;
+    -webkit-user-modify: read-write-plaintext-only;
+    text-overflow: clip !important;
+    padding-left: 2px;
+    margin-left: -2px;
+    padding-right: 2px;
+    margin-right: -2px;
+    margin-bottom: -1px;
+    padding-bottom: 1px;
+    opacity: 1.0 !important;
+}
+
+.editing,
+.editing * {
+    color: #222 !important;
+    text-decoration: none !important;
+}

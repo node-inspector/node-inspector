@@ -1,0 +1,62 @@
+/*
+ * Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.list-item {
+    padding: 2px 8px 3px 8px;
+    position: relative;
+    min-height: 18px;
+    white-space: nowrap;
+}
+
+.list-item:nth-of-type(2n) {
+    background-color: #f8f8f8;
+}
+
+.list-item.selected {
+    background-color: #dadada;
+}
+
+.list-item.selected > .title {
+    font-weight: bold;
+}
+
+.list-item:hover {
+    background-color: #eee;
+}
+
+.list-item > .title {
+    font-weight: normal;
+    word-wrap: break-word;
+    white-space: normal;
+}
+
+.list-item > .subtitle {
+    margin-left: 5px;
+    color: rgba(0, 0, 0, 0.7);
+    text-overflow: ellipsis;
+    overflow: hidden;
+    float: right;
+}
+
+.list-item > .subtitle a {
+    color: inherit;
+}
+
+.list-item.label {
+    text-align: center;
+}
+
+.list-item.label .title,
+.list-item.label .subtitle {
+    font-style: italic;
+    font-weight: bold;
+    color: #999;
+}
+
+.list-item.dimmed {
+    opacity: 0.6;
+    font-style: italic;
+}

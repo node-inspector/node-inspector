@@ -39,24 +39,26 @@ WebInspector.IDBDatabaseView = function(database)
     this.registerRequiredCSS("resources/indexedDBViews.css");
 
     this.element.classList.add("indexed-db-database-view");
+    this.element.classList.add("storage-view");
 
-    this._headersListElement = this.element.createChild("ol", "outline-disclosure");
-    this._headersTreeOutline = new TreeOutline(this._headersListElement);
+    this._headersTreeOutline = new TreeOutline();
+    this._headersTreeOutline.element.classList.add("outline-disclosure");
+    this.element.appendChild(this._headersTreeOutline.element);
     this._headersTreeOutline.expandTreeElementsWhenArrowing = true;
 
-    this._securityOriginTreeElement = new TreeElement("", null, false);
+    this._securityOriginTreeElement = new TreeElement();
     this._securityOriginTreeElement.selectable = false;
     this._headersTreeOutline.appendChild(this._securityOriginTreeElement);
 
-    this._nameTreeElement = new TreeElement("", null, false);
+    this._nameTreeElement = new TreeElement();
     this._nameTreeElement.selectable = false;
     this._headersTreeOutline.appendChild(this._nameTreeElement);
 
-    this._intVersionTreeElement = new TreeElement("", null, false);
+    this._intVersionTreeElement = new TreeElement();
     this._intVersionTreeElement.selectable = false;
     this._headersTreeOutline.appendChild(this._intVersionTreeElement);
 
-    this._stringVersionTreeElement = new TreeElement("", null, false);
+    this._stringVersionTreeElement = new TreeElement();
     this._stringVersionTreeElement.selectable = false;
     this._headersTreeOutline.appendChild(this._stringVersionTreeElement);
 
@@ -65,9 +67,9 @@ WebInspector.IDBDatabaseView = function(database)
 
 WebInspector.IDBDatabaseView.prototype = {
     /**
-     * @return {!Array.<!WebInspector.StatusBarItem>}
+     * @return {!Array.<!WebInspector.ToolbarItem>}
      */
-    statusBarItems: function()
+    toolbarItems: function()
     {
         return [];
     },
@@ -127,10 +129,10 @@ WebInspector.IDBDataView = function(model, databaseId, objectStore, index)
 
     this._createEditorToolbar();
 
-    this._refreshButton = new WebInspector.StatusBarButton(WebInspector.UIString("Refresh"), "refresh-status-bar-item");
+    this._refreshButton = new WebInspector.ToolbarButton(WebInspector.UIString("Refresh"), "refresh-toolbar-item");
     this._refreshButton.addEventListener("click", this._refreshButtonClicked, this);
 
-    this._clearButton = new WebInspector.StatusBarButton(WebInspector.UIString("Clear object store"), "clear-status-bar-item");
+    this._clearButton = new WebInspector.ToolbarButton(WebInspector.UIString("Clear object store"), "clear-toolbar-item");
     this._clearButton.addEventListener("click", this._clearButtonClicked, this);
 
     this._pageSize = 50;
@@ -172,7 +174,7 @@ WebInspector.IDBDataView.prototype = {
             return keyColumnHeaderFragment;
 
         keyColumnHeaderFragment.createTextChild(" (" + WebInspector.UIString("Key path: "));
-        if (keyPath instanceof Array) {
+        if (Array.isArray(keyPath)) {
             keyColumnHeaderFragment.createTextChild("[");
             for (var i = 0; i < keyPath.length; ++i) {
                 if (i != 0)
@@ -196,7 +198,7 @@ WebInspector.IDBDataView.prototype = {
     {
         var keyPathStringFragment = createDocumentFragment();
         keyPathStringFragment.createTextChild("\"");
-        var keyPathSpan = keyPathStringFragment.createChild("span", "source-code console-formatted-string");
+        var keyPathSpan = keyPathStringFragment.createChild("span", "source-code indexed-db-key-path");
         keyPathSpan.textContent = keyPathString;
         keyPathStringFragment.createTextChild("\"");
         return keyPathStringFragment;
@@ -204,17 +206,17 @@ WebInspector.IDBDataView.prototype = {
 
     _createEditorToolbar: function()
     {
-        var editorToolbar = new WebInspector.StatusBar(this.element);
+        var editorToolbar = new WebInspector.Toolbar(this.element);
         editorToolbar.element.classList.add("data-view-toolbar");
 
-        this._pageBackButton = new WebInspector.StatusBarButton(WebInspector.UIString("Show previous page."), "play-backwards-status-bar-item");
+        this._pageBackButton = new WebInspector.ToolbarButton(WebInspector.UIString("Show previous page"), "play-backwards-toolbar-item");
         this._pageBackButton.addEventListener("click", this._pageBackButtonClicked, this);
-        editorToolbar.appendStatusBarItem(this._pageBackButton);
+        editorToolbar.appendToolbarItem(this._pageBackButton);
 
-        this._pageForwardButton = new WebInspector.StatusBarButton(WebInspector.UIString("Show next page."), "play-status-bar-item");
+        this._pageForwardButton = new WebInspector.ToolbarButton(WebInspector.UIString("Show next page"), "play-toolbar-item");
         this._pageForwardButton.setEnabled(false);
         this._pageForwardButton.addEventListener("click", this._pageForwardButtonClicked, this);
-        editorToolbar.appendStatusBarItem(this._pageForwardButton);
+        editorToolbar.appendToolbarItem(this._pageForwardButton);
 
         this._keyInputElement = editorToolbar.element.createChild("input", "key-input");
         this._keyInputElement.placeholder = WebInspector.UIString("Start from key");
@@ -312,7 +314,6 @@ WebInspector.IDBDataView.prototype = {
                 data["primaryKey"] = entries[i].primaryKey;
                 data["value"] = entries[i].value;
 
-                var primaryKey = JSON.stringify(this._isIndex ? entries[i].primaryKey : entries[i].key);
                 var node = new WebInspector.IDBDataGridNode(data);
                 this._dataGrid.rootNode().appendChild(node);
             }
@@ -347,9 +348,9 @@ WebInspector.IDBDataView.prototype = {
     },
 
     /**
-     * @return {!Array.<!WebInspector.StatusBarItem>}
+     * @return {!Array.<!WebInspector.ToolbarItem>}
      */
-    statusBarItems: function()
+    toolbarItems: function()
     {
         return [this._refreshButton, this._clearButton];
     },
@@ -376,6 +377,7 @@ WebInspector.IDBDataGridNode = function(data)
 
 WebInspector.IDBDataGridNode.prototype = {
     /**
+     * @override
      * @return {!Element}
      */
     createCell: function(columnIdentifier)
@@ -388,35 +390,13 @@ WebInspector.IDBDataGridNode.prototype = {
         case "key":
         case "primaryKey":
             cell.removeChildren();
-            this._formatValue(cell, value);
+            var objectElement = WebInspector.ObjectPropertiesSection.defaultObjectPresentation(value, true);
+            cell.appendChild(objectElement);
             break;
         default:
         }
 
         return cell;
-    },
-
-    _formatValue: function(cell, value)
-    {
-        var type = value.subtype || value.type;
-        var contents = cell.createChild("div", "source-code console-formatted-" + type);
-
-        switch (type) {
-        case "object":
-        case "array":
-            var section = new WebInspector.ObjectPropertiesSection(value, value.description)
-            section.editable = false;
-            section.skipProto = true;
-            contents.appendChild(section.element);
-            break;
-        case "string":
-            contents.classList.add("primitive-value");
-            contents.createTextChildren("\"", value.description, "\"");
-            break;
-        default:
-            contents.classList.add("primitive-value");
-            contents.createTextChild(value.description);
-        }
     },
 
     __proto__: WebInspector.DataGridNode.prototype

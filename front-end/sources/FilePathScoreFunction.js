@@ -205,6 +205,6 @@ WebInspector.FilePathScoreFunction.prototype = {
             return this._singleCharScore(query, data, i, j);
         else
             return this._sequenceCharScore(query, data, i, j - consecutiveMatch, consecutiveMatch);
-    },
+    }
 }
 

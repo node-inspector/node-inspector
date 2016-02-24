@@ -37,7 +37,7 @@ WebInspector.AllocationProfile = function(profile, liveObjectStats)
     this._liveObjectStats = liveObjectStats;
 
     this._nextNodeId = 1;
-    this._functionInfos = []
+    this._functionInfos = [];
     this._idToNode = {};
     this._idToTopDownNode = {};
     this._collapsedTopNodeIdToFunctionInfo = {};
@@ -54,7 +54,6 @@ WebInspector.AllocationProfile.prototype = {
         var strings = this._strings;
 
         var functionInfoFields = profile.snapshot.meta.trace_function_info_fields;
-        var functionIdOffset = functionInfoFields.indexOf("function_id");
         var functionNameOffset = functionInfoFields.indexOf("name");
         var scriptNameOffset = functionInfoFields.indexOf("script_name");
         var scriptIdOffset = functionInfoFields.indexOf("script_id");

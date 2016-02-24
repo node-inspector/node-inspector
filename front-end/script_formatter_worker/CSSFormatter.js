@@ -44,7 +44,7 @@ FormatterWorker.CSSFormatter = function(content, builder)
 FormatterWorker.CSSFormatter.prototype = {
     format: function()
     {
-        this._lineEndings = this._lineEndings(this._content);
+        this._lineEndings = this._content.lineEndings();
         var tokenize = FormatterWorker.createTokenizer("text/css");
         var lines = this._content.split("\n");
 
@@ -53,21 +53,6 @@ FormatterWorker.CSSFormatter.prototype = {
             tokenize(line, this._tokenCallback.bind(this, i));
         }
         this._builder.flushNewLines(true);
-    },
-
-    /**
-     * @param {string} text
-     */
-    _lineEndings: function(text)
-    {
-        var lineEndings = [];
-        var i = text.indexOf("\n");
-        while (i !== -1) {
-            lineEndings.push(i);
-            i = text.indexOf("\n", i + 1);
-        }
-        lineEndings.push(text.length);
-        return lineEndings;
     },
 
     /**

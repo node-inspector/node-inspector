@@ -1,0 +1,359 @@
+/*
+ * Copyright (c) 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.animation-node-row {
+    width: 100%;
+    display: flex;
+    border-bottom: 1px dashed #ccc;
+}
+
+.animation-node-row:first-child > .animation-node-description {
+    line-height: 45px;
+}
+
+.animation-node-row:first-child > .animation-node-timeline {
+    padding-top: 5px;
+}
+
+.animation-node-description {
+    display: inline-block;
+    min-width: 200px;
+    max-width: 200px;
+    padding-left: 15px;
+    overflow: hidden;
+    position: relative;
+    transform-style: preserve-3d;
+    line-height: 40px;
+    border-bottom: 1px solid hsl(0, 0%, 90%);
+    margin-bottom: -1px;
+    margin-right: 30px;
+    background-color: hsl(0, 0%, 98%);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.animation-timeline-row {
+    height: 40px;
+    position: relative;
+}
+
+path.animation-keyframe {
+    fill-opacity: 0.3;
+}
+
+.animation-node-selected path.animation-keyframe {
+    fill-opacity: 0.4;
+}
+
+line.animation-line {
+    stroke-width: 2px;
+    stroke-linecap: round;
+    fill: none;
+}
+
+line.animation-delay-line {
+    stroke-width: 2px;
+    stroke-dasharray: 6, 4;
+}
+
+circle.animation-endpoint, circle.animation-keyframe-point {
+    stroke-width: 2px;
+    transition: transform 100ms cubic-bezier(0, 0, 0.2, 1);
+    transform: scale(1);
+    transform-origin: 50% 50%;
+}
+
+.animation-ui:not(.animation-ui-canceled) circle.animation-endpoint:hover, .animation-ui:not(.animation-ui-canceled) circle.animation-keyframe-point:hover {
+    transform: scale(1.2);
+}
+
+circle.animation-endpoint:active, circle.animation-keyframe-point:active {
+    transform: scale(1);
+}
+
+circle.animation-keyframe-point {
+    fill: white;
+}
+
+.animation-name {
+    position: absolute;
+    top: 15px;
+    color: #333;
+    text-align: center;
+    margin-left: -8px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    min-width: 50px;
+}
+
+.animation-timeline-header {
+    height: 44px;
+    border-bottom: 1px solid #ccc;
+    flex-shrink: 0;
+    display: flex;
+}
+
+.animation-timeline-header:after {
+    content: "";
+    height: 100%;
+    position: absolute;
+    width: 200px;
+    left: 0;
+    background-color: hsl(0, 0%, 98%);
+    z-index: -1;
+    border-right: 1px solid hsl(0, 0%, 90%);
+}
+
+.animation-controls {
+    flex: 0 0 200px;
+    padding: 10px;
+    height: 100%;
+    line-height: 22px;
+    background-color: hsl(0, 0%, 98%);
+    border-right: 1px solid hsl(0, 0%, 90%);
+}
+
+.animation-timeline-buffer {
+    height: 100%;
+    flex-grow: 1;
+    border-left: 1px solid #ccc;
+    display: flex;
+    padding: 0 2px;
+}
+
+.animation-time-overlay {
+    background-color: black;
+    opacity: 0.05;
+    position: absolute;
+    height: 100%;
+    width: 100%;
+}
+
+.animation-timeline-end > .animation-time-overlay {
+    visibility: hidden;
+}
+
+input.animation-playback-slider {
+    width: 93px;
+    margin-left: 12px;
+    -webkit-appearance: none;
+    position: absolute;
+    top: 7px;
+    background: none;
+}
+
+input[type=range].animation-playback-slider::-webkit-slider-runnable-track {
+    height: 4px;
+    margin: 10px 0;
+    border-radius: 2px;
+    cursor: pointer;
+    background: #c8c8c8;
+}
+
+input[type=range].animation-playback-slider:focus::-webkit-slider-runnable-track {
+    background: #b8b8b8;
+}
+
+input[type=range].animation-playback-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    cursor: pointer;
+    margin-top: -4px;
+    cursor: pointer;
+    width: 12px;
+    height: 12px;
+    border-radius: 12px;
+    background-color: rgb(248, 248, 248);
+    border: 1px solid #999;
+    box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.24);
+}
+
+.animation-playback-label {
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+    overflow: hidden;
+    text-align: center;
+    border: 1px solid #dadada;
+    border-radius: 2px;
+    line-height: 20px;
+    font-size: 11px;
+    padding: 0;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    -webkit-user-modify: read-write-plaintext-only;
+}
+
+.animation-scrubber {
+    opacity: 1;
+    position: absolute;
+    left: 230px;
+    height: calc(100% - 43px);
+    width: calc(100% - 200px);
+    top: 43px;
+    border-left: 1px solid rgba(0,0,0,0.5);
+    display: none;
+}
+
+.animation-scrubber.animation-timeline-end {
+    border: none;
+}
+
+.animation-scrubber-head {
+    background-color: rgba(0, 0, 0, 0.7);
+    width: 60px;
+    height: 23px;
+    color: white;
+    line-height: 23px;
+    text-align: center;
+    border-radius: 5px;
+    position: relative;
+    top: -29px;
+    left: -30px;
+    font-size: 10px;
+    visibility: visible;
+}
+
+.animation-scrubber-head:before, .animation-scrubber-head:after {
+    content: "||";
+    position: absolute;
+    color: #999;
+    font-size: 8px;
+}
+
+.animation-scrubber-head:before {
+    left: 3px;
+}
+
+.animation-scrubber-head:after {
+    right: 3px;
+}
+
+.animation-timeline-end > .animation-scrubber-head {
+    visibility: visible;
+}
+
+.animation-timeline-end > .animation-scrubber-arrow {
+    visibility: hidden;
+}
+
+.animation-scrubber-arrow {
+    width: 21px;
+    height: 25px;
+    position: absolute;
+    top: -6px;
+    left: -7px;
+    -webkit-clip-path: polygon(0 0, 6px 6px, 12px 0px, 0px 0px);
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.animation-timeline-end > .animation-timeline-timer {
+    visibility: hidden;
+}
+
+svg.animation-timeline-grid {
+    position: absolute;
+    left: 230px;
+    top: 43px;
+}
+
+rect.animation-timeline-grid-line {
+    fill: hsl(0, 0%, 90%);
+}
+
+.animation-timeline-row > svg.animation-ui {
+    position: absolute;
+}
+
+.animation-node-timeline {
+    flex-grow: 1;
+}
+
+.animation-node-description > div {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    max-height: 100%;
+}
+
+.animation-node-row.animation-node-removed {
+    background-color: hsla(0, 100%, 50%, 0.1);
+}
+
+svg.animation-ui g:first-child {
+    opacity: 1;
+}
+
+.animation-tail-iterations {
+    opacity: 0.5;
+}
+
+svg.animation-ui.animation-ui-canceled {
+    -webkit-filter: grayscale(100%);
+    transition: -webkit-filter 100ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.animation-keyframe-step line {
+    stroke-width: 2;
+    stroke-opacity: 0.3;
+}
+
+text.animation-timeline-grid-label {
+    font-size: 10px;
+    fill: #999;
+}
+
+.animation-timeline-rows {
+    flex-grow: 1;
+    overflow-y: auto;
+    z-index: 1;
+    overflow-x: hidden;
+}
+
+.toolbar.animation-controls-toolbar {
+    float: right;
+}
+
+.animation-node-row.animation-node-selected {
+    background-color: hsla(216, 71%, 53%, 0.08);
+}
+
+.animation-node-selected > .animation-node-description {
+    background-color: #EFF4FD;
+}
+
+.animation-timeline-empty-message {
+    padding-left: 230px;
+    padding-right: 30px;
+    text-align: center;
+    position: absolute;
+    font-size: 20px;
+    line-height: 32px;
+    align-items: center;   justify-content: center;
+    width: 100%;
+    height: calc(100% - 44px);
+    display: flex;
+}
+
+.animation-buffer-preview {
+    height: 35px;
+    margin: 4px 2px;
+    background-color: #F3F3F3;
+    border-radius: 2px;
+    flex: 1 1;
+    padding: 4px;
+    max-width: 100px;
+}
+.animation-buffer-preview.selected {
+    background-color: hsl(217, 89%, 61%);
+}
+.animation-buffer-preview.selected > svg > line {
+    stroke: white !important;
+}
+.animation-buffer-preview > svg > line {
+    stroke-width: 1px;
+}

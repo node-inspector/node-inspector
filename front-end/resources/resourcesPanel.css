@@ -73,7 +73,7 @@ body.inactive .resources.panel .sidebar li.selected .selection {
     top: 1px;
 }
 
-.resources-status-bar {
+.resources-toolbar {
     border-top: 1px solid #ccc;
     background-color: #eee;
 }
@@ -98,21 +98,13 @@ li.selected .base-storage-tree-element-subtitle {
 
 .resources.panel li .status .bubble-repeat-count {
     height: 13px;
+    margin-top: 1px;
     padding-top: 0;
 }
 
 .storage-view {
-    display: none;
-    overflow: hidden;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-}
-
-.storage-view.visible {
     display: flex;
+    overflow: hidden;
 }
 
 .storage-view {
@@ -126,6 +118,12 @@ li.selected .base-storage-tree-element-subtitle {
 
 .storage-view .storage-table-error {
     color: rgb(66%, 33%, 33%);
+    font-size: 24px;
+    font-weight: bold;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .storage-view.query {
@@ -155,15 +153,15 @@ li.selected .base-storage-tree-element-subtitle {
     height: 10px;
     margin-top: -7px;
     -webkit-user-select: none;
-    background-image: url(Images/statusbarButtonGlyphs.png);
-    background-size: 320px 144px;
+    background-image: url(Images/toolbarButtonGlyphs.png);
+    background-size: 352px 168px;
 }
 
 @media (-webkit-min-device-pixel-ratio: 1.5) {
 .database-user-query::before,
 .database-query-prompt::before,
 .database-query-result::before {
-    background-image: url(Images/statusbarButtonGlyphs_2x.png);
+    background-image: url(Images/toolbarButtonGlyphs_2x.png);
 }
 } /* media */
 
@@ -245,6 +243,7 @@ li.selected .base-storage-tree-element-subtitle {
     right: 3px;
     max-width: 8px;
     max-height: 11px;
+    overflow: hidden;
 }
 
 .resource-sidebar-tree-item.resources-type-document .icon {
@@ -321,6 +320,18 @@ li.selected .base-storage-tree-element-subtitle {
 
 .indexed-db-index-storage-tree-item .icon {
     content: url(Images/indexedDBIndex.png);
+}
+
+.service-worker-cache-tree-item .icon {
+    content: url(Images/indexedDBObjectStore.png);
+}
+
+.service-worker-cache-storage-tree-item .icon {
+    content: url(Images/indexedDB.png);
+}
+
+.service-workers-tree-item .icon {
+    content: url(Images/serviceWorker.svg);
 }
 
 .domstorage-storage-tree-item.local-storage .icon {

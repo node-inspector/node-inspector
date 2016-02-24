@@ -32,11 +32,15 @@
  * @constructor
  * @extends {WebInspector.TabbedPane}
  * @param {!WebInspector.NetworkRequest} request
+ * @param {!WebInspector.NetworkTimeCalculator} calculator
  */
-WebInspector.NetworkItemView = function(request)
+WebInspector.NetworkItemView = function(request, calculator)
 {
     WebInspector.TabbedPane.call(this);
+    this.renderWithNoHeaderBackground();
     this.element.classList.add("network-item-view");
+
+    this._resourceViewTabSetting = WebInspector.settings.createSetting("resourceViewTab", "preview");
 
     var headersView = new WebInspector.RequestHeadersView(request);
     this.appendTab("headers", WebInspector.UIString("Headers"), headersView);
@@ -46,6 +50,8 @@ WebInspector.NetworkItemView = function(request)
     if (request.resourceType() === WebInspector.resourceTypes.WebSocket) {
         var frameView = new WebInspector.ResourceWebSocketFrameView(request);
         this.appendTab("webSocketFrames", WebInspector.UIString("Frames"), frameView);
+    } else if (request.mimeType ===  "text/event-stream") {
+        this.appendTab("eventSource", WebInspector.UIString("EventStream"), new WebInspector.EventSourceMessagesView(request));
     } else {
         var responseView = new WebInspector.RequestResponseView(request);
         var previewView = new WebInspector.RequestPreviewView(request, responseView);
@@ -58,10 +64,8 @@ WebInspector.NetworkItemView = function(request)
         this.appendTab("cookies", WebInspector.UIString("Cookies"), this._cookiesView);
     }
 
-    if (request.timing) {
-        var timingView = new WebInspector.RequestTimingView(request);
-        this.appendTab("timing", WebInspector.UIString("Timing"), timingView);
-    }
+    this.appendTab("timing", WebInspector.UIString("Timing"), new WebInspector.RequestTimingView(request, calculator));
+
     this._request = request;
 }
 
@@ -89,7 +93,7 @@ WebInspector.NetworkItemView.prototype = {
     _selectTab: function(tabId)
     {
         if (!tabId)
-            tabId = WebInspector.settings.resourceViewTab.get();
+            tabId = this._resourceViewTabSetting.get();
 
         if (!this.selectTab(tabId))
             this.selectTab("headers");
@@ -100,13 +104,7 @@ WebInspector.NetworkItemView.prototype = {
         if (!event.data.isUserGesture)
             return;
 
-        WebInspector.settings.resourceViewTab.set(event.data.tabId);
-
-        WebInspector.notifications.dispatchEventToListeners(WebInspector.UserMetrics.UserAction, {
-            action: WebInspector.UserMetrics.UserActionNames.NetworkRequestTabSelected,
-            tab: event.data.tabId,
-            url: this._request.url
-        });
+        this._resourceViewTabSetting.set(event.data.tabId);
     },
 
     /**
@@ -132,7 +130,7 @@ WebInspector.RequestContentView = function(request)
 
 WebInspector.RequestContentView.prototype = {
     /**
-     * @return {!WebInspector.View}
+     * @return {!WebInspector.Widget}
      */
     get innerView()
     {

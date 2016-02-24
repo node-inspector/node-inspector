@@ -41,7 +41,7 @@ WebInspector.SearchableView = function(searchable, settingName)
     this.registerRequiredCSS("ui/searchableView.css");
 
     this._searchProvider = searchable;
-    this._settingName = settingName;
+    this._setting = settingName ? WebInspector.settings.createSetting(settingName, {}) : null;
 
     this.element.addEventListener("keydown", this._onKeyDown.bind(this), false);
 
@@ -49,19 +49,18 @@ WebInspector.SearchableView = function(searchable, settingName)
     this._footerElementContainer = this.contentElement.createChild("div", "search-bar hidden");
     this._footerElementContainer.style.order = 100;
 
-    var toolbar = new WebInspector.StatusBar(this._footerElementContainer);
-    toolbar.makeNarrow();
+    var toolbar = new WebInspector.Toolbar(this._footerElementContainer);
 
     if (this._searchProvider.supportsCaseSensitiveSearch()) {
-        this._caseSensitiveButton = new WebInspector.StatusBarTextButton(WebInspector.UIString("Case sensitive"), "case-sensitive-search-status-bar-item", "Aa", 2);
+        this._caseSensitiveButton = new WebInspector.ToolbarTextButton(WebInspector.UIString("Case sensitive"), "case-sensitive-search-toolbar-item", "Aa", 2);
         this._caseSensitiveButton.addEventListener("click", this._toggleCaseSensitiveSearch, this);
-        toolbar.appendStatusBarItem(this._caseSensitiveButton);
+        toolbar.appendToolbarItem(this._caseSensitiveButton);
     }
 
     if (this._searchProvider.supportsRegexSearch()) {
-        this._regexButton = new WebInspector.StatusBarTextButton(WebInspector.UIString("Regex"), "regex-search-status-bar-item", ".*", 2);
+        this._regexButton = new WebInspector.ToolbarTextButton(WebInspector.UIString("Regex"), "regex-search-toolbar-item", ".*", 2);
         this._regexButton.addEventListener("click", this._toggleRegexSearch, this);
-        toolbar.appendStatusBarItem(this._regexButton);
+        toolbar.appendToolbarItem(this._regexButton);
     }
 
     this._footerElement = this._footerElementContainer.createChild("table", "toolbar-search");
@@ -73,7 +72,11 @@ WebInspector.SearchableView = function(searchable, settingName)
     // Column 1
     var searchControlElementColumn = this._firstRowElement.createChild("td");
     this._searchControlElement = searchControlElementColumn.createChild("span", "toolbar-search-control");
-    this._searchInputElement = this._searchControlElement.createChild("input", "search-replace");
+
+    this._searchInputElement = WebInspector.HistoryInput.create();
+    this._searchInputElement.classList.add("search-replace");
+    this._searchControlElement.appendChild(this._searchInputElement);
+
     this._searchInputElement.id = "search-input-field";
     this._searchInputElement.placeholder = WebInspector.UIString("Find");
 
@@ -123,16 +126,14 @@ WebInspector.SearchableView = function(searchable, settingName)
     // Column 4
     this._replaceElement = this._firstRowElement.createChild("td").createChild("span");
 
-    this._replaceCheckboxElement = this._replaceElement.createChild("input");
-    this._replaceCheckboxElement.type = "checkbox";
+    this._replaceLabelElement = createCheckboxLabel(WebInspector.UIString("Replace"));
+    this._replaceCheckboxElement = this._replaceLabelElement.checkboxElement;
     this._uniqueId = ++WebInspector.SearchableView._lastUniqueId;
     var replaceCheckboxId = "search-replace-trigger" + this._uniqueId;
     this._replaceCheckboxElement.id = replaceCheckboxId;
     this._replaceCheckboxElement.addEventListener("change", this._updateSecondRowVisibility.bind(this), false);
 
-    this._replaceLabelElement = this._replaceElement.createChild("label");
-    this._replaceLabelElement.textContent = WebInspector.UIString("Replace");
-    this._replaceLabelElement.setAttribute("for", replaceCheckboxId);
+    this._replaceElement.appendChild(this._replaceLabelElement);
 
     // Column 5
     var cancelButtonElement = this._firstRowElement.createChild("td").createChild("button", "search-action-button");
@@ -212,32 +213,19 @@ WebInspector.SearchableView.prototype = {
         this._performSearch(false, true);
     },
 
-    /**
-     * @return {?WebInspector.Setting}
-     */
-    _setting: function()
-    {
-        if (!this._settingName)
-            return null;
-        if (!WebInspector.settings[this._settingName])
-            WebInspector.settings[this._settingName] = WebInspector.settings.createSetting(this._settingName, {});
-        return WebInspector.settings[this._settingName];
-    },
-
     _saveSetting: function()
     {
-        var setting = this._setting();
-        if (!setting)
+        if (!this._setting)
             return;
-        var settingValue = setting.get() || {};
+        var settingValue = this._setting.get() || {};
         settingValue.caseSensitive = this._caseSensitiveButton.toggled();
         settingValue.isRegex = this._regexButton.toggled();
-        setting.set(settingValue);
+        this._setting.set(settingValue);
     },
 
     _loadSetting: function()
     {
-        var settingValue = this._setting() ? (this._setting().get() || {}) : {};
+        var settingValue = this._setting ? (this._setting.get() || {}) : {};
         if (this._searchProvider.supportsCaseSensitiveSearch())
             this._caseSensitiveButton.setToggled(!!settingValue.caseSensitive);
         if (this._searchProvider.supportsRegexSearch())
@@ -245,6 +233,7 @@ WebInspector.SearchableView.prototype = {
     },
 
     /**
+     * @override
      * @return {!Element}
      */
     defaultFocusedElement: function()
@@ -255,7 +244,7 @@ WebInspector.SearchableView.prototype = {
             if (element)
                 return element;
         }
-        return WebInspector.View.prototype.defaultFocusedElement.call(this);
+        return WebInspector.Widget.prototype.defaultFocusedElement.call(this);
     },
 
     /**
@@ -296,6 +285,14 @@ WebInspector.SearchableView.prototype = {
     setMinimalSearchQuerySize: function(minimalSearchQuerySize)
     {
         this._minimalSearchQuerySize = minimalSearchQuerySize;
+    },
+
+    /**
+     * @param {string} placeholder
+     */
+    setPlaceholder: function(placeholder)
+    {
+        this._searchInputElement.placeholder = placeholder;
     },
 
     /**
@@ -449,7 +446,7 @@ WebInspector.SearchableView.prototype = {
 
         var queryCandidate;
         if (WebInspector.currentFocusElement() !== this._searchInputElement) {
-            var selection = this._searchInputElement.window().getSelection();
+            var selection = this._searchInputElement.getComponentSelection();
             if (selection.rangeCount)
                 queryCandidate = selection.toString().replace(/\r?\n.*/, "");
         }
@@ -624,13 +621,20 @@ WebInspector.SearchableView.prototype = {
         /** @type {!WebInspector.Replaceable} */ (this._searchProvider).replaceAllWith(searchConfig, this._replaceInputElement.value);
     },
 
+    /**
+     * @param {!Event} event
+     */
     _onInput: function(event)
     {
-        this._onValueChanged();
+        if (this._valueChangedTimeoutId)
+            clearTimeout(this._valueChangedTimeoutId);
+        var timeout = this._searchInputElement.value.length < 3 ? 200 : 0;
+        this._valueChangedTimeoutId = setTimeout(this._onValueChanged.bind(this), timeout);
     },
 
     _onValueChanged: function()
     {
+        delete this._valueChangedTimeoutId;
         this._performSearch(false, true);
     },
 
@@ -701,4 +705,36 @@ WebInspector.SearchableView.SearchConfig = function(query, caseSensitive, isRege
     this.query = query;
     this.caseSensitive = caseSensitive;
     this.isRegex = isRegex;
+}
+
+WebInspector.SearchableView.SearchConfig.prototype = {
+    /**
+     * @param {boolean=} global
+     * @return {!RegExp}
+     */
+    toSearchRegex: function(global)
+    {
+        var modifiers = this.caseSensitive ? "" : "i";
+        if (global)
+            modifiers += "g";
+        var query = this.isRegex ? "/" + this.query + "/" : this.query;
+
+        var regex;
+
+        // First try creating regex if user knows the / / hint.
+        try {
+            if (/^\/.+\/$/.test(query)) {
+                regex = new RegExp(query.substring(1, query.length - 1), modifiers);
+                regex.__fromRegExpQuery = true;
+            }
+        } catch (e) {
+            // Silent catch.
+        }
+
+        // Otherwise just do a plain text search.
+        if (!regex)
+            regex = createPlainTextSearchRegex(query, modifiers);
+
+        return regex;
+    }
 }

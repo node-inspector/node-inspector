@@ -1,0 +1,90 @@
+/*
+ * Copyright (c) 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.blocked-urls-pane {
+    overflow: hidden;
+}
+
+.toolbar {
+    border-bottom: 1px solid #dadada;
+}
+
+.no-blocked-urls, .blocked-urls-list {
+    font-size: 11px;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.no-blocked-urls {
+    display: flex;
+    justify-content: center;
+    padding: 3px;
+}
+
+.no-blocked-urls > span {
+    white-space: pre;
+}
+
+.blocked-url {
+    flex: none;
+    display: flex;
+    align-items: center;
+    padding: 3px 10px 3px 9px;
+    position: relative;
+}
+
+.blocked-url:not(.blocked-url-editing):hover {
+    background-color: #dadada;
+}
+
+.blocked-url .blocked-count {
+    flex: 30px 0 0;
+    font-size: smaller !important;
+    padding-right: 5px;
+}
+
+.blocked-url > input {
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    top: 0;
+    bottom: 0;
+    width: calc(100% - 12px);
+}
+
+.blocked-url-text {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    flex: auto;
+    margin-right: 5px;
+}
+
+.blocked-url .remove-button {
+    width: 13px;
+    height: 13px;
+    background-image: url(Images/toolbarButtonGlyphs.png);
+    background-size: 352px 168px;
+    background-position: -175px -96px;
+    visibility: hidden;
+    flex: none;
+    opacity: 0.7;
+    cursor: default;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+.blocked-url .remove-button {
+    background-image: url(Images/toolbarButtonGlyphs_2x.png);
+}
+} /* media */
+
+.blocked-url:hover .remove-button {
+    visibility: visible;
+}
+
+.blocked-url .remove-button:hover {
+    opacity: 1.0;
+}

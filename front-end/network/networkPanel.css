@@ -27,58 +27,30 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#network-views {
+.panel.network > .toolbar {
+    position: relative;
+    border-bottom: 1px solid #dadada;
+}
+
+.network-details-view {
     background: rgb(203, 203, 203);
 }
 
-#network-close-button {
-    position: absolute;
-    top: 8px;
-    left: 5px;
-    z-index: 10;
-    display: none;
+.network-close-button {
+    margin: auto -1px auto 4px;
 }
 
-#network-views.small #network-close-button {
-    top: 4px;
-}
-
-.network.panel.viewing-resource #network-close-button {
-    display: block;
-}
-
-#network-views .network-item-view .tabbed-pane-header {
-    flex: 0 0 31px;
-    padding-top: 8px;
-    padding-left: 13px;
-    white-space: nowrap;
-}
-
-#network-views.small .network-item-view .tabbed-pane-header {
-    flex-basis: 23px;
-    padding-top: 0;
+.network-details-view-tall-header {
+    margin-top: 4px;
 }
 
 .network-item-view {
-    display: none;
+    display: flex;
     background: white;
 }
 
-.network-item-view.visible {
-    display: -webkit-flex;
-}
-
-.network-item-view .tabbed-pane-header {
-    border-bottom: 1px solid rgb(205, 205, 205);
-}
-
 .resource-timing-view {
-    display: none;
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: 0;
-    bottom: 0;
+    display: block;
     margin: 6px;
     color: rgb(30%, 30%, 30%);
 }
@@ -86,14 +58,28 @@
 /* Network timing is shared between popover and network item view pane */
 
 .network-timing-table {
-    width: 328px;
+    width: 380px;
     border-spacing: 0;
-    padding-left: 4px;
-    padding-right: 4px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.network-timing-table-header td {
+    color: #bbb;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+}
+
+.network-timing-table-header td:last-child {
+    text-align: right;
 }
 
 .network-timing-table col.labels {
     width: 120px;
+}
+
+.network-timing-table col.duration {
+    width: 80px;
 }
 
 .network-timing-table td {
@@ -106,8 +92,13 @@
     padding: 2px 0;
 }
 
-.network-timing-table .footnote {
-    border-top: 1px solid #eee;
+.network-timing-footer td {
+    border-top: 8px solid transparent;
+}
+
+.network-timing-footer td:last-child {
+    font-weight: bold;
+    text-align: right;
 }
 
 .network-timing-row {
@@ -123,59 +114,105 @@
 }
 
 .network-timing-bar-title {
-    position: absolute;
     color: #222;
-    padding: 0 3px;
-    line-height: 15px;
+    white-space: nowrap;
+    text-align: right;
 }
 
+.network-timing-bar.queueing,
 .network-timing-bar.total {
     border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.network-timing-bar.blocking,
+.network-timing-bar.blocking {
+    background-color: #AAAAAA;
+}
+
 .network-timing-bar.proxy {
-    background-color: rgb(205, 205, 205);
+    background-color: #A1887F;
 }
 
 .network-timing-bar.dns {
-    background-color: rgb(31, 124, 131);
+    background-color: #009688;
 }
 
 .network-timing-bar.connecting,
-.network-timing-bar.ssl,
-.network-timing-bar.serviceworker {
-    background-color: rgb(229, 130, 38);
+.network-timing-bar.serviceworker,
+.network-timing-bar.serviceworker-preparation {
+    background-color: #FF9800;
+}
+
+.network-timing-bar.ssl {
+    background-color: #9C27B0;
 }
 
 .network-timing-bar.sending {
-    background-color: rgb(95, 221, 95);
+    background-color: #B0BEC5;
 }
 
 .network-timing-bar.waiting {
-    background-color: rgb(95, 221, 95);
+    background-color: #00C853;
 }
 
 .network-timing-bar.receiving {
-    background-color: rgb(65, 137, 215);
+    background-color: #03A9F4;
 }
 
-.resource-timing-view.visible {
-    display: block;
+.network-timing-bar.proxy,
+.network-timing-bar.dns,
+.network-timing-bar.ssl,
+.network-timing-bar.connecting,
+.network-timing-bar.blocking {
+    height: 10px;
+    margin: auto;
 }
 
 .resource-timing-view .network-timing-table {
     width: 100%;
 }
 
-.network-filters-header {
-    flex: 0 0 23px;
-    padding-right: 4px;
+#network-overview-panel {
+    flex: none;
+    position: relative;
 }
 
-.network-filters-header .filter-text-filter {
-    flex-grow: 1;
-    max-width: 312px;
+#network-overview-container {
+    overflow: hidden;
+    flex: auto;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    border-bottom: 1px solid #CDCDCD;
+}
+
+#network-overview-container canvas {
+    width: 100%;
+    height: 100%;
+}
+
+#network-overview-grid .resources-dividers-label-bar {
+    pointer-events: auto;
+}
+
+.network .network-overview {
+    flex: 0 0 60px;
+}
+
+.network-overview .overview-grid-window,
+.network-overview .overview-grid-dividers-background {
+    height: 100%;
+}
+
+.network-overview .resources-dividers-label-bar {
+    background-color: rgba(255, 255, 255, 0.95);
+}
+
+.network-overview .resources-dividers-label-bar .resources-divider {
+    background-color: transparent;
+}
+
+.network-overview .resources-dividers {
+    z-index: 250;
 }
 
 .request-view.json {
@@ -186,4 +223,14 @@
     width: 100%;
     height: 100%;
     position: absolute;
+}
+
+.network-film-strip {
+    border-bottom: solid 1px #cdcdcd;
+    flex: none !important;
+}
+
+.network-blocked-urls {
+    border-top: 1px solid #dadada;
+    flex: 104px 0 0;
 }

@@ -51,11 +51,10 @@ WebInspector.AuditCategory.prototype = {
     /**
      * @param {!WebInspector.Target} target
      * @param {!Array.<!WebInspector.NetworkRequest>} requests
-            * @param {function(!WebInspector.AuditRuleResult)} ruleResultCallback
-     * @param {function()} categoryDoneCallback
+     * @param {function(!WebInspector.AuditRuleResult)} ruleResultCallback
      * @param {!WebInspector.Progress} progress
      */
-    run: function(target, requests, ruleResultCallback, categoryDoneCallback, progress)
+    run: function(target, requests, ruleResultCallback, progress)
     {
     }
 }

@@ -22,7 +22,7 @@
         {
             "type": "@WebInspector.ActionDelegate",
             "actionId": "console.show",
-            "className": "WebInspector.ConsoleView.ShowConsoleActionDelegate",
+            "className": "WebInspector.ConsoleView.ActionDelegate",
             "bindings": [
                 {
                     "shortcut": "Ctrl+`"
@@ -30,43 +30,64 @@
             ]
         },
         {
-            "type": "ui-setting",
-            "section": "Console",
+            "type": "@WebInspector.ActionDelegate",
+            "actionId": "console.clear",
+            "title": "Clear console",
+            "iconClass": "clear-toolbar-item",
+            "className": "WebInspector.ConsoleView.ActionDelegate",
+            "bindings": [
+                {
+                    "platform": "windows,linux",
+                    "shortcut": "Ctrl+L"
+                },
+                {
+                    "platform": "mac",
+                    "shortcut": "Ctrl+L Meta+K"
+                }
+            ]
+        },
+        {
+            "type": "setting",
+            "category": "Console",
             "title": "Hide network messages",
             "settingName": "hideNetworkMessages",
-            "settingType": "checkbox"
+            "settingType": "boolean",
+            "defaultValue": false
         },
         {
-            "type": "ui-setting",
-            "section": "Console",
+            "type": "setting",
+            "category": "Console",
             "title": "Log XMLHttpRequests",
             "settingName": "monitoringXHREnabled",
-            "settingType": "checkbox"
+            "settingType": "boolean",
+            "defaultValue": false
         },
         {
-            "type": "ui-setting",
-            "section": "Console",
+            "type": "setting",
+            "category": "Console",
             "title": "Preserve log upon navigation",
             "settingName": "preserveConsoleLog",
-            "settingType": "checkbox"
+            "settingType": "boolean",
+            "defaultValue": false
         },
         {
-            "type": "ui-setting",
-            "section": "Console",
+            "type": "setting",
+            "category": "Console",
             "title": "Show timestamps",
             "settingName": "consoleTimestampsEnabled",
-            "settingType": "checkbox"
+            "settingType": "boolean",
+            "defaultValue": false
         }
     ],
     "dependencies": [
-        "components"
+        "components", "ui_lazy"
     ],
     "scripts": [
         "ConsoleViewMessage.js",
         "ConsoleView.js",
         "ConsolePanel.js"
     ],
-    "stylesheets": [
+    "resources": [
         "consoleView.css"
     ]
 }

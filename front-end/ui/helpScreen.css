@@ -33,7 +33,7 @@
 .help-content {
     overflow-y: auto;
     overflow-x: hidden;
-    margin: 8px;
+    margin: 8px 8px 8px 0;
     padding: 0 4px;
     flex: auto;
 }
@@ -73,32 +73,17 @@
     position: absolute;
     top: 8px;
     right: 8px;
+    z-index: 10;
 }
 
 body.dock-to-bottom .help-content {
     margin-bottom: 8px;
 }
 
-.platform-mac .help-window-main .tabbed-pane-header-contents {
-    margin-left: 27px;
-}
-
-.platform-mac .help-window-main .help-window-title {
-    margin-left: 18px;
-}
-
 .help-container {
     width: 100%;
     -webkit-user-select: auto;
-    -webkit-column-width: 470px;
-}
-
-.platform-mac .settings-tab .help-container {
-    -webkit-column-width: 430px;
-}
-
-.platform-mac .help-container {
-    -webkit-column-width: 361px;
+    -webkit-column-width: 288px;
 }
 
 .help-no-columns {
@@ -108,26 +93,21 @@ body.dock-to-bottom .help-content {
 .help-block {
     display: block;
     padding-bottom: 9px;
-    width: 470px;
+    width: 288px;
     -webkit-column-break-inside: avoid;
 }
 
-.platform-mac .settings-tab .help-block {
-    width: 430px;
-}
-
 .settings-tab.help-container {
-    -webkit-column-width: 410px;
+    -webkit-column-width: 308px;
 }
 
 .settings-tab .help-block {
-    width: 410px;
     margin-left: 20px;
 }
 
 .settings-tab .field-error-message {
     color: DarkRed;
-    height: 0px; /* Avoid changing element height when content is set. */
+    height: 0; /* Avoid changing element height when content is set. */
 }
 
 .help-line {
@@ -137,22 +117,22 @@ body.dock-to-bottom .help-content {
 
 .help-key-cell {
     display: inline-block;
-    width: 270px;
+    width: 153px;
+    white-space: nowrap;
     text-align: right;
-}
-
-.platform-mac .help-key-cell {
-    width: 151px;
+    vertical-align: middle;
+    padding-right: 6px;
 }
 
 .help-cell {
     display: inline-block;
-    width: 200px;
+    width: 135px;
     vertical-align: middle;
 }
 
 .help-section-title {
     font-size: 120%;
+    text-align: left;
 }
 
 .help-key {
@@ -161,16 +141,13 @@ body.dock-to-bottom .help-content {
     font-size: 11px;
     background-color: #f7f7f7;
     color: #333;
-    box-shadow: 0 1px 0px rgba(0, 0, 0, 0.2), 0 0 0 2px #ffffff inset;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), 0 0 0 2px #ffffff inset;
     border-radius: 3px;
     display: inline-block;
     margin: 0 0.1em;
     text-shadow: 0 1px 0 #fff;
     line-height: 1.5;
     white-space: nowrap;
-}
-
-.platform-mac .help-key {
     font-family: Lucida Grande, sans-serif;
 }
 
@@ -185,6 +162,7 @@ body.dock-to-bottom .help-content {
 
 .help-key-delimiter {
     margin: 0 0.5em;
+    display: none;
 }
 
 .help-window-outer fieldset {
@@ -206,11 +184,6 @@ body.dock-to-bottom .help-content {
     padding-left: 30px;
 }
 
-#enable-devtools-on-startup {
-    margin: 0 0 0 80px;
-    display: inline-block;
-}
-
 .help-content p.help-section {
     margin: 0 0 15px 0;
 }
@@ -223,12 +196,8 @@ body.dock-to-bottom .help-content {
     color: inherit;
 }
 
-#resolution-override-section {
-    margin-left: 13px;
-}
-
 .help-content input[type=checkbox] {
-    margin-right: 7px;
+    margin: 1px 7px 1px 2px;
 }
 
 .help-content option {
@@ -249,72 +218,23 @@ body.dock-to-bottom .help-content {
     bottom: 10px;
     left: 10px;
     height: initial;
-    padding: 21px 0 0 21px;
+    padding: 11px 0 0 0;
     box-shadow: 1px 1px 5px 2px rgba(128, 128, 128, 0.7);
 }
 
 #settings-screen .help-window-label {
     font-size: 18px;
     color: inherit;
-    padding-top: 1px;
+    padding: 1px 0 15px 17px;
 }
 
 .help-container-wrapper {
     position: absolute;
-    top: 54px;
-    left: 15px;
+    top: 40px;
+    left: 0px;
     right: 0;
     bottom: 0;
     overflow: auto;
-}
-
-#settings-screen .tabbed-pane-header {
-    border: none transparent;
-    height: auto;
-    width: 110px;
-    margin-top: 14px;
-    flex: auto;
-}
-
-#settings-screen .tabbed-pane-header-contents {
-    margin: 0;
-}
-
-#settings-screen .tabbed-pane-header-tabs {
-    display: flex;
-    flex-direction: column;
-    padding-top: 5px;
-    width: 100px;
-}
-
-#settings-screen .tabbed-pane-header-tab {
-    background-color: transparent;
-    border: none transparent;
-    font-weight: normal;
-    text-shadow: none;
-    color: #999999;
-    height: 22px;
-    padding-left: 0;
-}
-
-#settings-screen .tabbed-pane-header-tab:not(.selected) {
-    cursor: pointer;
-}
-
-#settings-screen .tabbed-pane-header-tab.selected {
-    color: inherit;
-}
-
-#settings-screen .tabbed-pane-content {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    margin: 8px;
-}
-
-#settings-screen .tabbed-pane-content {
-    left: 120px;
 }
 
 .settings-tab.help-content {
@@ -340,12 +260,8 @@ body.dock-to-bottom .help-content {
 }
 
 .settings-tab-container header {
-    padding: 14px 0 6px;
+    padding: 0 0 6px;
     border-bottom: 1px solid #EEEEEE;
-}
-
-#tab-shortcuts {
-    margin-top: 25px !important;
 }
 
 #experiments-tab-content .help-container {
@@ -354,6 +270,7 @@ body.dock-to-bottom .help-content {
 
 #experiments-tab-content .help-block {
     width: 470px;
+    margin-left: 0;
 }
 
 .settings-tab-container header > h3 {
@@ -507,7 +424,7 @@ input.list-column-editor {
 }
 select.list-column-editor {
     padding: 2px;
-    margin-left: 0px;
+    margin-left: 0;
 }
 
 .settings-tab .settings-list .settings-list-item .file-system-path {

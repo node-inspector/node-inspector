@@ -1,0 +1,162 @@
+/*
+ * Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.network-conditions-settings-tab .settings-tab.help-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    height: 100%;
+    margin: 0;
+}
+
+.network-conditions-settings-tab .conditions-title {
+    font-size: 120%;
+    color: #222;
+    flex: none;
+}
+
+.network-conditions-settings-tab .button-row {
+    flex: none;
+    display: flex;
+}
+
+.network-conditions-settings-tab .button-row button {
+    margin-right: 10px;
+    min-width: 120px;
+    flex: none;
+}
+
+.network-conditions-settings-tab .conditions-list {
+    width: 350px;
+    overflow-y: auto;
+    margin: 10px 0;
+    border: 1px solid rgb(231, 231, 231);
+    flex: auto 0 1;
+}
+
+.network-conditions-settings-tab .custom-separator {
+    background: rgb(231, 231, 231);
+    height: 1px;
+}
+
+.network-conditions-settings-tab .conditions-list-item {
+    padding: 3px 5px 3px 5px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+}
+
+.network-conditions-settings-tab .conditions-list-item:hover {
+    background: hsl(0, 0%, 85%);
+}
+
+.network-conditions-settings-tab .conditions-list-text {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    flex: 0 0 70px;
+    -webkit-user-select: none;
+    color: #222;
+    text-align: end;
+    position: relative;
+}
+
+.network-conditions-settings-tab .conditions-list-title {
+    text-align: start;
+    flex: auto;
+    display: flex;
+    align-items: center;
+}
+
+.network-conditions-settings-tab .conditions-list-title-text {
+    overflow: hidden;
+    flex: auto;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.network-conditions-settings-tab .conditions-list-separator {
+    flex: 0 0 1px;
+    background-color: rgb(231, 231, 231);
+    height: 90%;
+    margin: 0 4px;
+}
+
+.network-conditions-settings-tab .conditions-list-separator-invisible {
+    visibility: hidden;
+}
+
+.network-conditions-settings-tab .conditions-list-remove,
+.network-conditions-settings-tab .conditions-list-edit {
+    background-image: url(Images/toolbarButtonGlyphs.png);
+    background-size: 352px 168px;
+    width: 32px;
+    height: 24px;
+    opacity: 0.5;
+    cursor: pointer;
+    flex: none;
+    visibility: hidden;
+    pointer-events: auto;
+}
+
+.network-conditions-settings-tab .conditions-list:not(.conditions-list-editing) .conditions-list-item:hover .conditions-list-remove,
+.network-conditions-settings-tab .conditions-list-item:hover .conditions-list-edit {
+    visibility: visible;
+}
+
+.network-conditions-settings-tab .conditions-list-remove:hover,
+.network-conditions-settings-tab .conditions-list-edit:hover {
+    opacity: 0.7;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+    .network-conditions-settings-tab .conditions-list-remove,
+    .network-conditions-settings-tab .conditions-list-edit {
+        background-image: url(Images/toolbarButtonGlyphs_2x.png);
+    }
+} /* media */
+
+.network-conditions-settings-tab .conditions-list-remove {
+    background-position: -128px -24px;
+}
+
+.network-conditions-settings-tab .conditions-list-edit {
+    background-position: -224px -72px;
+}
+
+.network-conditions-settings-tab .conditions-edit-container {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 6px;
+    background: hsl(0, 0%, 95%);
+    border-top: 1px solid rgb(231, 231, 231);
+}
+
+.network-conditions-settings-tab .conditions-edit-row {
+    flex: none;
+    display: flex;
+    flex-direction: row;
+    margin: 6px 4px 0 5px;
+}
+
+.network-conditions-settings-tab .conditions-edit-row input {
+    width: 100%;
+    text-align: inherit;
+}
+
+.network-conditions-settings-tab .conditions-edit-row input.error-input {
+    outline: auto 2px red;
+    background-color: white;
+}
+
+.network-conditions-settings-tab .conditions-edit-optional {
+    position: absolute;
+    bottom: -20px;
+    right: 0;
+    color: rgb(128, 128, 128);
+}

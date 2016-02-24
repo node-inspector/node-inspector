@@ -29,7 +29,7 @@
 
 /**
  * @param {!Array.<number>} rgba
- * @param {string=} format
+ * @param {!WebInspector.Color.Format} format
  * @param {string=} originalText
  * @constructor
  */
@@ -37,15 +37,35 @@ WebInspector.Color = function(rgba, format, originalText)
 {
     this._rgba = rgba;
     this._originalText = originalText || null;
-    this._format = format || null;
+    this._originalTextIsValid = !!this._originalText;
+    this._format = format;
     if (typeof this._rgba[3] === "undefined")
         this._rgba[3] = 1;
+
     for (var i = 0; i < 4; ++i) {
-        if (this._rgba[i] < 0)
+        if (this._rgba[i] < 0) {
             this._rgba[i] = 0;
-        if (this._rgba[i] > 1)
+            this._originalTextIsValid = false;
+        }
+        if (this._rgba[i] > 1) {
             this._rgba[i] = 1;
+            this._originalTextIsValid = false;
+        }
     }
+}
+
+/**
+ * @enum {string}
+ */
+WebInspector.Color.Format = {
+    Original: "original",
+    Nickname: "nickname",
+    HEX: "hex",
+    ShortHEX: "shorthex",
+    RGB: "rgb",
+    RGBA: "rgba",
+    HSL: "hsl",
+    HSLA: "hsla"
 }
 
 /**
@@ -56,7 +76,7 @@ WebInspector.Color.parse = function(text)
 {
     // Simple - #hex, rgb(), nickname, hsl()
     var value = text.toLowerCase().replace(/\s+/g, "");
-    var simple = /^(?:#([0-9a-f]{3,6})|rgb\(([^)]+)\)|(\w+)|hsl\(([^)]+)\))$/i;
+    var simple = /^(?:#([0-9a-f]{3}|[0-9a-f]{6})|rgb\(((?:-?\d+%?,){2}-?\d+%?)\)|(\w+)|hsl\((-?\d+\.?\d*(?:,-?\d+\.?\d*%){2})\))$/i;
     var match = value.match(simple);
     if (match) {
         if (match[1]) { // hex
@@ -87,7 +107,7 @@ WebInspector.Color.parse = function(text)
                 var rgba = WebInspector.Color.Nicknames[nickname];
                 var color = WebInspector.Color.fromRGBA(rgba);
                 color._format = WebInspector.Color.Format.Nickname;
-                color._originalText = nickname;
+                color._originalText = text;
                 return color;
             }
             return null;
@@ -98,7 +118,8 @@ WebInspector.Color.parse = function(text)
             var hsla = [ WebInspector.Color._parseHueNumeric(hslString[0]),
                          WebInspector.Color._parseSatLightNumeric(hslString[1]),
                          WebInspector.Color._parseSatLightNumeric(hslString[2]), 1 ];
-            var rgba = WebInspector.Color._hsl2rgb(hsla);
+            var rgba = [];
+            WebInspector.Color._hsl2rgb(hsla, rgba);
             return new WebInspector.Color(rgba, WebInspector.Color.Format.HSL, text);
         }
 
@@ -106,7 +127,7 @@ WebInspector.Color.parse = function(text)
     }
 
     // Advanced - rgba(), hsla()
-    var advanced = /^(?:rgba\(([^)]+)\)|hsla\(([^)]+)\))$/;
+    var advanced = /^(?:rgba\(((?:-?\d+%?,){3}-?(?:\d+|\d*\.\d+))\)|hsla\((-?(?:\d+|\d*\.\d+)(?:,-?(?:\d+|\d*\.\d+)*%){2},-?(?:\d+|\d*\.\d+))\))$/;
     match = value.match(advanced);
     if (match) {
         if (match[1]) { // rgba
@@ -124,7 +145,8 @@ WebInspector.Color.parse = function(text)
                          WebInspector.Color._parseSatLightNumeric(hslaString[1]),
                          WebInspector.Color._parseSatLightNumeric(hslaString[2]),
                          WebInspector.Color._parseAlphaNumeric(hslaString[3]) ];
-            var rgba = WebInspector.Color._hsl2rgb(hsla);
+            var rgba = [];
+            WebInspector.Color._hsl2rgb(hsla, rgba);
             return new WebInspector.Color(rgba, WebInspector.Color.Format.HSLA, text);
         }
     }
@@ -138,7 +160,7 @@ WebInspector.Color.parse = function(text)
  */
 WebInspector.Color.fromRGBA = function(rgba)
 {
-    return new WebInspector.Color([rgba[0] / 255, rgba[1] / 255, rgba[2] / 255, rgba[3]]);
+    return new WebInspector.Color([rgba[0] / 255, rgba[1] / 255, rgba[2] / 255, rgba[3]], WebInspector.Color.Format.RGBA);
 }
 
 /**
@@ -147,23 +169,14 @@ WebInspector.Color.fromRGBA = function(rgba)
  */
 WebInspector.Color.fromHSVA = function(hsva)
 {
-    var h = hsva[0];
-    var s = hsva[1];
-    var v = hsva[2];
-
-    var t = (2 - s) * v;
-    if (v === 0 || s === 0)
-        s = 0;
-    else
-        s *= v / (t < 1 ? t : 2 - t);
-    var hsla = [h, s, t / 2, hsva[3]];
-
-    return new WebInspector.Color(WebInspector.Color._hsl2rgb(hsla), WebInspector.Color.Format.HSLA);
+    var rgba = [];
+    WebInspector.Color.hsva2rgba(hsva, rgba);
+    return new WebInspector.Color(rgba, WebInspector.Color.Format.HSLA);
 }
 
 WebInspector.Color.prototype = {
     /**
-     * @return {?string}
+     * @return {!WebInspector.Color.Format}
      */
     format: function()
     {
@@ -210,6 +223,15 @@ WebInspector.Color.prototype = {
     },
 
     /**
+     * @return {!Array.<number>}
+     */
+    canonicalHSLA: function()
+    {
+        var hsla = this.hsla();
+        return [Math.round(hsla[0] * 360), Math.round(hsla[1] * 100), Math.round(hsla[2] * 100), hsla[3]];
+    },
+
+    /**
      * @return {!Array.<number>} HSVA with components within [0..1]
      */
     hsva: function()
@@ -251,6 +273,9 @@ WebInspector.Color.prototype = {
      */
     asString: function(format)
     {
+        if (format === this._format && this._originalTextIsValid)
+            return this._originalText;
+
         if (!format)
             format = this._format;
 
@@ -314,16 +339,24 @@ WebInspector.Color.prototype = {
         return this._originalText;
     },
 
+
+    /**
+     * @return {!Array<number>}
+     */
+    rgba: function()
+    {
+        return this._rgba.slice();
+    },
+
     /**
      * @return {!Array.<number>}
      */
-    _canonicalRGBA: function()
+    canonicalRGBA: function()
     {
-        var rgba = new Array(3);
+        var rgba = new Array(4);
         for (var i = 0; i < 3; ++i)
             rgba[i] = Math.round(this._rgba[i] * 255);
-        if (this._rgba[3] !== 1)
-            rgba.push(this._rgba[3]);
+        rgba[3] = this._rgba[3];
         return rgba;
     },
 
@@ -336,11 +369,13 @@ WebInspector.Color.prototype = {
             WebInspector.Color._rgbaToNickname = {};
             for (var nickname in WebInspector.Color.Nicknames) {
                 var rgba = WebInspector.Color.Nicknames[nickname];
+                if (rgba.length !== 4)
+                    rgba = rgba.concat(1);
                 WebInspector.Color._rgbaToNickname[rgba] = nickname;
             }
         }
 
-        return WebInspector.Color._rgbaToNickname[this._canonicalRGBA()] || null;
+        return WebInspector.Color._rgbaToNickname[this.canonicalRGBA()] || null;
     },
 
     /**
@@ -348,7 +383,7 @@ WebInspector.Color.prototype = {
      */
     toProtocolRGBA: function()
     {
-        var rgba = this._canonicalRGBA();
+        var rgba = this.canonicalRGBA();
         var result = { r: rgba[0], g: rgba[1], b: rgba[2] };
         if (rgba[3] !== 1)
             result.a = rgba[3];
@@ -365,7 +400,7 @@ WebInspector.Color.prototype = {
         rgba[1] = 1 - this._rgba[1];
         rgba[2] = 1 - this._rgba[2];
         rgba[3] = this._rgba[3];
-        return new WebInspector.Color(rgba);
+        return new WebInspector.Color(rgba, WebInspector.Color.Format.RGBA);
     },
 
     /**
@@ -376,7 +411,7 @@ WebInspector.Color.prototype = {
      {
          var rgba = this._rgba.slice();
          rgba[3] = alpha;
-         return new WebInspector.Color(rgba);
+         return new WebInspector.Color(rgba, WebInspector.Color.Format.RGBA);
      }
 }
 
@@ -409,7 +444,7 @@ WebInspector.Color._parseHueNumeric = function(value)
  */
 WebInspector.Color._parseSatLightNumeric = function(value)
 {
-    return parseFloat(value) / 100;
+    return Math.min(1, parseFloat(value) / 100);
 }
 
 /**
@@ -422,10 +457,32 @@ WebInspector.Color._parseAlphaNumeric = function(value)
 }
 
 /**
- * @param {!Array.<number>} hsl
- * @return {!Array.<number>}
+ * @param {!Array.<number>} hsva
+ * @param {!Array.<number>} out_hsla
  */
-WebInspector.Color._hsl2rgb = function(hsl)
+WebInspector.Color._hsva2hsla = function(hsva, out_hsla)
+{
+    var h = hsva[0];
+    var s = hsva[1];
+    var v = hsva[2];
+
+    var t = (2 - s) * v;
+    if (v === 0 || s === 0)
+        s = 0;
+    else
+        s *= v / (t < 1 ? t : 2 - t);
+
+    out_hsla[0] = h;
+    out_hsla[1] = s;
+    out_hsla[2] = t/2;
+    out_hsla[3] = hsva[3];
+}
+
+/**
+ * @param {!Array.<number>} hsl
+ * @param {!Array.<number>} out_rgb
+ */
+WebInspector.Color._hsl2rgb = function(hsl, out_rgb)
 {
     var h = hsl[0];
     var s = hsl[1];
@@ -462,11 +519,88 @@ WebInspector.Color._hsl2rgb = function(hsl)
     var tg = h;
     var tb = h - (1 / 3);
 
-    var r = hue2rgb(p, q, tr);
-    var g = hue2rgb(p, q, tg);
-    var b = hue2rgb(p, q, tb);
-    return [r, g, b, hsl[3]];
+    out_rgb[0] = hue2rgb(p, q, tr);
+    out_rgb[1] = hue2rgb(p, q, tg);
+    out_rgb[2] = hue2rgb(p, q, tb);
+    out_rgb[3] = hsl[3];
 }
+
+/**
+ * @param {!Array<number>} hsva
+ * @param {!Array<number>} out_rgba
+ */
+WebInspector.Color.hsva2rgba = function(hsva, out_rgba)
+{
+    WebInspector.Color._hsva2hsla(hsva, WebInspector.Color.hsva2rgba._tmpHSLA);
+    WebInspector.Color._hsl2rgb(WebInspector.Color.hsva2rgba._tmpHSLA, out_rgba);
+
+    for (var i = 0; i < WebInspector.Color.hsva2rgba._tmpHSLA.length; i++)
+        WebInspector.Color.hsva2rgba._tmpHSLA[i] = 0;
+};
+
+/** @type {!Array<number>} */
+WebInspector.Color.hsva2rgba._tmpHSLA = [0, 0, 0, 0];
+
+
+/**
+ * Calculate the luminance of this color using the WCAG algorithm.
+ * See http://www.w3.org/TR/2008/REC-WCAG20-20081211/#relativeluminancedef
+ * @param {!Array<number>} rgba
+ * @return {number}
+ */
+WebInspector.Color.luminance = function(rgba)
+{
+    var rSRGB = rgba[0];
+    var gSRGB = rgba[1];
+    var bSRGB = rgba[2];
+
+    var r = rSRGB <= 0.03928 ? rSRGB / 12.92 : Math.pow(((rSRGB + 0.055)/1.055), 2.4);
+    var g = gSRGB <= 0.03928 ? gSRGB / 12.92 : Math.pow(((gSRGB + 0.055)/1.055), 2.4);
+    var b = bSRGB <= 0.03928 ? bSRGB / 12.92 : Math.pow(((bSRGB + 0.055)/1.055), 2.4);
+
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/**
+ * Combine the two given color according to alpha blending.
+ * @param {!Array<number>} fgRGBA
+ * @param {!Array<number>} bgRGBA
+ * @param {!Array<number>} out_flattened
+ */
+WebInspector.Color.flattenColors = function(fgRGBA, bgRGBA, out_flattened)
+{
+    var alpha = fgRGBA[3];
+
+    out_flattened[0] = ((1 - alpha) * bgRGBA[0]) + (alpha * fgRGBA[0]);
+    out_flattened[1] = ((1 - alpha) * bgRGBA[1]) + (alpha * fgRGBA[1]);
+    out_flattened[2] = ((1 - alpha) * bgRGBA[2]) + (alpha * fgRGBA[2]);
+    out_flattened[3] = alpha + (bgRGBA[3] * (1 - alpha));
+}
+
+/**
+ * Calculate the contrast ratio between a foreground and a background color.
+ * Returns the ratio to 1, for example for two two colors with a contrast ratio of 21:1, this function will return 21.
+ * See http://www.w3.org/TR/2008/REC-WCAG20-20081211/#contrast-ratiodef
+ * @param {!Array<number>} fgRGBA
+ * @param {!Array<number>} bgRGBA
+ * @return {number}
+ */
+WebInspector.Color.calculateContrastRatio = function(fgRGBA, bgRGBA)
+{
+    WebInspector.Color.flattenColors(fgRGBA, bgRGBA, WebInspector.Color.calculateContrastRatio._flattenedFg);
+
+    var fgLuminance = WebInspector.Color.luminance(WebInspector.Color.calculateContrastRatio._flattenedFg);
+    var bgLuminance = WebInspector.Color.luminance(bgRGBA);
+    var contrastRatio = (Math.max(fgLuminance, bgLuminance) + 0.05) /
+        (Math.min(fgLuminance, bgLuminance) + 0.05);
+
+    for (var i = 0; i < WebInspector.Color.calculateContrastRatio._flattenedFg.length; i++)
+        WebInspector.Color.calculateContrastRatio._flattenedFg[i] = 0;
+
+    return contrastRatio;
+}
+
+WebInspector.Color.calculateContrastRatio._flattenedFg = [0, 0, 0, 0];
 
 WebInspector.Color.Nicknames = {
     "aliceblue":          [240,248,255],
@@ -633,18 +767,4 @@ WebInspector.Color.PageHighlight = {
     EventTarget: WebInspector.Color.fromRGBA([255, 196, 196, .66]),
     Shape: WebInspector.Color.fromRGBA([96, 82, 177, 0.8]),
     ShapeMargin: WebInspector.Color.fromRGBA([96, 82, 127, .6])
-}
-
-/**
- * @enum {string}
- */
-WebInspector.Color.Format = {
-    Original: "original",
-    Nickname: "nickname",
-    HEX: "hex",
-    ShortHEX: "shorthex",
-    RGB: "rgb",
-    RGBA: "rgba",
-    HSL: "hsl",
-    HSLA: "hsla"
 }

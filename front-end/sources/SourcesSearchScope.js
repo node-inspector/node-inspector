@@ -47,9 +47,11 @@ WebInspector.SourcesSearchScope._filesComparator = function(uiSourceCode1, uiSou
         return -1;
     if (!uiSourceCode1.isDirty() && uiSourceCode2.isDirty())
         return 1;
-    if (uiSourceCode1.url && !uiSourceCode2.url)
+    var networkURL1 = WebInspector.networkMapping.networkURL(uiSourceCode1);
+    var networkURL2 = WebInspector.networkMapping.networkURL(uiSourceCode2);
+    if (networkURL1 && !networkURL2)
         return -1;
-    if (!uiSourceCode1.url && uiSourceCode2.url)
+    if (!networkURL1 && networkURL2)
         return 1;
     return String.naturalOrderComparator(uiSourceCode1.fullDisplayName(), uiSourceCode2.fullDisplayName());
 }
@@ -57,27 +59,19 @@ WebInspector.SourcesSearchScope._filesComparator = function(uiSourceCode1, uiSou
 
 WebInspector.SourcesSearchScope.prototype = {
     /**
+     * @override
      * @param {!WebInspector.Progress} progress
-     * @param {function(boolean)} indexingFinishedCallback
      */
-    performIndexing: function(progress, indexingFinishedCallback)
+    performIndexing: function(progress)
     {
         this.stopSearch();
 
         var projects = this._projects();
         var compositeProgress = new WebInspector.CompositeProgress(progress);
-        progress.addEventListener(WebInspector.Progress.Events.Canceled, indexingCanceled);
         for (var i = 0; i < projects.length; ++i) {
             var project = projects[i];
             var projectProgress = compositeProgress.createSubProgress(project.uiSourceCodes().length);
             project.indexContent(projectProgress);
-        }
-        compositeProgress.addEventListener(WebInspector.Progress.Events.Done, indexingFinishedCallback.bind(this, true));
-
-        function indexingCanceled()
-        {
-            indexingFinishedCallback(false);
-            progress.done();
         }
     },
 
@@ -101,13 +95,14 @@ WebInspector.SourcesSearchScope.prototype = {
          */
         function filterOutContentScriptsIfNeeded(project)
         {
-            return WebInspector.settings.searchInContentScripts.get() || project.type() !== WebInspector.projectTypes.ContentScripts;
+            return WebInspector.moduleSetting("searchInContentScripts").get() || project.type() !== WebInspector.projectTypes.ContentScripts;
         }
 
         return WebInspector.workspace.projects().filter(filterOutServiceProjects).filter(filterOutContentScriptsIfNeeded);
     },
 
     /**
+     * @override
      * @param {!WebInspector.ProjectSearchConfig} searchConfig
      * @param {!WebInspector.Progress} progress
      * @param {function(!WebInspector.FileBasedSearchResult)} searchResultCallback
@@ -278,7 +273,7 @@ WebInspector.SourcesSearchScope.prototype = {
             var queries = this._searchConfig.queries();
             if (content !== null) {
                 for (var i = 0; i < queries.length; ++i) {
-                    var nextMatches = WebInspector.ContentProvider.performSearchInContent(content, queries[i], !this._searchConfig.ignoreCase(), this._searchConfig.isRegex())
+                    var nextMatches = WebInspector.ContentProvider.performSearchInContent(content, queries[i], !this._searchConfig.ignoreCase(), this._searchConfig.isRegex());
                     matches = matches.mergeOrdered(nextMatches, matchesComparator);
                 }
             }
@@ -292,12 +287,16 @@ WebInspector.SourcesSearchScope.prototype = {
         }
     },
 
+    /**
+     * @override
+     */
     stopSearch: function()
     {
         ++this._searchId;
     },
 
     /**
+     * @override
      * @param {!WebInspector.ProjectSearchConfig} searchConfig
      * @return {!WebInspector.FileBasedSearchResultsPane}
      */

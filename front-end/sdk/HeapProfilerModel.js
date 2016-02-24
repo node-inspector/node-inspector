@@ -84,8 +84,8 @@ WebInspector.HeapProfilerDispatcher = function(model)
 }
 
 WebInspector.HeapProfilerDispatcher.prototype = {
-
     /**
+     * @override
      * @param {!Array.<number>} samples
      */
     heapStatsUpdate: function(samples)
@@ -94,6 +94,7 @@ WebInspector.HeapProfilerDispatcher.prototype = {
     },
 
     /**
+     * @override
      * @param {number} lastSeenObjectId
      * @param {number} timestamp
      */
@@ -103,6 +104,7 @@ WebInspector.HeapProfilerDispatcher.prototype = {
     },
 
     /**
+     * @override
      * @param {string} chunk
      */
     addHeapSnapshotChunk: function(chunk)
@@ -111,6 +113,7 @@ WebInspector.HeapProfilerDispatcher.prototype = {
     },
 
     /**
+     * @override
      * @param {number} done
      * @param {number} total
      * @param {boolean=} finished
@@ -120,6 +123,9 @@ WebInspector.HeapProfilerDispatcher.prototype = {
         this._heapProfilerModel.reportHeapSnapshotProgress(done, total, finished);
     },
 
+    /**
+     * @override
+     */
     resetProfiles: function()
     {
         this._heapProfilerModel.resetProfiles();

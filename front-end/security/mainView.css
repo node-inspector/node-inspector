@@ -1,0 +1,66 @@
+/* Copyright (c) 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.security-main-view {
+    -webkit-user-select: text;
+}
+
+.security-main-view .security-section {
+    padding: 1em;
+    border-bottom: 1px solid rgb(230, 230, 230);
+
+    display: flex;
+    white-space: nowrap;
+}
+
+.security-main-view .security-summary .lock-icon {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    margin-right: 1em;
+}
+
+.security-main-view .security-section-text {
+    flex: auto;
+    white-space: normal;
+}
+
+.security-certificate-id {
+    margin-top: 8px;
+}
+
+.security-main-view .security-summary-section-title {
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.security-main-view .security-explanation.security-state-secure {
+    color: rgb(42, 194, 57);
+}
+
+.security-main-view .security-explanation.security-state-neutral {
+    color: rgb(253, 177, 48);
+}
+
+.security-main-view .security-explanation.security-state-insecure {
+    color: rgb(216, 71, 60);
+}
+
+.security-main-view .security-explanation.security-section .lock-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin-left: 10px;
+    margin-right: 18px;
+}
+
+.security-main-view .security-section-title {
+    color: rgb(90, 90, 90);
+    margin-bottom: 8px;
+}
+
+.security-main-view .security-mixed-content {
+    margin-top: 8px;
+}

@@ -116,14 +116,8 @@
     display: flex;
     border: 1px solid #999;
     position: relative;
-    cursor: url(Images/touchCursor.png), default;
+    cursor: -webkit-image-set(url(Images/touchCursor.png) 1x, url(Images/touchCursor_2x.png) 2x), default;
 }
-
-@media (-webkit-min-device-pixel-ratio: 1.5) {
-.screencast-canvas-container {
-    cursor: url(Images/touchCursor_2x.png), default;
-}
-} /* media */
 
 .screencast canvas {
     flex: auto;
@@ -155,15 +149,10 @@
 }
 
 .screencast-glasspane {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  background-color: rgba(255, 255, 255, 0.8);
-  font-size: 30px;
-  z-index: 100;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+    background-color: rgba(255, 255, 255, 0.8);
+    font-size: 30px;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }

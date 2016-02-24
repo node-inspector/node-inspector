@@ -35,38 +35,38 @@ WebInspector.StackView = function(isVertical)
 {
     WebInspector.VBox.call(this);
     this._isVertical = isVertical;
-    this._currentSplitView = null;
+    this._currentSplitWidget = null;
 }
 
 WebInspector.StackView.prototype = {
     /**
-     * @param {!WebInspector.View} view
+     * @param {!WebInspector.Widget} view
      * @param {string=} sidebarSizeSettingName
      * @param {number=} defaultSidebarWidth
      * @param {number=} defaultSidebarHeight
-     * @return {!WebInspector.SplitView}
+     * @return {!WebInspector.SplitWidget}
      */
     appendView: function(view, sidebarSizeSettingName, defaultSidebarWidth, defaultSidebarHeight)
     {
-        var splitView = new WebInspector.SplitView(this._isVertical, true, sidebarSizeSettingName, defaultSidebarWidth, defaultSidebarHeight);
-        splitView.setMainView(view);
-        splitView.hideSidebar();
+        var splitWidget = new WebInspector.SplitWidget(this._isVertical, true, sidebarSizeSettingName, defaultSidebarWidth, defaultSidebarHeight);
+        splitWidget.setMainWidget(view);
+        splitWidget.hideSidebar();
 
-        if (!this._currentSplitView) {
-            splitView.show(this.element);
+        if (!this._currentSplitWidget) {
+            splitWidget.show(this.element);
         } else {
-            this._currentSplitView.setSidebarView(splitView);
-            this._currentSplitView.showBoth();
+            this._currentSplitWidget.setSidebarWidget(splitWidget);
+            this._currentSplitWidget.showBoth();
         }
 
-        this._currentSplitView = splitView;
-        return splitView;
+        this._currentSplitWidget = splitWidget;
+        return splitWidget;
     },
 
-    detachChildViews: function()
+    detachChildWidgets: function()
     {
-        WebInspector.View.prototype.detachChildViews.call(this);
-        this._currentSplitView = null;
+        WebInspector.Widget.prototype.detachChildWidgets.call(this);
+        this._currentSplitWidget = null;
     },
 
     __proto__: WebInspector.VBox.prototype

@@ -4,7 +4,7 @@
             "type": "@WebInspector.PanelFactory",
             "name": "profiles",
             "title": "Profiles",
-            "order": 4,
+            "order": 60,
             "className": "WebInspector.ProfilesPanelFactory"
         },
         {
@@ -13,29 +13,58 @@
             "className": "WebInspector.ProfilesPanel.ContextMenuProvider"
         },
         {
-            "type": "ui-setting",
-            "section": "Profiler",
+            "type": "setting",
+            "category": "Profiler",
             "title": "Show advanced heap snapshot properties",
             "settingName": "showAdvancedHeapSnapshotProperties",
-            "settingType": "checkbox"
+            "settingType": "boolean",
+            "defaultValue": false
         },
         {
-            "type": "ui-setting",
-            "section": "Profiler",
+            "type": "setting",
+            "category": "Profiler",
             "title": "Record heap allocation stack traces",
             "settingName": "recordAllocationStacks",
-            "settingType": "checkbox"
+            "settingType": "boolean",
+            "defaultValue": false
         },
         {
-            "type": "ui-setting",
-            "section": "Profiler",
+            "type": "setting",
+            "category": "Profiler",
             "title": "High resolution CPU profiling",
             "settingName": "highResolutionCpuProfiling",
-            "settingType": "checkbox"
+            "settingType": "boolean",
+            "defaultValue": false
+        },
+        {
+            "type": "setting",
+            "category": "Profiler",
+            "title": "Show native functions in JS Profile",
+            "settingName": "showNativeFunctionsInJSProfile",
+            "settingType": "boolean",
+            "defaultValue": false
+        },
+        {
+            "type": "@WebInspector.ActionDelegate",
+            "actionId": "profiler.toggle-recording",
+            "iconClass": "record-toolbar-item",
+            "contextTypes": ["WebInspector.ProfilesPanel"],
+            "className": "WebInspector.ProfilesPanel.RecordActionDelegate",
+            "bindings": [
+                {
+                    "platform": "windows,linux",
+                    "shortcut": "Ctrl+E"
+                },
+                {
+                    "platform": "mac",
+                    "shortcut": "Meta+E"
+                }
+            ]
         }
     ],
     "dependencies": [
-        "components"
+        "components",
+        "ui_lazy"
     ],
     "scripts": [
         "ProfilesPanel.js",
@@ -50,12 +79,10 @@
         "HeapSnapshotGridNodes.js",
         "HeapSnapshotView.js",
         "ProfileLauncherView.js",
-        "CanvasProfileView.js",
-        "CanvasReplayStateView.js",
-        "ProfileTypeRegistry.js"
+        "ProfileTypeRegistry.js",
+        "TargetsComboBoxController.js"
     ],
-    "stylesheets": [
-        "canvasProfiler.css",
+    "resources": [
         "heapProfiler.css",
         "profilesPanel.css"
     ]

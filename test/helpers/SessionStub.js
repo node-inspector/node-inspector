@@ -1,32 +1,40 @@
-var EventEmitter = require('events').EventEmitter,
-    inherits = require('util').inherits;
+'use strict';
+
+const Session = require('../../lib/session.js');
+const EventEmitter = require('events');
+const inherits = require('util').inherits;
+
+const FrontendClient = require('../../lib/FrontendClient/FrontendClient.js');
 
 module.exports = SessionStub;
 
 function SessionStub() {
-  this.debuggerClient = new DebuggerClientStub();
-  this.frontendClient = new FrontendClientStub();
-
-  this.resourceTreeResolved = true;
+  this.client = new EventEmitter();
+  this.debugger = new DebuggerClientStub();
+  this.frontend = new FrontendClientStub({}, this);
 }
-inherits(SessionStub, EventEmitter);
+inherits(SessionStub, Session);
 
-function DebuggerClientStub() {}
-inherits(DebuggerClientStub, EventEmitter);
+class DebuggerClientStub extends EventEmitter {
+  close() {
+    this.emit('close');
+  }
+}
 
-DebuggerClientStub.prototype.close = function() {
-  this.emit('close');
-};
+class FrontendClientStub extends FrontendClient {
+  constructor(config, session) {
+    super(config, session);
+  }
 
-function FrontendClientStub() {}
-inherits(FrontendClientStub, EventEmitter);
+  emitEvent(event, message) {
+    this.emit(event, message);
+  }
 
-FrontendClientStub.prototype.sendEvent = function(event, message) {
-  this.emit(event, message);
-};
-FrontendClientStub.prototype.sendLogToConsole = function(type, message) {
-  throw new Error(message);
-};
-FrontendClientStub.prototype.off = function() {
-  this.removeListener.apply(this, arguments);
-};
+  sendLogToConsole(type, message) {
+    throw new Error(message);
+  }
+
+  off() {
+    this.removeListener.apply(this, arguments);
+  }
+}

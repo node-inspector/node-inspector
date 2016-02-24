@@ -1,0 +1,51 @@
+/*
+ * Copyright 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+.event-listener-tree li {
+    padding: 2px 0 0 5px;
+}
+
+.event-listener-tree > li {
+    border-top: 1px solid #f0f0f0;
+}
+
+.event-listener-tree > li:first-of-type {
+    border-top: none;
+}
+
+.event-listener-tree {
+    padding-left: 0 !important;
+    padding-right: 3px;
+}
+
+.event-listener-tree li.parent::before {
+    top: 0 !important;
+}
+
+.event-listener-tree .name {
+    color: rgb(136, 19, 145);
+}
+
+.event-listener-tree-subtitle {
+    float: right;
+}
+
+.event-listener-delete-button {
+    padding: 0 3px;
+    background-color: #f2f2f2;
+    border-radius: 3px;
+    border: 1px solid #c3c3c3;
+    margin-left: 10px;
+    display: none;
+}
+
+.event-listener-delete-button:hover {
+    background-color: #e0e0e0;
+}
+
+.event-listener-tree li:hover .event-listener-delete-button {
+    display: inline;
+}

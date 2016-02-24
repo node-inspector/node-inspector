@@ -21,29 +21,28 @@ WebInspector.TransformController = function(element, disableRotate)
     element.addEventListener("keydown", this._onKeyDown.bind(this), false);
     element.addEventListener("keyup", this._onKeyUp.bind(this), false);
     element.addEventListener("mousewheel", this._onMouseWheel.bind(this), false);
-    this._disableRotate = disableRotate;
     this._minScale = 0;
     this._maxScale = Infinity;
 
-    this._controlPanelStatusBar = new WebInspector.StatusBar();
-    this._controlPanelStatusBar.element.classList.add("transform-control-panel");
+    this._controlPanelToolbar = new WebInspector.Toolbar();
+    this._controlPanelToolbar.element.classList.add("transform-control-panel");
 
     this._modeButtons = {};
     if (!disableRotate) {
-        var panModeButton = new WebInspector.StatusBarButton(WebInspector.UIString("Pan mode (X)"), "pan-status-bar-item");
+        var panModeButton = new WebInspector.ToolbarButton(WebInspector.UIString("Pan mode (X)"), "pan-toolbar-item");
         panModeButton.addEventListener("click", this._setMode.bind(this, WebInspector.TransformController.Modes.Pan));
         this._modeButtons[WebInspector.TransformController.Modes.Pan] = panModeButton;
-        this._controlPanelStatusBar.appendStatusBarItem(panModeButton);
-        var rotateModeButton = new WebInspector.StatusBarButton(WebInspector.UIString("Rotate mode (V)"), "rotate-status-bar-item");
+        this._controlPanelToolbar.appendToolbarItem(panModeButton);
+        var rotateModeButton = new WebInspector.ToolbarButton(WebInspector.UIString("Rotate mode (V)"), "rotate-toolbar-item");
         rotateModeButton.addEventListener("click", this._setMode.bind(this, WebInspector.TransformController.Modes.Rotate));
         this._modeButtons[WebInspector.TransformController.Modes.Rotate] = rotateModeButton;
-        this._controlPanelStatusBar.appendStatusBarItem(rotateModeButton);
+        this._controlPanelToolbar.appendToolbarItem(rotateModeButton);
     }
     this._setMode(WebInspector.TransformController.Modes.Pan);
 
-    var resetButton = new WebInspector.StatusBarButton(WebInspector.UIString("Reset transform (0)"), "center-status-bar-item");
+    var resetButton = new WebInspector.ToolbarButton(WebInspector.UIString("Reset transform (0)"), "center-toolbar-item");
     resetButton.addEventListener("click", this.resetAndNotify.bind(this, undefined));
-    this._controlPanelStatusBar.appendStatusBarItem(resetButton);
+    this._controlPanelToolbar.appendToolbarItem(resetButton);
 
     this._reset();
 }
@@ -65,11 +64,11 @@ WebInspector.TransformController.Modes = {
 
 WebInspector.TransformController.prototype = {
     /**
-     * @return {!WebInspector.StatusBar}
+     * @return {!WebInspector.Toolbar}
      */
-    statusBar: function()
+    toolbar: function()
     {
-        return this._controlPanelStatusBar;
+        return this._controlPanelToolbar;
     },
 
     _onKeyDown: function(event)

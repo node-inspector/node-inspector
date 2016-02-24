@@ -6,7 +6,7 @@
 .filtered-item-list-dialog > input[type=text] {
     flex: 0 0 36px;
     border: 0;
-    box-shadow: rgba(140, 140, 140, 0.5) 0px 4px 16px;
+    box-shadow: rgba(140, 140, 140, 0.5) 0 4px 16px;
     margin: 0 !important;
     padding-left: 6px !important;
     z-index: 1;
@@ -15,7 +15,6 @@
 .filtered-item-list-dialog > div.container {
     flex: auto;
     overflow-y: auto;
-    margin-top: 4px;
     background: white;
 }
 

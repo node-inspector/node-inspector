@@ -30,11 +30,15 @@
  */
 WebInspector.ScopeChainSidebarPane = function()
 {
-    WebInspector.SidebarPane.call(this, WebInspector.UIString("Scope Variables"));
+    WebInspector.SidebarPane.call(this, WebInspector.UIString("Scope"));
     this._sections = [];
-    this._expandedSections = {};
-    this._expandedProperties = [];
+    /** @type {!Set.<?string>} */
+    this._expandedSections = new Set();
+    /** @type {!Set.<string>} */
+    this._expandedProperties = new Set();
 }
+
+WebInspector.ScopeChainSidebarPane._pathSymbol = Symbol("path");
 
 WebInspector.ScopeChainSidebarPane.prototype = {
     /**
@@ -42,13 +46,13 @@ WebInspector.ScopeChainSidebarPane.prototype = {
      */
     update: function(callFrame)
     {
-        this.bodyElement.removeChildren();
+        this.element.removeChildren();
 
         if (!callFrame) {
             var infoElement = createElement("div");
             infoElement.className = "info";
             infoElement.textContent = WebInspector.UIString("Not Paused");
-            this.bodyElement.appendChild(infoElement);
+            this.element.appendChild(infoElement);
             return;
         }
 
@@ -57,23 +61,22 @@ WebInspector.ScopeChainSidebarPane.prototype = {
             if (!section.title)
                 continue;
             if (section.expanded)
-                this._expandedSections[section.title] = true;
+                this._expandedSections.add(section.title);
             else
-                delete this._expandedSections[section.title];
+                this._expandedSections.delete(section.title);
         }
 
         this._sections = [];
 
         var foundLocalScope = false;
-        var scopeChain = callFrame.scopeChain;
+        var scopeChain = callFrame.scopeChain();
         for (var i = 0; i < scopeChain.length; ++i) {
             var scope = scopeChain[i];
             var title = null;
             var emptyPlaceholder = null;
             var extraProperties = [];
-            var declarativeScope = true;
 
-            switch (scope.type) {
+            switch (scope.type()) {
             case DebuggerAgent.ScopeType.Local:
                 foundLocalScope = true;
                 title = WebInspector.UIString("Local");
@@ -82,7 +85,7 @@ WebInspector.ScopeChainSidebarPane.prototype = {
                 if (thisObject)
                     extraProperties.push(new WebInspector.RemoteObjectProperty("this", thisObject));
                 if (i == 0) {
-                    var details = callFrame.target().debuggerModel.debuggerPausedDetails();
+                    var details = callFrame.debuggerModel.debuggerPausedDetails();
                     if (!callFrame.isAsync()) {
                         var exception = details.exception();
                         if (exception)
@@ -108,77 +111,73 @@ WebInspector.ScopeChainSidebarPane.prototype = {
                 break;
             case DebuggerAgent.ScopeType.With:
                 title = WebInspector.UIString("With Block");
-                declarativeScope = false;
                 break;
             case DebuggerAgent.ScopeType.Global:
                 title = WebInspector.UIString("Global");
-                declarativeScope = false;
                 break;
             }
 
-            var subtitle = declarativeScope ? undefined : scope.object.description;
+            var subtitle = scope.description();
             if (!title || title === subtitle)
                 subtitle = undefined;
 
-            var runtimeModel = callFrame.target().runtimeModel;
-            if (declarativeScope)
-                var scopeObject = runtimeModel.createScopeRemoteObject(scope.object, new WebInspector.ScopeRef(i, callFrame.id, undefined));
-            else
-                var scopeObject = runtimeModel.createRemoteObject(scope.object);
+            var titleElement = createElementWithClass("div");
+            titleElement.createChild("div", "scope-chain-sidebar-pane-section-subtitle").textContent = subtitle;
+            titleElement.createChild("div", "scope-chain-sidebar-pane-section-title").textContent = title;
 
-            var section = new WebInspector.ObjectPropertiesSection(scopeObject, title, subtitle, emptyPlaceholder, true, extraProperties, WebInspector.ScopeVariableTreeElement);
-            section.editInSelectedCallFrameWhenPaused = true;
-            section.pane = this;
+            var section = new WebInspector.ObjectPropertiesSection(scope.object(), titleElement, emptyPlaceholder, true, extraProperties);
+            section[WebInspector.ScopeChainSidebarPane._pathSymbol] = title + ":" + (subtitle ? subtitle + ":" : "");
+            section.addEventListener(TreeOutline.Events.ElementAttached, this._elementAttached, this);
+            section.addEventListener(TreeOutline.Events.ElementExpanded, this._elementExpanded, this);
+            section.addEventListener(TreeOutline.Events.ElementCollapsed, this._elementCollapsed, this);
 
-            if (scope.type === DebuggerAgent.ScopeType.Global)
-                section.expanded = false;
-            else if (!foundLocalScope || scope.type === DebuggerAgent.ScopeType.Local || title in this._expandedSections)
-                section.expanded = true;
+            if (scope.type() === DebuggerAgent.ScopeType.Global)
+                section.objectTreeElement().collapse();
+            else if (!foundLocalScope || scope.type() === DebuggerAgent.ScopeType.Local || this._expandedSections.has(title))
+                section.objectTreeElement().expand();
 
+            section.element.classList.add("scope-chain-sidebar-pane-section");
             this._sections.push(section);
-            this.bodyElement.appendChild(section.element);
+            this.element.appendChild(section.element);
         }
     },
 
+    /**
+     * @param {!WebInspector.Event} event
+     */
+    _elementAttached: function(event)
+    {
+        var element = /** @type {!WebInspector.ObjectPropertyTreeElement} */ (event.data);
+        if (element.isExpandable() && this._expandedProperties.has(this._propertyPath(element)))
+            element.expand();
+    },
+
+    /**
+     * @param {!WebInspector.Event} event
+     */
+    _elementExpanded: function(event)
+    {
+        var element = /** @type {!WebInspector.ObjectPropertyTreeElement} */ (event.data);
+        this._expandedProperties.add(this._propertyPath(element));
+    },
+
+    /**
+     * @param {!WebInspector.Event} event
+     */
+    _elementCollapsed: function(event)
+    {
+        var element = /** @type {!WebInspector.ObjectPropertyTreeElement} */ (event.data);
+        this._expandedProperties.delete(this._propertyPath(element));
+    },
+
+    /**
+     * @param {!WebInspector.ObjectPropertyTreeElement} treeElement
+     * @return {string}
+     */
+    _propertyPath: function(treeElement)
+    {
+        return treeElement.treeOutline[WebInspector.ScopeChainSidebarPane._pathSymbol] + WebInspector.ObjectPropertyTreeElement.prototype.propertyPath.call(treeElement);
+    },
+
     __proto__: WebInspector.SidebarPane.prototype
-}
-
-/**
- * @constructor
- * @extends {WebInspector.ObjectPropertyTreeElement}
- * @param {!WebInspector.RemoteObjectProperty} property
- */
-WebInspector.ScopeVariableTreeElement = function(property)
-{
-    WebInspector.ObjectPropertyTreeElement.call(this, property);
-}
-
-WebInspector.ScopeVariableTreeElement.prototype = {
-    onattach: function()
-    {
-        WebInspector.ObjectPropertyTreeElement.prototype.onattach.call(this);
-        if (this.hasChildren && this.propertyIdentifier in this.treeOutline.section.pane._expandedProperties)
-            this.expand();
-    },
-
-    onexpand: function()
-    {
-        this.treeOutline.section.pane._expandedProperties[this.propertyIdentifier] = true;
-    },
-
-    oncollapse: function()
-    {
-        delete this.treeOutline.section.pane._expandedProperties[this.propertyIdentifier];
-    },
-
-    get propertyIdentifier()
-    {
-        if ("_propertyIdentifier" in this)
-            return this._propertyIdentifier;
-        var section = this.treeOutline.section;
-        this._propertyIdentifier = section.title + ":" + (section.subtitle ? section.subtitle + ":" : "") + this.propertyPath();
-        return this._propertyIdentifier;
-    },
-
-    __proto__: WebInspector.ObjectPropertyTreeElement.prototype
 }

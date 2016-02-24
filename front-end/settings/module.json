@@ -3,7 +3,8 @@
         {
             "type": "@WebInspector.ActionDelegate",
             "actionId": "settings.show",
-            "className": "WebInspector.SettingsController.SettingsScreenActionDelegate",
+            "title": "Settings",
+            "className": "WebInspector.SettingsController.ActionDelegate",
             "bindings": [
                 {
                     "shortcut": "F1 Shift+?"
@@ -11,18 +12,48 @@
             ]
         },
         {
-            "type": "@WebInspector.StatusBarItem.Provider",
-            "actionId": "settings.show",
-            "location": "toolbar-right",
-            "title": "Settings",
-            "order": 3,
-            "elementClass": "settings-status-bar-item"
+            "type": "@WebInspector.ActionDelegate",
+            "actionId": "settings.help",
+            "title": "Help",
+            "className": "WebInspector.SettingsController.ActionDelegate"
         },
         {
-            "type": "ui-setting",
-            "section": "Sources",
-            "settingType": "custom",
-            "className": "WebInspector.SettingsScreen.SkipStackFramePatternSettingDelegate"
+            "type": "@WebInspector.ActionDelegate",
+            "actionId": "settings.shortcuts",
+            "title": "Shortcuts",
+            "className": "WebInspector.SettingsController.ActionDelegate"
+        },
+        {
+            "type": "@WebInspector.SettingUI",
+            "category": "Sources",
+            "className": "WebInspector.SettingsScreen.SkipStackFramePatternSettingUI",
+            "settings": [
+                "skipContentScripts",
+                "skipStackFramesPattern"
+            ]
+        },
+        {
+            "type": "@WebInspector.Revealer",
+            "contextTypes": ["WebInspector.Setting"],
+            "className": "WebInspector.SettingsController.Revealer"
+        },
+        {
+            "type": "context-menu-item",
+            "location": "mainMenu/footer",
+            "order": 10,
+            "actionId": "settings.shortcuts"
+        },
+        {
+            "type": "context-menu-item",
+            "location": "mainMenu/footer",
+            "order": 20,
+            "actionId": "settings.show"
+        },
+        {
+            "type": "context-menu-item",
+            "location": "mainMenu/footer",
+            "order": 30,
+            "actionId": "settings.help"
         }
     ],
     "dependencies": [

@@ -55,23 +55,6 @@ WebInspector.OutputStreamDelegate.prototype = {
 /**
  * @interface
  */
-WebInspector.OutputStream = function()
-{
-}
-
-WebInspector.OutputStream.prototype = {
-    /**
-     * @param {string} data
-     * @param {function(!WebInspector.OutputStream)=} callback
-     */
-    write: function(data, callback) { },
-
-    close: function() { }
-}
-
-/**
- * @interface
- */
 WebInspector.ChunkedReader = function()
 {
 }
@@ -109,6 +92,7 @@ WebInspector.ChunkedFileReader = function(file, chunkSize, delegate)
     this._loadedSize = 0;
     this._chunkSize = chunkSize;
     this._delegate = delegate;
+    this._decoder = new TextDecoder();
     this._isCanceled = false;
 }
 
@@ -127,12 +111,16 @@ WebInspector.ChunkedFileReader.prototype = {
         this._loadChunk();
     },
 
+    /**
+     * @override
+     */
     cancel: function()
     {
         this._isCanceled = true;
     },
 
     /**
+     * @override
      * @return {number}
      */
     loadedSize: function()
@@ -141,6 +129,7 @@ WebInspector.ChunkedFileReader.prototype = {
     },
 
     /**
+     * @override
      * @return {number}
      */
     fileSize: function()
@@ -149,6 +138,7 @@ WebInspector.ChunkedFileReader.prototype = {
     },
 
     /**
+     * @override
      * @return {string}
      */
     fileName: function()
@@ -167,15 +157,16 @@ WebInspector.ChunkedFileReader.prototype = {
         if (event.target.readyState !== FileReader.DONE)
             return;
 
-        var data = event.target.result;
-        this._loadedSize += data.length;
-
-        this._output.write(data);
+        var buffer = event.target.result;
+        this._loadedSize += buffer.byteLength;
+        var endOfFile = this._loadedSize === this._fileSize;
+        var decodedString = this._decoder.decode(buffer, {stream: !endOfFile});
+        this._output.write(decodedString);
         if (this._isCanceled)
             return;
         this._delegate.onChunkTransferred(this);
 
-        if (this._loadedSize === this._fileSize) {
+        if (endOfFile) {
             this._file = null;
             this._reader = null;
             this._output.close();
@@ -189,9 +180,9 @@ WebInspector.ChunkedFileReader.prototype = {
     _loadChunk: function()
     {
         var chunkStart = this._loadedSize;
-        var chunkEnd = Math.min(this._fileSize, chunkStart + this._chunkSize)
+        var chunkEnd = Math.min(this._fileSize, chunkStart + this._chunkSize);
         var nextPart = this._file.slice(chunkStart, chunkEnd);
-        this._reader.readAsText(nextPart);
+        this._reader.readAsArrayBuffer(nextPart);
     }
 }
 
@@ -199,7 +190,8 @@ WebInspector.ChunkedFileReader.prototype = {
  * @param {function(!File)} callback
  * @return {!Node}
  */
-WebInspector.createFileSelectorElement = function(callback) {
+WebInspector.createFileSelectorElement = function(callback)
+{
     var fileSelectorElement = createElement("input");
     fileSelectorElement.type = "file";
     fileSelectorElement.style.display = "none";
@@ -245,6 +237,7 @@ WebInspector.FileOutputStream.prototype = {
     },
 
     /**
+     * @override
      * @param {string} data
      * @param {function(!WebInspector.OutputStream)=} callback
      */
@@ -254,6 +247,9 @@ WebInspector.FileOutputStream.prototype = {
         WebInspector.fileManager.append(this._fileName, data);
     },
 
+    /**
+     * @override
+     */
     close: function()
     {
         this._closed = true;

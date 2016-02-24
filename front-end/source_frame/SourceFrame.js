@@ -48,7 +48,6 @@ WebInspector.SourceFrame = function(contentProvider)
     this._currentSearchResultIndex = -1;
     this._searchResults = [];
 
-    this._messages = [];
     this._rowMessageBuckets = {};
 
     this._textEditor.setReadOnly(!this.canEditSource());
@@ -56,51 +55,10 @@ WebInspector.SourceFrame = function(contentProvider)
     this._shortcuts = {};
     this.element.addEventListener("keydown", this._handleKeyDown.bind(this), false);
 
-    this._sourcePosition = new WebInspector.StatusBarText("", "source-frame-cursor-position");
+    this._sourcePosition = new WebInspector.ToolbarText("", "source-frame-cursor-position");
 
     this._errorPopoverHelper = new WebInspector.PopoverHelper(this.element, this._getErrorAnchor.bind(this), this._showErrorPopover.bind(this));
     this._errorPopoverHelper.setTimeout(100, 100);
-}
-
-/**
- * @param {string} query
- * @param {string=} modifiers
- * @return {!RegExp}
- */
-WebInspector.SourceFrame.createSearchRegex = function(query, modifiers)
-{
-    var regex;
-    modifiers = modifiers || "";
-
-    // First try creating regex if user knows the / / hint.
-    try {
-        if (/^\/.+\/$/.test(query)) {
-            regex = new RegExp(query.substring(1, query.length - 1), modifiers);
-            regex.__fromRegExpQuery = true;
-        }
-    } catch (e) {
-        // Silent catch.
-    }
-
-    // Otherwise just do a plain text search.
-    if (!regex)
-        regex = createPlainTextSearchRegex(query, modifiers);
-
-    return regex;
-}
-
-/**
- * @param {!WebInspector.SearchableView.SearchConfig} searchConfig
- * @param {boolean=} global
- * @return {!RegExp}
- */
-WebInspector.SourceFrame._createSearchRegexForConfig = function(searchConfig, global)
-{
-    var modifiers = searchConfig.caseSensitive ? "" : "i";
-    if (global)
-        modifiers += "g";
-    var query = searchConfig.isRegex ? "/" + searchConfig.query + "/" : searchConfig.query;
-    return WebInspector.SourceFrame.createSearchRegex(query, modifiers);
 }
 
 WebInspector.SourceFrame.Events = {
@@ -151,11 +109,17 @@ WebInspector.SourceFrame.prototype = {
         this._ensureContentLoaded();
         this._textEditor.show(this.element);
         this._editorAttached = true;
+        // We need CodeMirrorTextEditor to be initialized prior to this call as it calls |cursorPositionToCoordinates| internally. @see crbug.com/506566
+        setImmediate(this._updateBucketDecorations.bind(this));
+        this._wasShownOrLoaded();
+    },
+
+    _updateBucketDecorations: function()
+    {
         for (var line in this._rowMessageBuckets) {
             var bucket = this._rowMessageBuckets[line];
-            bucket._updateDecorationPosition();
+            bucket._updateDecoration();
         }
-        this._wasShownOrLoaded();
     },
 
     /**
@@ -168,20 +132,21 @@ WebInspector.SourceFrame.prototype = {
 
     willHide: function()
     {
-        WebInspector.View.prototype.willHide.call(this);
+        WebInspector.Widget.prototype.willHide.call(this);
 
         this._clearPositionToReveal();
     },
 
     /**
-     * @return {!WebInspector.StatusBarText}
+     * @return {!WebInspector.ToolbarText}
      */
-    statusBarText: function()
+    toolbarText: function()
     {
         return this._sourcePosition;
     },
 
     /**
+     * @override
      * @return {!Element}
      */
     defaultFocusedElement: function()
@@ -207,13 +172,6 @@ WebInspector.SourceFrame.prototype = {
         }
     },
 
-    addMessage: function(msg)
-    {
-        this._messages.push(msg);
-        if (this.loaded)
-            this.addMessageToSource(msg.line - 1, msg);
-    },
-
     clearMessages: function()
     {
         for (var line in this._rowMessageBuckets) {
@@ -221,8 +179,8 @@ WebInspector.SourceFrame.prototype = {
             bubble.detachFromEditor();
         }
 
-        this._messages = [];
         this._rowMessageBuckets = {};
+        this._errorPopoverHelper.hidePopover();
     },
 
     /**
@@ -325,6 +283,11 @@ WebInspector.SourceFrame.prototype = {
         this.clearMessages();
     },
 
+    /**
+     * @param {string} content
+     * @param {string} mimeType
+     * @return {string}
+     */
     _simplifyMimeType: function(content, mimeType)
     {
         if (!mimeType)
@@ -374,46 +337,30 @@ WebInspector.SourceFrame.prototype = {
         }
 
         this._updateHighlighterType(content || "");
-
-        this._textEditor.beginUpdates();
-
-        this._setTextEditorDecorations();
-
+        this.clearMessages();
         this._wasShownOrLoaded();
 
         if (this._delayedFindSearchMatches) {
             this._delayedFindSearchMatches();
             delete this._delayedFindSearchMatches;
         }
-
         this.onTextEditorContentLoaded();
-
-        this._textEditor.endUpdates();
     },
 
     onTextEditorContentLoaded: function() {},
-
-    _setTextEditorDecorations: function()
-    {
-        this._rowMessageBuckets = {};
-
-        this._textEditor.beginUpdates();
-        this._addExistingMessagesToSource();
-        this._textEditor.endUpdates();
-    },
 
     /**
      * @param {!WebInspector.SearchableView.SearchConfig} searchConfig
      * @param {boolean} shouldJump
      * @param {boolean} jumpBackwards
-     * @param {function(!WebInspector.View, number)} searchFinishedCallback
+     * @param {function(!WebInspector.Widget, number)} searchFinishedCallback
      */
     _doFindSearchMatches: function(searchConfig, shouldJump, jumpBackwards, searchFinishedCallback)
     {
         this._currentSearchResultIndex = -1;
         this._searchResults = [];
 
-        var regex = WebInspector.SourceFrame._createSearchRegexForConfig(searchConfig);
+        var regex = searchConfig.toSearchRegex();
         this._searchRegex = regex;
         this._searchResults = this._collectRegexMatches(regex);
         searchFinishedCallback(this, this._searchResults.length);
@@ -431,7 +378,7 @@ WebInspector.SourceFrame.prototype = {
      * @param {!WebInspector.SearchableView.SearchConfig} searchConfig
      * @param {boolean} shouldJump
      * @param {boolean} jumpBackwards
-     * @param {function(!WebInspector.View, number)} searchFinishedCallback
+     * @param {function(!WebInspector.Widget, number)} searchFinishedCallback
      * @param {function(number)} currentMatchChangedCallback
      * @param {function()} searchResultsChangedCallback
      */
@@ -508,7 +455,7 @@ WebInspector.SourceFrame.prototype = {
      */
     _searchResultIndexForCurrentSelection: function()
     {
-        return insertionIndexForObjectInListSortedByFunction(this._textEditor.selection(), this._searchResults, WebInspector.TextRange.comparator);
+        return insertionIndexForObjectInListSortedByFunction(this._textEditor.selection().collapseToEnd(), this._searchResults, WebInspector.TextRange.comparator);
     },
 
     jumpToNextSearchResult: function()
@@ -540,6 +487,7 @@ WebInspector.SourceFrame.prototype = {
     },
 
     /**
+     * @override
      * @param {!WebInspector.SearchableView.SearchConfig} searchConfig
      * @param {string} replacement
      */
@@ -551,7 +499,7 @@ WebInspector.SourceFrame.prototype = {
         this._textEditor.highlightSearchResults(this._searchRegex, null);
 
         var oldText = this._textEditor.copyRange(range);
-        var regex = WebInspector.SourceFrame._createSearchRegexForConfig(searchConfig);
+        var regex = searchConfig.toSearchRegex();
         var text;
         if (regex.__fromRegExpQuery)
             text = oldText.replace(regex, replacement);
@@ -563,6 +511,7 @@ WebInspector.SourceFrame.prototype = {
     },
 
     /**
+     * @override
      * @param {!WebInspector.SearchableView.SearchConfig} searchConfig
      * @param {string} replacement
      */
@@ -573,7 +522,7 @@ WebInspector.SourceFrame.prototype = {
         var text = this._textEditor.text();
         var range = this._textEditor.range();
 
-        var regex = WebInspector.SourceFrame._createSearchRegexForConfig(searchConfig, true);
+        var regex = searchConfig.toSearchRegex(true);
         if (regex.__fromRegExpQuery)
             text = text.replace(regex, replacement);
         else
@@ -619,19 +568,12 @@ WebInspector.SourceFrame.prototype = {
         return ranges;
     },
 
-    _addExistingMessagesToSource: function()
-    {
-        var length = this._messages.length;
-        for (var i = 0; i < length; ++i)
-            this.addMessageToSource(this._messages[i].line - 1, this._messages[i]);
-    },
-
     /**
-     * @param {number} lineNumber
-     * @param {!WebInspector.ConsoleMessage} consoleMessage
+     * @param {!WebInspector.SourceFrameMessage} message
      */
-    addMessageToSource: function(lineNumber, consoleMessage)
+    addMessageToSource: function(message)
     {
+        var lineNumber = message.lineNumber();
         if (lineNumber >= this._textEditor.linesCount)
             lineNumber = this._textEditor.linesCount - 1;
         if (lineNumber < 0)
@@ -640,15 +582,15 @@ WebInspector.SourceFrame.prototype = {
         if (!this._rowMessageBuckets[lineNumber])
             this._rowMessageBuckets[lineNumber] = new WebInspector.SourceFrame.RowMessageBucket(this, this._textEditor, lineNumber);
         var messageBucket = this._rowMessageBuckets[lineNumber];
-        messageBucket.addMessage(consoleMessage);
+        messageBucket.addMessage(message);
     },
 
     /**
-     * @param {number} lineNumber
-     * @param {!WebInspector.ConsoleMessage} msg
+     * @param {!WebInspector.SourceFrameMessage} message
      */
-    removeMessageFromSource: function(lineNumber, msg)
+    removeMessageFromSource: function(message)
     {
+        var lineNumber = message.lineNumber();
         if (lineNumber >= this._textEditor.linesCount)
             lineNumber = this._textEditor.linesCount - 1;
         if (lineNumber < 0)
@@ -657,7 +599,7 @@ WebInspector.SourceFrame.prototype = {
         var messageBucket = this._rowMessageBuckets[lineNumber];
         if (!messageBucket)
             return;
-        messageBucket.removeMessage(msg);
+        messageBucket.removeMessage(message);
         if (!messageBucket.uniqueMessagesCount()) {
             messageBucket.detachFromEditor();
             delete this._rowMessageBuckets[lineNumber];
@@ -668,7 +610,7 @@ WebInspector.SourceFrame.prototype = {
     {
     },
 
-    populateTextAreaContextMenu: function(contextMenu, lineNumber)
+    populateTextAreaContextMenu: function(contextMenu, lineNumber, columnNumber)
     {
     },
 
@@ -682,11 +624,6 @@ WebInspector.SourceFrame.prototype = {
             from: from,
             to: to
         });
-    },
-
-    inheritScrollPositions: function(sourceFrame)
-    {
-        this._textEditor.inheritScrollPositions(sourceFrame._textEditor);
     },
 
     /**
@@ -749,28 +686,107 @@ WebInspector.SourceFrame.prototype = {
     __proto__: WebInspector.VBox.prototype
 }
 
+/**
+ * @constructor
+ * @param {string} messageText
+ * @param {!WebInspector.SourceFrameMessage.Level} level
+ * @param {number} lineNumber
+ * @param {number=} columnNumber
+ */
+WebInspector.SourceFrameMessage = function(messageText, level, lineNumber, columnNumber)
+{
+    this._messageText = messageText;
+    this._level = level;
+    this._lineNumber = lineNumber;
+    this._columnNumber = columnNumber;
+}
+
+/**
+ * @enum {string}
+ */
+WebInspector.SourceFrameMessage.Level = {
+    Error: "Error",
+    Warning: "Warning"
+}
+
+/**
+ * @param {!WebInspector.ConsoleMessage} consoleMessage
+ * @param {number} lineNumber
+ * @param {number} columnNumber
+ * @return {!WebInspector.SourceFrameMessage}
+ */
+WebInspector.SourceFrameMessage.fromConsoleMessage = function(consoleMessage, lineNumber, columnNumber)
+{
+    console.assert(consoleMessage.level === WebInspector.ConsoleMessage.MessageLevel.Error || consoleMessage.level === WebInspector.ConsoleMessage.MessageLevel.Warning);
+    var level = consoleMessage.level === WebInspector.ConsoleMessage.MessageLevel.Error ? WebInspector.SourceFrameMessage.Level.Error : WebInspector.SourceFrameMessage.Level.Warning;
+    return new WebInspector.SourceFrameMessage(consoleMessage.messageText, level, lineNumber, columnNumber);
+}
+
+WebInspector.SourceFrameMessage.prototype = {
+    /**
+     * @return {string}
+     */
+    messageText: function()
+    {
+        return this._messageText;
+    },
+
+    /**
+     * @return {!WebInspector.SourceFrameMessage.Level}
+     */
+    level: function()
+    {
+        return this._level;
+    },
+
+    /**
+     * @return {number}
+     */
+    lineNumber: function()
+    {
+        return this._lineNumber;
+    },
+
+    /**
+     * @return {(number|undefined)}
+     */
+    columnNumber: function()
+    {
+        return this._columnNumber;
+    },
+
+    /**
+     * @param {!WebInspector.SourceFrameMessage} another
+     * @return {boolean}
+     */
+    isEqual: function(another)
+    {
+        return this.messageText() === another.messageText() && this.level() === another.level() && this.lineNumber() === another.lineNumber() && this.columnNumber() === another.columnNumber();
+    }
+}
+
 WebInspector.SourceFrame._iconClassPerLevel = {};
-WebInspector.SourceFrame._iconClassPerLevel[WebInspector.ConsoleMessage.MessageLevel.Error] = "error-icon-small";
-WebInspector.SourceFrame._iconClassPerLevel[WebInspector.ConsoleMessage.MessageLevel.Warning] = "warning-icon-small";
+WebInspector.SourceFrame._iconClassPerLevel[WebInspector.SourceFrameMessage.Level.Error] = "error-icon";
+WebInspector.SourceFrame._iconClassPerLevel[WebInspector.SourceFrameMessage.Level.Warning] = "warning-icon";
 
 WebInspector.SourceFrame._lineClassPerLevel = {};
-WebInspector.SourceFrame._lineClassPerLevel[WebInspector.ConsoleMessage.MessageLevel.Error] = "text-editor-line-with-error";
-WebInspector.SourceFrame._lineClassPerLevel[WebInspector.ConsoleMessage.MessageLevel.Warning] = "text-editor-line-with-warning";
+WebInspector.SourceFrame._lineClassPerLevel[WebInspector.SourceFrameMessage.Level.Error] = "text-editor-line-with-error";
+WebInspector.SourceFrame._lineClassPerLevel[WebInspector.SourceFrameMessage.Level.Warning] = "text-editor-line-with-warning";
 
 /**
  * @constructor
- * @param {!WebInspector.ConsoleMessage} consoleMessage
+ * @param {!WebInspector.SourceFrameMessage} message
  */
-WebInspector.SourceFrame.RowMessage = function(consoleMessage)
+WebInspector.SourceFrame.RowMessage = function(message)
 {
-    this._consoleMessage = consoleMessage;
+    this._message = message;
     this._repeatCount = 1;
     this.element = createElementWithClass("div", "text-editor-row-message");
-    this._icon = this.element.createChild("span", "text-editor-row-message-icon");
-    this._icon.classList.add(WebInspector.SourceFrame._iconClassPerLevel[consoleMessage.level]);
+    this._icon = this.element.createChild("label", "", "dt-icon-label");
+    this._icon.type = WebInspector.SourceFrame._iconClassPerLevel[message.level()];
     this._repeatCountElement = this.element.createChild("span", "bubble-repeat-count hidden error");
     var linesContainer = this.element.createChild("div", "text-editor-row-message-lines");
-    var lines = this._consoleMessage.messageText.split("\n");
+    var lines = this._message.messageText().split("\n");
     for (var i = 0; i < lines.length; ++i) {
         var messageLine = linesContainer.createChild("div");
         messageLine.textContent = lines[i];
@@ -779,11 +795,11 @@ WebInspector.SourceFrame.RowMessage = function(consoleMessage)
 
 WebInspector.SourceFrame.RowMessage.prototype = {
     /**
-     * @return {!WebInspector.ConsoleMessage}
+     * @return {!WebInspector.SourceFrameMessage}
      */
-    consoleMessage: function()
+    message: function()
     {
-        return this._consoleMessage;
+        return this._message;
     },
 
     /**
@@ -814,7 +830,7 @@ WebInspector.SourceFrame.RowMessage.prototype = {
 /**
  * @constructor
  * @param {!WebInspector.SourceFrame} sourceFrame
- * @param {!WebInspector.TextEditor} textEditor
+ * @param {!WebInspector.CodeMirrorTextEditor} textEditor
  * @param {number} lineNumber
  */
 WebInspector.SourceFrame.RowMessageBucket = function(sourceFrame, textEditor, lineNumber)
@@ -825,7 +841,7 @@ WebInspector.SourceFrame.RowMessageBucket = function(sourceFrame, textEditor, li
     this._decoration = createElementWithClass("div", "text-editor-line-decoration");
     this._decoration._messageBucket = this;
     this._wave = this._decoration.createChild("div", "text-editor-line-decoration-wave");
-    this._icon = this._wave.createChild("div", "text-editor-line-decoration-icon");
+    this._icon = this._wave.createChild("label", "text-editor-line-decoration-icon", "dt-icon-label");
 
     this._textEditor.addDecoration(lineNumber, this._decoration);
 
@@ -833,24 +849,23 @@ WebInspector.SourceFrame.RowMessageBucket = function(sourceFrame, textEditor, li
     /** @type {!Array.<!WebInspector.SourceFrame.RowMessage>} */
     this._messages = [];
 
-    this._updateDecorationPosition();
-
     this._level = null;
 }
 
 WebInspector.SourceFrame.RowMessageBucket.prototype = {
-    _updateDecorationPosition: function()
+    /**
+     * @param {number} lineNumber
+     * @param {number} columnNumber
+     */
+    _updateWavePosition: function(lineNumber, columnNumber)
     {
-        if (!this._sourceFrame._isEditorShowing())
-            return;
-        var position = this._lineHandle.resolve();
-        if (!position)
-            return;
-        var lineNumber = position.lineNumber;
+        lineNumber = Math.min(lineNumber, this._textEditor.linesCount - 1);
         var lineText = this._textEditor.line(lineNumber);
+        columnNumber = Math.min(columnNumber, lineText.length);
         var lineIndent = WebInspector.TextUtils.lineIndent(lineText).length;
         var base = this._textEditor.cursorPositionToCoordinates(lineNumber, 0);
-        var start = this._textEditor.cursorPositionToCoordinates(lineNumber, lineIndent);
+
+        var start = this._textEditor.cursorPositionToCoordinates(lineNumber, Math.max(columnNumber - 1, lineIndent));
         var end = this._textEditor.cursorPositionToCoordinates(lineNumber, lineText.length);
         /** @const */
         var codeMirrorLinesLeftPadding = 4;
@@ -890,42 +905,44 @@ WebInspector.SourceFrame.RowMessageBucket.prototype = {
     },
 
     /**
-     * @param {!WebInspector.ConsoleMessage} consoleMessage
+     * @param {!WebInspector.SourceFrameMessage} message
      */
-    addMessage: function(consoleMessage)
+    addMessage: function(message)
     {
         for (var i = 0; i < this._messages.length; ++i) {
-            var message = this._messages[i];
-            if (message.consoleMessage().isEqual(consoleMessage)) {
-                message.setRepeatCount(message.repeatCount() + 1);
+            var rowMessage = this._messages[i];
+            if (rowMessage.message().isEqual(message)) {
+                rowMessage.setRepeatCount(rowMessage.repeatCount() + 1);
                 return;
             }
         }
 
-        var rowMessage = new WebInspector.SourceFrame.RowMessage(consoleMessage);
+        var rowMessage = new WebInspector.SourceFrame.RowMessage(message);
         this._messages.push(rowMessage);
-        this._updateBucketLevel();
+        this._updateDecoration();
     },
 
     /**
-     * @param {!WebInspector.ConsoleMessage} consoleMessage
+     * @param {!WebInspector.SourceFrameMessage} message
      */
-    removeMessage: function(consoleMessage)
+    removeMessage: function(message)
     {
         for (var i = 0; i < this._messages.length; ++i) {
             var rowMessage = this._messages[i];
-            if (!rowMessage.consoleMessage().isEqual(consoleMessage))
+            if (!rowMessage.message().isEqual(message))
                 continue;
             rowMessage.setRepeatCount(rowMessage.repeatCount() - 1);
             if (!rowMessage.repeatCount())
                 this._messages.splice(i, 1);
-            this._updateBucketLevel();
+            this._updateDecoration();
             return;
         }
     },
 
-    _updateBucketLevel: function()
+    _updateDecoration: function()
     {
+        if (!this._sourceFrame._isEditorShowing())
+            return;
         if (!this._messages.length)
             return;
         var position = this._lineHandle.resolve();
@@ -933,22 +950,25 @@ WebInspector.SourceFrame.RowMessageBucket.prototype = {
             return;
 
         var lineNumber = position.lineNumber;
+        var columnNumber = Number.MAX_VALUE;
         var maxMessage = null;
         for (var i = 0; i < this._messages.length; ++i) {
-            var message = this._messages[i].consoleMessage();;
-            if (!maxMessage || WebInspector.ConsoleMessage.messageLevelComparator(maxMessage, message) < 0)
+            var message = this._messages[i].message();
+            columnNumber = Math.min(columnNumber, message.columnNumber());
+            if (!maxMessage || WebInspector.SourceFrameMessage.messageLevelComparator(maxMessage, message) < 0)
                 maxMessage = message;
         }
+        this._updateWavePosition(lineNumber, columnNumber);
 
         if (this._level) {
             this._textEditor.toggleLineClass(lineNumber, WebInspector.SourceFrame._lineClassPerLevel[this._level], false);
-            this._icon.classList.toggle(WebInspector.SourceFrame._iconClassPerLevel[this._level], false);
+            this._icon.type = "";
         }
-        this._level = maxMessage.level;
+        this._level = maxMessage.level();
         if (!this._level)
             return;
         this._textEditor.toggleLineClass(lineNumber, WebInspector.SourceFrame._lineClassPerLevel[this._level], true);
-        this._icon.classList.toggle(WebInspector.SourceFrame._iconClassPerLevel[this._level], true);
+        this._icon.type = WebInspector.SourceFrame._iconClassPerLevel[this._level];
     }
 }
 
@@ -962,12 +982,16 @@ WebInspector.TextEditorDelegateForSourceFrame = function(sourceFrame)
 }
 
 WebInspector.TextEditorDelegateForSourceFrame.prototype = {
+    /**
+     * @override
+     */
     onTextChanged: function(oldRange, newRange)
     {
         this._sourceFrame.onTextChanged(oldRange, newRange);
     },
 
     /**
+     * @override
      * @param {!WebInspector.TextRange} textRange
      */
     selectionChanged: function(textRange)
@@ -976,6 +1000,7 @@ WebInspector.TextEditorDelegateForSourceFrame.prototype = {
     },
 
     /**
+     * @override
      * @param {number} lineNumber
      */
     scrollChanged: function(lineNumber)
@@ -983,22 +1008,32 @@ WebInspector.TextEditorDelegateForSourceFrame.prototype = {
         this._sourceFrame.scrollChanged(lineNumber);
     },
 
+    /**
+     * @override
+     */
     editorFocused: function()
     {
         this._sourceFrame._editorFocused();
     },
 
+    /**
+     * @override
+     */
     populateLineGutterContextMenu: function(contextMenu, lineNumber)
     {
         this._sourceFrame.populateLineGutterContextMenu(contextMenu, lineNumber);
     },
 
-    populateTextAreaContextMenu: function(contextMenu, lineNumber)
+    /**
+     * @override
+     */
+    populateTextAreaContextMenu: function(contextMenu, lineNumber, columnNumber)
     {
-        this._sourceFrame.populateTextAreaContextMenu(contextMenu, lineNumber);
+        this._sourceFrame.populateTextAreaContextMenu(contextMenu, lineNumber, columnNumber);
     },
 
     /**
+     * @override
      * @param {?WebInspector.TextRange} from
      * @param {?WebInspector.TextRange} to
      */
@@ -1006,4 +1041,19 @@ WebInspector.TextEditorDelegateForSourceFrame.prototype = {
     {
         this._sourceFrame.onJumpToPosition(from, to);
     }
+}
+
+WebInspector.SourceFrameMessage._messageLevelPriority = {
+    "Warning": 3,
+    "Error": 4
+};
+
+/**
+ * @param {!WebInspector.SourceFrameMessage} a
+ * @param {!WebInspector.SourceFrameMessage} b
+ * @return {number}
+ */
+WebInspector.SourceFrameMessage.messageLevelComparator = function(a, b)
+{
+    return WebInspector.SourceFrameMessage._messageLevelPriority[a.level()] - WebInspector.SourceFrameMessage._messageLevelPriority[b.level()];
 }

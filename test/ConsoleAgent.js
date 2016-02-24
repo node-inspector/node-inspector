@@ -1,166 +1,82 @@
-var expect = require('chai').expect,
-    semver = require('semver'),
-    launcher = require('./helpers/launcher.js'),
-    inherits = require('util').inherits,
-    EventEmitter = require('events').EventEmitter,
-    InjectorClient = require('../lib/InjectorClient').InjectorClient,
-    ConsoleClient = require('../lib/ConsoleClient').ConsoleClient,
-    ConsoleAgent = require('../lib/ConsoleAgent').ConsoleAgent;
+'use strict';
 
-var PROP_TYPE = semver.lt(process.version, '1.0.0') ? 1 : 0;
+var co = require('co');
+var expect = require('chai').expect;
+var launcher = require('./helpers/launcher.js');
+var inherits = require('util').inherits;
+var InjectorClient = require('../lib/InjectorClient/InjectorClient.js');
+var ConsoleAgent = require('../lib/Agents/Console/ConsoleAgent.js');
 
-var consoleAgent,
-    consoleClient,
-    childProcess,
-    debuggerClient,
-    frontendClient;
+var child;
+var session;
+var consoleAgent;
+var debuggerClient;
+var frontendClient;
+var injectorClient;
 
-describe('ConsoleAgent', function() {
-  before(initializeConsole);
+describe('ConsoleAgent', () => {
+  before(() => initializeConsole());
 
-  it('should translate console message to frontend', function(done) {
-    frontendClient.once('Console.messageAdded', function(message) {
-      done();
-    });
-    childProcess.stdin.write('log simple text\n');
+  it('should translate console message to frontend', done => {
+    frontendClient.once('Console.messageAdded', message => done());
+    child.stdin.write('log simple text\n');
   });
 
-  it('should translate objects', function(done) {
-    frontendClient.once('Console.messageAdded', function(message) {
-      expect(message.message.parameters).to.deep.equal([{
+  it('should translate objects', done => {
+    frontendClient.once('Console.messageAdded', message => {
+      expect(JSON.stringify(message.message.parameters)).to.equal(JSON.stringify([{
         type: 'object',
         subtype: undefined,
-        objectId: 'console:1:1',
+        objectId: '{"injectedScriptId":' + child.pid + ',"id":1}',
         className: 'Object',
-        description: 'Object'
-      }]);
-      done();
-    });
-    childProcess.stdin.write('log object\n');
-  });
-
-  it('should translate async console message to frontend', function(done) {
-    frontendClient.once('Console.messageAdded', function(message) {
-      done();
-    });
-    childProcess.stdin.write('log simple text async\n');
-  });
-
-  it('should clear messages', function(done) {
-    frontendClient.on('Console.messagesCleared', function() {
-      done();
-    });
-    consoleAgent.clearMessages();
-  });
-});
-
-describe('ConsoleClient', function() {
-  var _messages = [];
-
-  before(initializeConsole);
-  before(logInChildProcess);
-
-  function logInChildProcess(done) {
-    var state = 0;
-    function updateState() {
-      if (++state == 2) {
-        frontendClient.removeAllListeners();
-        done();
-      }
-    }
-
-    frontendClient.on('Console.messageAdded', function(message) {
-      _messages.push(message.message);
-      updateState();
-    });
-    childProcess.stdin.write('log object\n');
-    childProcess.stdin.write('log console\n');
-  }
-
-  it('should match only valid consoleId', function() {
-    function expectIsConsoleId(id, value) {
-      expect(consoleClient.isConsoleId(id), id).to.be.equal(value);
-    }
-
-    expectIsConsoleId('console:1:1', true);
-    expectIsConsoleId('console:1:1:1', false);
-    expectIsConsoleId('console:1:a', false);
-    expectIsConsoleId('console:1:', false);
-    expectIsConsoleId('console::', false);
-    expectIsConsoleId('consol:1:1', false);
-    expectIsConsoleId('::', false);
-    expectIsConsoleId('1', false);
-  });
-
-  it('should provide object data', function(done) {
-    consoleClient.lookupConsoleId(
-      _messages[0].parameters[0].objectId,
-      function(error, lookupBody, lookupRefs) {
-        expect(error).to.equal(null);
-        expect(lookupBody).to.deep.equal({
-          handle: 0,
+        description: 'Object',
+        preview: {
           type: 'object',
-          className: 'Object',
-          constructorFunction: { ref: 1 },
-          protoObject: { ref: 2 },
-          prototypeObject: { ref: 3 },
-          properties: [{ name: 'a', propertyType: PROP_TYPE, ref: 4}],
-          text: '#<Object>'
-        });
-        expect(lookupRefs).to.include.keys(['1', '2', '3', '4']);
-        done();
-      }
-    );
+          description: 'Object',
+          lossless: true,
+          overflow: false,
+          properties: [
+            {
+              name: 'a',
+              type: 'string',
+              value: 'test'
+            }
+          ]
+        }
+      }]));
+      done();
+    });
+    child.stdin.write('log object\n');
   });
 
-  it('should provide object (with internal properties) data', function(done) {
-    consoleClient.lookupConsoleId(
-      _messages[0].parameters[0].objectId,
-      function(error, lookupBody, lookupRefs) {
-        expect(error).to.equal(null);
-        done();
-      }
-    );
+  it('should translate async console message to frontend', done => {
+    frontendClient.once('Console.messageAdded', message => done());
+    child.stdin.write('log simple text async\n');
   });
 
-  it('should return error on not existed object', function(done) {
-    consoleClient.lookupConsoleId(
-      'console:1:0',
-      function(error, lookupBody, lookupRefs) {
-        expect(error).to.equal('Object #0# not found');
-        done();
-      }
-    );
-  });
-
-  it('should return error on not existed message', function(done) {
-    consoleClient.lookupConsoleId(
-      'console:2:1',
-      function(error, lookupBody, lookupRefs) {
-        expect(error).to.equal('Console message #2# not found');
-        done();
-      }
-    );
+  it('should clear messages', done => {
+    frontendClient.on('Console.messagesCleared', () => done());
+    consoleAgent.handle('clearMessages');
   });
 });
 
-function initializeConsole(done) {
-  launcher.runCommandlet(true, function(child, session) {
-    childProcess = child;
-    debuggerClient = session.debuggerClient;
-    frontendClient = session.frontendClient;
+function expand(instance) {
+  child = instance.child;
+  session = instance.session;
+  debuggerClient = session.debugger;
+  frontendClient = session.frontend;
+}
 
-    var injectorClient = new InjectorClient({}, session);
-    session.injectorClient = injectorClient;
+function fill() {
+  injectorClient = new InjectorClient({}, session);
+  session.injector = injectorClient;
+  consoleAgent = new ConsoleAgent({}, session);
+}
 
-    consoleClient = new ConsoleClient({}, session);
-    session.consoleClient = consoleClient;
-
-    consoleAgent = new ConsoleAgent({}, session);
-
-    injectorClient.inject(function(error) {
-      if (error) return done(error);
-      debuggerClient.request('continue', null, done);
-    });
+function initializeConsole() {
+  return co(function * () {
+    yield launcher.runCommandlet(true).then(expand).then(fill);
+    yield injectorClient.injected();
+    yield debuggerClient.request('continue');
   });
 }

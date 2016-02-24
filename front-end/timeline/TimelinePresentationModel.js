@@ -86,7 +86,7 @@ WebInspector.TimelinePresentationModel.prototype = {
      */
     addRecord: function(record)
     {
-        if (record.type() === WebInspector.TimelineModel.RecordType.Program) {
+        if (WebInspector.TracingModel.isTopLevelEvent(record.traceEvent())) {
             var records = record.children();
             for (var i = 0; i < records.length; ++i)
                 this._innerAddRecord(this._rootRecord, records[i]);
@@ -246,7 +246,7 @@ WebInspector.TimelinePresentationModel.prototype = {
                 var record = records[entry.index];
                 ++entry.index;
                 if (record.startTime() < this._windowEndTime && record.endTime() > this._windowStartTime) {
-                    if (this._model.isVisible(record.record())) {
+                    if (this._model.isVisible(record.record().traceEvent())) {
                         record._presentationParent._expandable = true;
                         if (this._textFilter)
                             revealRecordsInStack();
@@ -454,6 +454,7 @@ WebInspector.TimelinePresentationModel.ActualRecord = function(record, parentRec
 
 WebInspector.TimelinePresentationModel.ActualRecord.prototype = {
     /**
+     * @override
      * @return {number}
      */
     startTime: function()
@@ -462,6 +463,7 @@ WebInspector.TimelinePresentationModel.ActualRecord.prototype = {
     },
 
     /**
+     * @override
      * @return {number}
      */
     endTime: function()
@@ -470,14 +472,16 @@ WebInspector.TimelinePresentationModel.ActualRecord.prototype = {
     },
 
     /**
+     * @override
      * @return {number}
      */
     selfTime: function()
     {
-        return this._record.selfTime();
+        return this._record.traceEvent().selfTime;
     },
 
     /**
+     * @override
      * @return {!WebInspector.TimelineModel.Record}
      */
     record: function()
@@ -486,11 +490,12 @@ WebInspector.TimelinePresentationModel.ActualRecord.prototype = {
     },
 
     /**
+     * @override
      * @return {boolean}
      */
     hasWarnings: function()
     {
-        return !!this._record.warnings();
+        return !!this._record.traceEvent().warning;
     },
 
     __proto__: WebInspector.TimelinePresentationModel.Record.prototype
@@ -510,6 +515,7 @@ WebInspector.TimelinePresentationModel.CoalescedRecord = function(record)
 
 WebInspector.TimelinePresentationModel.CoalescedRecord.prototype = {
     /**
+     * @override
      * @return {number}
      */
     startTime: function()
@@ -518,6 +524,7 @@ WebInspector.TimelinePresentationModel.CoalescedRecord.prototype = {
     },
 
     /**
+     * @override
      * @return {number}
      */
     endTime: function()
@@ -526,6 +533,7 @@ WebInspector.TimelinePresentationModel.CoalescedRecord.prototype = {
     },
 
     /**
+     * @override
      * @return {number}
      */
     selfTime: function()
@@ -534,6 +542,7 @@ WebInspector.TimelinePresentationModel.CoalescedRecord.prototype = {
     },
 
     /**
+     * @override
      * @return {!WebInspector.TimelineModel.Record}
      */
     record: function()
@@ -542,6 +551,7 @@ WebInspector.TimelinePresentationModel.CoalescedRecord.prototype = {
     },
 
     /**
+     * @override
      * @return {boolean}
      */
     coalesced: function()
@@ -550,6 +560,7 @@ WebInspector.TimelinePresentationModel.CoalescedRecord.prototype = {
     },
 
     /**
+     * @override
      * @return {boolean}
      */
     hasWarnings: function()
@@ -571,6 +582,7 @@ WebInspector.TimelinePresentationModel.RootRecord = function()
 
 WebInspector.TimelinePresentationModel.RootRecord.prototype = {
     /**
+     * @override
      * @return {boolean}
      */
     hasWarnings: function()

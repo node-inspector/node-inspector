@@ -24,13 +24,10 @@ process.on('SIGINT', function() {
 
 console.log('Node Inspector v%s', packageJson.version);
 
-var debugServer = new DebugServer();
+var debugServer = new DebugServer(config);
 debugServer.on('error', onError);
 debugServer.on('listening', onListening);
-debugServer.on('close', function () {
-  process.exit();
-});
-debugServer.start(config);
+debugServer.on('close', () => process.exit());
 
 function onError(err) {
   console.error(

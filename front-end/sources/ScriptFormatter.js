@@ -37,13 +37,16 @@ WebInspector.Formatter = function()
 
 /**
  * @param {!WebInspector.ResourceType} contentType
- * @return {!WebInspector.Formatter}
+ * @param {string} mimeType
+ * @param {string} content
+ * @param {function(string, !WebInspector.FormatterSourceMapping)} callback
  */
-WebInspector.Formatter.createFormatter = function(contentType)
+WebInspector.Formatter.format = function(contentType, mimeType, content, callback)
 {
     if (contentType === WebInspector.resourceTypes.Script || contentType === WebInspector.resourceTypes.Document || contentType === WebInspector.resourceTypes.Stylesheet)
-        return new WebInspector.ScriptFormatter();
-    return new WebInspector.IdentityFormatter();
+        new WebInspector.ScriptFormatter(mimeType, content, callback);
+    else
+        new WebInspector.IdentityFormatter(mimeType, content, callback);
 }
 
 /**
@@ -73,83 +76,55 @@ WebInspector.Formatter.positionToLocation = function(lineEndings, position)
     return [lineNumber, columnNumber];
 }
 
-WebInspector.Formatter.prototype = {
-    /**
-     * @param {string} mimeType
-     * @param {string} content
-     * @param {function(string, !WebInspector.FormatterSourceMapping)} callback
-     */
-    formatContent: function(mimeType, content, callback)
-    {
-    }
-}
-
 /**
  * @constructor
  * @implements {WebInspector.Formatter}
+ * @param {string} mimeType
+ * @param {string} content
+ * @param {function(string, !WebInspector.FormatterSourceMapping)} callback
  */
-WebInspector.ScriptFormatter = function()
+WebInspector.ScriptFormatter = function(mimeType, content, callback)
 {
-    this._tasks = [];
+    content = content.replace(/\r\n?|[\n\u2028\u2029]/g, "\n").replace(/^\uFEFF/, '');
+    this._callback = callback;
+    this._originalContent = content;
+
+    this._worker = new WorkerRuntime.Worker("script_formatter_worker");
+    this._worker.onmessage = this._didFormatContent.bind(this);
+
+    var parameters = {
+        mimeType: mimeType,
+        content: content,
+        indentString: WebInspector.moduleSetting("textEditorIndent").get()
+    };
+    this._worker.postMessage({ method: "format", params: parameters });
 }
 
 WebInspector.ScriptFormatter.prototype = {
     /**
-     * @param {string} mimeType
-     * @param {string} content
-     * @param {function(string, !WebInspector.FormatterSourceMapping)} callback
+     * @param {!MessageEvent} event
      */
-    formatContent: function(mimeType, content, callback)
-    {
-        content = content.replace(/\r\n?|[\n\u2028\u2029]/g, "\n").replace(/^\uFEFF/, '');
-        const method = "format";
-        var parameters = { mimeType: mimeType, content: content, indentString: WebInspector.settings.textEditorIndent.get() };
-        this._tasks.push({ data: parameters, callback: callback });
-        this._worker().postMessage({ method: method, params: parameters });
-    },
-
     _didFormatContent: function(event)
     {
-        var task = this._tasks.shift();
-        var originalContent = task.data.content;
+        this._worker.terminate();
+        var originalContent = this._originalContent;
         var formattedContent = event.data.content;
         var mapping = event.data["mapping"];
         var sourceMapping = new WebInspector.FormatterSourceMappingImpl(originalContent.lineEndings(), formattedContent.lineEndings(), mapping);
-        task.callback(formattedContent, sourceMapping);
-    },
-
-    /**
-     * @return {!WorkerRuntime.Worker}
-     */
-    _worker: function()
-    {
-        if (!this._cachedWorker) {
-            this._cachedWorker = new WorkerRuntime.Worker("script_formatter_worker");
-            this._cachedWorker.onmessage = /** @type {function(this:Worker)} */ (this._didFormatContent.bind(this));
-        }
-        return this._cachedWorker;
+        this._callback(formattedContent, sourceMapping);
     }
 }
 
 /**
  * @constructor
  * @implements {WebInspector.Formatter}
+ * @param {string} mimeType
+ * @param {string} content
+ * @param {function(string, !WebInspector.FormatterSourceMapping)} callback
  */
-WebInspector.IdentityFormatter = function()
+WebInspector.IdentityFormatter = function(mimeType, content, callback)
 {
-    this._tasks = [];
-}
-
-WebInspector.IdentityFormatter.prototype = {
-    /**
-     * @param {string} mimeType
-     * @param {string} content
-     * @param {function(string, !WebInspector.FormatterSourceMapping)} callback
-     */
-    formatContent: function(mimeType, content, callback)
-    {
-        callback(content, new WebInspector.IdentityFormatterSourceMapping());
-    }
+    callback(content, new WebInspector.IdentityFormatterSourceMapping());
 }
 
 /**
@@ -190,6 +165,7 @@ WebInspector.IdentityFormatterSourceMapping = function()
 
 WebInspector.IdentityFormatterSourceMapping.prototype = {
     /**
+     * @override
      * @param {number} lineNumber
      * @param {number=} columnNumber
      * @return {!Array.<number>}
@@ -200,6 +176,7 @@ WebInspector.IdentityFormatterSourceMapping.prototype = {
     },
 
     /**
+     * @override
      * @param {number} lineNumber
      * @param {number=} columnNumber
      * @return {!Array.<number>}
@@ -226,6 +203,7 @@ WebInspector.FormatterSourceMappingImpl = function(originalLineEndings, formatte
 
 WebInspector.FormatterSourceMappingImpl.prototype = {
     /**
+     * @override
      * @param {number} lineNumber
      * @param {number=} columnNumber
      * @return {!Array.<number>}
@@ -238,6 +216,7 @@ WebInspector.FormatterSourceMappingImpl.prototype = {
     },
 
     /**
+     * @override
      * @param {number} lineNumber
      * @param {number=} columnNumber
      * @return {!Array.<number>}

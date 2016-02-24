@@ -30,20 +30,22 @@
 
 /**
  * @constructor
- * @param {!Element} relativeToElement
  * @param {!WebInspector.DialogDelegate} delegate
+ * @param {boolean=} modal
  */
-WebInspector.Dialog = function(relativeToElement, delegate)
+WebInspector.Dialog = function(delegate, modal)
 {
     this._delegate = delegate;
-    this._relativeToElement = relativeToElement;
+    this._modal = modal;
 
-    this._glassPane = new WebInspector.GlassPane(/** @type {!Document} */ (relativeToElement.ownerDocument));
+    this._glassPane = new WebInspector.GlassPane(/** @type {!Document} */ (WebInspector.Dialog._modalHostView.element.ownerDocument));
     WebInspector.GlassPane.DefaultFocusedViewStack.push(this);
 
     // Install glass pane capturing events.
     this._glassPane.element.tabIndex = 0;
     this._glassPane.element.addEventListener("focus", this._onGlassPaneFocus.bind(this), false);
+    if (this._modal)
+        this._glassPane.element.classList.add("tinted");
 
     this._element = this._glassPane.element.createChild("div");
     this._element.tabIndex = 0;
@@ -69,14 +71,15 @@ WebInspector.Dialog.currentInstance = function()
 }
 
 /**
- * @param {!Element} relativeToElement
  * @param {!WebInspector.DialogDelegate} delegate
+ * @param {boolean=} modal
  */
-WebInspector.Dialog.show = function(relativeToElement, delegate)
+WebInspector.Dialog.show = function(delegate, modal)
 {
     if (WebInspector.Dialog._instance)
         return;
-    WebInspector.Dialog._instance = new WebInspector.Dialog(relativeToElement, delegate);
+    WebInspector.Dialog._instance = new WebInspector.Dialog(delegate, modal);
+    WebInspector.Dialog._instance.focus();
 }
 
 WebInspector.Dialog.hide = function()
@@ -105,8 +108,13 @@ WebInspector.Dialog.prototype = {
         this._glassPane.dispose();
     },
 
+    /**
+     * @param {!Event} event
+     */
     _onGlassPaneFocus: function(event)
     {
+        if (this._modal)
+            return;
         this._hide();
     },
 
@@ -117,7 +125,7 @@ WebInspector.Dialog.prototype = {
 
     _position: function()
     {
-        this._delegate.position(this._element, this._relativeToElement);
+        this._delegate.position(this._element, WebInspector.Dialog._modalHostView.element);
     },
 
     _onKeyDown: function(event)
@@ -129,6 +137,8 @@ WebInspector.Dialog.prototype = {
 
         if (event.keyCode === WebInspector.KeyboardShortcut.Keys.Enter.code)
             this._delegate.onEnter(event);
+
+        this._delegate.onKeyDown(event);
 
         if (!event.handled && this._closeKeys.indexOf(event.keyCode) >= 0) {
             this._hide();
@@ -143,8 +153,7 @@ WebInspector.Dialog.prototype = {
  */
 WebInspector.DialogDelegate = function()
 {
-    /** @type {!Element} */
-    this.element;
+    this.element = createElement("div");
 }
 
 WebInspector.DialogDelegate.prototype = {
@@ -155,22 +164,19 @@ WebInspector.DialogDelegate.prototype = {
     {
         element.appendChild(this.element);
         this.element.classList.add("dialog-contents");
-        element.classList.add("dialog", "toolbar-colors");
+        element.classList.add("dialog");
     },
 
     /**
      * @param {!Element} element
-     * @param {!Element} relativeToElement
+     * @param {!Element} container
      */
-    position: function(element, relativeToElement)
+    position: function(element, container)
     {
-        var container = WebInspector.Dialog._modalHostView.element;
-        var box = relativeToElement.boxInWindow(window).relativeToElement(container);
-
-        var positionX = box.x + (relativeToElement.offsetWidth - element.offsetWidth) / 2;
+        var positionX = (container.offsetWidth - element.offsetWidth) / 2;
         positionX = Number.constrain(positionX, 0, container.offsetWidth - element.offsetWidth);
 
-        var positionY = box.y + (relativeToElement.offsetHeight - element.offsetHeight) / 2;
+        var positionY = (container.offsetHeight - element.offsetHeight) / 2;
         positionY = Number.constrain(positionY, 0, container.offsetHeight - element.offsetHeight);
 
         element.style.position = "absolute";
@@ -179,18 +185,26 @@ WebInspector.DialogDelegate.prototype = {
 
     focus: function() { },
 
+    /**
+     * @param {!KeyboardEvent} event
+     */
     onEnter: function(event) { },
+
+    /**
+     * @param {!KeyboardEvent} event
+     */
+    onKeyDown: function(event) { },
 
     willHide: function() { },
 
     __proto__: WebInspector.Object.prototype
 }
 
-/** @type {?WebInspector.View} */
+/** @type {?WebInspector.Widget} */
 WebInspector.Dialog._modalHostView = null;
 
 /**
- * @param {!WebInspector.View} view
+ * @param {!WebInspector.Widget} view
  */
 WebInspector.Dialog.setModalHostView = function(view)
 {
@@ -200,7 +214,7 @@ WebInspector.Dialog.setModalHostView = function(view)
 /**
  * FIXME: make utility method in Dialog, so clients use it instead of this getter.
  * Method should be like Dialog.showModalElement(position params, reposition callback).
- * @return {?WebInspector.View}
+ * @return {?WebInspector.Widget}
  */
 WebInspector.Dialog.modalHostView = function()
 {

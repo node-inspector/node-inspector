@@ -31,162 +31,6 @@
 /**
  * @constructor
  * @implements {WebInspector.ContentProvider}
- * @param {!Array.<!WebInspector.Script>} scripts
- */
-WebInspector.ConcatenatedScriptsContentProvider = function(scripts)
-{
-    this._scripts = scripts;
-}
-
-WebInspector.ConcatenatedScriptsContentProvider.scriptOpenTag = "<script>";
-WebInspector.ConcatenatedScriptsContentProvider.scriptCloseTag = "</script>";
-
-WebInspector.ConcatenatedScriptsContentProvider.prototype = {
-    /**
-     * @return {!Array.<!WebInspector.Script>}
-     */
-    _sortedScripts: function()
-    {
-        if (this._sortedScriptsArray)
-            return this._sortedScriptsArray;
-
-        this._sortedScriptsArray = [];
-
-        var scripts = this._scripts.slice();
-        scripts.sort(function(x, y) { return x.lineOffset - y.lineOffset || x.columnOffset - y.columnOffset; });
-
-        var scriptOpenTagLength = WebInspector.ConcatenatedScriptsContentProvider.scriptOpenTag.length;
-        var scriptCloseTagLength = WebInspector.ConcatenatedScriptsContentProvider.scriptCloseTag.length;
-
-        this._sortedScriptsArray.push(scripts[0]);
-        for (var i = 1; i < scripts.length; ++i) {
-            var previousScript = this._sortedScriptsArray[this._sortedScriptsArray.length - 1];
-
-            var lineNumber = previousScript.endLine;
-            var columnNumber = previousScript.endColumn + scriptCloseTagLength + scriptOpenTagLength;
-
-            if (lineNumber < scripts[i].lineOffset || (lineNumber === scripts[i].lineOffset && columnNumber <= scripts[i].columnOffset))
-                this._sortedScriptsArray.push(scripts[i]);
-        }
-        return this._sortedScriptsArray;
-    },
-
-    /**
-     * @return {string}
-     */
-    contentURL: function()
-    {
-        return "";
-    },
-
-    /**
-     * @return {!WebInspector.ResourceType}
-     */
-    contentType: function()
-    {
-        return WebInspector.resourceTypes.Document;
-    },
-
-    /**
-     * @param {function(?string)} callback
-     */
-    requestContent: function(callback)
-    {
-        var scripts = this._sortedScripts();
-        var sources = [];
-
-        /**
-         * @param {?string} content
-         * @this {WebInspector.ConcatenatedScriptsContentProvider}
-         */
-        function didRequestSource(content)
-        {
-            sources.push(content);
-            if (sources.length == scripts.length)
-                callback(this._concatenateScriptsContent(scripts, sources));
-        }
-        for (var i = 0; i < scripts.length; ++i)
-            scripts[i].requestContent(didRequestSource.bind(this));
-    },
-
-    /**
-     * @param {string} query
-     * @param {boolean} caseSensitive
-     * @param {boolean} isRegex
-     * @param {function(!Array.<!WebInspector.ContentProvider.SearchMatch>)} callback
-     */
-    searchInContent: function(query, caseSensitive, isRegex, callback)
-    {
-        var results = {};
-        var scripts = this._sortedScripts();
-        var scriptsLeft = scripts.length;
-
-        function maybeCallback()
-        {
-            if (scriptsLeft)
-                return;
-
-            var result = [];
-            for (var i = 0; i < scripts.length; ++i)
-                result = result.concat(results[scripts[i].scriptId]);
-            callback(result);
-        }
-
-        /**
-         * @param {!WebInspector.Script} script
-         * @param {!Array.<!PageAgent.SearchMatch>} searchMatches
-         */
-        function searchCallback(script, searchMatches)
-        {
-            results[script.scriptId] = [];
-            for (var i = 0; i < searchMatches.length; ++i) {
-                var searchMatch = new WebInspector.ContentProvider.SearchMatch(searchMatches[i].lineNumber + script.lineOffset, searchMatches[i].lineContent);
-                results[script.scriptId].push(searchMatch);
-            }
-            scriptsLeft--;
-            maybeCallback();
-        }
-
-        maybeCallback();
-        for (var i = 0; i < scripts.length; ++i)
-            scripts[i].searchInContent(query, caseSensitive, isRegex, searchCallback.bind(null, scripts[i]));
-    },
-
-    /**
-     * @return {string}
-     */
-    _concatenateScriptsContent: function(scripts, sources)
-    {
-        var content = "";
-        var lineNumber = 0;
-        var columnNumber = 0;
-
-        var scriptOpenTag = WebInspector.ConcatenatedScriptsContentProvider.scriptOpenTag;
-        var scriptCloseTag = WebInspector.ConcatenatedScriptsContentProvider.scriptCloseTag;
-        for (var i = 0; i < scripts.length; ++i) {
-            // Fill the gap with whitespace characters.
-            for (var newLinesCount = scripts[i].lineOffset - lineNumber; newLinesCount > 0; --newLinesCount) {
-                columnNumber = 0;
-                content += "\n";
-            }
-            for (var spacesCount = scripts[i].columnOffset - columnNumber - scriptOpenTag.length; spacesCount > 0; --spacesCount)
-                content += " ";
-
-            // Add script tag.
-            content += scriptOpenTag;
-            content += sources[i];
-            content += scriptCloseTag;
-            lineNumber = scripts[i].endLine;
-            columnNumber = scripts[i].endColumn + scriptCloseTag.length;
-        }
-
-        return content;
-    }
-}
-
-/**
- * @constructor
- * @implements {WebInspector.ContentProvider}
  * @param {string} sourceURL
  * @param {!WebInspector.ResourceType} contentType
  */
@@ -198,6 +42,7 @@ WebInspector.CompilerSourceMappingContentProvider = function(sourceURL, contentT
 
 WebInspector.CompilerSourceMappingContentProvider.prototype = {
     /**
+     * @override
      * @return {string}
      */
     contentURL: function()
@@ -206,6 +51,7 @@ WebInspector.CompilerSourceMappingContentProvider.prototype = {
     },
 
     /**
+     * @override
      * @return {!WebInspector.ResourceType}
      */
     contentType: function()
@@ -214,23 +60,23 @@ WebInspector.CompilerSourceMappingContentProvider.prototype = {
     },
 
     /**
+     * @override
      * @param {function(?string)} callback
      */
     requestContent: function(callback)
     {
-        NetworkAgent.loadResourceForFrontend(WebInspector.resourceTreeModel.mainFrame.id, this._sourceURL, undefined, contentLoaded.bind(this));
+        WebInspector.ResourceLoader.loadUsingTargetUA(this._sourceURL, {}, contentLoaded.bind(this));
 
         /**
-         * @param {?Protocol.Error} error
          * @param {number} statusCode
-         * @param {!NetworkAgent.Headers} headers
+         * @param {!Object.<string, string>} headers
          * @param {string} content
          * @this {WebInspector.CompilerSourceMappingContentProvider}
          */
-        function contentLoaded(error, statusCode, headers, content)
+        function contentLoaded(statusCode, headers, content)
         {
-            if (error || statusCode >= 400) {
-                console.error("Could not load content for " + this._sourceURL + " : " + (error || ("HTTP status code: " + statusCode)));
+            if (statusCode >= 400) {
+                console.error("Could not load content for " + this._sourceURL + " : " + "HTTP status code: " + statusCode);
                 callback(null);
                 return;
             }
@@ -240,6 +86,7 @@ WebInspector.CompilerSourceMappingContentProvider.prototype = {
     },
 
     /**
+     * @override
      * @param {string} query
      * @param {boolean} caseSensitive
      * @param {boolean} isRegex

@@ -60,25 +60,25 @@ WebInspector.RequestResponseView.prototype = {
 
     /**
      * @param {string} message
-     * @return {!WebInspector.EmptyView}
+     * @return {!WebInspector.EmptyWidget}
      */
     _createMessageView: function(message)
     {
-        return new WebInspector.EmptyView(message);
+        return new WebInspector.EmptyWidget(message);
     },
 
     contentLoaded: function()
     {
         if ((!this.request.content || !this.sourceView) && !this.request.contentError()) {
-            if (!this._emptyView) {
-                this._emptyView = this._createMessageView(WebInspector.UIString("This request has no response data available."));
-                this._emptyView.show(this.element);
-                this.innerView = this._emptyView;
+            if (!this._emptyWidget) {
+                this._emptyWidget = this._createMessageView(WebInspector.UIString("This request has no response data available."));
+                this._emptyWidget.show(this.element);
+                this.innerView = this._emptyWidget;
             }
         } else {
-            if (this._emptyView) {
-                this._emptyView.detach();
-                delete this._emptyView;
+            if (this._emptyWidget) {
+                this._emptyWidget.detach();
+                delete this._emptyWidget;
             }
 
             if (this.request.content && this.sourceView) {
@@ -107,6 +107,7 @@ WebInspector.RequestResponseView.ContentProvider = function(request) {
 
 WebInspector.RequestResponseView.ContentProvider.prototype = {
     /**
+     * @override
      * @return {string}
      */
     contentURL: function()
@@ -115,6 +116,7 @@ WebInspector.RequestResponseView.ContentProvider.prototype = {
     },
 
     /**
+     * @override
      * @return {!WebInspector.ResourceType}
      */
     contentType: function()
@@ -123,6 +125,7 @@ WebInspector.RequestResponseView.ContentProvider.prototype = {
     },
 
     /**
+     * @override
      * @param {function(?string)} callback
      */
     requestContent: function(callback)
@@ -140,6 +143,7 @@ WebInspector.RequestResponseView.ContentProvider.prototype = {
     },
 
     /**
+     * @override
      * @param {string} query
      * @param {boolean} caseSensitive
      * @param {boolean} isRegex

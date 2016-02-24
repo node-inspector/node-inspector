@@ -1,0 +1,949 @@
+{
+    "extensions": [
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Apple iPhone 4" ,
+                "screen": {
+                    "horizontal": {
+                        "width": 480,
+                        "height": 320
+                    },
+                    "device-pixel-ratio": 2,
+                    "vertical": {
+                        "width": 320,
+                        "height": 480
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (iPhone; U; CPU iPhone OS 4_2_1 like Mac OS X; en-us) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5",
+                "type": "phone",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Apple iPhone 5",
+                "screen": {
+                    "horizontal": {
+                        "width": 568,
+                        "height": 320
+                    },
+                    "device-pixel-ratio": 2,
+                    "vertical": {
+                        "width": 320,
+                        "height": 568
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 7_0 like Mac OS X; en-us) AppleWebKit/537.51.1 (KHTML, like Gecko) Version/7.0 Mobile/11A465 Safari/9537.53",
+                "type": "phone",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Apple iPhone 6",
+                "screen": {
+                    "horizontal": {
+                        "width": 667,
+                        "height": 375
+                    },
+                    "device-pixel-ratio": 2,
+                    "vertical": {
+                        "width": 375,
+                        "height": 667
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 8_0 like Mac OS X) AppleWebKit/600.1.3 (KHTML, like Gecko) Version/8.0 Mobile/12A4345d Safari/600.1.4",
+                "type": "phone",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 40, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "navigation bar",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 64, "right": 0, "bottom": 45 }
+                    },
+                    {
+                        "title": "keyboard",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 40, "right": 0, "bottom": 260 }
+                    },
+                    {
+                        "title": "navigation bar and keyboard",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 64, "right": 0, "bottom": 260 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "navigation bar",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 44, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "keyboard",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 206 }
+                    },
+                    {
+                        "title": "navigation bar and keyboard",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 44, "right": 0, "bottom": 206 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Apple iPhone 6 Plus",
+                "screen": {
+                    "horizontal": {
+                        "width": 736,
+                        "height": 414
+                    },
+                    "device-pixel-ratio": 3,
+                    "vertical": {
+                        "width": 414,
+                        "height": 736
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 8_0 like Mac OS X) AppleWebKit/600.1.3 (KHTML, like Gecko) Version/8.0 Mobile/12A4345d Safari/600.1.4",
+                "type": "phone",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "BlackBerry Z30",
+                "screen": {
+                    "horizontal": {
+                        "width": 640,
+                        "height": 360
+                    },
+                    "device-pixel-ratio": 2,
+                    "vertical": {
+                        "width": 360,
+                        "height": 640
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (BB10; Touch) AppleWebKit/537.10+ (KHTML, like Gecko) Version/10.0.9.2372 Mobile Safari/537.10+",
+                "type": "phone",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Google Nexus 4",
+                "screen": {
+                    "horizontal": {
+                        "width": 640,
+                        "height": 384
+                    },
+                    "device-pixel-ratio": 2,
+                    "vertical": {
+                        "width": 384,
+                        "height": 640
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (Linux; Android 4.4.2; Nexus 4 Build/KOT49H) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.122 Mobile Safari/537.36",
+                "type": "phone",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 25, "right": 0, "bottom": 48 }
+                    },
+                    {
+                        "title": "navigation bar",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 80, "right": 0, "bottom": 48 }
+                    },
+                    {
+                        "title": "keyboard",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 80, "right": 0, "bottom": 326 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 25, "right": 42, "bottom": 0 }
+                    },
+                    {
+                        "title": "navigation bar",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 80, "right": 42, "bottom": 0 }
+                    },
+                    {
+                        "title": "keyboard",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 80, "right": 42, "bottom": 214 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "title": "Google Nexus 5",
+                "type": "phone",
+                "user-agent": "Mozilla/5.0 (Linux; Android 4.4.4; Nexus 5 Build/KTU84P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.114 Mobile Safari/537.36",
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "show-by-default": true,
+                "screen": {
+                    "device-pixel-ratio": 3,
+                    "vertical": {
+                        "width": 360,
+                        "height": 640
+                    },
+                    "horizontal": {
+                        "width": 640,
+                        "height": 360
+                    }
+                },
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 25, "right": 0, "bottom": 48 },
+                        "image": "@url(google-nexus-5-vertical-default-1x.png) 1x, @url(google-nexus-5-vertical-default-2x.png) 2x"
+                    },
+                    {
+                        "title": "navigation bar",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 80, "right": 0, "bottom": 48 },
+                        "image": "@url(google-nexus-5-vertical-navigation-1x.png) 1x, @url(google-nexus-5-vertical-navigation-2x.png) 2x"
+                    },
+                    {
+                        "title": "keyboard",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 80, "right": 0, "bottom": 312 },
+                        "image": "@url(google-nexus-5-vertical-keyboard-1x.png) 1x, @url(google-nexus-5-vertical-keyboard-2x.png) 2x"
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 25, "right": 42, "bottom": 0 },
+                        "image": "@url(google-nexus-5-horizontal-default-1x.png) 1x, @url(google-nexus-5-horizontal-default-2x.png) 2x"
+                    },
+                    {
+                        "title": "navigation bar",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 80, "right": 42, "bottom": 0 },
+                        "image": "@url(google-nexus-5-horizontal-navigation-1x.png) 1x, @url(google-nexus-5-horizontal-navigation-2x.png) 2x"
+                    },
+                    {
+                        "title": "keyboard",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 80, "right": 42, "bottom": 202 },
+                        "image": "@url(google-nexus-5-horizontal-keyboard-1x.png) 1x, @url(google-nexus-5-horizontal-keyboard-2x.png) 2x"
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Google Nexus 6",
+                "screen": {
+                    "horizontal": {
+                        "width": 732,
+                        "height": 412
+                    },
+                    "device-pixel-ratio": 3.5,
+                    "vertical": {
+                        "width": 412,
+                        "height": 732
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (Linux; Android 5.1.1; Nexus 6 Build/LYZ28E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.20 Mobile Safari/537.36",
+                "type": "phone",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 25, "right": 0, "bottom": 48 }
+                    },
+                    {
+                        "title": "navigation bar",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 80, "right": 0, "bottom": 48 }
+                    },
+                    {
+                        "title": "keyboard",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 80, "right": 0, "bottom": 343 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 25, "right": 42, "bottom": 0 }
+                    },
+                    {
+                        "title": "navigation bar",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 80, "right": 42, "bottom": 0 }
+                    },
+                    {
+                        "title": "keyboard",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 80, "right": 42, "bottom": 222 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "LG Optimus L70",
+                "screen": {
+                    "horizontal": {
+                        "width": 640,
+                        "height": 384
+                    },
+                    "device-pixel-ratio": 1.25,
+                    "vertical": {
+                        "width": 384,
+                        "height": 640
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (Linux; U; Android 4.4.2; en-us; LGMS323 Build/KOT49I.MS32310c) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/30.0.1599.103 Mobile Safari/537.36",
+                "type": "phone",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Nokia N9",
+                "screen": {
+                    "horizontal": {
+                        "width": 640,
+                        "height": 360
+                    },
+                    "device-pixel-ratio": 1,
+                    "vertical": {
+                        "width": 360,
+                        "height": 640
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (MeeGo; NokiaN9) AppleWebKit/534.13 (KHTML, like Gecko) NokiaBrowser/8.5.0 Mobile Safari/534.13",
+                "type": "phone",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Nokia Lumia 520",
+                "screen": {
+                    "horizontal": {
+                        "width": 533,
+                        "height": 320
+                    },
+                    "device-pixel-ratio": 1.4,
+                    "vertical": {
+                        "width": 320,
+                        "height": 533
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (compatible; MSIE 10.0; Windows Phone 8.0; Trident/6.0; IEMobile/10.0; ARM; Touch; NOKIA; Lumia 520)",
+                "type": "phone",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Samsung Galaxy S III",
+                "screen": {
+                    "horizontal": {
+                        "width": 640,
+                        "height": 360
+                    },
+                    "device-pixel-ratio": 2,
+                    "vertical": {
+                        "width": 360,
+                        "height": 640
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (Linux; U; Android 4.0; en-us; GT-I9300 Build/IMM76D) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30",
+                "type": "phone",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Samsung Galaxy S4",
+                "screen": {
+                    "horizontal": {
+                        "width": 640,
+                        "height": 360
+                    },
+                    "device-pixel-ratio": 3,
+                    "vertical": {
+                        "width": 360,
+                        "height": 640
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (Linux; Android 4.2.2; GT-I9505 Build/JDQ39) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.59 Mobile Safari/537.36",
+                "type": "phone",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Amazon Kindle Fire HDX",
+                "screen": {
+                    "horizontal": {
+                        "width": 2560,
+                        "height": 1600
+                    },
+                    "device-pixel-ratio": 2,
+                    "vertical": {
+                        "width": 1600,
+                        "height": 2560
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (Linux; U; en-us; KFAPWI Build/JDQ39) AppleWebKit/535.19 (KHTML, like Gecko) Silk/3.13 Safari/535.19 Silk-Accelerated=true",
+                "type": "tablet",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Apple iPad Mini",
+                "screen": {
+                    "horizontal": {
+                        "width": 1024,
+                        "height": 768
+                    },
+                    "device-pixel-ratio": 2,
+                    "vertical": {
+                        "width": 768,
+                        "height": 1024
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (iPad; CPU OS 7_0_4 like Mac OS X) AppleWebKit/537.51.1 (KHTML, like Gecko) Version/7.0 Mobile/11B554a Safari/9537.53",
+                "type": "tablet",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Apple iPad",
+                "screen": {
+                    "horizontal": {
+                        "width": 1024,
+                        "height": 768
+                    },
+                    "device-pixel-ratio": 2,
+                    "vertical": {
+                        "width": 768,
+                        "height": 1024
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (iPad; CPU OS 7_0 like Mac OS X) AppleWebKit/537.51.1 (KHTML, like Gecko) Version/7.0 Mobile/11A465 Safari/9537.53",
+                "type": "tablet",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "BlackBerry PlayBook",
+                "screen": {
+                    "horizontal": {
+                        "width": 1024,
+                        "height": 600
+                    },
+                    "device-pixel-ratio": 1,
+                    "vertical": {
+                        "width": 600,
+                        "height": 1024
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (PlayBook; U; RIM Tablet OS 2.1.0; en-US) AppleWebKit/536.2+ (KHTML like Gecko) Version/7.2.1.0 Safari/536.2+",
+                "type": "tablet",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Google Nexus 10",
+                "screen": {
+                    "horizontal": {
+                        "width": 1280,
+                        "height": 800
+                    },
+                    "device-pixel-ratio": 2,
+                    "vertical": {
+                        "width": 800,
+                        "height": 1280
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (Linux; Android 4.3; Nexus 10 Build/JSS15Q) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2307.2 Safari/537.36",
+                "type": "tablet",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Google Nexus 7",
+                "screen": {
+                    "horizontal": {
+                        "width": 960,
+                        "height": 600
+                    },
+                    "device-pixel-ratio": 2,
+                    "vertical": {
+                        "width": 600,
+                        "height": 960
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (Linux; Android 4.3; Nexus 7 Build/JSS15Q) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2307.2 Safari/537.36",
+                "type": "tablet",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Samsung Galaxy Note 3",
+                "screen": {
+                    "horizontal": {
+                        "width": 640,
+                        "height": 360
+                    },
+                    "device-pixel-ratio": 3,
+                    "vertical": {
+                        "width": 360,
+                        "height": 640
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (Linux; U; Android 4.3; en-us; SM-N900T Build/JSS15J) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30",
+                "type": "phone",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Samsung Galaxy Note II",
+                "screen": {
+                    "horizontal": {
+                        "width": 640,
+                        "height": 360
+                    },
+                    "device-pixel-ratio": 2,
+                    "vertical": {
+                        "width": 360,
+                        "height": 640
+                    }
+                },
+                "capabilities": [
+                    "touch",
+                    "mobile"
+                ],
+                "user-agent": "Mozilla/5.0 (Linux; U; Android 4.1; en-us; GT-N7100 Build/JRO03C) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30",
+                "type": "phone",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "vertical",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    },
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Laptop with touch",
+                "screen": {
+                    "horizontal": {
+                        "width": 1280,
+                        "height": 950
+                    },
+                    "device-pixel-ratio": 1,
+                    "vertical": {
+                        "width": 950,
+                        "height": 1280
+                    }
+                },
+                "capabilities": [
+                    "touch"
+                ],
+                "user-agent": "",
+                "type": "notebook",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Laptop with HiDPI screen",
+                "screen": {
+                    "horizontal": {
+                        "width": 1440,
+                        "height": 900
+                    },
+                    "device-pixel-ratio": 2,
+                    "vertical": {
+                        "width": 900,
+                        "height": 1440
+                    }
+                },
+                "capabilities": [],
+                "user-agent": "",
+                "type": "notebook",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "emulated-device",
+            "device": {
+                "show-by-default": true,
+                "title": "Laptop with MDPI screen",
+                "screen": {
+                    "horizontal": {
+                        "width": 1280,
+                        "height": 800
+                    },
+                    "device-pixel-ratio": 1,
+                    "vertical": {
+                        "width": 800,
+                        "height": 1280
+                    }
+                },
+                "capabilities": [],
+                "user-agent": "",
+                "type": "notebook",
+                "modes": [
+                    {
+                        "title": "default",
+                        "orientation": "horizontal",
+                        "insets": { "left": 0, "top": 0, "right": 0, "bottom": 0 }
+                    }
+                ]
+            }
+        }
+    ],
+    "dependencies": [
+        "emulation"
+    ],
+    "scripts": [
+    ],
+    "resources": [
+    ]
+}

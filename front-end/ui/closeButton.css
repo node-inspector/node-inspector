@@ -1,0 +1,45 @@
+/*
+ * Copyright (c) 2015 The Chromium Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
+div {
+    background-image: url(Images/toolbarButtonGlyphs.png);
+    background-size: 352px 168px;
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5) {
+div {
+    background-image: url(Images/toolbarButtonGlyphs_2x.png);
+}
+} /* media */
+
+.close-button {
+    width: 14px;
+    height: 14px;
+    background-position: -128px -96px;
+    cursor: default;
+}
+
+.close-button:hover {
+    background-position: -96px -96px;
+}
+
+.close-button:active {
+    background-position: -111px -96px;
+}
+
+.close-button-gray {
+    width: 13px;
+    height: 13px;
+    background-position: -175px -96px;
+}
+
+.close-button-gray:hover {
+    background-position: -143px -96px;
+}
+
+.close-button-gray:active {
+    background-position: -160px -96px;
+}

@@ -45,6 +45,7 @@ WebInspector.FilterSuggestionBuilder.Filter;
 
 WebInspector.FilterSuggestionBuilder.prototype = {
     /**
+     * @override
      * @param {!HTMLInputElement} input
      * @return {?Array.<string>}
      */
@@ -90,6 +91,7 @@ WebInspector.FilterSuggestionBuilder.prototype = {
     },
 
     /**
+     * @override
      * @param {!HTMLInputElement} input
      * @param {string} suggestion
      * @param {boolean} isIntermediate
@@ -114,6 +116,7 @@ WebInspector.FilterSuggestionBuilder.prototype = {
     },
 
     /**
+     * @override
      * @param {!HTMLInputElement} input
      */
     unapplySuggestion: function(input)
@@ -172,37 +175,26 @@ WebInspector.FilterSuggestionBuilder.prototype = {
     {
         var filters = [];
         var text = [];
-        var i = 0;
-        var j = 0;
-        var part;
-        while (true) {
-            var colonIndex = query.indexOf(":", i);
-            if (colonIndex == -1) {
-                part = query.substring(j);
-                if (part)
-                    text.push(part);
-                break;
+        var parts = query.split(/\s+/);
+        for (var i = 0; i < parts.length; ++i) {
+            var part = parts[i];
+            if (!part)
+                continue;
+            var colonIndex = part.indexOf(":");
+            if (colonIndex === -1) {
+                text.push(part);
+                continue;
             }
-            var spaceIndex = query.lastIndexOf(" ", colonIndex);
-            var key = query.substring(spaceIndex + 1, colonIndex).toLowerCase();
+            var key = part.substring(0, colonIndex);
             var negative = key.startsWith("-");
             if (negative)
                 key = key.substring(1);
             if (this._keys.indexOf(key) == -1) {
-                i = colonIndex + 1;
+                text.push(part);
                 continue;
             }
-            part = spaceIndex > j ? query.substring(j, spaceIndex) : "";
-            if (part)
-                text.push(part);
-            var nextSpace = query.indexOf(" ", colonIndex + 1);
-            if (nextSpace == -1) {
-                filters.push({type: key, data: query.substring(colonIndex + 1), negative: negative});
-                break;
-            }
-            filters.push({type: key, data: query.substring(colonIndex + 1, nextSpace), negative: negative});
-            i = nextSpace + 1;
-            j = i;
+            var value = part.substring(colonIndex + 1);
+            filters.push({type: key, data: value, negative: negative});
         }
         return {text: text, filters: filters};
     }

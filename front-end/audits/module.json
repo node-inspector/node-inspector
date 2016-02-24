@@ -4,7 +4,7 @@
             "type": "@WebInspector.PanelFactory",
             "name": "audits",
             "title": "Audits",
-            "order": 6,
+            "order": 90,
             "className": "WebInspector.AuditsPanelFactory"
         }
     ],
@@ -23,7 +23,8 @@
         "AuditRules.js",
         "AuditExtensionCategory.js"
     ],
-    "stylesheets": [
-        "auditsPanel.css"
+    "resources": [
+        "auditsPanel.css",
+        "auditResultTree.css"
     ]
 }

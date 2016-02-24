@@ -319,6 +319,8 @@ WebInspector.HeapSnapshotCommon.Statistics = function()
     this.jsArrays;
     /** @type {number} */
     this.strings;
+    /** @type {number} */
+    this.system;
 }
 
 
@@ -364,4 +366,17 @@ WebInspector.HeapSnapshotCommon.SearchConfig = function(query, caseSensitive, is
     this.isRegex = isRegex;
     this.shouldJump = shouldJump;
     this.jumpBackward = jumpBackward;
+}
+
+/**
+ * @constructor
+ * @param {!Array.<number>} timestamps
+ * @param {!Array.<number>} lastAssignedIds
+ * @param {!Array.<number>} sizes
+ */
+WebInspector.HeapSnapshotCommon.Samples = function(timestamps, lastAssignedIds, sizes)
+{
+    this.timestamps = timestamps;
+    this.lastAssignedIds = lastAssignedIds;
+    this.sizes = sizes;
 }
