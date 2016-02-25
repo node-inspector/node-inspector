@@ -1,3 +1,16 @@
+## 2016-02-25, Version 0.12.7
+
+ * chmod 777 for unix socket (Yury Puzynya)
+
+ * Added frontend ping (Yury Puzynya)
+
+ * Remove registerDebuggerEventHandlers (Yury Puzynya)
+
+ * Merge debug-server address and wsAddress (Yury Puzynya)
+
+ * fix ws url (Yury Puzynya)
+
+
 ## 2016-02-09, Version 0.12.6
 
  * deps up (Yury Puzynya)
