@@ -9,13 +9,10 @@ var rimraf = require('rimraf');
 var launcher = require('./helpers/launcher.js');
 var FileStorage = require('../lib/ScriptManager/FileStorage.js');
 
-var rmrf = (dir) => new Promise((resolve, reject) =>
-                    rimraf(dir, (error, result) =>
-                    error ? reject(error) : resolve(result)));
 var relative = node => path.relative(TEMP_DIR, node);
 
 var TEMP_FILE = path.join(__dirname, 'fixtures', 'temp.js');
-var TEMP_DIR = path.join(__dirname, 'work');
+var TEMP_DIR = tree.dir;
 
 var child;
 var session;
@@ -73,7 +70,7 @@ describe('FileStorage', function() {
 
   it('finds application root for subdir/app.js by checking package.json file in parent', () => {
     return co(function * () {
-      yield tree(TEMP_DIR, {
+      yield tree({
         'subdir': {
           'app.js': true
         },
@@ -87,7 +84,7 @@ describe('FileStorage', function() {
 
   it('finds application root for root/app.js with no package.json files around', () => {
     return co(function * () {
-      yield tree(TEMP_DIR, {
+      yield tree({
         'root': {
           'app.js': true
         }
@@ -100,7 +97,7 @@ describe('FileStorage', function() {
 
   it('finds application root for root/app.js by checking package.json file in root/', () => {
     return co(function * () {
-      yield tree(TEMP_DIR, {
+      yield tree({
         'root': {
           'app.js': true,
           'package.json': true,
@@ -115,7 +112,7 @@ describe('FileStorage', function() {
 
   it('finds files in start directory', () => {
     return co(function * () {
-      yield tree(TEMP_DIR, {
+      yield tree({
         // Globally installed module, e.g. mocha
         'global': {
           'runner.js': true,
@@ -156,7 +153,7 @@ describe('FileStorage', function() {
 
   it('lists only well-known subdirectories when package.json is missing', () => {
     return co(function * () {
-      yield tree(TEMP_DIR, {
+      yield tree({
         'app.js': true,
         'root.js': true,
         'lib': {
@@ -194,7 +191,7 @@ describe('FileStorage', function() {
 
   it('lists all subdirectories when package.json is present', () => {
     return co(function * () {
-      yield tree(TEMP_DIR, {
+      yield tree({
         'app.js': true,
         'root.js': true,
         'lib': {
@@ -234,7 +231,7 @@ describe('FileStorage', function() {
 
   it('removes duplicate entries from files found', () => {
     return co(function * () {
-      yield tree(TEMP_DIR, {
+      yield tree({
         'app.js': true,
         'package.json': true
       });
@@ -253,7 +250,7 @@ describe('FileStorage', function() {
 
   it('excludes files to hide', () => {
     return co(function * () {
-      yield tree(TEMP_DIR, {
+      yield tree({
         'app.js': true,
         'mod.js': true,
         'test': {
@@ -277,7 +274,7 @@ describe('FileStorage', function() {
 
   it('disables preloading files', () => {
     return co(function * () {
-      yield tree(TEMP_DIR, {
+      yield tree({
         'app.js': true,
         'mod.js': true,
         'package.json': true
@@ -339,7 +336,6 @@ function deleteTemps() {
     if (yield fs.exists(TEMP_FILE))
       yield fs.unlink(TEMP_FILE);
 
-    if (yield fs.exists(TEMP_DIR))
-      yield rmrf(TEMP_DIR);
+    yield tree.clear();
   });
 }

@@ -1,11 +1,16 @@
 'use strict';
 
 var co = require('co');
+var fs = require('mz/fs');
+var path = require('path');
 var expect = require('chai').expect;
 var launcher = require('./helpers/launcher.js');
+var tree = require('./helpers/fs-tree.js');
 var SessionStub = require('./helpers/SessionStub.js');
 var InjectorClient = require('../lib/InjectorClient/InjectorClient.js');
 var NetworkAgent = require('../lib/Agents/Network/NetworkAgent.js');
+
+var TEMP_DIR = tree.dir;
 
 var session;
 var commandlet;
@@ -21,6 +26,21 @@ describe('NetworkAgent', () => {
         url: 'data:text/plain;base64,aGVsbG8gd29ybGQ='
       }).then(result => expect(result.content).to.equal('hello world'));
     });
+
+    it('should load files', () => {
+      return co(function * () {
+        var agent = new NetworkAgent({ inject: false }, new SessionStub());
+        yield tree({'test': true});
+
+        yield fs.writeFile(path.resolve(TEMP_DIR, 'test'), 'hello world');
+
+        return agent.handle('loadResourceForFrontend', {
+          url: 'file://' + path.resolve(TEMP_DIR, 'test')
+        }).then(result => expect(result.content).to.equal('hello world'));
+      });
+    });
+
+    after(tree.clear);
   });
 
   describe('HTTP request wrapper', () => {
@@ -213,32 +233,32 @@ describe('NetworkAgent', () => {
       }));
     });
   });
-
-  function containKeys(obj, keys) {
-    Object.keys(keys).forEach(key =>
-      expect(obj[key], key + ' is equal to ' + keys[key]).to.be.equal(keys[key]));
-  }
-
-  function expand(instance) {
-    commandlet = instance.child;
-    session = instance.session;
-    debuggerClient = session.debugger;
-    frontendClient = session.frontend;
-  }
-
-  function initializeNetwork() {
-    return co(function * () {
-      yield launcher.runCommandlet(true).then(expand);
-
-      commandlet.stdout.pipe(process.stdout);
-
-      var injectorClient = new InjectorClient({}, session);
-      session.injector = injectorClient;
-
-      networkAgent = new NetworkAgent({}, session);
-
-      yield networkAgent.ready();
-      yield debuggerClient.request('continue');
-    });
-  }
 });
+
+function containKeys(obj, keys) {
+  Object.keys(keys).forEach(key =>
+    expect(obj[key], key + ' is equal to ' + keys[key]).to.be.equal(keys[key]));
+}
+
+function expand(instance) {
+  commandlet = instance.child;
+  session = instance.session;
+  debuggerClient = session.debugger;
+  frontendClient = session.frontend;
+}
+
+function initializeNetwork() {
+  return co(function * () {
+    yield launcher.runCommandlet(true).then(expand);
+
+    commandlet.stdout.pipe(process.stdout);
+
+    var injectorClient = new InjectorClient({}, session);
+    session.injector = injectorClient;
+
+    networkAgent = new NetworkAgent({}, session);
+
+    yield networkAgent.ready();
+    yield debuggerClient.request('continue');
+  });
+}

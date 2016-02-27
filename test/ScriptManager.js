@@ -9,11 +9,7 @@ var tree = require('./helpers/fs-tree');
 var SessionStub = require('./helpers/SessionStub.js');
 var ScriptManager = require('../lib/ScriptManager/ScriptManager.js');
 
-var TEMP_DIR = path.join(__dirname, 'work');
-
-var rmrf = (dir) => new Promise((resolve, reject) =>
-                    rimraf(dir, (error, result) =>
-                    (error ? reject(error) : resolve(result))));
+var TEMP_DIR = tree.dir;
 
 describe('ScriptManager', () => {
   var manager;
@@ -27,7 +23,7 @@ describe('ScriptManager', () => {
     debuggerClient = session.debugger;
   });
 
-  afterEach(() => deleteTemps());
+  afterEach(tree.clear);
 
   describe('add()', () => {
     var _internal = {
@@ -143,7 +139,7 @@ describe('ScriptManager', () => {
         filename: `${TEMP_DIR}/test`
       });
       return co(function * () {
-        yield tree(TEMP_DIR, {'test': true});
+        yield tree({'test': true});
         var name = yield manager.mainAppScript();
         expect(name).to.be.equal(`${TEMP_DIR}/test`);
       });
@@ -168,7 +164,7 @@ describe('ScriptManager', () => {
         });
 
         return co(function * () {
-          yield tree(TEMP_DIR, {'Test': true});
+          yield tree({'Test': true});
           var realMainAppScript = yield manager.realMainAppScript();
           expect(realMainAppScript).to.equal(`${TEMP_DIR}/Test`);
         });
@@ -189,11 +185,3 @@ describe('ScriptManager', () => {
     }
   });
 });
-
-
-function deleteTemps() {
-  return co(function * () {
-    if (yield fs.exists(TEMP_DIR))
-      yield rmrf(TEMP_DIR);
-  });
-}
