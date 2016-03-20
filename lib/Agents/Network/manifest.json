@@ -1,16 +1,23 @@
 {
-    "domains": [
+  "frontend": {
+    "modules": [
       {
-        "domain": "Console",
-        "types": [],
-        "commands": [],
-        "events": [
-            {
-                "name": "showConsole",
-                "description": "Open console window"
-            }
-        ]
-      },
+        "name": "node-network",
+        "dependencies": [ "network" ],
+        "scripts": [ "NetworkPanel.js" ]
+      }
+    ]
+  },
+  "inspector": {
+    "agents": [
+      {
+        "name": "Network",
+        "path": "NetworkAgent.js"
+      }
+    ]
+  },
+  "protocol": {
+    "domains": [
       {
         "domain": "Network",
         "types": [],
@@ -30,4 +37,5 @@
         "events": []
       }
     ]
+  }
 }

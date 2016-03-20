@@ -1,8 +1,0 @@
-{
-    "dependencies": [
-      "sdk"
-    ],
-    "scripts": [
-        "SourcesOverrides.js"
-    ]
-}

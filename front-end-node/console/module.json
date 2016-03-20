@@ -1,8 +1,0 @@
-{
-    "dependencies": [
-        "console"
-    ],
-    "scripts": [
-        "ConsoleExtentions.js"
-    ]
-}

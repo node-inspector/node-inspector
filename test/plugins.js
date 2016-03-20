@@ -1,226 +1,122 @@
-var expect = require('chai').expect,
-    plugins = require('../lib/plugins'),
-    PluginError = plugins.PluginError,
-    ProtocolJson = plugins.ProtocolJson,
-    InspectorJson = plugins.InspectorJson;
+'use strict';
+
+const expect = require('chai').expect;
+const manifest = require('../lib/manifest.js');
+const plugins = require('../lib/plugins');
+const PluginError = plugins.PluginError;
+const Protocol = plugins.Protocol;
+const Inspector = plugins.Inspector;
 
 function findEq(collection, option, value) {
-  return collection.filter(function(item) {
-    return item[option] == value;
-  })[0];
+  return collection.filter(item => item[option] == value)[0];
 }
 
-function clearPlugins() {
-  plugins.plugins.length = 0;
-}
-
-function addCommonPlugin() {
-  var manifest = {
-    name: 'test-plugin',
-    type: 'autostart'
-  };
-  plugins.validateManifest(manifest);
-  plugins.plugins.push(manifest);
-
-  return manifest;
-}
-
-function addPluginWithProtocol() {
-   var manifest = {
-    name: 'test-plugin',
-    type: 'autostart',
-    protocol: {
-      domains: [
+function manifestWithProtocol(domain) {
+  const commands = Array.prototype.slice.call(arguments, 1);
+  return new manifest.constructor([{
+    "protocol": {
+      "domains": [
         {
-          domain: 'test-domain',
-          commands: [
-            {
-              'name': 'test-command'
-            }
-          ]
+          "domain": domain,
+          "types": [],
+          "commands": commands,
+          "events": []
         }
       ]
     }
-  };
-  plugins.validateManifest(manifest);
-  plugins.plugins.push(manifest);
-
-  return manifest;
+  }]);
 }
 
-describe('Plugins', function() {
-  describe('InspectorJson', function() {
-    beforeEach(clearPlugins);
+describe('Plugins', () => {
+  describe('Inspector', () => {
+    describe('.merge', () => {
+      it('should merge common plugin', () => {
+        const merged = Inspector.merge([{ name: 'a' }], [{ name: 'b' }]);
 
-    it('works without plugins if `config.plugins` disabled', function() {
-      var manifest = addCommonPlugin();
-      var inspectorJson = new InspectorJson({ plugins: false });
-
-      expect(findEq(inspectorJson._notes, 'name', 'plugins/' + manifest.name)).to.equal(undefined);
-    });
-
-    it('should merge plugins if `config.plugins` enabled', function() {
-      var manifest = addCommonPlugin();
-      var inspectorJson = new InspectorJson({ plugins: true });
-
-      expect(findEq(inspectorJson._notes, 'name', 'plugins/' + manifest.name)).to.deep.equal({
-        name: 'plugins/test-plugin',
-        type: 'autostart'
+        expect(merged).to.deep.equal([
+          { name: 'external/b' },
+          { name: 'a' }
+        ]);
       });
-    });
 
-    it('should work correctly with `manifest.exclude`', function() {
-      var inspectorJson = new InspectorJson({ plugins: false });
+      it('should process exclude type', () => {
+        const merged = Inspector.merge(
+          [{ name: 'a' }, { name: 'b' }],
+          [{ name: 'b', type: 'exclude' }]
+        );
 
-      var excludeTarget = inspectorJson._notes[0];
-      var manifest = {
-        name: 'test-plugin',
-        type: 'autostart',
-        exclude: [excludeTarget.name]
-      };
-      plugins.validateManifest(manifest);
-      plugins.plugins.push(manifest);
+        expect(merged).to.deep.equal([
+          { name: 'a' }
+        ]);
+      });
 
-      expect(excludeTarget).to.be.instanceof(Object);
-      expect(findEq(inspectorJson._notes, 'name', excludeTarget.name)).to.not.equal(undefined);
+      it('should process override type', () => {
+        const merged = Inspector.merge(
+          [{ name: 'a' }, { name: 'b' }],
+          [
+            { name: 'b', type: 'exclude' },
+            { name: 'b', override: true, type: 'autostart' }
+          ]
+        );
 
-      inspectorJson = new InspectorJson({ plugins: true });
-
-      expect(findEq(inspectorJson._notes, 'name', excludeTarget.name)).to.equal(undefined);
-    });
-
-    it('should work correctly with `manifest.override`', function() {
-      var inspectorJson = new InspectorJson({ plugins: false });
-
-      var overrideTarget = inspectorJson._notes[0];
-      var manifest = {
-        name: 'test-plugin',
-        type: 'autostart',
-        override: [{ name: overrideTarget.name, type: 'test' }]
-      };
-      plugins.validateManifest(manifest);
-      plugins.plugins.push(manifest);
-
-      expect(overrideTarget).to.be.instanceof(Object);
-      expect(findEq(inspectorJson._notes, 'name', overrideTarget.name)).to.not.equal(undefined);
-      expect(findEq(inspectorJson._notes, 'type', 'test')).to.equal(undefined);
-
-      inspectorJson = new InspectorJson({ plugins: true });
-
-      expect(findEq(inspectorJson._notes, 'name', overrideTarget.name)).to.not.equal(undefined);
-      expect(findEq(inspectorJson._notes, 'type', 'test')).to.not.equal(undefined);
-    });
-
-    it('should correctly stringify itself', function() {
-      var manifest = addCommonPlugin();
-      var inspectorJson = new InspectorJson({ plugins: true });
-      var json = JSON.stringify(inspectorJson),
-          object = JSON.parse(json);
-
-      expect(object).to.be.instanceof(Array);
-      expect(findEq(object, 'name', 'plugins/' + manifest.name)).to.deep.equal({
-        name: 'plugins/' + manifest.name,
-        type: 'autostart'
+        expect(merged).to.deep.equal([
+          { name: 'b', override: true, type: 'autostart' },
+          { name: 'a' }
+        ]);
       });
     });
   });
 
-  describe('ProtocolJson', function() {
-    beforeEach(clearPlugins);
+  describe('Protocol', () => {
+    describe('.merge', () => {
+      it('should merge manifests without conflicts', () => {
+        const acceptor = manifestWithProtocol('a');
+        const donor = manifestWithProtocol('b');
+        const protocol = Protocol.merge(true, acceptor.protocol, donor.protocol);
 
-    it('works without plugins if `config.plugins` disabled', function() {
-      var manifest = addPluginWithProtocol();
-      var protocolJson = new ProtocolJson({ plugins: false });
-      var targetName = manifest.protocol.domains[0].domain;
-
-      expect(findEq(protocolJson._domains, 'domain', targetName)).to.equal(undefined);
-    });
-
-    it('should merge plugins if `config.plugins` enabled', function() {
-      var manifest = addPluginWithProtocol();
-      var protocolJson = new ProtocolJson({ plugins: true });
-      var targetName = manifest.protocol.domains[0].domain;
-
-      expect(findEq(protocolJson._domains, 'domain', targetName)).to.deep.equal({
-        domain: 'test-domain',
-        commands: [
-          {
-            'name': 'test-command'
-          }
-        ]
+        expect(protocol.domains).to.have.length(2);
+        expect(findEq(protocol.domains, 'domain', 'a')).to.be.equal(acceptor.protocol[0]);
+        expect(findEq(protocol.domains, 'domain', 'b')).to.be.equal(donor.protocol[0]);
       });
-    });
 
-    it('should resolve plugins domain conflict', function() {
-      var manifest = addPluginWithProtocol();
-      var manifest_conflict = {
-        name: 'test-plugin-conflict',
-        type: 'autostart',
-        protocol: {
-          domains: [
-            {
-              domain: 'test-domain',
-              commands: [
-                {
-                  'name': 'test-command-no-conflict'
-                }
-              ]
-            }
-          ]
-        }
-      };
-      plugins.validateManifest(manifest_conflict);
-      plugins.plugins.push(manifest_conflict);
+      it('should merge manifests without donor', () => {
+        const acceptor = manifestWithProtocol('a');
+        const protocol = Protocol.merge(true, acceptor.protocol);
 
-      var protocolJson = new ProtocolJson({ plugins: true });
-      var targetName = manifest.protocol.domains[0].domain;
-
-      expect(findEq(protocolJson._domains, 'domain', targetName)).to.deep.equal({
-        domain: 'test-domain',
-        commands: [
-          {
-            'name': 'test-command'
-          },
-          {
-            'name': 'test-command-no-conflict'
-          }
-        ]
+        expect(protocol.domains).to.have.length(1);
+        expect(findEq(protocol.domains, 'domain', 'a')).to.be.equal(acceptor.protocol[0]);
       });
-    });
 
-    it('should throw on plugins command conflict', function() {
-      var manifest = addPluginWithProtocol();
-      var manifest_conflict = {
-        name: 'test-plugin-conflict',
-        type: 'autostart',
-        protocol: {
-          domains: [
-            {
-              domain: 'test-domain',
-              commands: [
-                {
-                  'name': 'test-command'
-                }
-              ]
-            }
-          ]
-        }
-      };
-      plugins.validateManifest(manifest_conflict);
-      plugins.plugins.push(manifest_conflict);
+      it('should merge manifests with domain conflicts', () => {
+        const acceptor = manifestWithProtocol('a', { name: 1 }, { name: 2 });
+        const donor = manifestWithProtocol('a', { name: 3 }, { name: 4 });
 
-      expect(function() { return new ProtocolJson({ plugins: true }); }).to.throw(PluginError);
-    });
+        const protocol = Protocol.merge(true, acceptor.protocol, donor.protocol);
 
-    it('should correctly stringify itself', function() {
-      var manifest = addPluginWithProtocol();
-      var targetDomain = manifest.protocol.domains[0];
-      var targetName = targetDomain.domain;
-      var protocolJson = new ProtocolJson({ plugins: true });
-      var json = JSON.stringify(protocolJson),
-          object = JSON.parse(json);
+        const domain = findEq(protocol.domains, 'domain', 'a');
+        expect(protocol.domains).to.have.length(1);
+        expect(domain).to.be.instanceof(Object);
+        expect(findEq(domain.commands, 'name', 1)).to.be.deep.equal({ "name": 1 });
+        expect(findEq(domain.commands, 'name', 2)).to.be.deep.equal({ "name": 2 });
+        expect(findEq(domain.commands, 'name', 3)).to.be.deep.equal({ "name": 3 });
+        expect(findEq(domain.commands, 'name', 4)).to.be.deep.equal({ "name": 4 });
+      });
 
-      expect(findEq(object.domains, 'domain', targetName)).to.deep.equal(targetDomain);
+      it('should throw on manifests with item conflicts', () => {
+        const acceptor = manifestWithProtocol('a', { name: 1 }, { name: 2, prop: 1 });
+        const donor = manifestWithProtocol('a', { name: 2 }, { name: 3 });
+
+        expect(() => Protocol.merge(true, acceptor.protocol, donor.protocol))
+          .to.throw(PluginError);
+      });
+
+      it('should not throw on manifests with equal items', () => {
+        const acceptor = manifestWithProtocol('a', { name: 1 }, { name: 2 });
+        const donor = manifestWithProtocol('a', { name: 2 }, { name: 3 });
+
+        expect(() => Protocol.merge(true, acceptor.protocol, donor.protocol))
+          .to.not.throw(PluginError);
+      });
     });
   });
 });

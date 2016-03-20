@@ -1,0 +1,10 @@
+{
+  "inspector": {
+    "agents": [
+      {
+        "name": "Runtime",
+        "path": "RuntimeAgent.js"
+      }
+    ]
+  }
+}

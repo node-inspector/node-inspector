@@ -1,8 +1,0 @@
-{
-    "dependencies": [
-        "main"
-    ],
-    "scripts": [
-        "MainOverrides.js"
-    ]
-}
