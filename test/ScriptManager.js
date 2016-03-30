@@ -75,11 +75,42 @@ describe('ScriptManager', function() {
         var name = manager.normalizeName(realMainAppScript);
         expect(name).to.equal(mainAppScript);
       });
+
+      it('returns case sensitive URL for main script on Windows', function() {
+        manager.realMainAppScript = 'C:\\' + realMainAppScript;
+        manager.mainAppScript = 'C:\\' + mainAppScript;
+        var url = 'file:///C:/' + realMainAppScript.replace(/\\/g, '/');
+        var normalized_name = manager.normalizeName(url);
+        expect(normalized_name).to.equal('file:///C:/' + mainAppScript.replace(/\\/g, '/'));
+      });
+
+      it('returns unchanged URL for not main script on Windows', function() {
+        manager.realMainAppScript = 'C:\\' + realMainAppScript;
+        manager.mainAppScript = 'C:\\' + mainAppScript;
+        var url = 'file:///C:/folder/app1.js';
+        var normalized_name = manager.normalizeName(url);
+        expect(normalized_name).to.equal(url);
+      });
     } else {
       it('returns unchanged name for main script on Linux', function() {
-        var name = manager.normalizeName('folder/app.js');
         var normalized_name = manager.normalizeName(realMainAppScript);
         expect(normalized_name).to.equal(realMainAppScript);
+      });
+
+      it('returns unchanged URL for main script on Linux', function() {
+        manager.realMainAppScript = '/' + realMainAppScript;
+        manager.mainAppScript = '/' + mainAppScript;
+        var url = 'file:///' + realMainAppScript;
+        var normalized_name = manager.normalizeName(url);
+        expect(normalized_name).to.equal(url);
+      });
+
+      it('returns unchanged URL for not main script on Linux', function() {
+        manager.realMainAppScript = '/' + realMainAppScript;
+        manager.mainAppScript = '/' + mainAppScript;
+        var url = 'file:///folder/App1.js';
+        var normalized_name = manager.normalizeName(url);
+        expect(normalized_name).to.equal(url);
       });
     }
 
@@ -87,6 +118,20 @@ describe('ScriptManager', function() {
       var name = 'folder/app1.js';
       var normalized_name = manager.normalizeName(name);
       expect(normalized_name).to.equal(name);
+    });
+  });
+
+  describe('_checkSourceMapIssues()', function() {
+    it('fixes sourcemap source file name when it duplicates the target file name', function() {
+      var url = (process.platform == 'win32') ? 'file:///C:/folder/file.js' : 'file:///folder/file.js';
+      var inspectorScriptData = {
+        url: url
+      };
+      var sourceMap = {
+        sources: ['file.js']
+      };
+      manager._checkSourceMapIssues(inspectorScriptData, sourceMap);
+      expect(sourceMap.sources[0]).to.equal('file.js.source');
     });
   });
 });
