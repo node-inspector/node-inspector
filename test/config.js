@@ -4,6 +4,118 @@ var util = require('util'),
 
 var Config = require('../lib/config');
 
+describe('Config', () => {
+  console.log(Config);
+
+  describe('.collectDefaults', () => {
+    it('should collect primitive default', () => {
+      const options = { test: { default: 'test' }};
+      const defaults = Config.collectDefaults(options);
+
+      expect(defaults).to.deep.equal({
+        test: 'test'
+      });
+    });
+
+    it('should collect immutable default array', () => {
+      const options = { test: { default: [] }};
+      const defaults1 = Config.collectDefaults(options);
+      const defaults2 = Config.collectDefaults(options);
+
+      expect(defaults1.test).to.be.instanceof(Array);
+      expect(defaults2.test).to.be.instanceof(Array);
+      expect(defaults1.test).to.be.not.equal(defaults2.test);
+    });
+
+    it('should not collect unspecified default', () => {
+      const options = { test: {} };
+      const defaults = Config.collectDefaults(options);
+
+      expect(defaults).to.be.deep.equal({});
+    });
+  });
+
+  describe('.collectCustom', () => {
+    it('should collect custom option', () => {
+      const options = {
+        test1: { custom: () => 'test' },
+        test2: {}
+      };
+
+      const custom = Config.collectCustom(options);
+
+      expect(custom).to.deep.equal({ test1: 'test' });
+    });
+  });
+
+  describe('.parseArgs', () => {
+    it('should collect common args', () => {
+      const options = { test: {} };
+      const argv = ['-a', '--b', '3', '--test'];
+      const result = Config.parseArgs(options, argv);
+
+      expect(result).to.contain.keys({ test: true });
+    });
+
+    it('should collect args without script args', () => {
+      const options = { test: { type: 'boolean' }};
+      const argv = ['-a', '--b', '3', 'script', '--test'];
+      const result = Config.parseArgs(options, argv);
+
+      expect(result).to.contain.keys({ test: false });
+    });
+
+    it('should ignore aliases', () => {
+      const options = {
+        first: { type: 'boolean' },
+        test: { type: 'boolean', alias: 't' },
+        last: { type: 'boolean', alias: ['l', 'lt'] }
+      };
+      const argv = ['-a', '--b', '3', '--test', '--lt', '--first'];
+      const result = Config.parseArgs(options, argv);
+
+      expect(result).to.not.contain.any.keys('lt', 't', 'l');
+      expect(result).to.contain.keys('test', 'first', 'a', 'b');
+    });
+
+    it('should ignore default values', () => {
+      const options = {
+        test: { type: 'boolean', default: true }
+      };
+      const argv = ['-a', '--b', '3', '--test'];
+      const result = Config.parseArgs(options, argv);
+
+      expect(result).to.not.contain.keys('test');
+    });
+
+    it('should ignore default complex structures', () => {
+      const options = {
+        test1: { type: 'array' },
+        test2: { type: 'array', default: [1] },
+        test3: { type: 'array', default: [1] }
+      };
+      const argv = ['-a', '--b', '3', '--test1=1', '--test2=1'];
+      const result = Config.parseArgs(options, argv);
+
+      expect(result).to.contain.keys('test1', 'test2');
+    });
+
+    it('should ignore camel case options', () => {
+      const options = {
+        'test-a': {},
+        'test-1': {},
+        test2: {},
+      };
+      const argv = ['-a', '--b', '3', '--test-a=1', '--test-1=1'];
+      const result = Config.parseArgs(options, argv);
+
+      expect(result).to.not.contain.any.keys('testA', 'test1');
+      expect(result).to.contain.keys('test2');
+    });
+  });
+});
+
+/*
 describe('Config', function() {
   describe('from argv', function(){
 
@@ -210,3 +322,4 @@ describe('Config', function() {
     });
   });
 });
+*/

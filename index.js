@@ -5,6 +5,12 @@ var path = require('path');
 exports.buildInspectorUrl = buildInspectorUrl;
 exports.buildWebSocketUrl = buildWebSocketUrl;
 
+exports.Server = require('./lib/server.js');
+exports.Router = require('./lib/router.js');
+exports.Config = require('./lib/config.js');
+exports.manifest = require('./lib/manifest.js');
+exports.version = require('./package.json').version;
+
 /**
  * Build a URL for loading inspector UI in the browser.
  * @param {string|undefined} inspectorHost as configured via --web-host
