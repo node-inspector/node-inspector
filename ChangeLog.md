@@ -1,3 +1,18 @@
+## 2016-04-07, Version 0.12.8
+
+ * Cleanup pr-839 (Yury Puzynya)
+
+ * Don't fail when there's a loop in symlinks (Yves Le Maout)
+
+ * Bump ws dependency to 1.0.1 (eliminates dependency on bufferutil) (Andre Asselin)
+
+ * Fix issue #832, "node inspector and babel-register". (Albert Pomortsev)
+
+ * Fix keep-alive network debugging (Yury Puzynya)
+
+ * Fix calling unexposed function (Guilherme Pacheco)
+
+
 ## 2016-02-25, Version 0.12.7
 
  * chmod 777 for unix socket (Yury Puzynya)
