@@ -228,18 +228,11 @@ describe('ScriptFileStorage', function() {
   });
 
   it('does not enter an infinite loop', function(done) {
-    var originalConsoleWarn = console.warn;
-    var matchedWarning;
-    console.warn = function(text) {
-      matchedWarning = text.match(/ELOOP: too many symbolic links encountered/) && text;
-      originalConsoleWarn.apply(console, arguments);
-    };
-
     givenTempFiles('app.js', 'mod.js');
 
     var tempDirA = path.join(TEMP_DIR, 'a');
-    var tempDirB = path.join(TEMP_DIR, 'a', 'b');
-    var tempDirC = path.join(TEMP_DIR, 'a', 'b', 'c');
+    var tempDirB = path.join(tempDirA, 'b');
+    var tempDirC = path.join(tempDirB, 'c');
     fs.mkdirSync(tempDirA);
     fs.mkdirSync(tempDirB);
     fs.symlinkSync(tempDirA, tempDirC);
@@ -248,22 +241,12 @@ describe('ScriptFileStorage', function() {
       TEMP_DIR,
       path.join(TEMP_DIR, 'app.js'),
       function(err, files) {
-        if (err) { return finish(err); }
+        if (err) return done(err);
+
         expect(files).to.have.length(2);
-        return finish();
+        done();
       }
     );
-
-    function finish(err) {
-      console.warn = originalConsoleWarn;
-      if (err) { return done(err); }
-
-      if (matchedWarning) {
-        return done(new Error(matchedWarning));
-      }
-
-      return done();
-    }
   });
 
   function relativeToTemp(p) {
