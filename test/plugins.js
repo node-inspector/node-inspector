@@ -24,7 +24,7 @@ function manifestWithProtocol(domain) {
         }
       ]
     }
-  }]);
+  }]).protocol.domains;
 }
 
 describe('Plugins', () => {
@@ -72,29 +72,29 @@ describe('Plugins', () => {
       it('should merge manifests without conflicts', () => {
         const acceptor = manifestWithProtocol('a');
         const donor = manifestWithProtocol('b');
-        const protocol = Protocol.merge(true, acceptor.protocol, donor.protocol);
+        const protocol = Protocol.merge(true, acceptor, donor);
 
-        expect(protocol.domains).to.have.length(2);
-        expect(findEq(protocol.domains, 'domain', 'a')).to.be.equal(acceptor.protocol[0]);
-        expect(findEq(protocol.domains, 'domain', 'b')).to.be.equal(donor.protocol[0]);
+        expect(protocol).to.have.length(2);
+        expect(findEq(protocol, 'domain', 'a')).to.be.equal(acceptor[0]);
+        expect(findEq(protocol, 'domain', 'b')).to.be.equal(donor[0]);
       });
 
       it('should merge manifests without donor', () => {
         const acceptor = manifestWithProtocol('a');
-        const protocol = Protocol.merge(true, acceptor.protocol);
+        const protocol = Protocol.merge(true, acceptor);
 
-        expect(protocol.domains).to.have.length(1);
-        expect(findEq(protocol.domains, 'domain', 'a')).to.be.equal(acceptor.protocol[0]);
+        expect(protocol).to.have.length(1);
+        expect(findEq(protocol, 'domain', 'a')).to.be.equal(acceptor[0]);
       });
 
       it('should merge manifests with domain conflicts', () => {
         const acceptor = manifestWithProtocol('a', { name: 1 }, { name: 2 });
         const donor = manifestWithProtocol('a', { name: 3 }, { name: 4 });
 
-        const protocol = Protocol.merge(true, acceptor.protocol, donor.protocol);
+        const protocol = Protocol.merge(true, acceptor, donor);
 
-        const domain = findEq(protocol.domains, 'domain', 'a');
-        expect(protocol.domains).to.have.length(1);
+        const domain = findEq(protocol, 'domain', 'a');
+        expect(protocol).to.have.length(1);
         expect(domain).to.be.instanceof(Object);
         expect(findEq(domain.commands, 'name', 1)).to.be.deep.equal({ "name": 1 });
         expect(findEq(domain.commands, 'name', 2)).to.be.deep.equal({ "name": 2 });
@@ -106,7 +106,7 @@ describe('Plugins', () => {
         const acceptor = manifestWithProtocol('a', { name: 1 }, { name: 2, prop: 1 });
         const donor = manifestWithProtocol('a', { name: 2 }, { name: 3 });
 
-        expect(() => Protocol.merge(true, acceptor.protocol, donor.protocol))
+        expect(() => Protocol.merge(true, acceptor, donor))
           .to.throw(PluginError);
       });
 
@@ -114,7 +114,7 @@ describe('Plugins', () => {
         const acceptor = manifestWithProtocol('a', { name: 1 }, { name: 2 });
         const donor = manifestWithProtocol('a', { name: 2 }, { name: 3 });
 
-        expect(() => Protocol.merge(true, acceptor.protocol, donor.protocol))
+        expect(() => Protocol.merge(true, acceptor, donor))
           .to.not.throw(PluginError);
       });
     });
