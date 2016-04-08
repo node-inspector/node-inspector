@@ -6,6 +6,7 @@ exports.buildInspectorUrl = buildInspectorUrl;
 exports.buildWebSocketUrl = buildWebSocketUrl;
 
 exports.Server = require('./lib/server.js');
+exports.Session = require('./lib/session.js');
 exports.Router = require('./lib/router.js');
 exports.Config = require('./lib/config.js');
 exports.manifest = require('./lib/manifest.js');
