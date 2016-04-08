@@ -161,7 +161,7 @@ describe('Config', function() {
       expect(serialisedOptions, 'true serialised boolean format [false]').to.contain('-d=false');
       expect(serialisedOptions, 'filtered `undefined` value').to.not.contain('-e=undefined');
       expect(serialisedOptions, 'not filtered `null` value').to.contain('-f=null');
-      expect(serialisedOptions, 'true serialised array format').to.contain('-g=h -g=1');
+      expect(serialisedOptions, 'true serialised array format').to.contain('-g=h', '-g=1');
       expect(serialisedOptions, 'true serialised regexp format').to.contain('-k=abc');
       expect(serialisedOptions, 'true serialised object format')
         .to.contain('--l.m --l.n=1 --l.o.p=false');
