@@ -140,6 +140,14 @@ Note that the array items are interpreted as regular expressions.
 #### UI doesn't load or doesn't work and refresh didn't help
 
 Make sure that you have adblock disabled as well as any other content blocking scripts and plugins.
+Also see the point below about long startup time.
+
+#### Node Inspector takes a long time to start up.
+
+Try passing `--no-preload` option. This option disables searching disk for `*.js` files at startup.
+Code will still be loaded into Node Inspector at runtime, as modules are required.
+
+Alternatively, when debugging a small script in a repo which contains a massive and deeply nested `node_modules` folder, consider creating a minimum copy of the environment in another folder, to minimize the number of files that have to be analyzed and loaded by Node Inspector.
 
 #### How can I (selectively) delete debug session metadata?
 
@@ -163,11 +171,6 @@ window.localStorage.removeItem('breakpoints')
 ```
 
 When you are done cleaning up, hit refresh in the browser.
-
-#### Node Inspector takes a long time to start up.
-
-Try setting --no-preload to true. This option disables searching disk for *.js at startup.
-Code will still be loaded into Node Inspector at runtime, as modules are required.
 
 #### How do I debug Mocha unit-tests?
 
