@@ -27,6 +27,7 @@ console.log('Node Inspector v%s', packageJson.version);
 var debugServer = new DebugServer();
 debugServer.on('error', onError);
 debugServer.on('listening', onListening);
+debugServer.on('sessionClose', onSessionClose);
 debugServer.on('close', function () {
   process.exit();
 });
@@ -60,6 +61,12 @@ function onListening() {
   notifyParentProcess({
     event: 'SERVER.LISTENING',
     address: address
+  });
+}
+
+function onSessionClose() {
+  notifyParentProcess({
+    event: 'SERVER.SESSION_CLOSE'
   });
 }
 
