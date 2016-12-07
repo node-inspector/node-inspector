@@ -9,13 +9,16 @@ exports.buildInspectorUrl = buildInspectorUrl;
  * @param {number} inspectorPort as configured via --web-port
  * @param {number} debugPort as configured via --debug in the debugged app
  */
-function buildInspectorUrl(inspectorHost, inspectorPort, debugPort, fileToShow) {
+function buildInspectorUrl(inspectorHost, inspectorPort, debugHost, debugPort, fileToShow) {
   var parts = {
     protocol: 'http',
     hostname: inspectorHost || '127.0.0.1',
     port: inspectorPort,
     pathname: '/debug',
-    search: '?port=' + debugPort
+    query: {
+        host: debugHost,
+        port: debugPort
+    }
   };
 
   return url.format(parts);

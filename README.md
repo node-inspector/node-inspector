@@ -257,6 +257,7 @@ Command line options:
 ```
 --debug-brk, -b         Break on the first line (`node --debug-brk`) [default: true]
 --web-port, -p, --port  Node Inspector port (`node-inspector --web-port={port}`)
+--debug-port, -d        Node/V8 debugger ip address (`node-inspector --debug-host={port}`)
 --debug-port, -d        Node/V8 debugger port (`node --debug={port}`)
 --cli, -c               CLI mode, do not open browser.
 --version, -v           Print Node Inspector's version.
@@ -291,6 +292,7 @@ Use dashed option names in RC files. Sample config file:
 {
   "web-port": 8088,
   "web-host": null,
+  "debug-host": "127.0.0.1",
   "debug-port": 5858,
   "save-live-edit": true,
   "no-preload": true,
@@ -305,6 +307,7 @@ List of predefined options:
 --help               |             | Print information about options
 --web-port           |    8080     | Port to host the inspector
 --web-host           |  127.0.0.1  | Host to listen on
+--debug-port         |  127.0.0.1  | Host where the debugging app runs on
 --debug-port         |    5858     | Port to connect to the debugging app
 --save-live-edit     |    false    | Save live edit changes to disk
                      |             |   (update the edited files)
