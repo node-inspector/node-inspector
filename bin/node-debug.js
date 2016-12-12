@@ -27,6 +27,10 @@ var argvOptions = {
     type: 'number',
     description: 'Node/V8 debugger port (`node --debug={port}`)'
   },
+  'debug-host': {
+    type: 'string',
+    description: 'Host where the debugged app is running (`node-inspector --debug-host={url}`)'
+  },
   nodejs: {
     type: 'string',
     description: 'Pass NodeJS options to debugged process (`node --option={value}`)\n' +
@@ -151,8 +155,10 @@ function parseArgs(argv) {
   }
 
   var inspectorPort = options['web-port'] || 8080;
+  var debugHost = options['debug-host'] || '';
   var inspectorArgs = extractPassThroughArgs(options, argvOptions)
-    .concat(['--web-port=' + inspectorPort]);
+    .concat(['--web-port=' + inspectorPort])
+    .concat(['--debug-host=' + debugHost]);
 
   return {
     printScript: printScript,
@@ -165,6 +171,7 @@ function parseArgs(argv) {
     },
     inspector: {
       port: inspectorPort,
+      debugHost: debugHost,
       args: inspectorArgs
     }
   };
@@ -204,7 +211,7 @@ function extractPassThroughArgs(options, argvOptions) {
     if (optionsToSkip[key]) return;
     //Filter camelKey options created by yargs
     if (/[A-Z]/.test(key)) return;
-    
+
     var value = options[key];
     if (value === undefined) return;
     if (value === true) {
@@ -287,7 +294,7 @@ function checkWinCmdFiles(script) {
   if (process.platform == 'win32' && path.extname(script).toLowerCase() == '.cmd') {
     var cmdContent = '' + fs.readFileSync(script);
     var link = (WIN_CMD_LINK_MATCHER.exec(cmdContent) || [])[1];
-    
+
     if (link) script = path.resolve(path.dirname(script), link);
   }
   return script;
@@ -297,7 +304,9 @@ function openBrowserAndPrintInfo() {
   var url = inspector.buildInspectorUrl(
     'localhost',
     config.inspector.port,
-    config.subproc.debugPort
+    config.subproc.debugPort,
+    null,
+    config.inspector.debugHost
   );
 
   if (!config.options.cli) {

@@ -9,17 +9,21 @@ exports.buildInspectorUrl = buildInspectorUrl;
  * @param {number} inspectorPort as configured via --web-port
  * @param {number} debugPort as configured via --debug in the debugged app
  */
-function buildInspectorUrl(inspectorHost, inspectorPort, debugHost, debugPort, fileToShow) {
+function buildInspectorUrl(inspectorHost, inspectorPort, debugPort, fileToShow) {
   var parts = {
     protocol: 'http',
     hostname: inspectorHost || '127.0.0.1',
     port: inspectorPort,
     pathname: '/debug',
     query: {
-        host: debugHost,
         port: debugPort
     }
   };
+  // For backward compatibility, we'd like to keep arguments.
+  // But if arguments.length > 4, we take fifth argument as a debugHost.
+  if (buildInspectorUrl.arguments.length > 4 && buildInspectorUrl.arguments[4]) {
+      parts.query['host'] = buildInspectorUrl.arguments[4];
+  }
 
   return url.format(parts);
 }
