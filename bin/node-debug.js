@@ -27,10 +27,6 @@ var argvOptions = {
     type: 'number',
     description: 'Node/V8 debugger port (`node --debug={port}`)'
   },
-  'debug-host': {
-    type: 'string',
-    description: 'Host where the debugged app is running (`node-inspector --debug-host={url}`)'
-  },
   nodejs: {
     type: 'string',
     description: 'Pass NodeJS options to debugged process (`node --option={value}`)\n' +
@@ -155,10 +151,8 @@ function parseArgs(argv) {
   }
 
   var inspectorPort = options['web-port'] || 8080;
-  var debugHost = options['debug-host'] || '';
   var inspectorArgs = extractPassThroughArgs(options, argvOptions)
-    .concat(['--web-port=' + inspectorPort])
-    .concat(['--debug-host=' + debugHost]);
+    .concat(['--web-port=' + inspectorPort]);
 
   return {
     printScript: printScript,
@@ -171,7 +165,6 @@ function parseArgs(argv) {
     },
     inspector: {
       port: inspectorPort,
-      debugHost: debugHost,
       args: inspectorArgs
     }
   };
@@ -304,9 +297,7 @@ function openBrowserAndPrintInfo() {
   var url = inspector.buildInspectorUrl(
     'localhost',
     config.inspector.port,
-    config.subproc.debugPort,
-    null,
-    config.inspector.debugHost
+    config.subproc.debugPort
   );
 
   if (!config.options.cli) {

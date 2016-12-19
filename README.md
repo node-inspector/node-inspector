@@ -257,7 +257,6 @@ Command line options:
 ```
 --debug-brk, -b         Break on the first line (`node --debug-brk`) [default: true]
 --web-port, -p, --port  Node Inspector port (`node-inspector --web-port={port}`)
---debug-host            Host where the debugged app is running (`node-inspector --debug-host={port}`)
 --debug-port, -d        Node/V8 debugger port (`node --debug={port}`)
 --cli, -c               CLI mode, do not open browser.
 --version, -v           Print Node Inspector's version.
