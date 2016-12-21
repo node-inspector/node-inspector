@@ -1,3 +1,8 @@
+2016-12-21, Version 0.7.5
+
+* Add support for remote debugging (#956) (Junil Kim)
+
+
 2014-06-05, Version 0.7.4
 
 * Non-ascii string saving fix (junecoder)
