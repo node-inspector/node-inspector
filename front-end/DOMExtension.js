@@ -562,7 +562,7 @@ Node.prototype.traversePreviousNode = function(stayWithin)
 
 function isEnterKey(event) {
     // Check if in IME.
-    return event.keyCode !== 229 && event.keyIdentifier === "Enter";
+    return event.keyCode !== 229 && (event.keyIdentifier === "Enter" || event.key === "Enter");
 }
 
 function consumeEvent(e)
@@ -610,4 +610,3 @@ NonLeakingMutationObserver.prototype = {
         delete this._observer;
     }
 }
-

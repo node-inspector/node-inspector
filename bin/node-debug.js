@@ -204,7 +204,7 @@ function extractPassThroughArgs(options, argvOptions) {
     if (optionsToSkip[key]) return;
     //Filter camelKey options created by yargs
     if (/[A-Z]/.test(key)) return;
-    
+
     var value = options[key];
     if (value === undefined) return;
     if (value === true) {
@@ -287,7 +287,7 @@ function checkWinCmdFiles(script) {
   if (process.platform == 'win32' && path.extname(script).toLowerCase() == '.cmd') {
     var cmdContent = '' + fs.readFileSync(script);
     var link = (WIN_CMD_LINK_MATCHER.exec(cmdContent) || [])[1];
-    
+
     if (link) script = path.resolve(path.dirname(script), link);
   }
   return script;

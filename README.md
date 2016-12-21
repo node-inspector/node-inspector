@@ -292,6 +292,7 @@ Use dashed option names in RC files. Sample config file:
   "web-port": 8088,
   "web-host": null,
   "debug-port": 5858,
+  "debug-host": null,
   "save-live-edit": true,
   "no-preload": true,
   "hidden": [],
@@ -306,6 +307,7 @@ List of predefined options:
 --web-port           |    8080     | Port to host the inspector
 --web-host           |  127.0.0.1  | Host to listen on
 --debug-port         |    5858     | Port to connect to the debugging app
+--debug-host         |  127.0.0.1  | Host where the debugged app is running
 --save-live-edit     |    false    | Save live edit changes to disk
                      |             |   (update the edited files)
 --preload            |    true     | Preload *.js files. You can disable this option
