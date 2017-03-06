@@ -1,4 +1,4 @@
-## 2017-03-06, Version 0.12.9
+## 2017-03-06, Version 0.12.10
 
  * Fix callback call in InjectorClient._findNMInScope (#914) (Sergey Sharov)
 
