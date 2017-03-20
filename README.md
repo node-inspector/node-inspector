@@ -8,11 +8,10 @@
 
 ## Overview
 
-Node Inspector is a debugger interface for Node.js applications that uses the
-Blink Developer Tools (formerly WebKit Web Inspector).
+Node Inspector is a debugger interface for Node.js applications that uses the Blink Developer Tools (formerly WebKit Web Inspector).
 
-The project maintenance and support is sponsored by
-[StrongLoop](http://strongloop.com).
+**Since version 6.3, Node.js provides a buit-in DevTools-based debugger which mostly deprecates Node Inspector, see e.g. [this blog post](https://medium.com/@paul_irish/debugging-node-js-nightlies-with-chrome-devtools-7c4a1b95ae27#.pmqejrn8q) to get started. The built-in debugger is developed directly by the V8/Chromium team and provides certain advanced features (e.g. long/async stack traces) that are too difficult to implement in Node Inspector.**
+
 
 ### Table of Content
 
@@ -389,12 +388,17 @@ started.
 
 ## Credits
 
-Maintainers
+#### Current maintainers
 
- - [Danny Coates](https://github.com/dannycoates) - the original author
-   and a sole maintainer for several years.
- - [Miroslav Bajtoš](https://github.com/bajtos) - a current maintainer,
-   sponsored by [StrongLoop](http://strongloop.com).
- - [3y3](https://github.com/3y3) - a current maintainer
+ - [淘小杰 (hustxiaoc)](https://github.com/hustxiaoc)
 
-Big thanks to the many contributors to the project, see [AUTHORS](AUTHORS).
+#### Alumni
+
+ - [Danny Coates](https://github.com/dannycoates) - the original author and a sole maintainer for several years.
+ - [Miroslav Bajtoš](https://github.com/bajtos) - sponsored by [StrongLoop](http://strongloop.com), maintained Node Inspector through the Node.js 0.10 era.
+ - [3y3](https://github.com/3y3) - maintained Node Inspector in 2015-2016
+
+#### Contributors
+
+
+Big thanks to the many contributors to the project, see [Contributors on GitHub](https://github.com/node-inspector/node-inspector/graphs/contributors)
