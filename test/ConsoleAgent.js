@@ -27,13 +27,11 @@ describe('ConsoleAgent', function() {
 
   it('should translate objects', function(done) {
     frontendClient.once('Console.messageAdded', function(message) {
-      // expect(message.message.parameters).to.deep.equal([{
-      //   type: 'object',
-      //   subtype: undefined,
-      //   objectId: 'console:1:1',
-      //   className: 'Object',
-      //   description: 'Object'
-      // }]);
+      var parameters = message.message.parameters[0];
+      expect(parameters.type).to.equal('object');
+      expect(parameters.subtype).to.equal(undefined);
+      expect(parameters.className).to.equal('Object');
+      expect(parameters.description).to.equal('Object');
       done();
     });
     childProcess.stdin.write('log object\n');
@@ -92,7 +90,7 @@ describe('ConsoleClient', function() {
     expectIsConsoleId('1', false);
   });
 
-  it.skip('should provide object data', function(done) {
+  it('should provide object data', function(done) {
     consoleClient.lookupConsoleId(
       _messages[0].parameters[0].objectId,
       function(error, lookupBody, lookupRefs) {
@@ -113,7 +111,7 @@ describe('ConsoleClient', function() {
     );
   });
 
-  it.skip('should provide object (with internal properties) data', function(done) {
+  it('should provide object (with internal properties) data', function(done) {
     consoleClient.lookupConsoleId(
       _messages[0].parameters[0].objectId,
       function(error, lookupBody, lookupRefs) {
