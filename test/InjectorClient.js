@@ -3,6 +3,8 @@ var expect = require('chai').expect,
     launcher = require('./helpers/launcher.js');
 
 describe('InjectorClient', function() {
+  this.timeout(10 * 1000);
+
   describe('with inject=false', function() {
     var injectorClient, debuggerClient, breakedObject;
 
@@ -158,7 +160,6 @@ describe('InjectorClient', function() {
           response.body = request.arguments;
         });
       };
-
       injectorClient.injection(
         injection,
         {},

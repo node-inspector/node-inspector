@@ -1,5 +1,7 @@
 /*jshint debug:true */
 var http = require('http');
+var fs = require('fs');
+var path = require('path');
 
 var commands = {
   'log simple text': function() {
@@ -141,13 +143,13 @@ function startServer(options, callback) {
 }
 
 var buffer = '';
+
 process.stdin.on('data', function(data) {
   buffer += data;
   while(/\n/.test(buffer)) {
     var parts = buffer.split('\n');
     var command = parts.splice(0, 1);
     buffer = parts.join('\n');
-
     if (commands[command]) commands[command]();
   }
 });
