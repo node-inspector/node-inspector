@@ -39,11 +39,14 @@
     "yargs": "^3.9.0"
   },
   "devDependencies": {
-    "promise": "^7.0.3",
-    "mocha": "^1.21",
-    "chai": "^2.1",
+    "chai": "^3.5.0",
+    "fs-extra": "~0.8.1",
+    "install": "^0.8.7",
     "jshint": "^2.4.4",
-    "fs-extra": "~0.8.1"
+    "mocha": "^1.21",
+    "npm": "^4.4.1",
+    "promise": "^7.0.3",
+    "rimraf": "^2.6.1"
   },
   "preferGlobal": true,
   "scripts": {
