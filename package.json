@@ -39,7 +39,7 @@
     "yargs": "^3.9.0"
   },
   "devDependencies": {
-    "chai": "^2.1",
+    "chai": "^3.5.0",
     "fs-extra": "~0.8.1",
     "install": "^0.8.7",
     "jshint": "^2.4.4",

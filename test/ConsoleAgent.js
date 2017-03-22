@@ -28,10 +28,12 @@ describe('ConsoleAgent', function() {
   it('should translate objects', function(done) {
     frontendClient.once('Console.messageAdded', function(message) {
       var parameters = message.message.parameters[0];
-      expect(parameters.type).to.equal('object');
-      expect(parameters.subtype).to.equal(undefined);
-      expect(parameters.className).to.equal('Object');
-      expect(parameters.description).to.equal('Object');
+      expect(parameters).to.deep.include({
+        type: 'object',
+        subtype: undefined,
+        className: 'Object',
+        description: 'Object'
+      });
       done();
     });
     childProcess.stdin.write('log object\n');
