@@ -57,11 +57,14 @@ function appInstance(scriptPath, breakOnStart) {
       reject(new Error('Timeout while waiting for the child process to initialize the debugger.'));
     }, 1000);
 
+    // childProcess.stdout.pipe(process.stdout);
+
     childProcess.stderr.on('data', function(data) {
       // Wait for the child process to initialize the debugger before connecting
       // Node v0.10 prints "debugger listening..."
       // Node v0.11 prints "Debugger listening..."
-      if (/^[Dd]ebugger listening on port \d+$/m.test(data.toString())) {
+      // Node v6.x prints "Debugger listening on [::]:xxxx"
+      if (/^[Dd]ebugger listening on/m.test(data.toString()) && /\d+$/m.test(data.toString()) ) {
         clearTimeout(startupTimer);
         // give the child process some time to finish the initialization code
         // this is especially important when breakOnStart is true

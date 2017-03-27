@@ -171,20 +171,20 @@ describe('RuntimeAgent', function() {
             return prop.name == '__proto__';
           });
           expect(proto.length == 1, 'proto exist and unique').to.equal(true);
-          expect(proto[0], '__proto__ has valid structure').to.deep.equal({
-              name: '__proto__',
-              value: {
-                type: 'object',
-                subtype: undefined,
-                objectId: '17',
-                className: 'Object',
-                description: 'InspectedClass'
-              },
-              writable: true,
-              configurable: true,
-              enumerable: false,
-              isOwn: true
-            });
+          expect(proto[0], '__proto__ has valid structure').to.include({
+            name: '__proto__',
+            writable: true,
+            configurable: true,
+            enumerable: false,
+            isOwn: true
+          });
+
+          expect(proto[0].value).to.include({
+            type: 'object',
+            subtype: undefined,
+            className: 'Object',
+            description: 'InspectedClass'
+          });
 
           done();
         });
