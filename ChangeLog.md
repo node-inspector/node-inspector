@@ -1,3 +1,12 @@
+## 2017-03-28, Version 1.0.0
+
+ * fix: upgrade v8-debug and v8-profiler, fix some test suites (#991) (淘小杰)
+
+ * fix: can not find `NativeModule` in node 6.4.x and above (#990) (淘小杰)
+
+ * Update README (#988) (Miroslav Bajtoš)
+
+
 ## 2017-03-06, Version 0.12.10
 
  * Fix callback call in InjectorClient._findNMInScope (#914) (Sergey Sharov)
