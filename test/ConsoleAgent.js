@@ -52,6 +52,7 @@ describe('ConsoleAgent', function() {
     });
     consoleAgent.clearMessages();
   });
+
 });
 
 describe('ConsoleClient', function() {
@@ -97,17 +98,13 @@ describe('ConsoleClient', function() {
       _messages[0].parameters[0].objectId,
       function(error, lookupBody, lookupRefs) {
         expect(error).to.equal(null);
-        expect(lookupBody).to.deep.equal({
+        expect(lookupBody).to.deep.include({
           handle: 0,
           type: 'object',
           className: 'Object',
-          constructorFunction: { ref: 1 },
-          protoObject: { ref: 2 },
-          prototypeObject: { ref: 3 },
-          properties: [{ name: 'a', propertyType: PROP_TYPE, ref: 4}],
           text: '#<Object>'
         });
-        expect(lookupRefs).to.include.keys(['1', '2', '3', '4']);
+        expect(lookupBody).to.include.keys(['constructorFunction', 'protoObject', 'prototypeObject']);
         done();
       }
     );

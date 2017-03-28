@@ -61,7 +61,7 @@ describe('Profiler Agent', function() {
 });
 
 function initializeProfiler(done) {
-  launcher.runCommandlet(true, function(childProcess, session) {
+  launcher.runCommandlet(false, function(childProcess, session) {
     debuggerClient = session.debuggerClient;
     frontendClient = session.frontendClient;
 
@@ -71,8 +71,7 @@ function initializeProfiler(done) {
     profilerAgent = new ProfilerAgent({}, session);
 
     injectorClient.inject(function(error) {
-      if (error) return done(error);
-      debuggerClient.request('continue', null, done);
+      done(error);
     });
   });
 }

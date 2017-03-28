@@ -259,7 +259,7 @@ describe('NetworkAgent', function() {
   }
 
   function initializeNetwork(done) {
-    launcher.runCommandlet(true, function(child, session) {
+    launcher.runCommandlet(false, function(child, session) {
       commandlet = child;
       debuggerClient = session.debuggerClient;
       frontendClient = session.frontendClient;
@@ -272,8 +272,7 @@ describe('NetworkAgent', function() {
       networkAgent = new NetworkAgent({}, session);
 
       injectorClient.inject(function(error) {
-        if (error) return done(error);
-        debuggerClient.request('continue', null, done);
+        done(error);
       });
     });
   }

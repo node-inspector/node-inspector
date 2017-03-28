@@ -57,6 +57,8 @@ function appInstance(scriptPath, breakOnStart) {
       reject(new Error('Timeout while waiting for the child process to initialize the debugger.'));
     }, 1000);
 
+    // childProcess.stdout.pipe(process.stdout);
+
     childProcess.stderr.on('data', function(data) {
       // Wait for the child process to initialize the debugger before connecting
       // Node v0.10 prints "debugger listening..."

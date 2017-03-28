@@ -32,8 +32,8 @@
     "semver": "^4.3.4",
     "serve-favicon": "^2.1.1",
     "strong-data-uri": "^1.0.0",
-    "v8-debug": "~0.7.1",
-    "v8-profiler": "~5.6.0",
+    "v8-debug": "~1.0.0",
+    "v8-profiler": "~5.7.0",
     "which": "^1.1.1",
     "ws": "^1.0.1",
     "yargs": "^3.9.0"
