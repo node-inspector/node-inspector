@@ -16,7 +16,7 @@ var consoleAgent,
     frontendClient;
 
 describe('ConsoleAgent', function() {
-  beforeEach(initializeConsole);
+  before(initializeConsole);
 
   it('should translate console message to frontend', function(done) {
     frontendClient.once('Console.messageAdded', function(message) {
