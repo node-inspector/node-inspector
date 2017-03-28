@@ -778,7 +778,7 @@ Document.prototype.deepElementFromPoint = function(x, y)
  */
 function isEnterKey(event) {
     // Check if in IME.
-    return event.keyCode !== 229 && event.keyIdentifier === "Enter";
+    return event.keyCode !== 229 && ((event.keyIdentifier || event.key) === "Enter");
 }
 
 function consumeEvent(e)
