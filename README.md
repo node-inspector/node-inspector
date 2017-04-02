@@ -364,7 +364,7 @@ Use dashed option names in RC files. Sample config file:
 ```js
 {
   "web-port": 8088,
-  "web-host": null,
+  "web-host": 0.0.0.0,
   "debug-port": 5858,
   "save-live-edit": true,
   "preload": false,
