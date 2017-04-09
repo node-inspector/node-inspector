@@ -360,11 +360,11 @@ $ node-debug --no-preload app
 
 #### RC Configuration
 
-Use dashed option names in RC files. Sample config file:
+Use dashed option names in RC files. Sample config file (to be saved as `.node-inspectorrc`):
 ```js
 {
   "web-port": 8088,
-  "web-host": null,
+  "web-host": "0.0.0.0",
   "debug-port": 5858,
   "save-live-edit": true,
   "preload": false,
