@@ -1,3 +1,17 @@
+## 2017-04-10, Version 1.0.1
+
+ * fix: breakpoint may be undefined. (#995) (淘小杰)
+
+ * fix: debug-brk not working and  failed to resolve value by handle,
+   https://github.com/node-inspector/node-inspector/issues/993 (#994) (淘小杰)
+
+ * Fixing CLI warning (#943) (Clint Goodman)
+
+ * Updated repo badges to svg (#945) (Amila Welihinda)
+
+ * As KeyboardEvent.keyIdentifier is removed from the recent (#955) (Junil Kim)
+
+
 ## 2017-03-28, Version 1.0.0
 
  * fix: upgrade v8-debug and v8-profiler, fix some test suites (#991) (淘小杰)
