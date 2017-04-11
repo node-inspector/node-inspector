@@ -34,6 +34,18 @@ describe('DebuggerClient', function() {
       done();
     });
 
+    it('should target.break === true in --debug-brk mode', function(done) {
+      if (client.isReady) {
+        expect(client.target.break).to.equal(true);
+        done();
+      } else {
+        client.once('connect', function() {
+          expect(client.target.break).to.equal(true);
+          done();
+        });
+      }
+    });
+
     it('is updated on break', function(done) {
       client.on('break', function() {
         expect(client.isRunning, 'isRunning').to.equal(false);
