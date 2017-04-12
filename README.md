@@ -1,18 +1,17 @@
 # Node Inspector
 
-[![Build Status](https://travis-ci.org/node-inspector/node-inspector.png?branch=master)](https://travis-ci.org/node-inspector/node-inspector)
-[![NPM version](https://badge.fury.io/js/node-inspector.png)](http://badge.fury.io/js/node-inspector)
+[![Build Status](https://travis-ci.org/node-inspector/node-inspector.svg?branch=master)](https://travis-ci.org/node-inspector/node-inspector)
+[![NPM version](https://badge.fury.io/js/node-inspector.svg)](http://badge.fury.io/js/node-inspector)
 [![Bountysource](https://www.bountysource.com/badge/tracker?tracker_id=195817)](https://www.bountysource.com/trackers/195817-node-inspector?utm_source=195817&utm_medium=shield&utm_campaign=TRACKER_BADGE)
 
 [![Join the chat at https://gitter.im/node-inspector/node-inspector](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/node-inspector/node-inspector?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## Overview
 
-Node Inspector is a debugger interface for Node.js applications that uses the
-Blink Developer Tools (formerly WebKit Web Inspector).
+Node Inspector is a debugger interface for Node.js applications that uses the Blink Developer Tools (formerly WebKit Web Inspector).
 
-The project maintenance and support is sponsored by
-[StrongLoop](http://strongloop.com).
+**Since version 6.3, Node.js provides a buit-in DevTools-based debugger which mostly deprecates Node Inspector, see e.g. [this blog post](https://medium.com/@paul_irish/debugging-node-js-nightlies-with-chrome-devtools-7c4a1b95ae27#.pmqejrn8q) to get started. The built-in debugger is developed directly by the V8/Chromium team and provides certain advanced features (e.g. long/async stack traces) that are too difficult to implement in Node Inspector.**
+
 
 ### Table of Content
 
@@ -361,11 +360,11 @@ $ node-debug --no-preload app
 
 #### RC Configuration
 
-Use dashed option names in RC files. Sample config file:
+Use dashed option names in RC files. Sample config file (to be saved as `.node-inspectorrc`):
 ```js
 {
   "web-port": 8088,
-  "web-host": null,
+  "web-host": "0.0.0.0",
   "debug-port": 5858,
   "save-live-edit": true,
   "preload": false,
@@ -389,12 +388,17 @@ started.
 
 ## Credits
 
-Maintainers
+#### Current maintainers
 
- - [Danny Coates](https://github.com/dannycoates) - the original author
-   and a sole maintainer for several years.
- - [Miroslav Bajtoš](https://github.com/bajtos) - a current maintainer,
-   sponsored by [StrongLoop](http://strongloop.com).
- - [3y3](https://github.com/3y3) - a current maintainer
+ - [淘小杰 (hustxiaoc)](https://github.com/hustxiaoc)
 
-Big thanks to the many contributors to the project, see [AUTHORS](AUTHORS).
+#### Alumni
+
+ - [Danny Coates](https://github.com/dannycoates) - the original author and a sole maintainer for several years.
+ - [Miroslav Bajtoš](https://github.com/bajtos) - sponsored by [StrongLoop](http://strongloop.com), maintained Node Inspector through the Node.js 0.10 era.
+ - [3y3](https://github.com/3y3) - maintained Node Inspector in 2015-2016
+
+#### Contributors
+
+
+Big thanks to the many contributors to the project, see [Contributors on GitHub](https://github.com/node-inspector/node-inspector/graphs/contributors)

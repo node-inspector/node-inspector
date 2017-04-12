@@ -2,6 +2,7 @@ var fs = require('fs-extra'),
   path = require('path'),
   expect = require('chai').expect,
   glob = require('glob'),
+  rimraf = require('rimraf'),
   launcher = require('./helpers/launcher.js'),
   SessionStub = require('./helpers/SessionStub.js'),
   ScriptFileStorage = require('../lib/ScriptFileStorage.js').ScriptFileStorage,
@@ -16,6 +17,7 @@ beforeEach(deleteTemps);
 describe('ScriptFileStorage', function() {
   var storage;
   beforeEach(function() {
+    rimraf.sync(TEMP_DIR);
     storage = createScriptFileStorage();
   });
 
