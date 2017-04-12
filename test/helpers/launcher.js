@@ -92,7 +92,7 @@ function computeDebugOptions(breakOnStart) {
 
 function setupDebugger(instance) {
   instance.session = new SessionStub();
-  var debuggerClient = instance.session.debuggerClient = new DebuggerClient(DEBUG_PORT);
+  var debuggerClient = instance.session.debuggerClient = new DebuggerClient('localhost', DEBUG_PORT);
 
   return new Promise(function(resolve, reject) {
     debuggerClient.on('connect', function() {
