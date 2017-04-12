@@ -91,6 +91,10 @@ WebInspector.NodeInspectorOverrides.prototype = {
     var params = Runtime._queryParamsObject;
     params['port'] = params['port'] || '5858';
     params['ws'] = params['ws'] || (location.host + location.pathname);
+    if (params['host']) {
+        params['ws'] += /\?/.test(params['ws']) ? '&' : '?';
+        params['ws'] += 'host=' + params['host'];
+    }
     params['ws'] += /\?/.test(params['ws']) ? '&' : '?';
     params['ws'] += 'port=' + params['port'];
   },
