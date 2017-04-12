@@ -1,6 +1,6 @@
 {
   "name": "node-inspector",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Web Inspector based nodeJS debugger",
   "homepage": "http://github.com/node-inspector/node-inspector",
   "author": "Danny Coates <dannycoates@gmail.com>",

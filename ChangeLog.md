@@ -1,3 +1,16 @@
+## 2017-04-12, Version 1.1.0
+
+ * doc: add doc of how to debug remote machine (#1002) (淘小杰)
+
+ * fix:  DebuggerClient api has a breaking change (#1000) (淘小杰)
+
+ * Implement the remote debugging feature. (#919) (Junil Kim)
+
+ * test: add debug break test case (#998) (淘小杰)
+
+ * fix: --debug-brk is ignored when launching it with command (#997) (淘小杰)
+
+
 ## 2017-04-10, Version 1.0.1
 
  * fix: breakpoint may be undefined. (#995) (淘小杰)
@@ -1060,27 +1073,3 @@
 ## v0.0.1
 
  * added to npm registry
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
