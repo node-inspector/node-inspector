@@ -86,7 +86,7 @@ Node Inspector supports almost all of the debugging features of DevTools, includ
 
 ### Cool stuff
 * Node Inspector uses WebSockets, so no polling for breaks.
-* Remote debugging
+* Remote debugging and debugging remote machine.
 * [Live edit of running code](http://github.com/node-inspector/node-inspector/wiki/LiveEdit),
   optionally persisting changes back to the file-system.
 * Set breakpoints in files that are not loaded into V8 yet - useful for
@@ -125,6 +125,21 @@ When in doubt, refresh the page in browser
 
 Yes. Node Inspector must be running on the same machine, but your browser can be anywhere.
 Just make sure port 8080 is accessible.
+
+And if Node Inspector is not running on your remote machine, you can also debug it as long as your local machine can connect it.
+In this way, you must launch Node Inspector with `--no-inject` which means some features are not supported such as profiling and consoling output inspection.
+
+So how to debug remote machine with your local Node Inspector?
+
+##### option 1
+$ node-inspector --debug-host 192.168.0.2 --no-inject
+then open the url
+http://127.0.0.1:8080/debug?port=5858
+
+##### option 2
+$ node-inspector  --no-inject
+then specify the remote machine address as a host parameter in the url
+e.g.) http://127.0.0.1:8080/debug?host=192.168.123.12&port=5858
 
 #### How do I specify files to hide?
 
