@@ -5,8 +5,9 @@ NULL="/dev/null"
 LIST=false
 TAG=$(node -e "console.log(require('./package.json').version)")
 tmp="$TMPDIR/changelog"
+name=`echo $(uname -s) | cut -c 1-10`;
 
-if [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ]; then
+if [ $name == "MINGW32_NT" ]; then
   NULL="NUL";
   tmp="._changelog"
 fi
