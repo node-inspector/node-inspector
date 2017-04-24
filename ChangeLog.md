@@ -1,3 +1,10 @@
+## 2017-04-24, Version 1.1.1
+
+ * fix: press enter doesn't work in console (#1006) (淘小杰)
+
+ * fix: make it work with mac (#1003) (淘小杰)
+
+
 ## 2017-04-12, Version 1.1.0
 
  * doc: add doc of how to debug remote machine (#1002) (淘小杰)
