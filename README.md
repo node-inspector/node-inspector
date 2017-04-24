@@ -372,6 +372,10 @@ Disable preloading of `.js` files:
 ```
 $ node-debug --no-preload app
 ```
+If you are connecting to a remote server to debug an app you can forward the specific port to yor local machine:
+```
+$ ssh -L 8080:127.0.0.2:8080 user@remoteSite.com -N
+```
 
 #### RC Configuration
 
