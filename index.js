@@ -13,7 +13,7 @@ exports.buildWebSocketUrl = buildWebSocketUrl;
  * @param {number} isHttps as configured via --ssl-cert and --ssl-key in the debugged app
  */
 function buildInspectorUrl(inspectorHost, inspectorPort, debugPort, isHttps) {
-  var host = inspectorHost == '0.0.0.0' ? '127.0.0.1' : inspectorHost;
+  var host = inspectorHost;
   var port = inspectorPort;
   var protocol = isHttps ? 'https' : 'http';
 
