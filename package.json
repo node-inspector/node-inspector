@@ -21,6 +21,7 @@
     "node-inspector": "./bin/inspector.js",
     "node-debug": "./bin/node-debug.js"
   },
+  "main": "./bin/inspector.js",
   "dependencies": {
     "async": "~0.9",
     "biased-opener": "~0.2.2",
