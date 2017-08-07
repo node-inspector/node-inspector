@@ -10,7 +10,7 @@
 
 Node Inspector is a debugger interface for Node.js applications that uses the Blink Developer Tools (formerly WebKit Web Inspector).
 
-**Since version 6.3, Node.js provides a buit-in DevTools-based debugger which mostly deprecates Node Inspector, see e.g. [this blog post](https://medium.com/@paul_irish/debugging-node-js-nightlies-with-chrome-devtools-7c4a1b95ae27#.pmqejrn8q) to get started. The built-in debugger is developed directly by the V8/Chromium team and provides certain advanced features (e.g. long/async stack traces) that are too difficult to implement in Node Inspector.**
+**Since version 6.3, Node.js provides a built-in DevTools-based debugger which mostly deprecates Node Inspector, see e.g. [this blog post](https://medium.com/@paul_irish/debugging-node-js-nightlies-with-chrome-devtools-7c4a1b95ae27#.pmqejrn8q) to get started. The built-in debugger is developed directly by the V8/Chromium team and provides certain advanced features (e.g. long/async stack traces) that are too difficult to implement in Node Inspector.**
 
 
 ### Table of Content
