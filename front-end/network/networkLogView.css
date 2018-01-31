@@ -29,6 +29,8 @@
  */
 
 .network-log-grid.data-grid {
+    width: 100vw;
+    min-height: calc(100vh - 116px);
     border: none;
     flex: 1 1;
 }
