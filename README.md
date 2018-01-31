@@ -311,7 +311,7 @@ so that sources earlier in this list override later ones.
 | --help              | -h  |         | Display information about available options.<br/>Use `--help -l` to display full usage info.<br/>Use `--help <option>` to display quick help on `option`.
 | --version           | -v  |         | Display Node Inspector's version.
 | --debug-port        | -d  | 5858    | Node/V8 debugger port.<br/>(`node --debug={port}`)
-| --web-host          |     | 0.0.0.0 | Host to listen on for Node Inspector's web interface.<br/>`node-debug` listens on `127.0.0.1` by default.
+| --web-host          |     | 127.0.0.1 | Host to listen on for Node Inspector's web interface.<br/>`node-debug` listens on `127.0.0.1` by default. To listen on all available network interfaces use ```--web-host 0.0.0.0```.
 | --web-port          | -p  | 8080    | Port to listen on for Node Inspector's web interface.
 | **node-debug**
 | --debug-brk         | -b  | true    | Break on the first line.<br/>(`node --debug-brk`)
