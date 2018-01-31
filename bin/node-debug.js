@@ -155,7 +155,7 @@ function formatNodeInspectorError(err) {
 
 function startDebuggedProcess(callback) {
   var script = path.resolve(process.cwd(), config.subproc.script);
-  if (!fs.existsSync(script)) {
+  if (!fs.existsSync(script) || fs.lstatSync(script).isDirectory()) {
     try {
       script = whichSync(config.subproc.script);
       script = checkWinCmdFiles(script);
