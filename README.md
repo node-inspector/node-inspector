@@ -145,6 +145,19 @@ e.g.) http://127.0.0.1:8080/debug?host=192.168.123.12&port=5858
 
 Create a JSON-encoded array.  You must escape quote characters when using a command-line option.
 
+#### My options are not being considered
+
+Make sure you put the options before the main script argument.
+
+Right:
+```
+node-debug --hidden=test.js app
+```
+Wrong:
+```
+node-debug app --hidden=test.js
+```
+
 ```sh
 $ node-inspector --hidden='["node_modules/framework"]'
 ```
@@ -354,7 +367,7 @@ $ node-debug --web-host 127.0.0.2 app
 ```
 Pass `--option=value` to debugging process:
 ```
-$ node-debug app --option value
+$ node-debug --option value app
 ```
 Start node-inspector to listen on HTTPS:
 ```
@@ -363,6 +376,14 @@ $ node-debug --ssl-key ./ssl/key.pem --ssl-cert ./ssl/cert.pem app
 Ignore breakpoints in files stored in `node_modules` folder or ending in `.test.js`:
 ```
 $ node-debug --hidden node_modules/ --hidden \.test\.js$ app
+```
+Only show files with the word 'test.js' in the path:
+```
+$ node-debug --hidden=^\(?\!.*test\.js.*\) app
+```
+Only show files with the word 'test.js' or 'hello.js' in the path:
+```
+$ node-debug --hidden=^\(?\!\(.*test\.js.*\)\|\(.*hello\.js.*\)\) app
 ```
 Add `--harmony` flag to the node process running the debugged script:
 ```
