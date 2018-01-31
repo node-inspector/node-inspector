@@ -1,3 +1,12 @@
+## 2018-01-31, Version 1.1.2
+
+ * fix: ui messed up (#1034) (淘小杰)
+
+ * Allow "blob:" sources for scripts in Content-Security-Policy header (#1017) (André Wachter)
+
+ * Fixed typo: buit > built (#1018) (Greg Knapp)
+
+
 ## 2017-04-24, Version 1.1.1
 
  * fix: press enter doesn't work in console (#1006) (淘小杰)
