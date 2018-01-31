@@ -12,3 +12,11 @@
 @import url("sidebarPane.css");
 @import url("suggestBox.css");
 @import url("tabbedPane.css");
+
+#sources-editor-container-tabbed-pane .tabbed-pane-content {
+    height: calc(100vh - 116px);
+}
+#console-messages {
+
+    height: calc(100vh - 97px);
+}
