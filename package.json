@@ -4,6 +4,7 @@
   "description": "Web Inspector based nodeJS debugger",
   "homepage": "http://github.com/node-inspector/node-inspector",
   "author": "Danny Coates <dannycoates@gmail.com>",
+  "license": "BSD-2-Clause",
   "keywords": [
     "debug",
     "debugger",
